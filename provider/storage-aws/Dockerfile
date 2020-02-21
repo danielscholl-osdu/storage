@@ -13,7 +13,11 @@
 # limitations under the License.
 FROM amazoncorretto:8
 
-WORKDIR /
-COPY provider/storage-aws/target/storage-aws-0.0.3-spring-boot.jar storage-aws-0.0.3-spring-boot.jar
+ARG JAR_VERSION
+ENV JAR_FILE=storage-aws-${JAR_VERSION}-spring-boot.jar
 
-CMD ["java","-jar", "storage-aws-0.0.3-spring-boot.jar"]
+WORKDIR /
+COPY provider/storage-aws/target/$JAR_FILE $JAR_FILE
+EXPOSE 8080
+
+CMD java -jar $JAR_FILE
