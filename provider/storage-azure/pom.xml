@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Copyright © Microsoft Corporation
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent> 
+    <artifactId>os-storage</artifactId>  
+    <groupId>org.opengroup.osdu</groupId>  
+    <version>0.0.5-SNAPSHOT</version>
+    <relativePath>../../</relativePath>
+  </parent>  
+  <modelVersion>4.0.0</modelVersion>  
+  <artifactId>storage-azure</artifactId>  
+  <description>Storage service on Azure</description>
+  <packaging>jar</packaging>  
+  <properties> 
+    <azure.version>2.1.7</azure.version>
+    <azure.appservice.resourcegroup></azure.appservice.resourcegroup>
+    <azure.appservice.plan></azure.appservice.plan>
+    <azure.appservice.appname></azure.appservice.appname>
+    <azure.appservice.subscription></azure.appservice.subscription>
+  </properties>
+  <dependencies> 
+    <dependency> 
+      <groupId>com.microsoft.azure</groupId>  
+      <artifactId>azure-active-directory-spring-boot-starter</artifactId>  
+      <version>${azure.version}</version> 
+    </dependency>  
+    <dependency> 
+      <groupId>org.springframework.boot</groupId>  
+      <artifactId>spring-boot-starter-security</artifactId> 
+    </dependency>  
+    <dependency> 
+      <groupId>org.springframework.security</groupId>  
+      <artifactId>spring-security-oauth2-client</artifactId> 
+    </dependency>  
+    <dependency> 
+      <groupId>org.springframework.security</groupId>  
+      <artifactId>spring-security-oauth2-jose</artifactId> 
+    </dependency>  
+    <dependency> 
+      <groupId>com.microsoft.azure</groupId>  
+      <artifactId>azure-cosmosdb-spring-boot-starter</artifactId>  
+      <version>${azure.version}</version> 
+    </dependency>
+    <dependency>
+      <groupId>org.opengroup.osdu</groupId>
+      <artifactId>core-lib-azure</artifactId>
+      <version>0.0.9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opengroup.osdu</groupId>
+      <artifactId>os-core-common</artifactId>
+      <version>0.0.13</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opengroup.osdu</groupId>
+      <artifactId>storage-core</artifactId>
+      <version>0.0.5-SNAPSHOT</version>
+    </dependency>
+    <dependency> 
+      <groupId>org.projectlombok</groupId>  
+      <artifactId>lombok</artifactId> 
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>1.10.19</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-module-junit4</artifactId>
+      <version>2.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build> 
+    <plugins> 
+      <plugin> 
+        <groupId>org.springframework.boot</groupId>  
+        <artifactId>spring-boot-maven-plugin</artifactId>  
+        <executions> 
+          <execution> 
+            <goals> 
+              <goal>repackage</goal> 
+            </goals>  
+            <configuration> 
+              <classifier>spring-boot</classifier>  
+              <mainClass>org.opengroup.osdu.storage.provider.azure.StorageApplication</mainClass>
+            </configuration> 
+          </execution> 
+        </executions> 
+      </plugin>
+      <plugin>
+        <groupId>com.microsoft.azure</groupId>  
+        <artifactId>azure-webapp-maven-plugin</artifactId>  
+        <version>1.7.0</version>  
+        <configuration>
+          <schemaVersion>V2</schemaVersion>
+          <authentication>
+            <serverId>azure-auth</serverId>
+          </authentication>
+          <subscriptionId>${azure.appservice.subscription}</subscriptionId>
+          <resourceGroup>${azure.appservice.resourcegroup}</resourceGroup>
+          <appServicePlanName>${azure.appservice.plan}</appServicePlanName>
+          <appName>${azure.appservice.appname}</appName>
+          <appSettings>
+            <property>
+              <name>JAVA_OPTS</name>
+              <value>-Dserver.port=80</value>
+            </property>
+          </appSettings>
+          <deployment>
+            <resources>
+              <resource>
+                <directory>${project.basedir}/target</directory>
+                <includes>
+                  <include>*spring-boot.jar</include>
+                </includes>
+              </resource>
+            </resources>
+          </deployment>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build> 
+</project>

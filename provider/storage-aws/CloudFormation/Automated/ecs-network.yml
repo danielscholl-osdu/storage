@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  CloudFormation template for creating the network resources used for the ECS cluster the application will
+  be deployed into. This is separated from the rest of the ECS resources in order to avoid a circular dependency.
+  Because there can be any number of cache stacks, but only one ECS stack per service, it makes sense to have
+  the caches import ECS exports in order to permit access from ECS, rather than the other way around, since
+  the number of cache clusters and their names can vary, and would require hardcoding them into the ECS template,
+  whereas this way things stay generic and the ECS CloudFormation template does not need to be updated in order to
+  add or remove ElastiCache clusters.
+
+Parameters:
+  Environment:
+    Description: An environment name that will be prefixed to resource names.
+    Type: String
+    AllowedValues:
+      - dev
+      - uat
+      - prod
+    ConstraintDescription: Can only be "dev/uat/prod"
+    Default: dev
+
+  Region:
+    Description: The AWS region to deploy the resources to.
+    Type: String
+    Default: us-east-1
+
+  ApplicationName:
+    Description: >
+      The name of the application, which will be used to generate the ECS cluster name.
+      It will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: os-storage
+
+  ECSPort:
+    Description: The port that the ECS Service will listen on.
+    Type: Number
+    Default: 443
+    MinValue: 1
+    MaxValue: 65535
+
+  DomainName:
+    Description: >-
+      The optional custom DNS name for the service's load balancer. If omitted, the site will only be accessible
+      via the ECS service's Application Load Balancer DNS name. This value is used in the creation and signing of
+      the service's SSL certificate. Leave blank for none.
+    Type: String
+    Default: ''
+
+  AcmCertificateArn:
+    Description: >-
+      The Amazon Resource Name (ARN) of an existing AWS Certificate Manager (ACM) certificate.
+      If omitted, a new SSL certified will be requested/generated (only if the custom domain name
+      parameter is provided, otherwise the ECS service's ALB will not use SSL/HTTPS).
+    Type: String
+    AllowedPattern: "^(|arn:aws:acm:.*)$"
+    Default: ''
+
+Conditions:
+  IncludeCustomDomain: !Not [!Equals [ !Ref DomainName, '' ]]
+  UseExistingACMSSLCertificate: !And
+    - !Not [!Equals [ !Ref AcmCertificateArn, '' ]]
+    - !Condition IncludeCustomDomain
+  ShouldRequestNewSSLCertificate: !And
+    - !Not [!Condition UseExistingACMSSLCertificate]
+    - !Condition IncludeCustomDomain
+  ShouldExportSSLCertificate: !Or
+    - !Condition IncludeCustomDomain
+    - !Condition UseExistingACMSSLCertificate
+
+Resources:
+  # If an existing SSL certificate is not provided, but a custom domain is, request one
+  LoadBalancerSSLCertificate:
+    Type: 'AWS::CertificateManager::Certificate'
+    Condition: ShouldRequestNewSSLCertificate
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Join ['.', ['origin', !Ref DomainName]] #
+
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${Environment}-${ApplicationName}-sg"
+      GroupDescription: Storage Service ECS Security Group
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${Environment}-OSDU-VPC"
+
+  # Public access to the specified ECS Listening Port
+  ECSSecurityGroupECSListenerInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref 'ECSSecurityGroup'
+      IpProtocol: tcp
+      FromPort: !Ref ECSPort
+      ToPort: !Ref ECSPort
+      CidrIp: 0.0.0.0/0
+
+  # SSH access for instances in our VPC's jump box subnet group
+  # TODO: Update when the jump box is created as a part of the Util CFN, for now it is public
+  ECSSecurityGroupSSHInbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref 'ECSSecurityGroup'
+      IpProtocol: tcp
+      FromPort: '22'
+      ToPort: '22'
+      CidrIp: 0.0.0.0/0
+
+  # Open Application Load Balancer port range to self-access
+  ECSSecurityGroupALBports:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref 'ECSSecurityGroup'
+      IpProtocol: tcp
+      FromPort: '31000'
+      ToPort: '61000'
+      SourceSecurityGroupId: !Ref 'ECSSecurityGroup'
+
+Outputs:
+  EcsNetworkSecurityGroupId:
+    Description: The ID of the Storage Service ECS EC2 security group.
+    Value: !Ref 'ECSSecurityGroup'
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsNetworkSecurityGroupId
+
+  LoadBalancerSSLCertificateArn:
+    Condition: ShouldExportSSLCertificate
+    Description: The ARN of the SSL certificate to be used for both ECS and CloudFront (includes both DNS names).
+    Value: !If [UseExistingACMSSLCertificate, !Ref AcmCertificateArn, !Ref 'LoadBalancerSSLCertificate']
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-LoadBalancerSSLCertificateArn

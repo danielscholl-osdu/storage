@@ -1,0 +1,569 @@
+# Copyright © Amazon Web Services
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates all AWS resources used by OSDU. Requires having previously setup the CodeCommit repository, as well as the CodePipeline (manual template).
+Parameters:
+  Environment:
+    Description: The name of the environment.
+    Type: String
+    AllowedValues:
+      - dev
+      - uat
+      - prod
+    ConstraintDescription: Environment can only be "dev/uat/prod".
+    Default: dev
+
+  DeploymentRegion:
+    Description: The AWS region to deploy the resources to.
+    Type: String
+    Default: us-east-1
+
+  ChildTemplateBasePath:
+    Description: >-
+      The base path for where child CloudFormation templates are located – can be relative or absolute, e.g.
+      https://s3.amazonaws.com/dev-osdu-cloudformation-scripts/Automated/
+    Type: String
+    AllowedPattern: '^https:\/\/s3.amazonaws.com\/.*\/$'
+    Default: https://s3.amazonaws.com/dev-osdu-cloudformation-scripts/Automated/
+
+  ApplicationName:
+    Description: >
+      The name of the application, should be equal to the repository name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: os-storage
+
+  KeyName:
+    Description: >
+      Name of an existing EC2 KeyPair to enable SSH access to the ECS instances. Note that key pairs cannot
+      be created through CloudFormation, but instead must be uploaded through the AWS Console.
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: ecs_storage_key
+
+  DesiredCapacity:
+    Description: The default number of instances to launch in the ECS cluster.
+    Type: Number
+    Default: '1'
+
+  MaxSize:
+    Description: Maximum number of instances that can be launched in the ECS cluster.
+    Type: Number
+    Default: '1'
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.16xlarge
+      - m5.24xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.12xlarge
+      - c5.16xlarge
+      - c5.24xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5.12xlarge
+      - r5.24xlarge
+      - r4.large
+      - r4.xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.16xlarge
+      - i3.large
+      - i3.xlarge
+      - i3.2xlarge
+      - i3.4xlarge
+      - i3.10xlarge
+      - i3.16xlarge
+      - x1e.xlarge
+      - x1e.2xlarge
+      - x1e.4xlarge
+      - x1e.8xlarge
+      - x1e.16xlarge
+      - x1e.32xlarge
+    ConstraintDescription: Please choose a valid EC2 instance type for the ECS container instances.
+
+  SchemaRepositoryDynamoDBName:
+    Description: The name of the DynamoDB table for the schema repository; will be prefixed by the environment (e.g. SchemaRepository).
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, and _ accepted. Max. length 64 characters.
+    Default: 'SchemaRepository'
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  RecordMetadataRepositoryDynamoDBName:
+    Description: The name of the DynamoDB table for the record metadata repository; will be prefixed by the environment (e.g. RecordMetadataRepository).
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, and _ accepted. Max. length 64 characters.
+    Default: RecordMetadataRepository
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  TenantInfoDynamoDBName:
+    Description: The name of the DynamoDB table for the tenant information database; will be prefixed by the environment (e.g. TenantInfo).
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, and _ accepted. Max. length 64 characters.
+    Default: TenantInfo
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  DataStorageS3BucketName:
+    Description: The name of the data storage S3 bucket. Defaults to osdu-data.
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: osdu-data
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  StorageServiceIamUsername:
+    Description: The username of the service user for the OS Storage Service.
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Type: String
+    Default: service-user-os-storage
+    MinLength: '1'
+    MaxLength: '64'
+
+  StorageServiceIamKeyRotationSerial:
+    Description: This integer value can only ever be incremented, and an increase in value results in a rotation of the user's access key.
+    Type: Number
+    Default: 1
+  
+  SNSTopicName:
+    Description: >-
+      The name of the Simple Notification Service topic for the OS Storage Service. Defaults to osdu-storage-messages.
+      Will be prefixed with the environment name.
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: osdu-storage-messages
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  SQSQueueName:
+    Description: >-
+      The name of the Simple Queue Service queue for the OS Storage Service. Defaults to osdu-storage-queue.
+      Will be prefixed with the environment name.
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: osdu-storage-queue
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  GroupCacheName:
+    Description: The name of the cache cluster for the group cache. Will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: storagegroupcache
+
+  GroupCacheEngine:
+    Description: Which caching platform to use for the group cache. Can be set to 'redis' or 'memcached'.
+    Type: String
+    AllowedValues:
+      - redis
+      - memcached
+    ConstraintDescription: Can only be "redis" or "memcached"
+    Default: redis
+
+  GroupCacheNodeInstanceType:
+    Description: The instance type for redis cache nodes for the group cache.
+    ConstraintDescription: Must be a valid instance type from the list of allowed values.
+    Default: cache.t2.micro
+    AllowedValues:
+      - cache.m5.large
+      - cache.m5.xlarge
+      - cache.m5.2xlarge
+      - cache.m5.4xlarge
+      - cache.m5.12xlarge
+      - cache.m5.24xlarge
+      - cache.m4.large
+      - cache.m4.xlarge
+      - cache.m4.2xlarge
+      - cache.m4.4xlarge
+      - cache.m4.10xlarge
+      - cache.t2.micro
+      - cache.t2.small
+      - cache.t2.medium
+      - cache.c1.xlarge
+      - cache.r5.large
+      - cache.r5.xlarge
+      - cache.r5.2xlarge
+      - cache.r5.4xlarge
+      - cache.r5.12xlarge
+      - cache.r5.24xlarge
+      - cache.r4.large
+      - cache.r4.xlarge
+      - cache.r4.2xlarge
+      - cache.r4.4xlarge
+      - cache.r4.8xlarge
+      - cache.r4.16xlarge
+    Type: String
+
+  GroupCacheNumberOfCacheNodes:
+    Description: An integer value specifying the number of node in the redis cache for the group cache.
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 128
+
+  LegalTagCacheName:
+    Description: The name of the cache cluster for the legal tag cache. Will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: storagelegaltagcache
+
+  LegalTagCacheEngine:
+    Description: Which caching platform to use for the legal tag cache. Can be set to 'redis' or 'memcached'.
+    Type: String
+    AllowedValues:
+      - redis
+      - memcached
+    ConstraintDescription: Can only be "redis" or "memcached"
+    Default: redis
+
+  LegalTagCacheNodeInstanceType:
+    Description: The instance type for redis cache nodes for the legal tag cache.
+    ConstraintDescription: Must be a valid instance type from the list of allowed values.
+    Default: cache.t2.micro
+    AllowedValues:
+      - cache.m5.large
+      - cache.m5.xlarge
+      - cache.m5.2xlarge
+      - cache.m5.4xlarge
+      - cache.m5.12xlarge
+      - cache.m5.24xlarge
+      - cache.m4.large
+      - cache.m4.xlarge
+      - cache.m4.2xlarge
+      - cache.m4.4xlarge
+      - cache.m4.10xlarge
+      - cache.t2.micro
+      - cache.t2.small
+      - cache.t2.medium
+      - cache.c1.xlarge
+      - cache.r5.large
+      - cache.r5.xlarge
+      - cache.r5.2xlarge
+      - cache.r5.4xlarge
+      - cache.r5.12xlarge
+      - cache.r5.24xlarge
+      - cache.r4.large
+      - cache.r4.xlarge
+      - cache.r4.2xlarge
+      - cache.r4.4xlarge
+      - cache.r4.8xlarge
+      - cache.r4.16xlarge
+    Type: String
+
+  LegalTagCacheNumberOfCacheNodes:
+    Description: An integer value specifying the number of node in the redis cache for the legal tag cache.
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 128
+
+  SchemaCacheName:
+    Description: The name of the cache cluster for the schema cache. Will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: storageschemacache
+
+  SchemaCacheEngine:
+    Description: Which caching platform to use for the schema cache. Can be set to 'redis' or 'memcached'.
+    Type: String
+    AllowedValues:
+      - redis
+      - memcached
+    ConstraintDescription: Can only be "redis" or "memcached"
+    Default: redis
+
+  SchemaCacheNodeInstanceType:
+    Description: The instance type for redis cache nodes for the schema cache.
+    ConstraintDescription: Must be a valid instance type from the list of allowed values.
+    Default: cache.t2.micro
+    AllowedValues:
+      - cache.m5.large
+      - cache.m5.xlarge
+      - cache.m5.2xlarge
+      - cache.m5.4xlarge
+      - cache.m5.12xlarge
+      - cache.m5.24xlarge
+      - cache.m4.large
+      - cache.m4.xlarge
+      - cache.m4.2xlarge
+      - cache.m4.4xlarge
+      - cache.m4.10xlarge
+      - cache.t2.micro
+      - cache.t2.small
+      - cache.t2.medium
+      - cache.c1.xlarge
+      - cache.r5.large
+      - cache.r5.xlarge
+      - cache.r5.2xlarge
+      - cache.r5.4xlarge
+      - cache.r5.12xlarge
+      - cache.r5.24xlarge
+      - cache.r4.large
+      - cache.r4.xlarge
+      - cache.r4.2xlarge
+      - cache.r4.4xlarge
+      - cache.r4.8xlarge
+      - cache.r4.16xlarge
+    Type: String
+
+  SchemaCacheNumberOfCacheNodes:
+    Description: An integer value specifying the number of node in the redis cache for the schema cache.
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 128
+
+  ECSPort:
+    Description: The port that the ECS Service will listen on.
+    Type: Number
+    Default: 80
+    MinValue: 1
+    MaxValue: 65535
+
+  ECSCPUAllocation:
+    Description: The amount of CPU resources to allocate to each ECS task/container. Scale - 1024 = 1 vCPU core.
+    Type: Number
+    Default: 1024
+    MinValue: 10
+    MaxValue: 65535
+
+  ECSMemoryAllocation:
+    Description: The amount of memory (RAM) to allocate to each ECS task/container. Scale - 1 = 1MB of memory.
+    Type: Number
+    Default: 2048
+    MinValue: 256
+    MaxValue: 131072
+
+  DomainName:
+    Description: >-
+      The optional custom DNS name for the ECS service's load balancer. If omitted, the site will only be accessible
+      via the ECS service's Application Load Balancer DNS name. This value is used in the creation and signing of
+      the service's SSL certificate. Leave blank is not using a custom domain for this deployment.
+    Type: String
+    Default: ''
+
+  HostedZoneName:
+    Description: >-
+      The name of the hosted zone (ex: for storage.osdu.slb.com, this would likely be osdu.slb.com).
+      Leave blank is not using a custom domain for this deployment.
+    Type: String
+    Default: ''
+
+  AcmCertificateArn:
+    Description: >-
+      The Amazon Resource Name (ARN) of an existing AWS Certificate Manager (ACM) certificate.
+      If omitted, a new SSL certified will be requested/generated (only if the custom domain name
+      parameter is provided, otherwise the ECS service's ALB will not use SSL/HTTPS).
+    Type: String
+    AllowedPattern: "^(|arn:aws:acm:.*)$"
+    Default: ''
+
+Resources:
+
+  #### Shared Resources ################################################################
+
+  ServiceAccountIAMCredentialsStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, service-account-iam-credentials.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        StorageServiceIamUsername: !Ref StorageServiceIamUsername
+        StorageServiceIamKeyRotationSerial: !Ref StorageServiceIamKeyRotationSerial
+
+  MessageBusSNSStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join ['', [!Ref ChildTemplateBasePath, sns-topic.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        SNSTopicName: !Ref SNSTopicName
+        SQSQueueName: !Ref SQSQueueName
+
+  #### ECS Resources ###################################################################
+
+  ECSNetworkStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: ServiceAccountIAMCredentialsStack
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, ecs-network.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        ApplicationName: !Ref ApplicationName
+        ECSPort: !Ref ECSPort
+        DomainName: !Ref DomainName
+        AcmCertificateArn: !Ref AcmCertificateArn
+
+  ECSClusterStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: [GroupCacheStack, LegalTagCacheStack, SchemaCacheStack]
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, ecs-cluster.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        ApplicationName: !Ref ApplicationName
+        KeyName: !Ref KeyName
+        DesiredCapacity: !Ref DesiredCapacity
+        MaxSize: !Ref MaxSize
+        InstanceType: !Ref InstanceType
+        GroupCacheName: !Ref GroupCacheName
+        LegalTagCacheName: !Ref LegalTagCacheName
+        SchemaCacheName: !Ref SchemaCacheName
+        ECSPort: !Ref ECSPort
+        SNSTopicName: !Ref SNSTopicName
+        DataStorageS3BucketName: !Ref DataStorageS3BucketName
+        ECSMemoryAllocation: !Ref ECSMemoryAllocation
+        DomainName: !Ref DomainName
+        HostedZoneName: !Ref HostedZoneName
+
+  #### Record Metadata Repository DB ###################################################
+
+  RecordMetadataRepositoryStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, records-metadata-repository.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        TableName: !Ref RecordMetadataRepositoryDynamoDBName
+
+  #### Schema Repository DB ############################################################
+
+  SchemaRepositoryStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, schema-repository.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        TableName: !Ref SchemaRepositoryDynamoDBName
+
+  #### Tenant Info DB ##################################################################
+
+  TenantInfoStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, tenant-info.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        TableName: !Ref TenantInfoDynamoDBName
+
+  #### Storage Bucket ##################################################################
+
+  StorageBucketStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: ServiceAccountIAMCredentialsStack
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, storage-bucket.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        DataStorageBucketName: !Ref DataStorageS3BucketName
+
+  #### Caching Resources ###############################################################
+
+  GroupCacheStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: ECSNetworkStack
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, cache.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        ApplicationName: !Ref ApplicationName
+        CacheName: !Ref GroupCacheName
+        CacheEngine: !Ref GroupCacheEngine
+        NodeInstanceType: !Ref GroupCacheNodeInstanceType
+        NumberOfCacheNodes: !Ref GroupCacheNumberOfCacheNodes
+
+  LegalTagCacheStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: ECSNetworkStack
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, cache.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        ApplicationName: !Ref ApplicationName
+        CacheName: !Ref LegalTagCacheName
+        CacheEngine: !Ref LegalTagCacheEngine
+        NodeInstanceType: !Ref LegalTagCacheNodeInstanceType
+        NumberOfCacheNodes: !Ref LegalTagCacheNumberOfCacheNodes
+
+  SchemaCacheStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: ECSNetworkStack
+    Properties:
+      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, cache.yml ] ]
+      Parameters:
+        Environment: !Ref Environment
+        Region: !Ref DeploymentRegion
+        ApplicationName: !Ref ApplicationName
+        CacheName: !Ref SchemaCacheName
+        CacheEngine: !Ref SchemaCacheEngine
+        NodeInstanceType: !Ref SchemaCacheNodeInstanceType
+        NumberOfCacheNodes: !Ref SchemaCacheNumberOfCacheNodes

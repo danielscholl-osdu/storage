@@ -1,0 +1,742 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  CloudFormation template for creating the resources used for the ECS cluster the application will
+  be deployed into. Will create the CodeDeploy application, the ECR repository, and the ECS cluster.
+  This is separated from the rest of the ECS resources in order to avoid a circular dependency.
+  Because there can be any number of cache stacks, but only one ECS stack per service, it makes sense to have
+  the caches import ECS exports in order to permit access from ECS, rather than the other way around, since
+  the number of cache clusters and their names can vary, and would require hardcoding them into the ECS template,
+  whereas this way things stay generic and the ECS CloudFormation template does not need to be updated in order to
+  add or remove ElastiCache clusters.
+
+Parameters:
+  Environment:
+    Description: An environment name that will be prefixed to resource names.
+    Type: String
+    AllowedValues:
+      - dev
+      - uat
+      - prod
+    ConstraintDescription: Can only be "dev/uat/prod"
+    Default: dev
+
+  Region:
+    Description: The AWS region to deploy the resources to.
+    Type: String
+    Default: us-east-1
+
+  ApplicationName:
+    Description: >
+      The name of the application, which will be used to generate the ECS cluster name.
+      It will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: os-storage
+
+  KeyName:
+    Description: >
+      Name of an existing EC2 KeyPair to enable SSH access to the ECS instances. Note that key pairs cannot
+      be created through CloudFormation, but instead must be uploaded through the AWS Console.
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: ecs_storage_key
+
+  DesiredCapacity:
+    Description: The default number of instances to launch in the ECS cluster.
+    Type: Number
+    Default: '1'
+
+  MaxSize:
+    Description: Maximum number of instances that can be launched in the ECS cluster.
+    Type: Number
+    Default: '1'
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.16xlarge
+      - m5.24xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.12xlarge
+      - c5.16xlarge
+      - c5.24xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5.12xlarge
+      - r5.24xlarge
+      - r4.large
+      - r4.xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.16xlarge
+      - i3.large
+      - i3.xlarge
+      - i3.2xlarge
+      - i3.4xlarge
+      - i3.10xlarge
+      - i3.16xlarge
+      - x1e.xlarge
+      - x1e.2xlarge
+      - x1e.4xlarge
+      - x1e.8xlarge
+      - x1e.16xlarge
+      - x1e.32xlarge
+    ConstraintDescription: Please choose a valid EC2 instance type for the ECS container instances.
+
+  GroupCacheName:
+    Description: The name of the cache cluster for the group cache. Will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: storagegroupcache
+
+  LegalTagCacheName:
+    Description: The name of the cache cluster for the legal tag cache. Will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: storagelegaltagcache
+
+  SchemaCacheName:
+    Description: The name of the cache cluster for the schema cache. Will be prefixed with the environment name.
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: storageschemacache
+
+  ECSPort:
+    Description: The port that the ECS Service will listen on.
+    Type: Number
+    Default: 443
+    MinValue: 1
+    MaxValue: 65535
+
+  SNSTopicName:
+    Description: >-
+      The name of the Simple Notification Service topic for the OS Storage Service. Defaults to osdu-storage-messages.
+      Will be prefixed with the environment name.
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: osdu-storage-messages
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  DataStorageS3BucketName:
+    Description: The name of the data storage S3 bucket. Defaults to osdu-data.
+    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
+    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
+    Default: osdu-data
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+
+  ECSCPUAllocation:
+    Description: The amount of CPU resources to allocate to each ECS task/container. Scale - 1024 = 1 vCPU core.
+    Type: Number
+    Default: 1024
+    MinValue: 10
+    MaxValue: 65535
+
+  ECSMemoryAllocation:
+    Description: The amount of memory (RAM) to allocate to each ECS task/container. Scale - 1 = 1MB of memory.
+    Type: Number
+    Default: 2048
+    MinValue: 256
+    MaxValue: 131072
+
+  DomainName:
+    Description: >-
+      The optional custom DNS name for the ECS service's load balancer. If omitted, the site will only be accessible
+      via the ECS service's Application Load Balancer DNS name. This value is used in the creation and signing of
+      the service's SSL certificate. Leave blank is not using a custom domain for this deployment.
+    Type: String
+    Default: ''
+
+  HostedZoneName:
+    Description: >-
+      The name of the hosted zone (ex: for storage.osdu.slb.com, this would likely be osdu.slb.com).
+      Leave blank is not using a custom domain for this deployment.
+    Type: String
+    Default: ''
+
+Mappings:
+  # This mapping is for the ECS-optimized edition of the November 13-14, 2019 release of the Amazon Linux 2 AMI
+  # It will need to be periodically updated as new versions are released by Amazon.
+  # The latest ECS-optimized AMI IDs can be found here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
+  # The mapping is used to input the correct AMI ID based on the region the instance is being spun up in.
+  AWSRegionToAMI:
+    us-east-1:
+      AMIID: ami-097e3d1cdb541f43e
+    us-east-2:
+      AMIID: ami-0fbd313043845c4f2
+    us-west-1:
+      AMIID: ami-03d7632ea0ab75eaa
+    us-west-2:
+      AMIID: ami-0fb71e703258ab7eb
+    eu-north-1:
+      AMIID: ami-0f8edbbca6bac13a6
+    eu-west-1:
+      AMIID: ami-0bf45a5f4ab05b949
+    eu-west-2:
+      AMIID: ami-0393b5f363fbd613a
+    eu-west-3:
+      AMIID: ami-03490ca40775a62f0
+    eu-central-1:
+      AMIID: ami-074dc9dd588b6ea52
+    ap-northeast-1:
+      AMIID: ami-0934e28fe3e390537
+    ap-northeast-2:
+      AMIID: ami-0fa5d85859452a178
+    ap-south-1:
+      AMIID: ami-0312d67ff59a3db34
+    ap-southeast-1:
+      AMIID: ami-01f07b3fa86406c96
+    ap-southeast-2:
+      AMIID: ami-07610e278b1ddf331
+    ca-central-1:
+      AMIID: ami-0057d82f917a17334
+    sa-east-1:
+      AMIID: ami-0c947c117562538ee
+
+Conditions:
+  IncludeCustomDomain: !Not [!Equals [ !Ref DomainName, '' ]]
+  IsPortStandardSSL:
+    !Or [!Equals [ !Ref ECSPort, '443' ], !Equals [ !Ref ECSPort, '8443' ]]
+  IsLoadBalancerHTTPS: !And # HTTPS for ECS requires a custom domain, but CloudFront will still have HTTPS/SSL
+    - !Condition IncludeCustomDomain
+    - !Condition IsPortStandardSSL
+
+Resources:
+  # This sets up a Route 53 record for CloudFront if a custom domain is being used,
+  # otherwise a default cloudfront.net value will be used instead
+  CloudFrontDNSName:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: IncludeCustomDomain
+    Properties:
+      HostedZoneName: !Join ['', [!Ref HostedZoneName, .]] # Route 53 requires a trailing period
+      RecordSets:
+        - Name: !Ref DomainName
+          Type: A
+          AliasTarget:
+            # This hosted zone ID is for ALL CloudFront distributions, always, and should be hard-coded
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt ECSCloudFrontDistribution.DomainName
+
+  # This sets up a Route 53 record for the ECS ALB origin if a custom domain is being used
+  ECSDNSName:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: IncludeCustomDomain
+    Properties:
+      HostedZoneName: !Join ['', [!Ref HostedZoneName, .]] # Route 53 requires a trailing period
+      RecordSets:
+        - Name: !Join ['.', ['origin', !Ref DomainName]] # prefix the ECS origin record with 'origin.'
+          Type: A
+          AliasTarget:
+            HostedZoneId: !GetAtt ECSALB.CanonicalHostedZoneID # this value comes from the ALB attributes
+            DNSName: !GetAtt ECSALB.DNSName
+            EvaluateTargetHealth: true # Route 53 routes traffic to ECS targets based on their health checks
+    DependsOn: ECSALB
+
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Sub ${Environment}-${ApplicationName}-code-deploy
+      ComputePlatform: ECS
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${Environment}-${ApplicationName}-repository
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowPushPull
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:aws:iam::${AWS::AccountId}:root
+                - Fn::ImportValue:
+                    !Sub "${Environment}-${ApplicationName}-CodeBuildRoleArn"
+                - Fn::ImportValue:
+                    !Sub "${Environment}-${ApplicationName}-CFNRoleArn"
+                - Fn::ImportValue:
+                    !Sub "${Environment}-${ApplicationName}-PipelineRoleArn"
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+
+  ApplicationECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub ${Environment}-${ApplicationName}-cluster
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'ApplicationName']]
+      RetentionInDays: 365
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Join ['', [!Ref 'AWS::StackName', -, !Ref 'ApplicationName']]
+      ContainerDefinitions:
+        - Name: !Ref 'ApplicationName'
+          Cpu: !Ref ECSCPUAllocation
+          Essential: 'true'
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Environment}-${ApplicationName}-repository:latest
+          Memory: !Ref ECSMemoryAllocation
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref 'CloudWatchLogsGroup'
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: !Ref 'ApplicationName'
+          MountPoints:
+            - ContainerPath: /root/.m2
+              SourceVolume: docker-volume
+          PortMappings:
+            - ContainerPort: !Ref ECSPort
+          Environment:
+            - Name: AWS_ACCESS_KEY_ID
+              Value: '{{resolve:secretsmanager:dev-StorageServiceIamCredentials:SecretString:access_key}}'
+            - Name: AWS_SECRET_KEY
+              Value: '{{resolve:secretsmanager:dev-StorageServiceIamCredentials:SecretString:secret_key}}'
+            - Name: ENVIRONMENT
+              Value: !Ref Environment
+            - Name: VSTS_FEED_USER
+              Value: '{{resolve:secretsmanager:dev-VSTSFeedToken:SecretString:vsts_feed_user}}'
+            - Name: VSTS_FEED_TOKEN
+              Value: '{{resolve:secretsmanager:dev-VSTSFeedToken:SecretString:vsts_feed_token}}'
+            - Name: CACHE_CLUSTER_GROUP_ENDPOINT
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-${GroupCacheName}-RedisEndpointAddress"
+            - Name: CACHE_CLUSTER_GROUP_PORT
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-${GroupCacheName}-RedisEndpointPort"
+            - Name: CACHE_CLUSTER_LEGALTAG_ENDPOINT
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-${LegalTagCacheName}-RedisEndpointAddress"
+            - Name: CACHE_CLUSTER_LEGALTAG_PORT
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-${LegalTagCacheName}-RedisEndpointPort"
+            - Name: CACHE_CLUSTER_SCHEMA_ENDPOINT
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-${SchemaCacheName}-RedisEndpointAddress"
+            - Name: CACHE_CLUSTER_SCHEMA_PORT
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-${SchemaCacheName}-RedisEndpointPort"
+            - Name: APPLICATION_PORT
+              Value: !Ref ECSPort
+            - Name: AWS_REGION
+              Value: !Ref 'AWS::Region'
+            - Name: AWS_ACCOUNT_ID
+              Value: !Ref 'AWS::AccountId'
+            - Name: SNS_TOPIC_NAME
+              Value: !Ref SNSTopicName
+            - Name: S3_DATA_BUCKET
+              Value: !Ref DataStorageS3BucketName
+            - Name: JAVA_HEAP_MEMORY
+              Value: !Ref ECSMemoryAllocation
+      Volumes:
+        - Name: docker-volume
+
+  ECSALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ECSALB-${ApplicationName}
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '30'
+      Subnets:
+        - Fn::ImportValue:
+            !Sub "${Environment}-OSDU-PublicSubnet-AZ1"
+        - Fn::ImportValue:
+            !Sub "${Environment}-OSDU-PublicSubnet-AZ2"
+      SecurityGroups:
+        - Fn::ImportValue:
+            !Sub "${Environment}-${ApplicationName}-EcsNetworkSecurityGroupId"
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: ECSServiceRole
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref 'ECSTargetGroup'
+      LoadBalancerArn: !Ref 'ECSALB'
+      Port: !Ref ECSPort
+      Protocol: !If [IsLoadBalancerHTTPS, HTTPS, HTTP]
+
+  LoadBalancerALBListenerCertificate:
+    Type: AWS::ElasticLoadBalancingV2::ListenerCertificate
+    Condition: IncludeCustomDomain
+    Properties:
+      Certificates:
+        - Fn::ImportValue:
+            !Sub "${Environment}-${ApplicationName}-LoadBalancerSSLCertificateArn"
+      ListenerArn: !Ref 'ALBListener'
+
+  ECSALBPrimaryListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    DependsOn: ALBListener
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref 'ECSTargetGroup'
+      Conditions:
+        - Field: path-pattern
+          Values: [/]
+      ListenerArn: !Ref 'ALBListener'
+      Priority: 1
+
+  ECSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ECSALB
+    Properties:
+      HealthCheckIntervalSeconds: 120
+      HealthCheckPath: /api/storage/v2/
+      HealthCheckProtocol: !If [IsLoadBalancerHTTPS, HTTPS, HTTP]
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Name: !Sub ECSTargetGroup-New-${ApplicationName}
+      Port: !Ref ECSPort
+      Protocol: !If [IsLoadBalancerHTTPS, HTTPS, HTTP]
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${Environment}-OSDU-VPC"
+
+  ECSCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: ECSALB
+    Properties:
+      DistributionConfig:
+        Comment: 'Cloudfront Distribution pointing ALB Origin'
+        Origins:
+          - DomainName: !GetAtt 'ECSALB.DNSName'
+            Id: !Ref 'ECSALB'
+            CustomOriginConfig:
+              HTTPPort: !Ref ECSPort # The ports are the same because we'll only ever be accessing the ECS cluster over one protocol, as set in OriginProtocolPolicy below
+              HTTPSPort: !Ref ECSPort # The ports are the same because we'll only ever be accessing the ECS cluster over one protocol, as set in OriginProtocolPolicy below
+              OriginProtocolPolicy: !If [IsLoadBalancerHTTPS, https-only, http-only] # this only affects the origin, not CloudFront / the user's request
+              OriginKeepaliveTimeout: '60'
+              OriginReadTimeout: '60'
+              OriginSSLProtocols:
+                - TLSv1
+                - TLSv1.1
+                - TLSv1.2
+                - SSLv3
+        Enabled: true
+        HttpVersion: 'http2'
+        Aliases:
+          - Fn::If:
+              - IncludeCustomDomain
+              - !Ref DomainName
+              - !Ref AWS::NoValue
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          Compress: true
+          TargetOriginId: !Ref 'ECSALB'
+          DefaultTTL: 5
+          MaxTTL: 30
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: all
+          ViewerProtocolPolicy: redirect-to-https # CloudFront requests will always be HTTPS, regardless of the origin or the request
+        ViewerCertificate:
+          AcmCertificateArn:
+            Fn::If:
+              - IncludeCustomDomain
+              - Fn::ImportValue:
+                  !Sub "${Environment}-${ApplicationName}-LoadBalancerSSLCertificateArn"
+              - Ref: AWS::NoValue
+          CloudFrontDefaultCertificate:
+            Fn::If:
+              - IncludeCustomDomain
+              - Ref: AWS::NoValue
+              - true
+          SslSupportMethod:
+            Fn::If:
+              - IncludeCustomDomain
+              - sni-only # sni-only is free; 'vip' is the only other option, which allows viewers without Server Name Indication (SNI) support by using dedicated IP addresses, but it costs $600/mo per SSL certificate
+              - Ref: AWS::NoValue
+          MinimumProtocolVersion:
+            Fn::If:
+              - IncludeCustomDomain
+              - TLSv1
+              - Ref: AWS::NoValue # this is not used when using the default CloudFront certificate (which is always TLSv1)
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - Fn::ImportValue:
+            !Sub "${Environment}-OSDU-PublicSubnet-AZ1"
+        - Fn::ImportValue:
+            !Sub "${Environment}-OSDU-PublicSubnet-AZ2"
+      LaunchConfigurationName: !Ref 'ContainerInstances'
+      MinSize: '1'
+      MaxSize: !Ref 'MaxSize'
+      DesiredCapacity: !Ref 'DesiredCapacity'
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+
+  ContainerInstances:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
+      SecurityGroups:
+        - Fn::ImportValue:
+            !Sub "${Environment}-${ApplicationName}-EcsNetworkSecurityGroupId"
+      InstanceType: !Ref 'InstanceType'
+      IamInstanceProfile: !Ref 'EC2InstanceProfile'
+      KeyName: !Ref 'KeyName'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo ECS_CLUSTER=${ApplicationECSCluster} >> /etc/ecs/ecs.config
+          yum install -y aws-cfn-bootstrap
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ECSAutoScalingGroup --region ${AWS::Region}
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      Cluster: !Ref 'ApplicationECSCluster'
+      DesiredCount: '1'
+      LoadBalancers:
+        - ContainerName: !Ref 'ApplicationName'
+          ContainerPort: !Ref ECSPort
+          TargetGroupArn: !Ref 'ECSTargetGroup'
+      Role: !Ref 'ECSServiceRole'
+      TaskDefinition: !Ref 'TaskDefinition'
+
+  ECSServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: !Sub ${Environment}-${ApplicationName}-ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
+                         'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
+                         'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
+                Resource: '*'
+
+  ServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn: Service
+    Properties:
+      MaxCapacity: 2
+      MinCapacity: 1
+      ResourceId: !Join ['', [service/, !Ref 'ApplicationECSCluster', /, !GetAtt [Service, Name]]]
+      RoleARN: !GetAtt [AutoscalingRole, Arn]
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  ServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ScalingPolicy-${ApplicationName}
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref 'ServiceScalingTarget'
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+          - MetricIntervalLowerBound: 0
+            ScalingAdjustment: 200
+
+  ALB500sAlarmScaleUp:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '10'
+      AlarmDescription: Alarm triggering ECS to scale up if our ALB generates too many HTTP 500 errors.
+      Period: '60'
+      AlarmActions: [!Ref 'ServiceScalingPolicy']
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !GetAtt
+            - ECSALB
+            - LoadBalancerFullName
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: HTTPCode_ELB_5XX_Count
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: !Sub ${Environment}-${ApplicationName}-ecs-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: ['ecs:CreateCluster', 'ecs:DeregisterContainerInstance', 'ecs:DiscoverPollEndpoint',
+                         'ecs:Poll', 'ecs:RegisterContainerInstance', 'ecs:StartTelemetrySession',
+                         'ecs:Submit*', 'logs:CreateLogStream', 'logs:PutLogEvents', 'ecr:*']
+                Resource: '*'
+
+  AutoscalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [application-autoscaling.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: !Sub ${Environment}-${ApplicationName}-service-autoscaling
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: ['application-autoscaling:*', 'cloudwatch:DescribeAlarms', 'cloudwatch:PutMetricAlarm',
+                         'ecs:DescribeServices', 'ecs:UpdateService']
+                Resource: '*'
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref 'EC2Role']
+
+Outputs:
+  ApplicationECSClusterArn:
+    Description: The ARN of the application's ECS cluster.
+    Value: !GetAtt ApplicationECSCluster.Arn
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsClusterArn
+
+  ApplicationECSClusterName:
+    Description: The logical name of the application's ECS cluster.
+    Value: !Ref ApplicationECSCluster
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsClusterName
+
+  ECSServiceArn:
+    Description: The ARN of the Storage Service service in the ECS cluster.
+    Value: !Ref 'Service'
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsServiceArn
+
+  ECSServiceName:
+    Description: The name of the Legal Service service in the ECS cluster.
+    Value: !GetAtt Service.Name
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsServiceName
+
+  ECSALBUrl:
+    Description: The Storage Service ALB DNS URL.
+    Value: !Join ['', [!GetAtt [ECSALB, DNSName]]]
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsAlbUrl
+
+  ECSALBCustomDNSName:
+    Description: The custom DNS name of the ECS service's ALB origin.
+    Condition: IncludeCustomDomain
+    Value: !Join ['.', ['origin', !Ref DomainName]]
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsAlbCustomDnsName
+
+  ECSCloudFrontCustomDNSName:
+    Description: The custom DNS name of the ECS service's CloudFront Distribution.
+    Condition: IncludeCustomDomain
+    Value: !Ref DomainName
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsCloudFrontCustomDnsName
+
+  ECSCloudFrontDomainName:
+    Description: The custom DNS name of the ECS service's CloudFront Distribution.
+    Value: !GetAtt ECSCloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsCloudFrontDomainName
+
+  TaskDefinitionArn:
+    Description: The ARN of the Storage Service ECS task definition.
+    Value: !Ref 'TaskDefinition'
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-EcsTaskDefinitionArn

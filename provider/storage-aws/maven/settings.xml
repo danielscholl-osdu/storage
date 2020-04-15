@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <profiles>
+        <profile>
+            <id>credentialsConfiguration</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <deployment.environment>dev</deployment.environment>
+                <aws.accessKeyId>no-default</aws.accessKeyId>
+                <aws.secretKey>no-default</aws.secretKey>
+                <azure.devops.username>Another-Access-Token-2021</azure.devops.username>
+                <azure.devops.token>no-default</azure.devops.token>
+            </properties>
+        </profile>
+    </profiles>
+
+    <servers>
+        <!-- Azure DevOps Artifact Store -->
+        <server>
+            <id>os-core</id>
+            <username>${azure.devops.username}</username>
+            <!-- The generated token was last updated on 01/13/2020 and expires on or before 01/12/2021 -->
+            <password>${azure.devops.token}</password>
+        </server>
+    </servers>
+
+    <activeProfiles>
+        <activeProfile>credentialsConfiguration</activeProfile>
+    </activeProfiles>
+
+</settings>
