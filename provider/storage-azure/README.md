@@ -149,7 +149,7 @@ Jet Brains - the authors of Intellij IDEA, have written an [excellent guide](htt
 ## Deploying service to Azure
 
 Service deployments into Azure are standardized to make the process the same for all services. The steps to deploy into
-Azure can be [found here](https://dev.azure.com/slb-des-ext-collaboration/open-data-ecosystem/_git/infrastructure-templates?path=%2Fdocs%2Fosdu%2FSERVICE_DEPLOYMENTS.md&_a=preview)
+Azure can be [found here](point to gitlab /infrastructure-templates?path=%2Fdocs%2Fosdu%2FSERVICE_DEPLOYMENTS.md&_a=preview)
 
 
 ## License
