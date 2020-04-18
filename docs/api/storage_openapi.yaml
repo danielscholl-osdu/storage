@@ -1,7 +1,6 @@
----
 swagger: "2.0"
 info:
-  description: "Storage service which handles the metadata ingestion in the Delfi\
+  description: "Storage service which handles the metadata ingestion in the OSDU\
     \ ecosystem"
   version: "2.0.0"
   title: "Storage APIs"
@@ -109,7 +108,7 @@ paths:
         default: "tenant1:public:well:1.0.2"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -153,7 +152,7 @@ paths:
           $ref: "#/definitions/MultiRecordIds"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -200,7 +199,7 @@ paths:
         default: "tenant1:well:123456789"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -254,7 +253,7 @@ paths:
         collectionFormat: "multi"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -299,7 +298,7 @@ paths:
         default: "tenant1:well:123456789"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -359,7 +358,7 @@ paths:
         collectionFormat: "multi"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -405,7 +404,7 @@ paths:
         default: "tenant1:well:123456789"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -462,7 +461,7 @@ paths:
             $ref: "#/definitions/Record"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -517,7 +516,7 @@ paths:
         default: "tenant1:public:well:1.0.2"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -566,7 +565,7 @@ paths:
         default: "tenant1:public:well:1.0.2"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
@@ -613,7 +612,7 @@ paths:
           $ref: "#/definitions/Schema"
       - name: "OSDU-Account-Id"
         in: "header"
-        description: "Account ID is the active DELFI account (OSDU account or customer's\
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
           \ account) which the users choose to use with the Search API."
         required: true
         type: "string"
