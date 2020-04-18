@@ -37,24 +37,35 @@ public class DeliveryTestUtils {
     private static String containerName = "delivery-int-test-temp";
     private static String storageAccount = getStorageAccount();
     final public static String[] FILE_NAMES = new String[] {"delivery-sample-1.txt", "delivery-sample-2.txt", "delivery-sample-3.txt"};
-    public static HashMap<String, String> filePathMap = new HashMap<>();
-
+    final public static String[] CONTAINER_NAMES = new String[] {"delivery-sample-container-1", "delivery-sample-container-2"};
+    public static HashMap<String, String> pathMap = new HashMap<>();
+;
     public static void generateTestBlobs(){
         for(String fileName : FILE_NAMES) {
-            DeliveryTestUtils.createBlob(filePathMap.get(fileName));
+            DeliveryTestUtils.createBlob(pathMap.get(fileName));
+        }
+        for(String localContainer : CONTAINER_NAMES) {
+            DeliveryTestUtils.createContainer(pathMap.get(localContainer));
         }
     }
 
     public static void generateFileNames() {
         for(String fileName : FILE_NAMES) {
-            filePathMap.put(fileName, generateBlobPath(storageAccount, containerName, fileName));
+            pathMap.put(fileName, generateBlobPath(storageAccount, containerName, fileName));
         }
     }
 
-    public static String createJsonRecord(String id, String fileName, String kind, String legalTag, String filePath) {
+    public static void generateContainerNames() {
+        for(String containerName : CONTAINER_NAMES) {
+            pathMap.put(containerName, generateContainerPath(storageAccount, containerName));
+        }
+    }
+    public static String createJsonRecord(String id, String fileName, String kind, String legalTag, String filePath, boolean isContainer) {
 
         JsonArray files = new JsonArray();
-        files.add(String.format("srn:type:file/csv:%s:1", fileName.hashCode()));
+        String fileSrn = String.format("srn:type:file/csv:%s:1", fileName.hashCode());
+        String contSrn = String.format("srn:file/ovds:%s", fileName.hashCode());
+        files.add(isContainer ? contSrn : fileSrn);
 
         JsonObject data = new JsonObject();
         data.add("ResourceID", files);
@@ -152,6 +163,9 @@ public class DeliveryTestUtils {
 
     public static void deleteTestBlobs() {
         DeliveryTestUtils.deleteContainer(generateContainerPath(storageAccount, containerName));
+        for (String otherContainerName : CONTAINER_NAMES) {
+            DeliveryTestUtils.deleteContainer(generateContainerPath(storageAccount, otherContainerName));
+        }
     }
 
     private static String getStorageAccount() {
@@ -201,6 +215,16 @@ public class DeliveryTestUtils {
         }
     }
 
+    private static void createContainer(String containerUrl) {
+        BlobUrlParts parts = BlobUrlParts.parse(containerUrl);
+
+        BlobContainerClient blobContainerClient = getBlobContainerClient(parts.getAccountName(), parts.getBlobContainerName());
+
+        if(!blobContainerClient.exists()){
+            blobContainerClient.create();
+        }
+
+    }
     private static BlobContainerClient getBlobContainerClient(String accountName, String containerName) {
         String clientSecret = System.getProperty("TESTER_SERVICEPRINCIPAL_SECRET", System.getenv("TESTER_SERVICEPRINCIPAL_SECRET"));
         String clientId = System.getProperty("INTEGRATION_TESTER", System.getenv("INTEGRATION_TESTER"));

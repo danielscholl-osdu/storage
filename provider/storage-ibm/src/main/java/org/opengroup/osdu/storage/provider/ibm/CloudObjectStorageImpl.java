@@ -21,20 +21,27 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.core.ibm.objectstorage.CloudObjectStorageFactory;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
@@ -54,6 +61,15 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	@Inject
 	private CloudObjectStorageFactory cosFactory;
 
+	@Inject
+    private EntitlementsAndCacheServiceIBM entitlementsService;
+
+	@Inject
+    private DpsHeaders headers;
+
+	@Inject
+	private ITenantFactory tenant;
+
 	private static final Logger logger = LoggerFactory.getLogger(CloudObjectStorageImpl.class);
 
 	AmazonS3 cos;
@@ -67,6 +83,8 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Override
 	public void write(RecordProcessing... recordsProcessing) {
+
+		validateRecordAcls(recordsProcessing);
 
 		Gson gson = new GsonBuilder().serializeNulls().create();
 
@@ -120,6 +138,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Override
 	public void delete(RecordMetadata record) {
+		validateOwnerAccessToRecord(record);
 		String itemName = getItemName(record);
 		logger.info("Delete item: " + itemName);
 	    cos.deleteObject(bucketName, itemName);
@@ -128,6 +147,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Override
 	public void deleteVersion(RecordMetadata record, Long version) {
+		validateOwnerAccessToRecord(record);
 		String itemName = getItemName(record, version);
 		logger.info("Delete item: " + itemName);
 	    cos.deleteObject(bucketName, itemName);
@@ -152,19 +172,83 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Override
 	public boolean hasAccess(RecordMetadata... records) {
+        if (ArrayUtils.isEmpty(records)) {
+            return true;
+        }
+
+        boolean hasAtLeastOneActiveRecord = false;
 		for (RecordMetadata record : records) {
-			if (!record.getStatus().equals(RecordState.active))
-				return false;
-			if (!cos.doesObjectExist(bucketName, getItemName(record)))
-				return false;
+            if (!record.getStatus().equals(RecordState.active)) {
+                continue;
 		}
-		// TODO Implement group validation?!!?
+            hasAtLeastOneActiveRecord = true;
+            if (hasViewerAccessToRecord(record))
 		return true;
 	}
+
+        return !hasAtLeastOneActiveRecord;
+    }
+
+    private boolean hasViewerAccessToRecord(RecordMetadata record)
+    {
+        boolean isEntitledForViewing = entitlementsService.hasAccessToData(headers,
+                new HashSet<>(Arrays.asList(record.getAcl().getViewers())));
+        boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
+        return isEntitledForViewing || isRecordOwner;
+    }
+
+    private boolean hasOwnerAccessToRecord(RecordMetadata record)
+    {
+        return entitlementsService.hasAccessToData(headers,
+                new HashSet<>(Arrays.asList(record.getAcl().getOwners())));
+    }
+
+    private void validateOwnerAccessToRecord(RecordMetadata record) {
+        if (!hasOwnerAccessToRecord(record)) {
+            logger.warn(String.format("%s has no owner access to %s", headers.getUserEmail(), record.getId()));
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
+        }
+    }
+
+    private void validateViewerAccessToRecord(RecordMetadata record) {
+        if (!hasViewerAccessToRecord(record)) {
+            logger.warn(String.format("%s has no viewer access to %s", headers.getUserEmail(), record.getId()));
+            throw new AppException(HttpStatus.SC_FORBIDDEN,  ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
+        }
+    }
+
+    /**
+     * Ensures that the ACLs of the record are a subset of the ACLs
+     * @param records the records to validate
+     */
+    private void validateRecordAcls(RecordProcessing... records) {
+        /*Set<String> validGroups = tenantRepo.findById(headers.getPartitionId())
+                .orElseThrow(() -> new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown Tenant", "Tenant was not found"))
+                .getGroups()
+                .stream()
+                .map(group -> group.toLowerCase())
+                .collect(Collectors.toSet());
+		*/
+        for (RecordProcessing record : records) {
+        	validateOwnerAccessToRecord(record.getRecordMetadata());
+            /*for (String acl : record.getRecordMetadata().getAcl().getOwners()) {
+                String groupName = acl.split("@")[0].toLowerCase();
+                if (!validGroups.contains(groupName)) {
+                    throw new AppException(
+                            HttpStatus.SC_FORBIDDEN,
+                            "Invalid ACL",
+                            "Record ACL is not one of " + String.join(",", validGroups));
+                }
+            }*/
+        }
+    }
 
 	@Override
 	public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
 		// TODO checkDataInconsistency implement
+
+		validateViewerAccessToRecord(record);
+
         String itemName = this.getItemName(record, version);
         logger.info("Reading item: " + itemName);
 

@@ -20,5 +20,6 @@ import lombok.Data;
 public class FileSrnInfo {
     public String kind;
     public String fileSource;
+    public boolean isContainer;
 }
 

@@ -44,15 +44,19 @@ import com.cloudant.client.api.query.JsonIndex;
 import com.cloudant.client.api.query.QueryBuilder;
 import com.cloudant.client.api.query.QueryResult;
 import com.cloudant.client.api.query.Sort;
-import com.cloudant.client.api.query.TextIndex;
 
 @Repository
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
 	
-	@Value("${ibm.cloudant.url:}") 
-	private String url;
-	@Value("${ibm.cloudant.apikey:}")
+	@Value("${ibm.db.url}")
+	private String dbUrl;
+	@Value("${ibm.db.apikey:#{null}}")
 	private String apiKey;
+	@Value("${ibm.db.user:#{null}}")
+	private String dbUser;
+	@Value("${ibm.db.password:#{null}}")
+	private String dbPassword;
+
 	@Value("${ibm.env.prefix:local-dev}")
 	private String dbNamePrefix;
 	
@@ -64,21 +68,18 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 		
 	@PostConstruct
     public void init() throws MalformedURLException{
-		cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(url, apiKey));
+		if (apiKey != null) {
+			cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(dbUrl, apiKey));
+		} else {
+			cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(dbUrl, dbUser, dbPassword));
+		}
         db = cloudantFactory.getDatabase(dbNamePrefix, DB_NAME);
         System.out.println("creating indexes...");
 		 db.createIndex(JsonIndex.builder().
 			     name("kind-json-index").
 			     asc("kind").
 			     definition());
-		 db.createIndex(JsonIndex.builder().
-			     name("legalTagsNames-json-index").
-			     asc("legalTagsNames").
-			     definition());
-		 db.createIndex(TextIndex.builder().
-			     name("id-text-index").
-			     string("_id").
-			     definition());		
+		db.createIndex(JsonIndex.builder().name("legalTagsNames-json-index").asc("legalTagsNames").definition());
     }
 	
     @Override
@@ -174,12 +175,9 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                     	
         List<RecordMetadata> outputRecords = new ArrayList<>();
         
-        QueryResult<RecordMetadataDoc> results = db.query(new QueryBuilder(
-    			and(regex("legalTagsNames", "!"+legalTagName+"!"), gte("_id", initialId))).
-			    sort(Sort.asc("_id")).
-			    fields("_id").
-			    limit(numRecords+1).
-			    build(), RecordMetadataDoc.class);
+		QueryResult<RecordMetadataDoc> results = db
+				.query(new QueryBuilder(and(regex("legalTagsNames", "!" + legalTagName + "!"), gte("_id", initialId)))
+						.sort(Sort.asc("_id")).fields("_id").limit(numRecords + 1).build(), RecordMetadataDoc.class);
 
         String nextCursor = "";
 		for (RecordMetadataDoc doc:results.getDocs()) {

@@ -30,6 +30,9 @@ phases:
       - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
       - echo $JAVA_HOME
       - mvn -version
+      - echo "Look below for M2 bucket name:"
+      - echo $M2_REPO_S3_BUCKET
+      - aws s3 sync s3://$M2_REPO_S3_BUCKET /root/.m2 # copy previous state of the shared libraries' .m2 folder from S3 to local
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2& # start the Docker Daemon
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done" # wait for Docker to be ready before proceeding to the build steps
   pre_build:
@@ -49,23 +52,17 @@ phases:
       - echo Environment - $ENVIRONMENT
       - echo SchemaCacheName - $SCHEMA_CACHE_NAME
       - echo AWSRegion - $AWS_REGION
-      - export CACHE_CLUSTER_SCHEMA_ENDPOINT=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$SCHEMA_CACHE_NAME-RedisEndpointAddress'].[Value]" --output text --region $AWS_REGION)
-      - export CACHE_CLUSTER_SCHEMA_PORT=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$SCHEMA_CACHE_NAME-RedisEndpointPort'].[Value]" --output text --region $AWS_REGION)
-      - export CACHE_CLUSTER_GROUP_ENDPOINT=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$GROUP_CACHE_NAME-RedisEndpointAddress'].[Value]" --output text --region $AWS_REGION)
-      - export CACHE_CLUSTER_GROUP_PORT=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$GROUP_CACHE_NAME-RedisEndpointPort'].[Value]" --output text --region $AWS_REGION)
-      - export CACHE_CLUSTER_LEGALTAG_ENDPOINT=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$LEGALTAG_CACHE_NAME-RedisEndpointAddress'].[Value]" --output text --region $AWS_REGION)
-      - export CACHE_CLUSTER_LEGALTAG_PORT=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$LEGALTAG_CACHE_NAME-RedisEndpointPort'].[Value]" --output text --region $AWS_REGION)
-      - export SNS_TOPIC_NAME=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-OSDUStorageSNSTopic'].[Value]" --output text --region $AWS_REGION)
-      - export S3_DATA_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-S3BucketDataStorage'].[Value]" --output text --region $AWS_REGION)
+      - export VERSIONNUMBER=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$APPLICATION_NAME-JarVersionNumber'].[Value]" --output text --region $AWS_REGION)
+      - export SERVICE=$(aws cloudformation list-exports --query "Exports[?Name=='$ENVIRONMENT-$APPLICATION_NAME-JarServiceName'].[Value]" --output text --region $AWS_REGION)
       - echo ...finished setting environment variables!
       - echo All environment variables
       - printenv
-      - mvn clean test -pl storage-core,provider/storage-aws -Ddeployment.environment=$ENVIRONMENT -Dazure.devops.token=$VSTS_FEED_TOKEN -Dazure.devops.username=$VSTS_FEED_USER -DaltSnapshotDeploymentRepository=snapshot::default::file:../../local-snapshots-dir -DaltReleaseDeploymentRepository=release::default::file:../../local-release-dir -DaltDeploymentRepository=release::default::file:../../local-release-dir -DCACHE_CLUSTER_SCHEMA_ENDPOINT=$CACHE_CLUSTER_SCHEMA_ENDPOINT -DCACHE_CLUSTER_SCHEMA_PORT=$CACHE_CLUSTER_SCHEMA_PORT -DCACHE_CLUSTER_GROUP_ENDPOINT=$CACHE_CLUSTER_GROUP_ENDPOINT -DCACHE_CLUSTER_GROUP_PORT=$CACHE_CLUSTER_GROUP_PORT -DCACHE_CLUSTER_LEGALTAG_ENDPOINT=$CACHE_CLUSTER_LEGALTAG_ENDPOINT -DCACHE_CLUSTER_LEGALTAG_PORT=$CACHE_CLUSTER_LEGALTAG_PORT -DSNS_TOPIC_NAME=$SNS_TOPIC_NAME -DS3_DATA_BUCKET=$S3_DATA_BUCKET -DAWS_ACCOUNT_ID=$AWS_ACCOUNT_ID -DAWS_REGION=$AWS_REGION
+      - mvn clean test -pl storage-core,provider/storage-aws
       - echo ...os-storage Java build completed on `date`.
       - echo os-storage beginning packaging to jar...
-      - mvn clean deploy -pl storage-core,provider/storage-aws -Ddeployment.environment=$ENVIRONMENT -Dazure.devops.token=$VSTS_FEED_TOKEN -Dazure.devops.username=$VSTS_FEED_USER -DaltSnapshotDeploymentRepository=snapshot::default::file:../../local-snapshots-dir -DaltReleaseDeploymentRepository=release::default::file:../../local-release-dir -DaltDeploymentRepository=release::default::file:../../local-release-dir
+      - mvn clean install -pl storage-core,provider/storage-aws -Dversion.number=$VERSIONNUMBER -Ddeployment.environment=$ENVIRONMENT
       - echo os-storage Docker image build started on `date`...
-      - docker build -f provider/storage-aws/Dockerfile -t $REPOSITORY_URI:latest .
+      - docker build -f provider/storage-aws/Dockerfile -t $REPOSITORY_URI:latest --build-arg versionNumber=$VERSIONNUMBER --build-arg service=$SERVICE .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
       - echo ...os-storage Docker image build completed on `date`.
       - echo Pushing the Docker image to ECR...

@@ -1,3 +1,21 @@
+/**
+ * Copyright 2020 IBM Corp. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @author alanbraz@br.ibm.com
+ *
+ */
 package org.opengroup.osdu.storage.util;
 
 import java.io.BufferedReader;
@@ -7,18 +25,10 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -28,51 +38,15 @@ public class KeyCloakProvider {
     private static String url;
     private static String realm;
 	private static String client_id;
+	private static String client_secret;
 	private static String grant_type = "password";
 
 	static {
-	    disableSslVerification();
 	    url = System.getProperty("KEYCLOAK_URL");
-	    realm = System.getProperty("KEYCLOAK_REALM");
+	    realm = System.getProperty("KEYCLOAK_REALM", "OSDU");
 	    client_id = System.getProperty("KEYCLOAK_CLIENT_ID");
-	}
-
-	private static void disableSslVerification() {
-	    try
-	    {
-	        // Create a trust manager that does not validate certificate chains
-	        TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
-	            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-	                return null;
+	    client_secret = System.getProperty("KEYCLOAK_CLIENT_SECRET");
 	            }
-	            public void checkClientTrusted(X509Certificate[] certs, String authType) {
-	            }
-	            public void checkServerTrusted(X509Certificate[] certs, String authType) {
-	            }
-	        }
-	        };
-
-	        // Install the all-trusting trust manager
-	        SSLContext sc = SSLContext.getInstance("SSL");
-	        sc.init(null, trustAllCerts, new java.security.SecureRandom());
-	        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
-	        // Create all-trusting host name verifier
-	        HostnameVerifier allHostsValid = new HostnameVerifier() {
-	            public boolean verify(String hostname, SSLSession session) {
-	                return true;
-	            }
-	        };
-
-	        // Install the all-trusting host verifier
-	        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-	    } catch (NoSuchAlgorithmException e) {
-	        e.printStackTrace();
-	    } catch (KeyManagementException e) {
-	        e.printStackTrace();
-	    }
-	}
-
 
 	public static String getToken(String user, String pwd) throws IOException {
 		String token_endpoint = String.format("https://%s/auth/realms/%s/protocol/openid-connect/token", url, realm);
@@ -84,6 +58,7 @@ public class KeyCloakProvider {
         Map<String, String> parameters = new HashMap<>();
         parameters.put("grant_type", grant_type);
         parameters.put("client_id", client_id);
+        parameters.put("client_secret", client_secret);
         parameters.put("username", user);
         parameters.put("password", pwd);
 

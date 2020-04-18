@@ -44,8 +44,8 @@
         <!-- Internal packages -->
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
-            <artifactId>aws-osdu-util</artifactId>
-            <version>0.0.9</version>
+            <artifactId>os-core-lib-aws</artifactId>
+            <version>0.0.10</version>
         </dependency>
 
         <!-- Testing packages -->
@@ -62,24 +62,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>${gitlab-server}</id>
-            <url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>${gitlab-server}</id>
-            <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-        </repository>
-        <snapshotRepository>
-            <id>${gitlab-server}</id>
-            <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <build>
       <plugins>

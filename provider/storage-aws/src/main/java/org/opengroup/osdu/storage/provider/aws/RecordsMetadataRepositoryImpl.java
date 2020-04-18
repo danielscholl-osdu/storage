@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
@@ -56,19 +57,10 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Inject
     private JaxRsDpsLog logger;
 
+    @Inject
+    private UserAccessService userAccessService;
+
     private DynamoDBQueryHelper queryHelper;
-
-    private CacheHelper cacheHelper;
-
-    // below attributes needed for record acl checks
-    @Inject
-    private ICache<String, Groups> cache;
-
-    @Inject
-    private IEntitlementsFactory factory;
-
-    @Inject
-    private DpsHeaders headers;
 
     private final static String ACCESS_DENIED_REASON = "Access denied";
     private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
@@ -77,7 +69,6 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @PostConstruct
     public void init(){
         queryHelper = new DynamoDBQueryHelper(dynamoDbEndpoint, dynamoDbRegion, tablePrefix);
-        cacheHelper = new CacheHelper();
     }
 
     @Override
@@ -85,7 +76,6 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         if (recordsMetadata != null) {
             for (RecordMetadata recordMetadata : recordsMetadata) {
                 // user should be part of the acl of the record being saved
-                if (userHasAccessToRecord(getGroups(), recordMetadata.getAcl())) {
                     RecordMetadataDoc doc = new RecordMetadataDoc();
 
                     // Set the core fields (what is expected in every implementation)
@@ -101,9 +91,6 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                     // Store the record to the database
                     queryHelper.save(doc);
                     saveLegalTagAssociation(recordMetadata.getId(), recordMetadata.getLegal().getLegaltags());
-                } else {
-                    throw new AppException(HttpStatus.FORBIDDEN.value(), ACCESS_DENIED_REASON, ACCESS_DENIED_MSG);
-                }
             }
         }
         return recordsMetadata;
@@ -124,12 +111,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         if (doc == null) {
             return null;
         } else {
-            RecordMetadata rmd = doc.getMetadata();
-            if (userHasAccessToRecord(getGroups(), rmd.getAcl())) {
                 return doc.getMetadata();
-            } else {
-                throw new AppException(HttpStatus.FORBIDDEN.value(), ACCESS_DENIED_REASON, ACCESS_DENIED_MSG);
-            }
         }
     }
 
@@ -142,11 +124,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             if (doc == null) continue;
             RecordMetadata rmd = doc.getMetadata();
             if (rmd == null) continue;
-            if (userHasAccessToRecord(getGroups(), rmd.getAcl())) {
                 output.put(id, rmd);
-            } else {
-                logger.error("User not in ACL for record %s");
-            }
         }
 
         return output;
@@ -174,56 +152,6 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         }
 
         return new AbstractMap.SimpleEntry<>(result.cursor, associatedRecords);
-    }
-
-    /**
-     * Unideal way to check if user has access to record because a list is being compared
-     * for a match in a list. Future improvements include redesigning our dynamo schema to
-     * get around this and redesigning dynamo schema to stop parsing the acl out of
-     * recordmetadata
-     * @param groups
-     * @param acl
-     * @return
-     */
-    // TODO: Optimize entitlements record ACL design to not compare list against list
-    public boolean userHasAccessToRecord(Groups groups, Acl acl){
-        HashSet<String> allowedGroups = new HashSet<>();
-        for(String owner : acl.getOwners()){
-            allowedGroups.add(owner);
-        }
-        for(String viewer : acl.getViewers()){
-            allowedGroups.add(viewer);
-        }
-        List<GroupInfo> memberGroups = groups.getGroups();
-        HashSet<String> memberGroupsSet = new HashSet<>();
-        for(GroupInfo memberGroup : memberGroups){
-            memberGroupsSet.add(memberGroup.getEmail());
-        }
-
-        return allowedGroups.stream().anyMatch(memberGroupsSet::contains);
-    }
-
-    // TODO: duplicate logic resides in EntitlementsAndCacheServiceImpl
-    private Groups getGroups(){
-        String cacheKey = this.cacheHelper.getGroupCacheKey(this.headers);
-        Groups groups = this.cache.get(cacheKey);
-        if(groups == null){
-            groups = refreshGroups();
-        }
-        return groups;
-    }
-
-    private Groups refreshGroups(){
-        Groups groups;
-        IEntitlementsService service = this.factory.create(this.headers);
-        try {
-            groups = service.getGroups();
-            this.cache.put(this.cacheHelper.getGroupCacheKey(this.headers), groups);
-        } catch (EntitlementsException e) {
-            e.printStackTrace();
-            throw new AppException(e.getHttpResponse().getResponseCode(), ACCESS_DENIED_REASON, ACCESS_DENIED_MSG, e);
-        }
-        return groups;
     }
 
     private void saveLegalTagAssociation(String recordId, Set<String> legalTags){

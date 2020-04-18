@@ -28,11 +28,13 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-aws</artifactId>
     <description>Storage service on AWS</description>
+    <version>${version.number}</version>
     <packaging>jar</packaging>
 
     <properties>
         <aws.version>1.11.637</aws.version>
         <deployment.environment>dev</deployment.environment>
+        <version.number>0.0.5-SNAPSHOT</version.number>
     </properties>
 
     <dependencyManagement>
@@ -56,13 +58,13 @@
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
-            <artifactId>aws-osdu-util</artifactId>
-            <version>0.0.9</version>
+            <artifactId>os-core-lib-aws</artifactId>
+            <version>0.0.10</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <version>${version.number}</version>
         </dependency>
 
         <!-- AWS managed packages -->

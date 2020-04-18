@@ -22,27 +22,33 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class GetRecordFromVersionTask implements Callable<GetRecordFromVersionTask> {
     private S3RecordClient s3RecordClient;
-    private AtomicReference<Map<String, String>> map;
     private String versionPath;
     public String recordId;
-    public AmazonServiceException exception;
+    public String recordContents;
+    public Exception exception;
     public CallableResult result;
 
+    private final static String EMPTY_S3_MSG = "S3 returned empty record contents";
+
     public GetRecordFromVersionTask(S3RecordClient s3RecordClient,
-                         AtomicReference<Map<String, String>> map,
                          String recordId,
                          String versionPath){
         this.s3RecordClient = s3RecordClient;
-        this.map = map;
         this.recordId = recordId;
         this.versionPath = versionPath;
     }
 
     @Override
     public GetRecordFromVersionTask call() {
+        result = CallableResult.Pass;
         try {
-            s3RecordClient.getRecord(this.recordId, this.versionPath, map);
-            result = CallableResult.Pass;
+            this.recordContents = s3RecordClient.getRecord(this.versionPath);
+
+            if (this.recordContents == null || this.recordContents == ""){
+                // s3 wasn't ready to deliver contents
+                exception = new Exception(EMPTY_S3_MSG);
+                result = CallableResult.Fail;
+            }
         }
         catch(AmazonServiceException e) {
             exception = e;

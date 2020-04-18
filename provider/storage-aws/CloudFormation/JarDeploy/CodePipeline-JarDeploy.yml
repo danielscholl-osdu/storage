@@ -45,47 +45,15 @@ Parameters:
     Type: String
     Default: os-storage
 
+  JarServiceBase:
+    Description: The name of the service base path for the JAR files (e.g. 'storage').
+    Type: String
+    Default: storage
+
   CodeCommitBranchName:
     Description: The name of the Code Commit branch that the CodePipeline source is connected to.
     Type: String
     Default: dev
-
-  MasterStackName:
-    Description: The name of the master stack that is being deployed by the CodePipeline.
-    Type: String
-    Default: os-storage-master-stack
-
-  MasterTemplateName:
-    Description: The name of the master template that is called when creating the master stack.
-    Type: String
-    Default: provider/storage-aws/CloudFormation/Master/os-storage-master.yml
-
-  GroupCacheName:
-    Description: The name of the cache cluster for the group cache. Needs to match the value in the environment params JSON. Will be prefixed with the environment name.
-    Type: String
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
-    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
-    Default: storagegroupcache
-
-  LegalTagCacheName:
-    Description: The name of the cache cluster for the legal tag cache. Needs to match the value in the environment params JSON. Will be prefixed with the environment name.
-    Type: String
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
-    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
-    Default: storagelegaltagcache
-
-  SchemaCacheName:
-    Description: The name of the cache cluster for the schema cache. Needs to match the value in the environment params JSON. Will be prefixed with the environment name.
-    Type: String
-    MinLength: '1'
-    MaxLength: '64'
-    AllowedPattern: "^[a-zA-Z]+[0-9a-zA-Z_-]*$"
-    ConstraintDescription: Must start with a letter. Only numbers, letters, -, and _ accepted. Max. length 64 characters.
-    Default: storageschemacache
 
 Resources:
   ArtifactStoreBucket:
@@ -152,7 +120,7 @@ Resources:
       Subscription:
         - Endpoint: !Ref SNSNotificationEmail
           Protocol: email
-      TopicName: !Sub '${Environment}-OS-Storage-Deployment-CodePipeline-Failed'
+      TopicName: !Sub '${Environment}-OS-Storage-Deployment-CodePipeline-JarDeploy-Failed'
 
   EventRuleCodePipelineFailed:
     Type: AWS::Events::Rule
@@ -167,18 +135,18 @@ Resources:
           state:
             - "FAILED"
           pipeline:
-            - !Sub '${Environment}-OS-Storage-Resources-CodePipeline'
+            - !Sub '${Environment}-OSDU-OS-Storage-CodePipeline-JarDeploy'
 
-      Name: !Sub ${Environment}-CodePipelineEventRule-${CodeCommitRepositoryName}
+      Name: !Sub ${Environment}-CodePipelineEventRule-${CodeCommitRepositoryName}-JarDeploy
       Targets:
-        -
-          Arn:
-            !Ref SNSCodePipelineDeploymentFailed
-          Id: "Deployment-CodePipeline-Failed"
-          InputTransformer:
-            InputPathsMap:
-              pipeline : "$.detail.pipeline"
-            InputTemplate: '"The Pipeline <pipeline> has failed."'
+      -
+        Arn:
+          !Ref SNSCodePipelineDeploymentFailed
+        Id: "Deployment-CodePipeline-JarDeploy-Failed"
+        InputTransformer:
+          InputPathsMap:
+            pipeline : "$.detail.pipeline"
+          InputTemplate: '"The Pipeline <pipeline> has failed."'
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -186,7 +154,7 @@ Resources:
       ArtifactStore:
         Location: !Ref ArtifactStoreBucket
         Type: S3
-      Name: !Sub '${Environment}-OSDU-OS-Storage-CodePipeline'
+      Name: !Sub '${Environment}-OSDU-OS-Storage-CodePipeline-JarDeploy'
       RoleArn: !ImportValue
         'Fn::Sub': '${Environment}-PipelineRoleArn'
       Stages:
@@ -205,9 +173,9 @@ Resources:
                 - Name: Source
               RunOrder: '1'
 
-        - Name: Pre-Deployment-CodeBuild
+        - Name: CodeBuild
           Actions:
-            - Name: Pre-Deployment-CodeBuild
+            - Name: Jar-CodeBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -216,94 +184,25 @@ Resources:
               InputArtifacts:
                 - Name: Source
               OutputArtifacts:
-                - Name: Pre-Deployment-CodeBuild
+                - Name: Jar-CodeBuild
               Configuration:
-                ProjectName: !Ref PreDeploymentCodeBuild
+                ProjectName: !Ref JarCodeBuild
               RunOrder: '2'
 
-        - Name: Deployment
-          Actions:
-            - Name: CloudFormation-Deployment-Master
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CloudFormation
-                Version: '1'
-              InputArtifacts:
-                - Name: Source
-              Configuration:
-                ActionMode: CREATE_UPDATE
-                Capabilities: CAPABILITY_NAMED_IAM
-                RoleArn: !ImportValue
-                  'Fn::Sub': '${Environment}-CFNRoleArn'
-                StackName: !Sub ${Environment}-${MasterStackName}
-                TemplatePath: !Sub "Source::${MasterTemplateName}"
-                TemplateConfiguration: !Sub "Source::provider/storage-aws/CloudFormation/Params/${Environment}.template_configuration.json"
-              RunOrder: '3'
-
-        - Name: Post-Deployment-CodeBuild
-          Actions:
-            - Name: Post-Deployment-CodeBuild
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: '1'
-              InputArtifacts:
-                - Name: Source
-              OutputArtifacts:
-                - Name: Post-Deployment-CodeBuild
-              Configuration:
-                ProjectName: !Ref PostDeploymentCodeBuild
-              RunOrder: '4'
-
-  PreDeploymentCodeBuild:
+  JarCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub ${Environment}-pre-deployment-codebuild-${CodeCommitRepositoryName}
-      Description: CodeBuild commands which run prior to the CloudFormation deployment.
+      Name: !Sub ${Environment}-jar-codebuild-${CodeCommitRepositoryName}
+      Description: >
+        CodeBuild commands which handle setting environment variables, along with the
+        build, test, and packaging of the .jar file. It then uses the AWS CLI to copy
+        the versioned JAR and associated build files to the shared jar-deploy S3 bucket.
       ServiceRole: !ImportValue
         'Fn::Sub': '${Environment}-CodeBuildRoleArn'
       Artifacts:
         Type: S3
         Location: !Ref ArtifactStoreBucket
-        Name: !Sub ${Environment}-pre-deployment-codebuild
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:2.0
-        EnvironmentVariables:
-          - Name: ENVIRONMENT
-            Type: PLAINTEXT
-            Value: !Ref Environment
-          - Name: AWS_REGION
-            Type: PLAINTEXT
-            Value: !Ref DeploymentRegion
-          - Name: CFN_S3_BUCKET
-            Type: PLAINTEXT
-            Value: !ImportValue
-              'Fn::Sub': '${Environment}-S3BucketCloudFormation'
-          - Name: APPLICATION_NAME
-            Type: PLAINTEXT
-            Value: !Ref CodeCommitRepositoryName
-        PrivilegedMode: false
-      Source:
-        BuildSpec: ./provider/storage-aws/buildspec-pre-deploy.yml
-        Location: !Sub https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${CodeCommitRepositoryName}
-        Type: CODECOMMIT
-      TimeoutInMinutes: 15
-
-  PostDeploymentCodeBuild:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: !Sub ${Environment}-post-deployment-codebuild-${CodeCommitRepositoryName}
-      Description: CodeBuild commands which run after the CloudFormation deployment.
-      ServiceRole: !ImportValue
-        'Fn::Sub': '${Environment}-CodeBuildRoleArn'
-      Artifacts:
-        Type: S3
-        Location: !Ref ArtifactStoreBucket
-        Name: !Sub ${Environment}-post-deployment-codebuild
+        Name: !Sub ${Environment}-jar-codebuild
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
@@ -318,30 +217,21 @@ Resources:
           - Name: AWS_REGION
             Type: PLAINTEXT
             Value: !Ref DeploymentRegion
-          - Name: IMAGE_REPO_NAME
-            Type: PLAINTEXT
-            Value: !Sub ${Environment}-${CodeCommitRepositoryName}-repository
-          - Name: IMAGE_TAG
-            Type: PLAINTEXT
-            Value: latest
-          - Name: SCHEMA_CACHE_NAME
-            Type: PLAINTEXT
-            Value: !Ref SchemaCacheName
-          - Name: GROUP_CACHE_NAME
-            Type: PLAINTEXT
-            Value: !Ref GroupCacheName
-          - Name: LEGALTAG_CACHE_NAME
-            Type: PLAINTEXT
-            Value: !Ref LegalTagCacheName
           - Name: APPLICATION_NAME
             Type: PLAINTEXT
             Value: !Ref CodeCommitRepositoryName
+          - Name: JAR_SERVICE_BASE
+            Type: PLAINTEXT
+            Value: !Ref JarServiceBase
           - Name: M2_REPO_S3_BUCKET
             Type: PLAINTEXT
             Value: !Sub "${Environment}-${AWS::AccountId}-persistent-maven-m2-bucket"
+          - Name: JAR_DEPLOY_S3_BUCKET
+            Type: PLAINTEXT
+            Value: !Sub ${Environment}-${AWS::AccountId}-osdu-jar-deploy
         PrivilegedMode: true
       Source:
-        BuildSpec: ./provider/storage-aws/buildspec-post-deploy.yml
+        BuildSpec: ./provider/storage-aws/buildspec-jar-deploy.yml
         Location: !Sub https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${CodeCommitRepositoryName}
         Type: CODECOMMIT
       Cache:

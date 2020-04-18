@@ -43,11 +43,15 @@ import com.cloudant.client.api.query.Sort;
 @Repository
 public class QueryRepositoryImpl implements IQueryRepository {
         
-	
-	@Value("${ibm.cloudant.url:}") 
-	private String url;
-	@Value("${ibm.cloudant.apikey:}")
+	@Value("${ibm.db.url}")
+	private String dbUrl;
+	@Value("${ibm.db.apikey:#{null}}")
 	private String apiKey;
+	@Value("${ibm.db.user:#{null}}")
+	private String dbUser;
+	@Value("${ibm.db.password:#{null}}")
+	private String dbPassword;
+
 	@Value("${ibm.env.prefix:local-dev}")
 	private String dbNamePrefix;
 	
@@ -58,7 +62,12 @@ public class QueryRepositoryImpl implements IQueryRepository {
 	
 	@PostConstruct
     public void init() throws MalformedURLException{
-		cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(url, apiKey));
+
+		if (apiKey != null) {
+			cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(dbUrl, apiKey));
+		} else {
+			cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(dbUrl, dbUser, dbPassword));
+		}
 		
 		dbSchema = cloudantFactory.getDatabase(dbNamePrefix, SchemaRepositoryImpl.SCHEMA_DATABASE);
         dbRecords = cloudantFactory.getDatabase(dbNamePrefix, RecordsMetadataRepositoryImpl.DB_NAME);

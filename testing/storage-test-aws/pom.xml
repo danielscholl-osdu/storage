@@ -29,7 +29,6 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
-        <MY_TENANT>opendes</MY_TENANT>
     </properties>
     <dependencies>
         <!-- Internal packages -->
@@ -141,12 +140,7 @@
                 <configuration>
                     <trimStackTrace>false</trimStackTrace>
                     <systemPropertyVariables>
-                        <HOST_URL>http://localhost:8082/api/storage/v1/</HOST_URL>
-                        <ENTITLEMENT_URL>broken</ENTITLEMENT_URL>
-                        <AWS_S3_ENDPOINT>s3.us-east-1.amazonaws.com</AWS_S3_ENDPOINT>
-                        <AWS_S3_REGION>us-east-1</AWS_S3_REGION>
                         <buildDirectory>${project.build.directory}</buildDirectory>
-                        <MY_TENANT>opendes</MY_TENANT>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

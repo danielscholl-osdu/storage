@@ -93,7 +93,12 @@ public class MessageBusImplTest {
             messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
                     .withDataType("String")
                     .withStringValue(headers.getCorrelationId()));
-
+            messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
+                    .withDataType("String")
+                    .withStringValue(headers.getUserEmail()));
+            messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
+                    .withDataType("String")
+                    .withStringValue(headers.getAuthorization()));
             publishRequest.setMessage(json);
             publishRequest.setMessageAttributes(messageAttributes);
         }

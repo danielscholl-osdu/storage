@@ -30,14 +30,6 @@ Parameters:
     Type: String
     Default: us-east-1
 
-  ChildTemplateBasePath:
-    Description: >-
-      The base path for where child CloudFormation templates are located – can be relative or absolute, e.g.
-      https://s3.amazonaws.com/dev-osdu-cloudformation-scripts/Automated/
-    Type: String
-    AllowedPattern: '^https:\/\/s3.amazonaws.com\/.*\/$'
-    Default: https://s3.amazonaws.com/dev-osdu-cloudformation-scripts/Automated/
-
   ApplicationName:
     Description: >
       The name of the application, should be equal to the repository name.
@@ -417,6 +409,17 @@ Parameters:
     AllowedPattern: "^(|arn:aws:acm:.*)$"
     Default: ''
 
+  VersionNumber:
+    Description: The version number for the service jar being produced
+    Type: String
+    Default: '0.0.1'
+
+  ServiceName:
+    Description: >-
+      The service name associated with the jar package for the Dockerfile.
+    Type: String
+    Default: 'storage'
+
 Resources:
 
   #### Shared Resources ################################################################
@@ -424,7 +427,11 @@ Resources:
   ServiceAccountIAMCredentialsStack:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, service-account-iam-credentials.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: service-account-iam-credentials.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -434,7 +441,11 @@ Resources:
   MessageBusSNSStack:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join ['', [!Ref ChildTemplateBasePath, sns-topic.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: sns-topic.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -447,7 +458,11 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     DependsOn: ServiceAccountIAMCredentialsStack
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, ecs-network.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: ecs-network.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -460,7 +475,11 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     DependsOn: [GroupCacheStack, LegalTagCacheStack, SchemaCacheStack]
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, ecs-cluster.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: ecs-cluster.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -478,13 +497,19 @@ Resources:
         ECSMemoryAllocation: !Ref ECSMemoryAllocation
         DomainName: !Ref DomainName
         HostedZoneName: !Ref HostedZoneName
+        VersionNumber: !Ref VersionNumber
+        ServiceName: !Ref ServiceName
 
   #### Record Metadata Repository DB ###################################################
 
   RecordMetadataRepositoryStack:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, records-metadata-repository.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: records-metadata-repository.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -495,7 +520,11 @@ Resources:
   SchemaRepositoryStack:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, schema-repository.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: schema-repository.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -506,7 +535,11 @@ Resources:
   TenantInfoStack:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, tenant-info.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: tenant-info.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -518,7 +551,11 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     DependsOn: ServiceAccountIAMCredentialsStack
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, storage-bucket.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: storage-bucket.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -530,7 +567,11 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     DependsOn: ECSNetworkStack
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, cache.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: cache.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -544,7 +585,11 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     DependsOn: ECSNetworkStack
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, cache.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: cache.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -558,7 +603,11 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     DependsOn: ECSNetworkStack
     Properties:
-      TemplateURL: !Join [ '', [ !Ref ChildTemplateBasePath, cache.yml ] ]
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${CloudFormationS3Bucket}/${ApplicationName}/Automated/${CFNTemplateFilename}
+        - CloudFormationS3Bucket: !ImportValue
+            'Fn::Sub': '${Environment}-S3BucketCloudFormation'
+          CFNTemplateFilename: cache.yml
       Parameters:
         Environment: !Ref Environment
         Region: !Ref DeploymentRegion
@@ -567,3 +616,17 @@ Resources:
         CacheEngine: !Ref SchemaCacheEngine
         NodeInstanceType: !Ref SchemaCacheNodeInstanceType
         NumberOfCacheNodes: !Ref SchemaCacheNumberOfCacheNodes
+
+Outputs:
+  ElastiCacheConfigurationEndpointUrl:
+    Description: Service Name of the application being built.
+    Value: !Ref ServiceName
+    Export:
+      Name: !Sub ${Environment}-${ServiceName}-ServiceName
+
+  # This output is only applicable if the cache engine is set to Memcached
+  MemcachedConfigurationEndpointPort:
+    Description: The Memcached configuration endpoint port of the cache node.
+    Value: !Ref VersionNumber
+    Export:
+      Name: !Sub ${Environment}-${ServiceName}-VersionNumber
