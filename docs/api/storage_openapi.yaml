@@ -1,11 +1,11 @@
 swagger: "2.0"
 info:
   description: "Storage service which handles the metadata ingestion in the OSDU\
-    \ ecosystem"
+    \ data platform"
   version: "2.0.0"
   title: "Storage APIs"
   contact:
-    name: "OSDU Data Platform Tesm team"
+    name: "OSDU Data Platform Team team"
     email: "dps@[OSDU].org"
 host: "storage-[OSDU].appspot.com"
 basePath: "/api/storage/v2"
