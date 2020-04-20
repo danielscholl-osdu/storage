@@ -34,6 +34,7 @@ import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.StorageApplication;
+import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.di.EntitlementsServiceImpl;
@@ -55,6 +56,9 @@ public class RecordsMetadataRepositoryTest {
 
     @Mock
     private DynamoDBQueryHelper queryHelper;
+
+    @Mock
+    private UserAccessService userAccessService;
 
     @Before
     public void setUp() {
@@ -103,36 +107,7 @@ public class RecordsMetadataRepositoryTest {
 
         Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedRmd));
 
-        CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
-        Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject()))
-                .thenReturn("test-cache-key");
-        Whitebox.setInternalState(repo, "cacheHelper", cacheHelper);
-
-        ICache cache = Mockito.mock(ICache.class);
-        Mockito.when(cache.get(Mockito.anyObject()))
-                .thenReturn(null);
-        Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
-        Whitebox.setInternalState(repo, "cache", cache);
-
-        EntitlementsServiceImpl entitlementsService = Mockito.mock(EntitlementsServiceImpl.class);
-        Groups groups = new Groups();
-        List<GroupInfo> groupInfos = new ArrayList<>();
-        GroupInfo groupInfo = new GroupInfo();
-        groupInfo.setName("data.tenant@byoc.local");
-        groupInfo.setEmail("data.tenant@byoc.local");
-        groupInfos.add(groupInfo);
-        groups.setGroups(groupInfos);
-        try {
-            Mockito.when(entitlementsService.getGroups())
-                    .thenReturn(groups);
-        } catch (EntitlementsException e){
-            throw new RuntimeException(e);
-        }
-
-        IEntitlementsFactory factory = Mockito.mock(IEntitlementsFactory.class);
-        Mockito.when(factory.create(Mockito.anyObject()))
-                .thenReturn(entitlementsService);
-        Whitebox.setInternalState(repo, "factory", factory);
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         repo.createOrUpdate(recordsMetadata);
@@ -180,11 +155,6 @@ public class RecordsMetadataRepositoryTest {
         expectedRmd.setUser(expectedRecordMetadata.getUser());
         expectedRmd.setMetadata(expectedRecordMetadata);
 
-        CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
-        Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject()))
-                .thenReturn("test-cache-key");
-        Whitebox.setInternalState(repo, "cacheHelper", cacheHelper);
-
         Groups groups = new Groups();
         List<GroupInfo> groupInfos = new ArrayList<>();
         GroupInfo groupInfo = new GroupInfo();
@@ -193,14 +163,10 @@ public class RecordsMetadataRepositoryTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        ICache cache = Mockito.mock(ICache.class);
-        Mockito.when(cache.get(Mockito.anyObject()))
-                .thenReturn(groups);
-        Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
-        Whitebox.setInternalState(repo, "cache", cache);
-
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
+
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         RecordMetadata recordMetadata = repo.get(id);
@@ -256,11 +222,6 @@ public class RecordsMetadataRepositoryTest {
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
 
-        CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
-        Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject()))
-                .thenReturn("test-cache-key");
-        Whitebox.setInternalState(repo, "cacheHelper", cacheHelper);
-
         Groups groups = new Groups();
         List<GroupInfo> groupInfos = new ArrayList<>();
         GroupInfo groupInfo = new GroupInfo();
@@ -269,11 +230,7 @@ public class RecordsMetadataRepositoryTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        ICache cache = Mockito.mock(ICache.class);
-        Mockito.when(cache.get(Mockito.anyObject()))
-                .thenReturn(groups);
-        Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
-        Whitebox.setInternalState(repo, "cache", cache);
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         Map<String, RecordMetadata> recordsMetadata = repo.get(ids);
@@ -307,11 +264,6 @@ public class RecordsMetadataRepositoryTest {
         recordMetadata.setLegal(recordLegal);
         expectedRmd.setMetadata(recordMetadata);
 
-        CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
-        Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject()))
-                .thenReturn("test-cache-key");
-        Whitebox.setInternalState(repo, "cacheHelper", cacheHelper);
-
         Groups groups = new Groups();
         List<GroupInfo> groupInfos = new ArrayList<>();
         GroupInfo groupInfo = new GroupInfo();
@@ -320,15 +272,11 @@ public class RecordsMetadataRepositoryTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        ICache cache = Mockito.mock(ICache.class);
-        Mockito.when(cache.get(Mockito.anyObject()))
-                .thenReturn(groups);
-        Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
-        Whitebox.setInternalState(repo, "cache", cache);
-
         Mockito.doNothing().when(queryHelper).deleteByPrimaryKey(RecordMetadataDoc.class, id);
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
+
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         repo.delete(id);

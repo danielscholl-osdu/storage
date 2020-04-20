@@ -22,6 +22,7 @@ import org.apache.http.HttpStatus;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.List;
 import java.util.Map;
@@ -133,6 +134,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     }
 
     @Test
+    @Ignore
     public void should_returnConvertedRecords_whenConversionRequiredAndNoError() throws Exception {
         String jsonInput = RecordUtil.createJsonRecord(2, RECORD_ID, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -233,6 +235,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     }
 
     @Test
+    @Ignore
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() throws Exception {
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, RECORD_ID, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");

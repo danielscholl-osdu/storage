@@ -16,10 +16,13 @@ package org.opengroup.osdu.storage.provider.aws.api;
 
 import com.google.gson.Gson;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.aws.CloudStorageImpl;
+import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.s3.RecordsUtil;
 import org.opengroup.osdu.storage.provider.aws.util.s3.S3RecordClient;
 import org.opengroup.osdu.core.common.util.Crc32c;
@@ -33,6 +36,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
@@ -57,6 +61,12 @@ public class CloudStorageTest {
 
     @Mock
     private ExecutorService threadPool;
+
+    @Mock
+    private UserAccessService userAccessService;
+
+    @Inject
+    private JaxRsDpsLog logger;
 
     String userId = "test-user-id";
     RecordMetadata record = new RecordMetadata();
@@ -104,6 +114,8 @@ public class CloudStorageTest {
     public void delete(){
         // arrange
         Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(record));
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
+                .thenReturn(true);
 
         // act
         repo.delete(record);
@@ -113,24 +125,13 @@ public class CloudStorageTest {
     }
 
     @Test
-    public void hasAccess(){
-        // arrange
-        Mockito.when(s3RecordClient.checkIfRecordExists(Mockito.eq(record)))
-                .thenReturn(false);
-
-        // act
-        boolean hasAccess = repo.hasAccess(record);
-
-        // assert
-        Assert.assertFalse(hasAccess);
-    }
-
-    @Test
     public void read(){
         // arrange
         Long version = 1L;
         Mockito.when(s3RecordClient.getRecord(Mockito.eq(record), Mockito.eq(version)))
                 .thenReturn("test-response");
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
+                .thenReturn(true);
 
         // act
         String resp = repo.read(record, version, false);

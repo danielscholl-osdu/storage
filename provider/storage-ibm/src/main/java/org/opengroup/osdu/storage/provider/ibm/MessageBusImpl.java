@@ -34,7 +34,7 @@ import com.google.gson.Gson;
 public class MessageBusImpl implements IMessageBus {
 
 	@Inject
-	IMessageFactory rabbitMQ;
+	IMessageFactory mq;
 
 	public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
 
@@ -52,7 +52,7 @@ public class MessageBusImpl implements IMessageBus {
 			headers.addCorrelationIdIfMissing();
 			message.put(DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
 
-			rabbitMQ.sendMessage(gson.toJson(message));
+			mq.sendMessage(gson.toJson(message));
 		}
 
 	}

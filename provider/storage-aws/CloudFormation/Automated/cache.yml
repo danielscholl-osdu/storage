@@ -14,8 +14,9 @@
 
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  CloudFormation template for creating the resources used for the tenant info database for OSDU.
-  It creates the DynamoDB table and the API Gateway endpoints.
+  CloudFormation template for creating the resources needed to deploy an ElastiCache cluster in AWS.
+  It creates the a Security Group with ingress rules, an ElastiCache Subnet Group for the cache cluster,
+  and the ElastiCache cluster itself.
 
 Parameters:
   Environment:

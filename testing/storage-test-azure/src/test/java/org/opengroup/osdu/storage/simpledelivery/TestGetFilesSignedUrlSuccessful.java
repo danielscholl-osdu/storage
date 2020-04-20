@@ -47,6 +47,7 @@ public class TestGetFilesSignedUrlSuccessful {
     @BeforeClass
     public static void setup() throws Exception {
         DeliveryTestUtils.generateFileNames();
+        DeliveryTestUtils.generateContainerNames();
         DeliveryTestUtils.generateTestBlobs();
 
         String token = azureTestUtils.getToken();
@@ -61,8 +62,12 @@ public class TestGetFilesSignedUrlSuccessful {
         response = TestUtils.send("schemas/" + SCHEMA, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
         assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-        for (String fileName : DeliveryTestUtils.filePathMap.keySet()) {
-            String recordJsonBody = DeliveryTestUtils.createJsonRecord(RECORD_ID, fileName, SCHEMA, LEGAL_TAG, DeliveryTestUtils.filePathMap.get(fileName));
+        for (String fileName : DeliveryTestUtils.pathMap.keySet()) {
+            boolean isContainer = false;
+            if (fileName.contains("container")) {
+                isContainer = true;
+            }
+            String recordJsonBody = DeliveryTestUtils.createJsonRecord(RECORD_ID, fileName, SCHEMA, LEGAL_TAG, DeliveryTestUtils.pathMap.get(fileName), isContainer);
             response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), recordJsonBody, "");
             assertEquals(201, response.getStatus());
             assertEquals("application/json; charset=UTF-8", response.getType().toString());
@@ -73,7 +78,7 @@ public class TestGetFilesSignedUrlSuccessful {
     public static void tearDown() throws Exception {
         String token = azureTestUtils.getToken();
         ClientResponse response;
-        for (String fileName : DeliveryTestUtils.filePathMap.keySet()) {
+        for (String fileName : DeliveryTestUtils.pathMap.keySet()) {
             response = TestUtils.send("records/" + RECORD_ID + "-"+ fileName, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
             assertEquals(204, response.getStatus());
         }
@@ -86,6 +91,37 @@ public class TestGetFilesSignedUrlSuccessful {
 
         legalTagUtils.delete(LEGAL_TAG, token);
         DeliveryTestUtils.deleteTestBlobs();
+    }
+
+    @Test
+    public void should_GetResults_a_2Urls_when_requestingContainerSRNs() throws Exception {
+        Integer expectedUnprocessed = 0;
+        Integer expectedProcessed = 2;
+        JsonArray srns = new JsonArray();
+
+        srns.add(String.format("srn:file/ovds:%s", DeliveryTestUtils.CONTAINER_NAMES[0].hashCode()));
+        srns.add(String.format("srn:file/ovds:%s", DeliveryTestUtils.CONTAINER_NAMES[1].hashCode()));
+
+        JsonObject srnJsonObject = new JsonObject();
+        srnJsonObject.add("srns", srns);
+
+        String jsonBody = srnJsonObject.toString();
+        ClientResponse response;
+
+        for (int i = 0; ; i++) {
+            response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+            if(DeliveryTestUtils.IndexedDocumentsExist(response, expectedProcessed)) {
+                break;
+            } else {
+                System.out.println("Sleeping for 15 seconds before GET delivery/GetFileSignedURL");
+                Thread.sleep(15000);
+                if (i > 12) {
+                    throw new AssertionError("Failed to get processed docs from delivery/GetFileSignedURL in under 3 minutes");
+                }
+            }
+        }
+        response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
     }
 
     @Test

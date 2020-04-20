@@ -22,7 +22,7 @@ public class HeaderUtils {
 	public static Map<String, String> getHeaders(String tenantName, String token) {
 		Map<String, String> headers = new HashMap<>();
 		if(tenantName == null || tenantName.isEmpty()) {
-			TenantUtils.getTenantName();
+			tenantName = TenantUtils.getTenantName();
 		}
 		headers.put("Data-Partition-Id", tenantName);
 		headers.put("Authorization", token);

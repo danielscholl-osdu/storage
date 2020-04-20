@@ -138,14 +138,15 @@
                     	  <PROJECT_ID>1</PROJECT_ID>
                     	  <DOMAIN>ibm.com</DOMAIN>
                     	  <DEPLOY_ENV>empty</DEPLOY_ENV>
-                        <STORAGE_URL>https://os-storage-ibm-osdu-r2.osduadev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud/api/storage/v2/</STORAGE_URL>
-                        <LEGAL_URL>https://os-legal-ibm-osdu-r2.osduadev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud/api/legal/v1/</LEGAL_URL>
-                        <ENTITLEMENT_URL>https://entitlements-osdu-r2.osduadev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud/api/entitlements/v1/</ENTITLEMENT_URL>
+                    	<STORAGE_URL>https://storage.osdu-r2-dev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud/api/storage/v2/</STORAGE_URL>
+                        <LEGAL_URL>https://legal.osdu-r2-dev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud/api/legal/v1/</LEGAL_URL>
+                        <ENTITLEMENT_URL>https://entitlements.osdu-r2-dev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud/api/entitlements/v1/</ENTITLEMENT_URL>
                         <TENANT_NAME>opendes</TENANT_NAME>
                         <PUBSUB_TOKEN>token_not_implemented</PUBSUB_TOKEN>
-                        <KEYCLOAK_URL>keycloak-osdu-r2.osduadev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud</KEYCLOAK_URL>
+                        <KEYCLOAK_URL>keycloak.osdu-r2-dev-a1c3eaf78a86806e299f5f3f207556f0-0000.us-south.containers.appdomain.cloud</KEYCLOAK_URL>
                         <KEYCLOAK_REALM>OSDU</KEYCLOAK_REALM>
                         <KEYCLOAK_CLIENT_ID>osdu-login</KEYCLOAK_CLIENT_ID>
+                        <KEYCLOAK_CLIENT_SECRET>CHANGE_ME</KEYCLOAK_CLIENT_SECRET>
                         <AUTH_USER_ACCESS>osdu-user</AUTH_USER_ACCESS>
                         <AUTH_USER_ACCESS_PASSWORD>CHANGE_ME</AUTH_USER_ACCESS_PASSWORD>
                         <AUTH_USER_NO_ACCESS>osdu-no-roles</AUTH_USER_NO_ACCESS>

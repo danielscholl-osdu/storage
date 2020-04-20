@@ -103,5 +103,23 @@ public class SearchServiceFacade {
         Object fileSource = lkm.get("Data.GroupTypeProperties.PreLoadFilePath"); //get value of nested object in LinkedTreeMap [0].data.[key]
         fileSrnInfo.kind = resultKind.toString();
         fileSrnInfo.fileSource = fileSource.toString();
+        fileSrnInfo.isContainer = isSrnForContainer(srn);
     }
+
+
+    /*
+     temporarily parse the srn to see if it has file/ovds  or file/zgy
+     @todo replace with better logic!! Remove hardcoded reference to "ovds".
+     @todo needs external rules to map srn type to access pattern, ex, using the ResourceTypeID which is not currently passed in
+    */
+    private boolean isSrnForContainer(String srn) {
+        boolean result = false;
+
+        if (srn != null && srn.contains("ovds")) {
+            result = true;
+    }
+
+        return result;
+    }
+
 }

@@ -2,7 +2,6 @@
   "Parameters" : {
     "Environment" : "prod",
     "DeploymentRegion" : "us-east-1",
-    "ChildTemplateBasePath" : "https://s3.amazonaws.com/prod-os-storage-cloudformation-scripts/Automated/",
     "ApplicationName" : "os-storage",
     "KeyName": "storage-ecs-keypair",
     "DesiredCapacity": "1",
@@ -33,7 +32,9 @@
     "ECSMemoryAllocation": "3072",
     "DomainName": "",
     "HostedZoneName": "",
-    "AcmCertificateArn": ""
+    "AcmCertificateArn": "",
+    "ServiceName": "storage",
+    "VersionNumber": "0.0.5-SNAPSHOT"
   },
   "Tags" : {
     "Environment" : "prod"

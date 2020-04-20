@@ -14,14 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.ibm.app;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
-
-import java.util.Arrays;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
 
 
 @SpringBootApplication
@@ -33,21 +30,7 @@ public class StorageIBMApplication {
 
 	}
 	public static void main(String[] args) {
-		// We can't load things from Spring properties at this point
-				if (System.getenv().containsKey("INSECURE_HOSTNAMES")) {
-					// This must be one of the first things to run
-					List<String> insecureHostnames = Arrays.asList(System.getenv("INSECURE_HOSTNAMES").split(":"));
-					javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
-							new javax.net.ssl.HostnameVerifier(){
-								public boolean verify(String hostname, javax.net.ssl.SSLSession sslSession){
-									if (insecureHostnames.contains(hostname)) {
-										return true;
-									}
-									return false;
-								}
-							}
-					);
-				}
+
 		SpringApplication.run(StorageIBMApplication.class, args);
        }
 }

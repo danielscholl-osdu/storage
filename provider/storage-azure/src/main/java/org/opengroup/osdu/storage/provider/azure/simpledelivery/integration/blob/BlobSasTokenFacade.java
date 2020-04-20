@@ -36,6 +36,35 @@ public class BlobSasTokenFacade {
     @Inject
     private DefaultAzureCredential defaultCredential;
 
+    public String signContainer(String containerUrl) {
+        BlobUrlParts parts = BlobUrlParts.parse(containerUrl);
+        String endpoint = calcBlobAccountUrl(parts);
+
+        BlobServiceClient rbacKeySource = new BlobServiceClientBuilder()
+                .endpoint(endpoint)
+                .credential(defaultCredential)
+                .buildClient();
+
+
+        BlobContainerClient blobContainerClient = new BlobContainerClientBuilder()
+                .credential(defaultCredential)
+                .endpoint(containerUrl)
+                .containerName(parts.getBlobContainerName())
+                .buildClient();
+
+        // @todo review expiration date for container SAS
+        OffsetDateTime expiresInHalfADay = calcTokenExpirationDate();
+        UserDelegationKey key = rbacKeySource.getUserDelegationKey(null, expiresInHalfADay);
+
+        BlobSasPermission readOnlyPerms = BlobSasPermission.parse("r");
+        BlobServiceSasSignatureValues tokenProps = new BlobServiceSasSignatureValues(expiresInHalfADay, readOnlyPerms);
+
+        String sasToken = blobContainerClient.generateUserDelegationSas(tokenProps, key);
+
+        String sasUri = String.format("%s?%s", containerUrl, sasToken);
+        return sasUri;
+    }
+
     public String sign(String blobUrl) {
 
         BlobUrlParts parts = BlobUrlParts.parse(blobUrl);

@@ -9,7 +9,6 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -24,6 +23,8 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.ibm.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,8 +42,7 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
     @Inject
     private StorageAuditLogger auditLogger;
 
-    @Inject
-    private JaxRsDpsLog logger;
+	private static final Logger logger = LoggerFactory.getLogger(LegalComplianceChangeServiceImpl.class);
 
     @Inject
     private LegalTagCache legalTagCache;
@@ -118,7 +118,7 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
             this.legalTagCache.delete(lt.getChangedTagName());
             output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
         } else {
-            this.logger.warning(String.format("Unknown LegalTag compliance status received %s %s",
+			logger.warn(String.format("Unknown LegalTag compliance status received %s %s",
                     lt.getChangedTagStatus(), lt.getChangedTagName()));
         }
 

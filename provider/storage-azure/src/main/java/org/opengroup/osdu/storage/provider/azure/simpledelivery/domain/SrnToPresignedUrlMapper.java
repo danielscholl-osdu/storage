@@ -36,15 +36,27 @@ public class SrnToPresignedUrlMapper {
 
     public GetResourcesResponsePayload processAllSrns(List<String> input) {
         GetResourcesResponsePayload out = new GetResourcesResponsePayload();
+
+        // @todo consider revisiting this, this is rather chatty, making a single query for each srn
+
         for (String srn : input) {
             try {
                 FileSrnInfo info = searchFacade.findInfoForFileSrn(srn);
                 String fileSource = info.getFileSource();
+                String signedUrl;
+
                 if (null == fileSource) {
                     out.appendUnprocessedSrn(srn);
                     continue;
                 }
-                String signedUrl = tokenFacade.sign(fileSource);
+
+                if (info.isContainer) {
+                    signedUrl = tokenFacade.signContainer(fileSource);
+                }
+                else {
+                    signedUrl = tokenFacade.sign(fileSource);
+                }
+
                 if (null == signedUrl) {
                     out.appendUnprocessedSrn(srn);
                     continue;

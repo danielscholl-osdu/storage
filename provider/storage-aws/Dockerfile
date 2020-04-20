@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 FROM amazoncorretto:8
-
-ARG JAR_VERSION
-ENV JAR_FILE=storage-aws-${JAR_VERSION}-spring-boot.jar
+ARG versionNumber
+ARG service
+ENV serviceName=${service}-aws
+ENV awsJar=${serviceName}-${versionNumber}-spring-boot.jar
 
 WORKDIR /
-COPY provider/storage-aws/target/$JAR_FILE $JAR_FILE
+COPY provider/${serviceName}/target/${awsJar} ${awsJar}
+
 EXPOSE 8080
 
-CMD java -jar $JAR_FILE
+CMD ["sh","-c", " java -jar ${awsJar}"]
+

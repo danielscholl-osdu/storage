@@ -138,17 +138,6 @@ public class S3RecordClient {
         return record;
     }
 
-    public boolean isDuplicateRecord(RecordMetadata metadata, RecordData recordData) {
-        Gson gson = new Gson();
-        String dataContents = gson.toJson(recordData.getData());
-        String originalDataContents = getRecord(metadata, metadata.getLatestVersion());
-        RecordData originalRecordData = gson.fromJson(originalDataContents, RecordData.class);
-        originalDataContents = gson.toJson(originalRecordData.getData());
-        String dataHash = Base64.getEncoder().encodeToString(dataContents.getBytes());
-        String originalHash = Base64.getEncoder().encodeToString(originalDataContents.getBytes());
-        return dataHash.contentEquals(originalHash);
-    }
-
     private String getKeyNameForLatestVersion(RecordMetadata recordMetadata) {
         return recordMetadata.getKind() + "/" + recordMetadata.getId() + "/" + recordMetadata.getLatestVersion();
     }

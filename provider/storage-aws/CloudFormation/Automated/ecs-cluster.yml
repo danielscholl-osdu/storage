@@ -1,3 +1,17 @@
+# Copyright © Amazon Web Services
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   CloudFormation template for creating the resources used for the ECS cluster the application will
@@ -194,6 +208,17 @@ Parameters:
     Type: String
     Default: ''
 
+  VersionNumber:
+    Description: The version number for the service JAR being produced.
+    Type: String
+    Default: '0.0.1'
+
+  ServiceName:
+    Description: >-
+      The service name associated with the JAR package for the Dockerfile.
+    Type: String
+    Default: 'storage'
+
 Mappings:
   # This mapping is for the ECS-optimized edition of the November 13-14, 2019 release of the Amazon Linux 2 AMI
   # It will need to be periodically updated as new versions are released by Amazon.
@@ -291,11 +316,11 @@ Resources:
               AWS:
                 - !Sub arn:aws:iam::${AWS::AccountId}:root
                 - Fn::ImportValue:
-                    !Sub "${Environment}-${ApplicationName}-CodeBuildRoleArn"
+                    !Sub "${Environment}-CodeBuildRoleArn"
                 - Fn::ImportValue:
-                    !Sub "${Environment}-${ApplicationName}-CFNRoleArn"
+                    !Sub "${Environment}-CFNRoleArn"
                 - Fn::ImportValue:
-                    !Sub "${Environment}-${ApplicationName}-PipelineRoleArn"
+                    !Sub "${Environment}-PipelineRoleArn"
               Service:
                 - codebuild.amazonaws.com
             Action:
@@ -349,10 +374,6 @@ Resources:
               Value: '{{resolve:secretsmanager:dev-StorageServiceIamCredentials:SecretString:secret_key}}'
             - Name: ENVIRONMENT
               Value: !Ref Environment
-            - Name: VSTS_FEED_USER
-              Value: '{{resolve:secretsmanager:dev-VSTSFeedToken:SecretString:vsts_feed_user}}'
-            - Name: VSTS_FEED_TOKEN
-              Value: '{{resolve:secretsmanager:dev-VSTSFeedToken:SecretString:vsts_feed_token}}'
             - Name: CACHE_CLUSTER_GROUP_ENDPOINT
               Value:
                 Fn::ImportValue:
@@ -377,6 +398,10 @@ Resources:
               Value:
                 Fn::ImportValue:
                   !Sub "${Environment}-${SchemaCacheName}-RedisEndpointPort"
+            - Name: LEGALTAG_BASE_URL
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-os-legal-EcsCloudFrontDomainName"
             - Name: APPLICATION_PORT
               Value: !Ref ECSPort
             - Name: AWS_REGION
@@ -386,9 +411,16 @@ Resources:
             - Name: SNS_TOPIC_NAME
               Value: !Ref SNSTopicName
             - Name: S3_DATA_BUCKET
-              Value: !Ref DataStorageS3BucketName
+              Value:
+                Fn::ImportValue:
+                  !Sub "${Environment}-S3BucketDataStorage"
             - Name: JAVA_HEAP_MEMORY
               Value: !Ref ECSMemoryAllocation
+            - Name: VERSIONNUMBER
+              Value: !Ref VersionNumber
+            - Name: SERVICE
+              Value: !Ref ServiceName
+            - Name: DELIVERY_SERVICE_HOST
       Volumes:
         - Name: docker-volume
 
@@ -447,7 +479,7 @@ Resources:
     DependsOn: ECSALB
     Properties:
       HealthCheckIntervalSeconds: 120
-      HealthCheckPath: /api/storage/v2/
+      HealthCheckPath: /api/storage/v2/health/liveness_check/
       HealthCheckProtocol: !If [IsLoadBalancerHTTPS, HTTPS, HTTP]
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
@@ -503,6 +535,13 @@ Resources:
             QueryString: true
             Cookies:
               Forward: all
+            Headers:
+              - Authorization
+              - Data-Partition-Id
+              - Content-Type
+              - Kind
+              - Limit
+              - Cursor
           ViewerProtocolPolicy: redirect-to-https # CloudFront requests will always be HTTPS, regardless of the origin or the request
         ViewerCertificate:
           AcmCertificateArn:
@@ -740,3 +779,15 @@ Outputs:
     Value: !Ref 'TaskDefinition'
     Export:
       Name: !Sub ${Environment}-${ApplicationName}-EcsTaskDefinitionArn
+
+  JarVersionNumber:
+    Description: The service name associated with the JAR package for the Dockerfile.
+    Value: !Ref 'VersionNumber'
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-JarVersionNumber
+
+  JarServiceName:
+    Description: The service name associated with the JAR package for the Dockerfile.
+    Value: !Ref 'ServiceName'
+    Export:
+      Name: !Sub ${Environment}-${ApplicationName}-JarServiceName

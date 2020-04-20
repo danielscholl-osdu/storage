@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.aws.util.s3.RecordProcessor;
@@ -52,6 +53,9 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Inject
     private RecordsUtil recordsUtil;
+
+    @Inject
+    private UserAccessService userAccessService;
 
     private ExecutorService threadPool;
 
@@ -133,27 +137,47 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void delete(RecordMetadata record) {
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
         s3RecordClient.deleteRecord(record);
+        } else {
+            logger.error(String.format("User not in ACL for record %s", record.getId()));
+            throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user is not authorized to perform this action");
+        }
     }
 
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
         s3RecordClient.deleteRecordVersion(record, version);
+        } else {
+            logger.error(String.format("User not in ACL for record %s", record.getId()));
+            throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user is not authorized to perform this action");
+        }
     }
 
     @Override
     public boolean hasAccess(RecordMetadata... records) {
-        boolean hasAccess = true;
-        for (RecordMetadata record : records) {
-            hasAccess = s3RecordClient.checkIfRecordExists(record);
+        for (RecordMetadata recordMetadata : records) {
+            if (!userAccessService.userHasAccessToRecord(recordMetadata.getAcl())) {
+                return false;
         }
-        return hasAccess;
+        }
+
+        return true;
     }
 
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
         // checkDataInconsistency not used in other providers
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
         return s3RecordClient.getRecord(record, version);
+        } else {
+            logger.error(String.format("User not in ACL for record %s", record.getId()));
+            throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user is not authorized to perform this action");
+        }
     }
 
     @Override
@@ -165,6 +189,22 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap, Map.Entry<RecordMetadata, RecordData> kv) {
-        return s3RecordClient.isDuplicateRecord(kv.getKey(), kv.getValue());
+        RecordMetadata metadata = kv.getKey();
+        RecordData recordData = kv.getValue();
+
+        Gson gson = new Gson();
+        String dataContents = gson.toJson(recordData.getData());
+        String originalDataContents = s3RecordClient.getRecord(metadata, metadata.getLatestVersion());
+        RecordData originalRecordData = gson.fromJson(originalDataContents, RecordData.class);
+        originalDataContents = gson.toJson(originalRecordData.getData());
+        String newHash = Base64.getEncoder().encodeToString(dataContents.getBytes());
+        String originalHash = Base64.getEncoder().encodeToString(originalDataContents.getBytes());
+
+        if (newHash.equals(originalHash)) {
+            transfer.getSkippedRecords().add(metadata.getId());
+            return true;
+        } else {
+            return false;
+        }
     }
 }

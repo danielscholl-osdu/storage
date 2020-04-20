@@ -42,13 +42,12 @@ public class RecordsUtil {
     }
 
     public Map<String, String> getRecordsValuesById(Map<String, String> objects) {
-        AtomicReference<Map<String, String>> map = new AtomicReference<>();
-        map.set(new HashMap<>());
+        Map<String, String> map = new HashMap<>();
         List<CompletableFuture<GetRecordFromVersionTask>> futures = new ArrayList<>();
 
         try {
             for (Map.Entry<String, String> object : objects.entrySet()) {
-                GetRecordFromVersionTask task = new GetRecordFromVersionTask(s3RecordClient, map, object.getKey(), object.getValue());
+                GetRecordFromVersionTask task = new GetRecordFromVersionTask(s3RecordClient, object.getKey(), object.getValue());
                 CompletableFuture<GetRecordFromVersionTask> future = CompletableFuture.supplyAsync(task::call);
                 futures.add(future);
             }
@@ -64,10 +63,12 @@ public class RecordsUtil {
                 if (task.exception != null
                         || task.result == CallableResult.Fail) {
                     assert task.exception != null;
-                    logger.error(String.format("%s failed writing to S3 with exception: %s"
+                    logger.error(String.format("%s failed getting record from S3 with exception: %s"
                             , task.recordId
-                            , task.exception.getErrorMessage()
+                            , task.exception.getMessage()
                     ));
+                } else {
+                    map.put(task.recordId, task.recordContents);
                 }
             }
         } catch (Exception e) {
@@ -79,7 +80,7 @@ public class RecordsUtil {
             }
         }
 
-        return map.get();
+        return map;
     }
 
     public Map<String, String> getRecordsValuesById(Collection<RecordMetadata> recordMetadatas) {

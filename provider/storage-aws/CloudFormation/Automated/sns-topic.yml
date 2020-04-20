@@ -61,17 +61,6 @@ Resources:
     Properties:
       DisplayName: !Sub ${Environment}-${SNSTopicName}
       TopicName: !Sub ${Environment}-${SNSTopicName}
-      Subscription:
-        - Endpoint:
-            Fn::GetAtt:
-              - OSDUStorageSQSQueue
-              - Arn
-          Protocol: sqs
-
-  OSDUStorageSQSQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub ${Environment}-${SQSQueueName}
 
   OSDUStorageSNSSubscription:
     Type: AWS::SNS::Subscription
@@ -80,6 +69,11 @@ Resources:
       TopicArn: !Ref OSDUStorageSNSTopic
       RawMessageDelivery: true
       Endpoint: !GetAtt OSDUStorageSQSQueue.Arn
+
+  OSDUStorageSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${Environment}-${SQSQueueName}
 
   OSDUQueuePolicy:
     Type: AWS::SQS::QueuePolicy

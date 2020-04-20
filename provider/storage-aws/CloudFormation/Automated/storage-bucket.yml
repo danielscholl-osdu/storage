@@ -47,7 +47,7 @@ Resources:
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Sub ${Environment}-${DataStorageBucketName}
+      BucketName: !Sub ${Environment}-${AWS::AccountId}-${DataStorageBucketName}
 
   StorageS3BucketPolicy:
     Type: AWS::S3::BucketPolicy

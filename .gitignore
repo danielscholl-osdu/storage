@@ -30,9 +30,13 @@ build/
 
 ### VS Code ###
 .vscode/
+.gradle/
 
 ### macOS ###
 *.DS_Store
 
 ### Integration tests ###
 .gradle
+
+### Environment Configuration ###
+*.env
