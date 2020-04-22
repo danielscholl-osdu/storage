@@ -81,7 +81,7 @@ This section describes the deployment process for each cloud provider.
 ### Azure
 
 Instructions for running the Azure implementation in the cloud can be found [here](https://dev.azure.com/slb-des-ext-collaboration/open-data-ecosystem/_git/infrastructure-templates?path=%2Fdocs%2Fosdu%2FSERVICE_DEPLOYMENTS.md&_a=preview).
-
+(This link may not be reachable for everyone, it points to Azure infrastructure templates and ensuing documentation. We are trying to find a home for that, so please stay tuned, or reach our to Dania.Kodeih@microsoft.com to get early access)
 
 ##***REMOVED***
 This guide assumes that you already have an AWS account and have admin access to it in order to 
