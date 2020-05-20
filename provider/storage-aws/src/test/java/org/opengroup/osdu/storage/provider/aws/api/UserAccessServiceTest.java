@@ -23,13 +23,15 @@ import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.StorageApplication;
-import org.opengroup.osdu.storage.provider.aws.di.EntitlementsServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,9 +50,14 @@ public class UserAccessServiceTest {
 
     Acl acl;
 
+    RecordMetadata record;
+
     @Before
     public void setUp() {
         initMocks(this);
+
+        record = new RecordMetadata();
+        record.setUser("not a user");
 
         CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
         Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject())).thenReturn("test-cache-key");
@@ -61,7 +68,7 @@ public class UserAccessServiceTest {
         Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
         Whitebox.setInternalState(CUT, "cache", cache);
 
-        EntitlementsServiceImpl entitlementsService = Mockito.mock(EntitlementsServiceImpl.class);
+        IEntitlementsService entitlementsService = Mockito.mock(IEntitlementsService.class);
         Groups groups = new Groups();
         List<GroupInfo> groupInfos = new ArrayList<>();
         GroupInfo groupInfo = new GroupInfo();
@@ -79,6 +86,10 @@ public class UserAccessServiceTest {
         IEntitlementsFactory factory = Mockito.mock(IEntitlementsFactory.class);
         Mockito.when(factory.create(Mockito.anyObject())).thenReturn(entitlementsService);
         Whitebox.setInternalState(CUT, "entitlementsFactory", factory);
+
+        DpsHeaders dpsHeaders = Mockito.mock(DpsHeaders.class);
+        Mockito.when(dpsHeaders.getUserEmail()).thenReturn("notauser@nottheower.com");
+        Whitebox.setInternalState(CUT, "dpsHeaders", dpsHeaders);
     }
 
     @Test
@@ -90,8 +101,10 @@ public class UserAccessServiceTest {
         acl.setOwners(owners);
         acl.setViewers(viewers);
 
+        record.setAcl(acl);
+
         // Act
-        boolean actual = CUT.userHasAccessToRecord(acl);
+        boolean actual = CUT.userHasAccessToRecord(record, true);
 
         // Assert
         Assert.assertTrue(actual);
@@ -104,8 +117,10 @@ public class UserAccessServiceTest {
         acl.setOwners(new String[] {});
         acl.setViewers(new String [] {});
 
+        record.setAcl(acl);
+
         // Act
-        boolean actual = CUT.userHasAccessToRecord(acl);
+        boolean actual = CUT.userHasAccessToRecord(record, true);
 
         // Assert
         Assert.assertFalse(actual);

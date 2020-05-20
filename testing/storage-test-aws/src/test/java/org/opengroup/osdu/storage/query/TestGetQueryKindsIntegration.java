@@ -17,18 +17,41 @@ package org.opengroup.osdu.storage.query;
 import org.junit.After;
 import org.junit.Before;
 import org.opengroup.osdu.storage.util.AWSTestUtils;
+import org.opengroup.osdu.storage.util.SchemaUtil;
+import org.opengroup.osdu.storage.util.TenantUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestGetQueryKindsIntegration extends GetQueryKindsIntegrationTests {
+
+    private static List<String> schemaIds;
+
+    // Need at least 3 to test limit of 2
+    private static final int SCHEMA_COUNT = 3;
+
+    protected static final String KIND_TEMPLATE = TenantUtils.getTenantName() + ":test:testkind:1.%d." + System.currentTimeMillis();
 
     @Before
     @Override
     public void setup() throws Exception {
         this.testUtils = new AWSTestUtils();
+
+        schemaIds = new ArrayList<>();
+        for (int i = 0; i < SCHEMA_COUNT; i++) {
+            String kind = String.format(KIND_TEMPLATE,i);
+            SchemaUtil.create(kind, testUtils.getToken());
+            schemaIds.add(kind);
+        }
     }
 
     @After
     @Override
     public void tearDown() throws Exception {
+        for (String kind : schemaIds) {
+            SchemaUtil.delete(kind, testUtils.getToken());
+        }
+
         this.testUtils = null;
 	}
 }

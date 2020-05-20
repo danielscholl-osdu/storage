@@ -14,6 +14,9 @@
 
 package org.opengroup.osdu.storage.provider.aws.security;
 
+import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.entitlements.GroupsUtil;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
@@ -23,11 +26,15 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -56,20 +63,25 @@ public class UserAccessService {
      * get around this and redesigning dynamo schema to stop parsing the acl out of
      * recordmetadata
      *
-     * @param acl
+     * @param record
      * @return
      */
     // TODO: Optimize entitlements record ACL design to not compare list against list
-    public boolean userHasAccessToRecord(Acl acl) {
+    public boolean userHasAccessToRecord(RecordMetadata record, boolean isReadAccess) {
+
+
+        if (record.getUser().equalsIgnoreCase(dpsHeaders.getUserEmail()))
+            return true;
+
+        Acl acl = record.getAcl();
+
         Groups groups = getGroups();
         HashSet<String> allowedGroups = new HashSet<>();
 
-        for (String owner : acl.getOwners()) {
-            allowedGroups.add(owner);
-        }
+        Collections.addAll(allowedGroups, acl.getOwners());
 
-        for (String viewer : acl.getViewers()) {
-            allowedGroups.add(viewer);
+        if(isReadAccess) {
+            Collections.addAll(allowedGroups, acl.getViewers());
         }
 
         List<GroupInfo> memberGroups = groups.getGroups();
@@ -80,6 +92,21 @@ public class UserAccessService {
         }
 
         return allowedGroups.stream().anyMatch(memberGroupsSet::contains);
+    }
+
+    public void validateRecordAcl (DynamoDBQueryHelper queryHelper, RecordProcessing... records){
+        List<String> groupNames = getPartitionGroups(queryHelper).getGroupNames();
+        for (RecordProcessing record : records) {
+            for (String acl : Acl.flattenAcl(record.getRecordMetadata().getAcl())) {
+                String groupName = acl.split("@")[0].toLowerCase();
+                if (!groupNames.contains(groupName)) {
+                    throw new AppException(
+                            HttpStatus.SC_FORBIDDEN,
+                            "Invalid ACL",
+                            String.format("ACL has invalid Group %s", acl));
+                }
+            }
+        }
     }
 
     // TODO: duplicate logic resides in EntitlementsAndCacheServiceImpl
@@ -102,8 +129,30 @@ public class UserAccessService {
             groups = service.getGroups();
             this.cache.put(this.cacheHelper.getGroupCacheKey(this.dpsHeaders), groups);
         } catch (EntitlementsException e) {
-            e.printStackTrace();
             throw new AppException(e.getHttpResponse().getResponseCode(), ACCESS_DENIED_REASON, ACCESS_DENIED_MSG, e);
+        }
+
+        return groups;
+    }
+
+    private Groups getPartitionGroups(DynamoDBQueryHelper queryHelper) {
+        Groups groups = this.cache.get(this.cacheHelper.getPartitionGroupsCacheKey(this.dpsHeaders.getPartitionId()));
+
+        if (groups == null) {
+            groups = refreshPartitionGroups(queryHelper);
+        }
+
+        return groups;
+    }
+
+    private Groups refreshPartitionGroups (DynamoDBQueryHelper queryHelper) {
+        Groups groups = new Groups();
+
+        try{
+            groups.setGroups(GroupsUtil.getPartitionGroups(queryHelper, dpsHeaders.getPartitionId()));
+            this.cache.put(this.cacheHelper.getPartitionGroupsCacheKey(dpsHeaders.getPartitionId()), groups);
+        } catch (IOException e) {
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_REASON, ACCESS_DENIED_MSG, e);
         }
 
         return groups;

@@ -15,9 +15,13 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.google.gson.Gson;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.storage.RecordData;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.core.common.util.Crc32c;
@@ -27,6 +31,7 @@ import org.opengroup.osdu.storage.provider.aws.util.s3.RecordsUtil;
 import org.opengroup.osdu.storage.provider.aws.util.s3.S3RecordClient;
 import org.apache.http.HttpStatus;
 
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
@@ -36,11 +41,22 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Repository
 public class CloudStorageImpl implements ICloudStorage {
+
+    @Value("${aws.dynamodb.table.prefix}")
+    String tablePrefix;
+
+    @Value("${aws.region}")
+    String dynamoDbRegion;
+
+    @Value("${aws.dynamodb.endpoint}")
+    String dynamoDbEndpoint;
 
     @Value("${aws.s3.max-record-threads}")
     private int maxNumOfRecordThreads;
@@ -57,11 +73,17 @@ public class CloudStorageImpl implements ICloudStorage {
     @Inject
     private UserAccessService userAccessService;
 
+    @Inject
+    private IRecordsMetadataRepository recordsMetadataRepository;
+
     private ExecutorService threadPool;
+
+    private DynamoDBQueryHelper queryHelper;
 
     @PostConstruct
     public void init(){
        this.threadPool = Executors.newFixedThreadPool(maxNumOfRecordThreads);
+        queryHelper = new DynamoDBQueryHelper(dynamoDbEndpoint, dynamoDbRegion, tablePrefix);
     }
 
     // Used specifically in the unit tests
@@ -71,15 +93,17 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
+        userAccessService.validateRecordAcl(this.queryHelper, recordsProcessing);
+
         // TODO: throughout this class userId isn't used, seems to be something to integrate with entitlements service
         // TODO: ensure that the threads come from the shared pool manager from the web server
         // Using threads to write records to S3 to increase efficiency, no impact to cost
         List<CompletableFuture<RecordProcessor>> futures = new ArrayList<>();
 
         for(RecordProcessing recordProcessing : recordsProcessing){
-            if(recordProcessing.getRecordData().getMeta() == null) {
+            if (recordProcessing.getRecordData().getMeta() == null) {
                 HashMap<String, Object> meta = new HashMap<String, Object>();
-                HashMap<String,Object>[] arrayMeta = new HashMap[0];
+                HashMap<String, Object>[] arrayMeta = new HashMap[0];
                 recordProcessing.getRecordData().setMeta(arrayMeta);
             }
             RecordProcessor recordProcessor = new RecordProcessor(recordProcessing, s3RecordClient);
@@ -117,9 +141,17 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
+        Collection<RecordMetadata> accessibleRecords = new ArrayList<>();
+
+        for (RecordMetadata record : records) {
+            if (userAccessService.userHasAccessToRecord(record, true)) {
+                accessibleRecords.add(record);
+            }
+        }
+
         Gson gson = new Gson();
         Map<String, String> base64Hashes = new HashMap<String, String>();
-        Map<String, String> recordsMap = recordsUtil.getRecordsValuesById(records);
+        Map<String, String> recordsMap = recordsUtil.getRecordsValuesById(accessibleRecords);
         for (Map.Entry<String, String> recordObj : recordsMap.entrySet()) {
             String recordId = recordObj.getKey();
             String contents = recordObj.getValue();
@@ -137,8 +169,8 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void delete(RecordMetadata record) {
-        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
-        s3RecordClient.deleteRecord(record);
+        if(userAccessService.userHasAccessToRecord(record, false)) {
+            s3RecordClient.deleteRecord(record);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
             throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
@@ -148,8 +180,8 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
-        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
-        s3RecordClient.deleteRecordVersion(record, version);
+        if(userAccessService.userHasAccessToRecord(record, false)) {
+            s3RecordClient.deleteRecordVersion(record, version);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
             throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
@@ -160,9 +192,9 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public boolean hasAccess(RecordMetadata... records) {
         for (RecordMetadata recordMetadata : records) {
-            if (!userAccessService.userHasAccessToRecord(recordMetadata.getAcl())) {
+            if (!userAccessService.userHasAccessToRecord(recordMetadata, true)) {
                 return false;
-        }
+            }
         }
 
         return true;
@@ -171,8 +203,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
         // checkDataInconsistency not used in other providers
-        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
-        return s3RecordClient.getRecord(record, version);
+        if(userAccessService.userHasAccessToRecord(record, true)) {
+            return s3RecordClient.getRecord(record, version);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
             throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
@@ -184,7 +216,21 @@ public class CloudStorageImpl implements ICloudStorage {
     public Map<String, String> read(Map<String, String> objects) {
         // key -> record id
         // value -> record version path
-        return recordsUtil.getRecordsValuesById(objects);
+        Map<String, String> accessibleRecords = new HashMap<>();
+
+        Map<String, String> response = new HashMap<>();
+
+        for (Map.Entry<String, String> record : objects.entrySet()) {
+            RecordMetadata recordMetadata = recordsMetadataRepository.get(record.getKey());
+            if (userAccessService.userHasAccessToRecord(recordMetadata, true))
+                accessibleRecords.put(record.getKey(), record.getValue());
+            else
+                response.put(record.getKey(), null);
+        }
+
+        response.putAll(recordsUtil.getRecordsValuesById(accessibleRecords));
+
+        return response;
     }
 
     @Override

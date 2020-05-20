@@ -21,4 +21,8 @@ public class CacheHelper {
     public String getGroupCacheKey(DpsHeaders headers){
         return GroupCache.getGroupCacheKey(headers);
     }
+
+    public String getPartitionGroupsCacheKey (String dataPartitionId) {
+        return GroupCache.getPartitionGroupsCacheKey(dataPartitionId);
+    }
 }
