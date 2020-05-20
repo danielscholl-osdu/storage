@@ -14,27 +14,16 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
-import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
-import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
-import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.springframework.beans.factory.annotation.Value;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
@@ -62,12 +51,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     private DynamoDBQueryHelper queryHelper;
 
-    private final static String ACCESS_DENIED_REASON = "Access denied";
-    private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
-
-
     @PostConstruct
-    public void init(){
+    public void init() {
         queryHelper = new DynamoDBQueryHelper(dynamoDbEndpoint, dynamoDbRegion, tablePrefix);
     }
 
@@ -76,21 +61,21 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         if (recordsMetadata != null) {
             for (RecordMetadata recordMetadata : recordsMetadata) {
                 // user should be part of the acl of the record being saved
-                    RecordMetadataDoc doc = new RecordMetadataDoc();
+                RecordMetadataDoc doc = new RecordMetadataDoc();
 
-                    // Set the core fields (what is expected in every implementation)
-                    doc.setId(recordMetadata.getId());
-                    doc.setMetadata(recordMetadata);
+                // Set the core fields (what is expected in every implementation)
+                doc.setId(recordMetadata.getId());
+                doc.setMetadata(recordMetadata);
 
-                    // Add extra indexed fields for querying in DynamoDB
-                    doc.setKind(recordMetadata.getKind());
-                    doc.setLegaltags(recordMetadata.getLegal().getLegaltags());
-                    doc.setStatus(recordMetadata.getStatus().name());
-                    doc.setUser(recordMetadata.getUser());
+                // Add extra indexed fields for querying in DynamoDB
+                doc.setKind(recordMetadata.getKind());
+                doc.setLegaltags(recordMetadata.getLegal().getLegaltags());
+                doc.setStatus(recordMetadata.getStatus().name());
+                doc.setUser(recordMetadata.getUser());
 
-                    // Store the record to the database
-                    queryHelper.save(doc);
-                    saveLegalTagAssociation(recordMetadata.getId(), recordMetadata.getLegal().getLegaltags());
+                // Store the record to the database
+                queryHelper.save(doc);
+                saveLegalTagAssociation(recordMetadata.getId(), recordMetadata.getLegal().getLegaltags());
             }
         }
         return recordsMetadata;
@@ -99,20 +84,24 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public void delete(String id) {
         RecordMetadata rmd = get(id); // needed for authorization check
-        queryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
-        for(String legalTag : rmd.getLegal().getLegaltags()){
-            deleteLegalTagAssociation(id, legalTag);
+        if(userAccessService.userHasAccessToRecord(rmd, false)) {
+            queryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
+            for(String legalTag : rmd.getLegal().getLegaltags()){
+                deleteLegalTagAssociation(id, legalTag);
+            }
         }
     }
 
     @Override
     public RecordMetadata get(String id) {
+        RecordMetadata metadata = null;
         RecordMetadataDoc doc = queryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
-        if (doc == null) {
-            return null;
-        } else {
-                return doc.getMetadata();
+
+        if (doc != null) {
+            metadata = doc.getMetadata();
         }
+
+        return metadata;
     }
 
     @Override
@@ -120,11 +109,9 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         Map<String, RecordMetadata> output = new HashMap<>();
 
         for (String id: ids) {
-            RecordMetadataDoc doc = queryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
-            if (doc == null) continue;
-            RecordMetadata rmd = doc.getMetadata();
+            RecordMetadata rmd = get(id);
             if (rmd == null) continue;
-                output.put(id, rmd);
+            output.put(id, rmd);
         }
 
         return output;
@@ -148,7 +135,9 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
         List<RecordMetadata> associatedRecords = new ArrayList<>();
         for(String recordId : associatedRecordIds){
-            associatedRecords.add(get(recordId));
+            RecordMetadata rmd = get(recordId);
+            if (rmd != null)
+                associatedRecords.add(rmd);
         }
 
         return new AbstractMap.SimpleEntry<>(result.cursor, associatedRecords);

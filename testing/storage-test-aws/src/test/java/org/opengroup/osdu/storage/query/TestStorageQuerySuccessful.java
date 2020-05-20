@@ -19,18 +19,41 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.opengroup.osdu.storage.util.AWSTestUtils;
+import org.opengroup.osdu.storage.util.SchemaUtil;
+import org.opengroup.osdu.storage.util.TenantUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestStorageQuerySuccessful extends StorageQuerySuccessfulTest {
 
     private static final AWSTestUtils awsTestUtils = new AWSTestUtils();
 
+    private static List<String> schemaIds;
+
+    // Need at least 11 to require a cursor when querying for 10 items
+    private static final int SCHEMA_COUNT = 11;
+
+    protected static final String KIND_TEMPLATE = TenantUtils.getTenantName() + ":test:testkind:1.%d." + System.currentTimeMillis();
+
     @BeforeClass
 	public static void classSetup() throws Exception {
         StorageQuerySuccessfulTest.classSetup(awsTestUtils.getToken());
+
+        schemaIds = new ArrayList<>();
+        for (int i = 0; i < SCHEMA_COUNT; i++) {
+            String kind = String.format(KIND_TEMPLATE,i);
+            SchemaUtil.create(kind, awsTestUtils.getToken());
+            schemaIds.add(kind);
+        }
 	}
 
 	@AfterClass
 	public static void classTearDown() throws Exception {
+        for (String kind : schemaIds) {
+            SchemaUtil.delete(kind, awsTestUtils.getToken());
+        }
+
         StorageQuerySuccessfulTest.classTearDown(awsTestUtils.getToken());
     }
 	

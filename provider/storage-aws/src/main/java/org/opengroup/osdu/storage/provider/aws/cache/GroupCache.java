@@ -32,4 +32,9 @@ public class GroupCache extends RedisCache<String, Groups> {
                 headers.getAuthorization());
         return Crc32c.hashToBase64EncodedString(key);
     }
+
+    public static String getPartitionGroupsCacheKey(String dataPartitionId) {
+        String key = String.format("entitlement-groups:data-partition:%s", dataPartitionId);
+        return Crc32c.hashToBase64EncodedString(key);
+    }
 }
