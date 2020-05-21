@@ -22,6 +22,7 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "build/maven.yml"
   - project: "osdu/platform/ci-cd-pipelines"
+    ref: "trusted-azure"
     file: "cloud-providers/azure.yml"
   # - project: "osdu/platform/ci-cd-pipelines"
   #   file: "scanners/fossa.yml"
