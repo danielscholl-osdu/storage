@@ -11,8 +11,20 @@ variables:
   GCP_DEPLOY_ENV: p4d
   GCP_DOMAIN: cloud.slb-ds.com
   GCP_STORAGE_URL: https://osdu-storage-dot-opendes.appspot.com/api/storage/v2/
+  AZURE_SERVICE: storage
+  AZURE_BUILD_SUBDIR: provider/storage-azure
+  AZURE_TEST_SUBDIR: testing/storage-test-azure
+
 
 include:
-  - project: 'osdu/platform/ci-cd-pipelines'
-    ref: 'master'
-    file: 'temp-service.gitlab-ci.yml'
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "standard-setup.yml"
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "build/maven.yml"
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/azure.yml"
+  # - project: "osdu/platform/ci-cd-pipelines"
+  #   file: "scanners/fossa.yml"
+  # - project: "osdu/platform/ci-cd-pipelines"
+  #   file: "scanners/gitlab-ultimate.yml"
+
