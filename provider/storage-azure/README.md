@@ -151,8 +151,10 @@ Jet Brains - the authors of Intellij IDEA, have written an [excellent guide](htt
 
 ## Deploying service to Azure
 
-Service deployments into Azure are standardized to make the process the same for all services. The steps to deploy into
-Azure can be [found here](point to gitlab /infrastructure-templates?path=%2Fdocs%2Fosdu%2FSERVICE_DEPLOYMENTS.md&_a=preview)
+Service deployments into Azure are standardized to make the process the same for all services if using ADO and are closely related to the infrastructure deployed. The steps to deploy into Azure can be [found here](https://github.com/azure/osdu-infrastructure)
+
+The default ADO pipeline is /devops/azure-pipeline.yml
+
 
 ### Manual Deployment Steps
 
