@@ -42,7 +42,6 @@ stages:
     parameters:
       mavenGoal: 'package'
       mavenPublishJUnitResults: true
-      serviceCoreMavenOptions: '-P storage-core'
       mavenOptions: '-P storage-azure'
       copyFileContents: |
         pom.xml
@@ -56,7 +55,7 @@ stages:
   - template: devops/service-pipelines/deploy-stages.yml@osdu-infrastructure
     parameters:
       serviceName: ${{ variables.serviceName }}
-      testCoreMavenPomFile: 'testing/legal-test-core/pom.xml'
+      testCoreMavenPomFile: 'testing/storage-test-core/pom.xml'
       testCoreMavenOptions: '--settings $(System.DefaultWorkingDirectory)/drop/deploy/testing/maven/settings.xml'
       providers:
         -  name: Azure
