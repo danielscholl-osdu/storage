@@ -427,6 +427,7 @@ The following software have components provided under the terms of this license:
 - Commons Digester (from http://commons.apache.org/digester/)
 - Commons IO (from http://commons.apache.org/io/)
 - Commons IO (from http://commons.apache.org/io/)
+- Commons IO (from http://commons.apache.org/io/)
 - Converter: Jackson (from )
 - Elastic JNA Distribution (from https://github.com/java-native-access/jna)
 - Elasticsearch: 5.0.0-alpha5 (from https://github.com/elastic/elasticsearch)
@@ -450,6 +451,10 @@ The following software have components provided under the terms of this license:
 - Guava: Google Core Libraries for Java (from https://github.com/google/guava.git)
 - HPPC Collections (from http://labs.carrotsearch.com)
 - Hibernate Validator Engine (from )
+- IBM COS Java SDK for Amazon S3 (from https://github.com/ibm/ibm-cos-sdk-java)
+- IBM COS Java SDK for COS KMS (from https://github.com/ibm/ibm-cos-sdk-java)
+- IBM COS SDK For Java (from https://github.com/ibm/ibm-cos-sdk-java)
+- IBM COS SDK for Java - Core (from https://github.com/ibm/ibm-cos-sdk-java)
 - Identity and Access Management (IAM) API v1-rev247-1.23.0 (from )
 - J2ObjC Annotations (from https://github.com/google/j2objc/)
 - J2ObjC Annotations (from https://github.com/google/j2objc/)
@@ -485,6 +490,7 @@ The following software have components provided under the terms of this license:
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Java Servlet API (from http://servlet-spec.java.net)
 - Java UUID Generator (from http://wiki.fasterxml.com/JugHome)
+- Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
 - Joda-Time (from http://www.joda.org/joda-time/)
@@ -527,10 +533,10 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Mockito (from http://mockito.org)
-- Mockito (from http://mockito.org)
+- Mockito (from http://www.mockito.org)
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
-- Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
 - Netty Reactive Streams Implementation (from )
 - Netty/Buffer (from http://netty.io/)
 - Netty/Buffer (from http://netty.io/)
@@ -560,7 +566,9 @@ The following software have components provided under the terms of this license:
 - Objenesis (from http://objenesis.org)
 - Objenesis (from http://objenesis.org)
 - OkHttp (from )
+- OkHttp (from )
 - OkHttp Logging Interceptor (from )
+- OkHttp URLConnection (from )
 - OkHttp URLConnection (from )
 - Okio (from )
 - OpenCensus (from https://github.com/census-instrumentation/opencensus-java)
@@ -568,6 +576,7 @@ The following software have components provided under the terms of this license:
 - OpenCensus (from https://github.com/census-instrumentation/opencensus-java)
 - PowerMock (from http://www.powermock.org)
 - Protocol Buffer extensions to the Google HTTP Client Library for Java. (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - Reactive Streams Netty driver (from https://github.com/reactor/reactor-netty)
 - Retrofit (from )
 - SnakeYAML (from http://www.snakeyaml.org)
@@ -585,7 +594,6 @@ The following software have components provided under the terms of this license:
 - Spring Boot Starter (from http://projects.spring.io/spring-boot/)
 - Spring Boot Test (from http://projects.spring.io/spring-boot/)
 - Spring Boot Test Auto-Configure (from http://projects.spring.io/spring-boot/)
-- Spring Boot Test Starter (from http://projects.spring.io/spring-boot/)
 - Spring Boot Test Starter (from http://projects.spring.io/spring-boot/)
 - Spring Boot Test Starter (from http://projects.spring.io/spring-boot/)
 - Spring Boot Tomcat Starter (from http://projects.spring.io/spring-boot/)
@@ -634,6 +642,8 @@ The following software have components provided under the terms of this license:
 - ion-java (from https://github.com/amznlabs/ion-java/)
 - jackson-databind (from http://github.com/FasterXML/jackson)
 - jackson-databind (from http://github.com/FasterXML/jackson)
+- java-cloudant (from https://cloudant.com)
+- java-cloudant (from https://cloudant.com)
 - javatuples (from http://www.javatuples.org)
 - javax.inject (from http://code.google.com/p/atinject/)
 - javax.inject (from )
@@ -675,7 +685,7 @@ The following software have components provided under the terms of this license:
 - spring-security-oauth2-client (from http://spring.io/spring-security)
 - spring-security-oauth2-core (from http://spring.io/spring-security)
 - spring-security-oauth2-jose (from http://spring.io/spring-security)
-- spring-security-test (from http://spring.io/spring-security)
+- spring-security-oauth2-resource-server (from http://spring.io/spring-security)
 - spring-security-test (from http://spring.io/spring-security)
 - spring-security-web (from http://spring.io/spring-security)
 - springfox-core (from https://github.com/springfox/springfox)
@@ -718,7 +728,6 @@ The following software have components provided under the terms of this license:
 - API Common (from https://github.com/googleapis)
 - ASM Core (from )
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
-- Byte Buddy (without dependencies) (from )
 - GAX (Google Api eXtensions) (from https://github.com/googleapis)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis)
@@ -737,8 +746,8 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Mockito (from http://www.mockito.org)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
 - NanoHttpd-Core (from )
 - Netty/Codec/HTTP (from )
 - Netty/Codec/HTTP (from )
@@ -788,7 +797,6 @@ The following software have components provided under the terms of this license:
 
 - HK2 API module (from git://java.net/hk2~git/hk2-api)
 - HK2 Implementation Utilities (from )
-- JavaBeans Activation Framework API jar (from )
 - JavaBeans(TM) Activation Framework (from http://java.sun.com/javase/technologies/desktop/javabeans/jaf/index.jsp)
 - ServiceLocator Default Implementation (from git://java.net/hk2~git/hk2-locator)
 - aopalliance-repackaged (from )
@@ -804,7 +812,6 @@ CDDL-1.1
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- Java Architecture For XML Binding (from )
 - Java Servlet API (from http://servlet-spec.java.net)
 - JavaBeans Activation Framework (from )
 - JavaMail API (from )
@@ -833,12 +840,11 @@ The following software have components provided under the terms of this license:
 
 - HK2 API module (from git://java.net/hk2~git/hk2-api)
 - HK2 Implementation Utilities (from )
-- Java Architecture For XML Binding (from )
 - Java Servlet API (from http://servlet-spec.java.net)
 - JavaBeans Activation Framework (from )
-- JavaBeans Activation Framework API jar (from )
 - JavaMail API (from )
 - OSGi resource locator (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - ServiceLocator Default Implementation (from git://java.net/hk2~git/hk2-locator)
 - aopalliance-repackaged (from )
 - javax.annotation-api (from http://jcp.org/en/jsr/detail?id=250)
@@ -863,12 +869,11 @@ GPL-2.0-with-classpath-exception
 The following software have components provided under the terms of this license:
 
 - Checker Qual (from https://checkerframework.org)
-- Java Architecture For XML Binding (from )
 - Java Servlet API (from http://servlet-spec.java.net)
 - JavaBeans Activation Framework (from )
-- JavaBeans Activation Framework API jar (from )
 - JavaMail API (from )
 - OSGi resource locator (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - javax.annotation-api (from http://jcp.org/en/jsr/detail?id=250)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
@@ -904,6 +909,7 @@ The following software have components provided under the terms of this license:
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
+- Javassist (from http://www.javassist.org/)
 - Logback Classic Module (from )
 - Logback Core Module (from )
 - Microsoft Application Insights Java SDK Core (from https://github.com/Microsoft/ApplicationInsights-Java)
@@ -918,6 +924,7 @@ The following software have components provided under the terms of this license:
 
 - Java Native Access (from https://github.com/java-native-access/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
+- Javassist (from http://www.javassist.org/)
 - SnakeYAML (from http://www.snakeyaml.org)
 
 ========================================================================
@@ -928,6 +935,7 @@ The following software have components provided under the terms of this license:
 - Apache Log4j API (from )
 - Apache Log4j API (from )
 - Apache Log4j Core (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 ========================================================================
 MIT
@@ -973,8 +981,8 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure client library for Identity (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for KeyVault Secrets (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure common module for Storage (from https://github.com/Azure/azure-sdk-for-java)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
 - Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
@@ -1000,6 +1008,8 @@ The following software have components provided under the terms of this license:
 
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
+- Javassist (from http://www.javassist.org/)
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 ========================================================================
 MPL-2.0
@@ -1008,6 +1018,8 @@ The following software have components provided under the terms of this license:
 
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
+- Javassist (from http://www.javassist.org/)
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 ========================================================================
 Public-Domain
@@ -1055,6 +1067,7 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure client library for Blob Storage (from https://github.com/Azure/azure-sdk-for-java)
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
 
 ========================================================================
@@ -1062,6 +1075,8 @@ unknown
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- Byte Buddy (without dependencies) (from )
 - Objenesis (from http://objenesis.org)
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 
