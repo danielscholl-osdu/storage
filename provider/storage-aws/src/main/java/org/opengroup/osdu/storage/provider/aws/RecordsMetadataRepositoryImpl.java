@@ -37,7 +37,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Value("${aws.dynamodb.table.prefix}")
     String tablePrefix;
 
-    @Value("${aws.dynamodb.region}")
+    @Value("${aws.region}")
     String dynamoDbRegion;
 
     @Value("${aws.dynamodb.endpoint}")

@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
@@ -52,6 +53,9 @@ public class QueryRepositoryTest {
     @Mock
     private DynamoDBQueryHelper queryHelper;
 
+    @Mock
+    private DpsHeaders dpsHeaders;
+
     @Before
     public void setUp() {
         initMocks(this);
@@ -60,34 +64,42 @@ public class QueryRepositoryTest {
     @Test
     public void getAllKinds() throws UnsupportedEncodingException {
         // Arrange
-        String kind = "tenant:source:type:1.0.0";
+        String dataPartitionId = "test-data-partition-id";
+        String kind = dataPartitionId + ":source:type:1.0.0";
         String cursor = "abc123";
+        String user = "test-user@testing.com";
+
         List<String> resultsKinds = new ArrayList<>();
         resultsKinds.add(kind);
         DatastoreQueryResult expectedDatastoreQueryResult = new DatastoreQueryResult(cursor, resultsKinds);
         Schema expectedSchema = new Schema();
         expectedSchema.setKind(kind);
+
         SchemaItem item = new SchemaItem();
         item.setKind(kind);
         item.setPath("schemaPath");
         SchemaItem[] schemaItems = new SchemaItem[1];
         schemaItems[0] = item;
         expectedSchema.setSchema(schemaItems);
-        String user = "test-user";
+
         SchemaDoc expectedSd = new SchemaDoc();
         expectedSd.setKind(expectedSchema.getKind());
         expectedSd.setExtension(expectedSchema.getExt());
         expectedSd.setUser(user);
         expectedSd.setSchemaItems(Arrays.asList(expectedSchema.getSchema()));
+
         List<SchemaDoc> expectedSchemaDocList = new ArrayList<>();
         expectedSchemaDocList.add(expectedSd);
         QueryPageResult<SchemaDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedSchemaDocList);
 
-        Mockito.when(queryHelper.scanPage(Mockito.eq(SchemaDoc.class), Mockito.anyInt(), Mockito.anyString()))
+        Mockito.when(dpsHeaders.getPartitionId()).thenReturn(dataPartitionId);
+        Mockito.when(dpsHeaders.getUserEmail()).thenReturn(user);
+        Mockito.when(queryHelper.queryByGSI(Mockito.eq(SchemaDoc.class),
+                Mockito.anyObject(), Mockito.eq("User"), Mockito.eq(user), Mockito.anyInt(), Mockito.eq(cursor)))
                 .thenReturn(expectedQueryPageResult);
 
         // Act
-        DatastoreQueryResult datastoreQueryResult = repo.getAllKinds(50, null);
+        DatastoreQueryResult datastoreQueryResult = repo.getAllKinds(50, cursor);
 
         // Assert
         Assert.assertEquals(datastoreQueryResult, expectedDatastoreQueryResult);

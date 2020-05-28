@@ -66,7 +66,6 @@
             <artifactId>storage-core</artifactId>
             <version>${version.number}</version>
         </dependency>
-
         <!-- AWS managed packages -->
         <dependency>
             <groupId>com.amazonaws</groupId>

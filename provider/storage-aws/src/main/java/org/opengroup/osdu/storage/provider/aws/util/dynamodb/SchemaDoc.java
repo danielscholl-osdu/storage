@@ -34,15 +34,20 @@ public class SchemaDoc {
     @DynamoDBHashKey(attributeName = "Kind")
     private String kind;
 
-    @DynamoDBTypeConverted(converter = SchemaExtTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "ext")
-    private Map<String,Object> extension;
+    @DynamoDBIndexHashKey(globalSecondaryIndexName = "DataPartitionId-User-Index")
+    @DynamoDBAttribute(attributeName = "DataPartitionId")
+    private String dataPartitionId;
 
+    @DynamoDBIndexRangeKey(globalSecondaryIndexName = "DataPartitionId-User-Index")
     @DynamoDBAttribute(attributeName = "User")
     private String user;
 
     @DynamoDBTypeConverted(converter = SchemaItemTypeConverter.class)
     @DynamoDBAttribute(attributeName = "schema")
     private List<SchemaItem> schemaItems;
+
+    @DynamoDBTypeConverted(converter = SchemaExtTypeConverter.class)
+    @DynamoDBAttribute(attributeName = "ext")
+    private Map<String,Object> extension;
 }
 

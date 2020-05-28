@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SchemaCache extends RedisCache<String, Schema> {
 
-    public SchemaCache(@Value("${aws.elasticache.cluster.schema.endpoint}") final String REDIS_SCHEMA_HOST, @Value("${aws.elasticache.cluster.schema.port}") final String REDIS_SCHEMA_PORT) {
+    public SchemaCache(@Value("${aws.elasticache.cluster.endpoint}") final String REDIS_SCHEMA_HOST, @Value("${aws.elasticache.cluster.port}") final String REDIS_SCHEMA_PORT) {
         super(REDIS_SCHEMA_HOST, Integer.parseInt(REDIS_SCHEMA_PORT), 60 * 60, String.class,
                 Schema.class);
     }

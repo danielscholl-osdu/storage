@@ -21,6 +21,8 @@ import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.aws.ssm.ParameterStorePropertySource;
+import org.opengroup.osdu.core.aws.ssm.SSMConfig;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -45,10 +47,9 @@ public class S3RecordClient {
     private JaxRsDpsLog logger;
 
     // Storing all records in one bucket does not impact performance, no need to spread keys anymore
-    @Value("${aws.s3.records.bucket-name}")
     private String recordsBucketName;
 
-    @Value("${aws.s3.region}")
+    @Value("${aws.region}")
     private String s3Region;
 
     @Value("${aws.s3.endpoint}")
@@ -56,10 +57,18 @@ public class S3RecordClient {
 
     private AmazonS3 s3;
 
+    @Value("${aws.sns.s3.bucket-name}")
+    String ssmParameter;
+
+    private ParameterStorePropertySource ssm;
+
     @PostConstruct
     public void init() {
         S3Config config = new S3Config(s3Endpoint, s3Region);
         s3 = config.amazonS3();
+        SSMConfig ssmConfig = new SSMConfig();
+        ssm = ssmConfig.amazonSSM();
+        recordsBucketName = ssm.getProperty(ssmParameter).toString();
     }
 
     /**

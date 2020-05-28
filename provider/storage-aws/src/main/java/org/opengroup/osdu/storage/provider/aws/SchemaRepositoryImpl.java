@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,11 +35,14 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
     @Value("${aws.dynamodb.table.prefix}")
     String tablePrefix;
 
-    @Value("${aws.dynamodb.region}")
+    @Value("${aws.region}")
     String dynamoDbRegion;
 
     @Value("${aws.dynamodb.endpoint}")
     String dynamoDbEndpoint;
+
+    @Inject
+    private DpsHeaders headers;
 
     private DynamoDBQueryHelper queryHelper;
 
@@ -60,6 +65,7 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
         sd.setExtension(schema.getExt());
         sd.setUser(user);
         sd.setSchemaItems(Arrays.asList(schema.getSchema()));
+        sd.setDataPartitionId(headers.getPartitionId());
         queryHelper.save(sd);
     }
 
