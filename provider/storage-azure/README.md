@@ -89,7 +89,7 @@ Java version: 1.8.0_212, vendor: AdoptOpenJDK, runtime: /usr/lib/jvm/jdk8u212-b0
 ...
 ```
 
-You will need to configure access to the remote maven repository that holds the OSDU dependencies. This file should live within `~/.m2/settings.xml`:
+You may need to configure access to the remote maven repository that holds the OSDU dependencies. This file should live within `~/.m2/settings.xml`:
 ```bash
 $ cat ~/.m2/settings.xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -114,7 +114,7 @@ After configuring your environment as specified above, you can follow these step
 
 ```bash
 # build + test + install core service code
-$ (cd storage-core/ && mvn clean install)
+$ mvn clean install
 
 # build + test + package azure service code
 $ (cd provider/storage-azure/ && mvn clean package)
@@ -123,7 +123,10 @@ $ (cd provider/storage-azure/ && mvn clean package)
 #
 # Note: this assumes that the environment variables for running the service as outlined
 #       above are already exported in your environment.
-$ java -jar $(find provider/storage-azure/target/ -name *-spring-boot.jar)
+$ java -jar $(find provider/storage-azure/target/ -name '*-spring-boot.jar')
+
+# Alternately you can run using the Mavan Task
+$ mvn spring-boot:run
 ```
 
 ### Test the application
@@ -148,8 +151,98 @@ Jet Brains - the authors of Intellij IDEA, have written an [excellent guide](htt
 
 ## Deploying service to Azure
 
-Service deployments into Azure are standardized to make the process the same for all services. The steps to deploy into
-Azure can be [found here](point to gitlab /infrastructure-templates?path=%2Fdocs%2Fosdu%2FSERVICE_DEPLOYMENTS.md&_a=preview)
+Service deployments into Azure are standardized to make the process the same for all services if using ADO and are closely related to the infrastructure deployed. The steps to deploy into Azure can be [found here](https://github.com/azure/osdu-infrastructure)
+
+The default ADO pipeline is /devops/azure-pipeline.yml
+
+
+### Manual Deployment Steps
+
+__Environment Settings__
+
+The following environment variables are necessary to properly deploy a service to an Azure OSDU Environment.
+
+```bash
+# Group Level Variables
+export AZURE_TENANT_ID=""
+export AZURE_SUBSCRIPTION_ID=""
+export AZURE_SUBSCRIPTION_NAME=""
+export AZURE_PRINCIPAL_ID=""
+export AZURE_PRINCIPAL_SECRET=""
+export AZURE_APP_ID=""
+export AZURE_BASENAME_21=""
+export AZURE_BASENAME=""
+export AZURE_BASE=""
+export AZURE_STORAGE_ACCOUNT=""
+export AZURE_NO_ACCESS_ID=""
+
+# Pipeline Level Variable
+export AZURE_SERVICE="storage"
+export AZURE_BUILD_SUBDIR="provider/storage-azure"
+export AZURE_TEST_SUBDIR="testing/storage-test-azure"
+
+# Required for Azure Deployment
+export AZURE_CLIENT_ID="${AZURE_PRINCIPAL_ID}"
+export AZURE_CLIENT_SECRET="${AZURE_PRINCIPAL_SECRET}"
+export AZURE_RESOURCE_GROUP="${AZURE_BASENAME}-osdu-r2-app-rg"
+export AZURE_APPSERVICE_PLAN="${AZURE_BASENAME}-osdu-r2-sp"
+export AZURE_APPSERVICE_NAME="${AZURE_BASENAME_21}-au-${AZURE_SERVICE}"
+
+# Required for Testing
+export AZURE_AD_TENANT_ID="$AZURE_TENANT_ID"
+export INTEGRATION_TESTER: "$AZURE_PRINCIPAL_ID"
+export AZURE_TESTER_SERVICEPRINCIPAL_SECRET: "$AZURE_PRINCIPAL_SECRET"
+export AZURE_AD_APP_RESOURCE_ID: "$AZURE_APP_ID"
+export STORAGE_URL="https://{AZURE_BASENAME_21}-au-storage.azurewebsites.net/"
+export LEGAL_URL="https://{AZURE_BASENAME_21}-au-legal.azurewebsites.net/"
+export TENANT_NAME: "opendes"
+export AZURE_STORAGE_ACCOUNT: "$AZURE_STORAGE_ACCOUNT"
+export NO_DATA_ACCESS_TESTER: "$AZURE_NO_ACCESS_ID"
+export NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET: "$AZURE_NO_ACCESS_SECRET"
+export DOMAIN: "contoso.com"
+export PUBSUB_TOKEN: "az"
+export DEPLOY_ENV: "empty"
+```
+
+__Azure Service Deployment__
+
+
+1. Deploy the service using the Maven Plugin  _(azure_deploy)_
+
+```bash
+cd $AZURE_BUILD_SUBDIR
+mvn azure-webapp:deploy \
+  -DAZURE_TENANT_ID=$AZURE_TENANT_ID \
+  -Dazure.appservice.subscription=$AZURE_SUBSCRIPTION_ID \
+  -DAZURE_CLIENT_ID=$AZURE_CLIENT_ID \
+  -DAZURE_CLIENT_SECRET=$AZURE_CLIENT_SECRET \
+  -Dazure.appservice.resourcegroup=$AZURE_RESOURCE_GROUP \
+  -Dazure.appservice.plan=$AZURE_APPSERVICE_PLAN \
+  -Dazure.appservice.appname=$AZURE_APPSERVICE_NAME
+```
+
+2. Configure the Web App to start the SpringBoot Application _(azure_config)_
+
+```bash
+az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+
+# Set the JAR FILE as required
+TARGET=$(find ./target/ -name '*-spring-boot.jar')
+JAR_FILE=${TARGET##*/}
+
+JAVA_COMMAND="java -jar /home/site/wwwroot/${JAR_FILE}"
+JSON_TEMPLATE='{"appCommandLine":"%s"}'
+JSON_FILE="config.json"
+echo $(printf "$JSON_TEMPLATE" "$JAVA_COMMAND") > $JSON_FILE
+
+az webapp config set --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_APPSERVICE_NAME --generic-configurations @$JSON_FILE
+```
+
+3. Execute the Integration Tests against the Service Deployment _(azure_test)_
+
+```bash
+mvn clean test -f $AZURE_TEST_SUBDIR/pom.xml
+```
 
 
 ## License
@@ -157,7 +250,7 @@ Copyright © Microsoft Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-You may obtain a copy of the License at 
+You may obtain a copy of the License at
 
 [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
