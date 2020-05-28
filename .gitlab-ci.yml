@@ -21,12 +21,22 @@ variables:
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
+
   - project: "osdu/platform/ci-cd-pipelines"
     file: "build/maven.yml"
-  - project: "osdu/platform/ci-cd-pipelines"
-    ref: "master"
-    file: "cloud-providers/azure.yml"
+
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa.yml"
+
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/azure.yml"
+
+# disable the eslint scanner
+# I think this is being generated from the presence of an HTML file, but there
+# is no javascript to scan, so the job isn't helpful and just gets in the way
+eslint-sast:
+  rules:
+    - when: never
