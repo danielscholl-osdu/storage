@@ -78,6 +78,7 @@ public abstract class CreateSchemaIntegrationTests extends TestBase {
 		assertTrue(HttpStatus.SC_FORBIDDEN == response.getStatus() || HttpStatus.SC_UNAUTHORIZED == response.getStatus());
 
 		// Delete schema
+		Thread.sleep(80000);
 		response = TestUtils.send("schemas/" + this.schema, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
 

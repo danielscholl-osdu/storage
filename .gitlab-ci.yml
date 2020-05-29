@@ -5,13 +5,11 @@ variables:
 
   GCP_BUILD_SUBDIR: provider/storage-gcp
   GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
-  GCP_APPLICATION_NAME: osdu-storage
-  GCP_ENVIRONMENT: dev
-  GCP_PROJECT: opendes
-  GCP_TENANT_NAME: opendes
+  GCP_APPLICATION_NAME: os-storage
+  GCP_ENVIRONMENT: testing
+  GCP_PROJECT: opendes-evt
+  GCP_TENANT_NAME: opendesevt
   GCP_DEPLOY_ENV: p4d
-  GCP_DOMAIN: cloud.slb-ds.com
-  GCP_STORAGE_URL: https://osdu-storage-dot-opendes.appspot.com/api/storage/v2/
 
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
@@ -27,6 +25,9 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/gcp.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"

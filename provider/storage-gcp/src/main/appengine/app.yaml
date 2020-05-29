@@ -1,4 +1,4 @@
-service: osdu-storage
+service: os-storage
 runtime: java
 env: flex
 
