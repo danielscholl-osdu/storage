@@ -55,7 +55,11 @@ public abstract class StorageSchemaNegativeTest extends TestBase {
 		ClientResponse recordResponseCreateAgain = TestUtils.send(this.SCHEMAS, HttpMethod.POST,
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputRecord.toString(), "");
 		assertEquals(HttpStatus.SC_CONFLICT, recordResponseCreateAgain.getStatus());
+		System.out.println("2. Waiting..."+System.currentTimeMillis());
+		Thread.sleep(80000);
 		ClientResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		System.out.println(deleteResponse.getStatus());
+		System.out.println(deleteResponse.getStatusInfo());
 		assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getStatus());
 	}
 
