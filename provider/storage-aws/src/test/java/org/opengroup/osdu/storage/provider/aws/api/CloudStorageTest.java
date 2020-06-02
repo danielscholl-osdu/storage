@@ -84,10 +84,6 @@ public class CloudStorageTest {
         records.add(record);
     }
 
-    @Value("${aws.s3.records.bucket-name}")
-    private String recordsBucketName;
-
-
 
     @Test
     public void getHash() throws NoSuchFieldException {

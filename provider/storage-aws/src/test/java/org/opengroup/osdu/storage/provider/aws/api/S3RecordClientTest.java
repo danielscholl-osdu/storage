@@ -51,7 +51,6 @@ public class S3RecordClientTest {
     @Spy
     private S3RecordClient client;
 
-    @Value("${aws.s3.records.bucket-name}")
     private String recordsBucketName;
 
     @Mock

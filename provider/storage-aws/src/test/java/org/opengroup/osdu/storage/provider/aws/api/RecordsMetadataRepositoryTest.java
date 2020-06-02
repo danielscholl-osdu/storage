@@ -14,13 +14,10 @@
 
 package org.opengroup.osdu.storage.provider.aws.api;
 
-import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
@@ -31,13 +28,10 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
-import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
-import org.opengroup.osdu.storage.provider.aws.di.EntitlementsServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.RecordsMetadataRepositoryImpl;
 import org.springframework.boot.test.context.SpringBootTest;
 

@@ -15,15 +15,17 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
+import org.opengroup.osdu.core.aws.cognito.AWSCognitoClient;
 
 public class AWSTestUtils extends TestUtils {
 	private static String token;
 	private static String noDataAccesstoken;
+	private static AWSCognitoClient awsCognitoClient = null;
 
 	@Override
 	public synchronized String getToken() throws Exception {
 		if (Strings.isNullOrEmpty(token)) {
-			token = AWSCognitoClient.getTokenForUserWithAccess();
+			token = getAwsCognitoClient().getTokenForUserWithAccess();
 		}
 		return "Bearer " + token;
 	}
@@ -31,9 +33,14 @@ public class AWSTestUtils extends TestUtils {
 	@Override
 	public synchronized String getNoDataAccessToken() throws Exception {
 		if (Strings.isNullOrEmpty(noDataAccesstoken)) {
-			noDataAccesstoken = AWSCognitoClient.getTokenForUserWithNoAccess();
+			noDataAccesstoken = getAwsCognitoClient().getTokenForUserWithNoAccess();
 		}
 		return "Bearer " + noDataAccesstoken;
 	}
 
+	private AWSCognitoClient getAwsCognitoClient() {
+		if(awsCognitoClient == null)
+			awsCognitoClient = new AWSCognitoClient();
+		return	awsCognitoClient;
+	}
 }

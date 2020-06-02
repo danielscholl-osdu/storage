@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws.api;
 
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
@@ -47,6 +48,9 @@ public class SchemaRepositoryTest {
     @Mock
     private DynamoDBQueryHelper queryHelper;
 
+    @Mock
+    private DpsHeaders headers;
+
     @Before
     public void setUp() {
         initMocks(this);
@@ -64,14 +68,17 @@ public class SchemaRepositoryTest {
         schemaItems[0] = item;
         schema.setSchema(schemaItems);
         String user = "test-user";
+        String dataPartitionId = "test-data-partition-id";
         SchemaDoc expectedSd = new SchemaDoc();
         expectedSd.setKind(schema.getKind());
         expectedSd.setExtension(schema.getExt());
         expectedSd.setUser(user);
         expectedSd.setSchemaItems(Arrays.asList(schema.getSchema()));
+        expectedSd.setDataPartitionId(dataPartitionId);
 
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(SchemaDoc.class), Mockito.anyString()))
                 .thenReturn(null);
+        Mockito.when(headers.getPartitionId()).thenReturn(dataPartitionId);
         Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedSd));
 
         // Act

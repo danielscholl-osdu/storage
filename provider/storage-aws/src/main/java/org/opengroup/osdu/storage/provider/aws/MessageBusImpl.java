@@ -18,6 +18,8 @@ import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.google.gson.Gson;
 import com.amazonaws.services.sns.AmazonSNS;
+import org.opengroup.osdu.core.aws.ssm.ParameterStorePropertySource;
+import org.opengroup.osdu.core.aws.ssm.SSMConfig;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -36,21 +38,28 @@ import java.util.Map;
 @Component
 public class MessageBusImpl implements IMessageBus {
 
-    @Value("${aws.sns.arn}")
     private String amazonSNSTopic;
 
-    @Value("${aws.sns.region}")
+    @Value("${aws.region}")
     private String amazonSNSRegion;
+
+    @Value("${aws.sns.topic.arn}")
+    private String parameter;
 
     private AmazonSNS snsClient;
 
     @Inject
     private JaxRsDpsLog logger;
 
+    private ParameterStorePropertySource ssm;
+
     @PostConstruct
     public void init(){
         AmazonSNSConfig config = new AmazonSNSConfig(amazonSNSRegion);
         snsClient = config.AmazonSNS();
+        SSMConfig ssmConfig = new SSMConfig();
+        ssm = ssmConfig.amazonSSM();
+        amazonSNSTopic = ssm.getProperty(parameter).toString();
     }
 
     @Override
