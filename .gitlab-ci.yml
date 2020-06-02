@@ -1,6 +1,7 @@
 variables:
-  AWS_BUILD_SUBDIR: provider/storage-aws
-  AWS_APPLICATION_NAME: os-storage
+  AWS_BUILD_SUBDIR: provider/storage-aws/build-aws
+  AWS_TEST_SUBDIR: testing/storage-test-aws
+  AWS_SERVICE: storage
   AWS_ENVIRONMENT: dev
 
   GCP_BUILD_SUBDIR: provider/storage-gcp
