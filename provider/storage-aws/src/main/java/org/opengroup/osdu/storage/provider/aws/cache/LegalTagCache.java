@@ -32,7 +32,7 @@ public class LegalTagCache implements ICache<String, String> {
 
     private final MultiTenantCache<String> caches;
 
-    public LegalTagCache(@Value("${aws.elasticache.cluster.legaltag.endpoint}") final String REDIS_LEGALTAG_HOST, @Value("${aws.elasticache.cluster.legaltag.port}") final String REDIS_LEGALTAG_PORT) {
+    public LegalTagCache(@Value("${aws.elasticache.cluster.endpoint}") final String REDIS_LEGALTAG_HOST, @Value("${aws.elasticache.cluster.port}") final String REDIS_LEGALTAG_PORT) {
         this.caches = new MultiTenantCache<>(new RedisCache<>(REDIS_LEGALTAG_HOST,Integer.parseInt(REDIS_LEGALTAG_PORT),
                 60 * 60,
                 String.class,

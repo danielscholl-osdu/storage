@@ -11,16 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# https://docs.spring.io/spring-boot/docs/current/reference/html/deployment.html
 FROM amazoncorretto:8
-ARG versionNumber
-ARG service
-ENV serviceName=${service}-aws
-ENV awsJar=${serviceName}-${versionNumber}-spring-boot.jar
 
+ARG JAR_FILE=provider/storage-aws/target/*spring-boot.jar
 WORKDIR /
-COPY provider/${serviceName}/target/${awsJar} ${awsJar}
-
+COPY ${JAR_FILE} app.jar
 EXPOSE 8080
-
-CMD ["sh","-c", " java -jar ${awsJar}"]
-
+ENTRYPOINT java $JAVA_OPTS -jar /app.jar

@@ -59,14 +59,13 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.0.10</version>
+            <version>0.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
             <version>${version.number}</version>
         </dependency>
-
         <!-- AWS managed packages -->
         <dependency>
             <groupId>com.amazonaws</groupId>

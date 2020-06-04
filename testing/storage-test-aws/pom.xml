@@ -33,6 +33,12 @@
     <dependencies>
         <!-- Internal packages -->
         <dependency>
+            <groupId>org.opengroup.osdu.core.aws</groupId>
+            <artifactId>os-core-lib-aws</artifactId>
+            <version>0.2.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.opengroup.osdu.storage</groupId>
             <artifactId>storage-test-core</artifactId>
             <version>0.0.2-SNAPSHOT</version>
@@ -94,7 +100,7 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
             <scope>test</scope>
-        </dependency>        
+        </dependency>
     </dependencies>
 
     <repositories>
