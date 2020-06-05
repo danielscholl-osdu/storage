@@ -47,7 +47,7 @@ import com.cloudant.client.api.query.Sort;
 
 @Repository
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
-	
+
 	@Value("${ibm.db.url}")
 	private String dbUrl;
 	@Value("${ibm.db.apikey:#{null}}")
@@ -59,13 +59,13 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
 	@Value("${ibm.env.prefix:local-dev}")
 	private String dbNamePrefix;
-	
+
 	private IBMCloudantClientFactory cloudantFactory;
-	
+
 	private Database db;
-	
+
 	public final static String DB_NAME = "records";
-		
+
 	@PostConstruct
     public void init() throws MalformedURLException{
 		if (apiKey != null) {
@@ -81,26 +81,26 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 			     definition());
 		db.createIndex(JsonIndex.builder().name("legalTagsNames-json-index").asc("legalTagsNames").definition());
     }
-	
+
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
-    	
+
     	List<RecordMetadata> resultList = new ArrayList<RecordMetadata>();
-    	
+
     	if (recordsMetadata != null) {
-    		
+
     		// get ids
     		List<String> ids = new ArrayList<String>();
             for (RecordMetadata rm : recordsMetadata) {
             	ids.add(rm.getId());
             }
-            
+
             // lookup for ids to check if already exists
             QueryResult<RecordMetadataDoc> results = db.query(new QueryBuilder(
 	    			in("_id", ids.toArray())).
 				    fields("_id", "_rev").
 				    build(), RecordMetadataDoc.class);
-            
+
             // map id with revs
             Map<String, String> idRevs = new HashMap<String, String>();
             for (RecordMetadataDoc doc : results.getDocs()) {
@@ -108,7 +108,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             }
             Date date = new Date();
             long now = date.getTime();
-            
+
             List<RecordMetadataDoc> bulkList = new ArrayList<RecordMetadataDoc>();
             for (RecordMetadata rm : recordsMetadata) {
             	RecordMetadataDoc rmd = new RecordMetadataDoc(rm);
@@ -120,13 +120,13 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             	}
             	bulkList.add(rmd);
             }
-            
+
             List<Response> bulkResponse = db.bulk(bulkList);
             for (Response response : bulkResponse) {
             	RecordMetadataDoc rmdoc = new RecordMetadataDoc(response.getId(), response.getRev());
             	resultList.add(rmdoc);
 			}
-            
+
         }
         return recordsMetadata;
     }
@@ -149,7 +149,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public Map<String, RecordMetadata> get(List<String> ids) {
         Map<String, RecordMetadata> output = new HashMap<>();
-        
+
         if (ids != null && ids.size() > 0) {
 	        QueryResult<RecordMetadataDoc> results = db.query(new QueryBuilder(
 	    			in("_id", ids.toArray())).
@@ -165,31 +165,30 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor) {
-    	
+
     	String initialId = QueryRepositoryImpl.validateCursor(cursor, db);
-        
+
         int numRecords = QueryRepositoryImpl.PAGE_SIZE;
         if (Integer.valueOf(limit) != null) {
             numRecords = limit > 0 ? limit : QueryRepositoryImpl.PAGE_SIZE;
         }
-                    	
+
         List<RecordMetadata> outputRecords = new ArrayList<>();
-        
+
 		QueryResult<RecordMetadataDoc> results = db
 				.query(new QueryBuilder(and(regex("legalTagsNames", "!" + legalTagName + "!"), gte("_id", initialId)))
-						.sort(Sort.asc("_id")).fields("_id").limit(numRecords + 1).build(), RecordMetadataDoc.class);
+						.sort(Sort.asc("_id")).fields("_id", "legal", "gcsVersionPaths").limit(numRecords + 1).build(), RecordMetadataDoc.class);
 
-        String nextCursor = "";
+        String nextCursor = null;
 		for (RecordMetadataDoc doc:results.getDocs()) {
 			if (outputRecords.size() < numRecords) {
 				outputRecords.add(doc.getRecordMetadata());
 			} else {
 				nextCursor = doc.getRecordMetadata().getId();
 			}
-		}		
+		}
 
         return new AbstractMap.SimpleEntry<>(nextCursor, outputRecords);
     }
 
 }
-

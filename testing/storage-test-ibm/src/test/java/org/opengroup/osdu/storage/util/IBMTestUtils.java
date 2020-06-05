@@ -19,6 +19,8 @@
 
 package org.opengroup.osdu.storage.util;
 
+import org.opengroup.osdu.core.ibm.util.IdentityClient;
+
 import com.google.common.base.Strings;
 
 public class IBMTestUtils extends TestUtils {
@@ -40,5 +42,5 @@ public class IBMTestUtils extends TestUtils {
 		}
 		return "Bearer " + noDataAccesstoken;
 	}
-
+	
 }
