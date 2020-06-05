@@ -39,10 +39,11 @@ import com.cloudant.client.api.Database;
 import com.cloudant.client.api.query.QueryBuilder;
 import com.cloudant.client.api.query.QueryResult;
 import com.cloudant.client.api.query.Sort;
+import com.google.common.base.Strings;
 
 @Repository
 public class QueryRepositoryImpl implements IQueryRepository {
-        
+
 	@Value("${ibm.db.url}")
 	private String dbUrl;
 	@Value("${ibm.db.apikey:#{null}}")
@@ -54,12 +55,12 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
 	@Value("${ibm.env.prefix:local-dev}")
 	private String dbNamePrefix;
-	
+
 	private IBMCloudantClientFactory cloudantFactory;
-	
+
 	private Database dbSchema;
 	private Database dbRecords;
-	
+
 	@PostConstruct
     public void init() throws MalformedURLException{
 
@@ -68,29 +69,29 @@ public class QueryRepositoryImpl implements IQueryRepository {
 		} else {
 			cloudantFactory = new IBMCloudantClientFactory(new ServiceCredentials(dbUrl, dbUser, dbPassword));
 		}
-		
+
 		dbSchema = cloudantFactory.getDatabase(dbNamePrefix, SchemaRepositoryImpl.SCHEMA_DATABASE);
         dbRecords = cloudantFactory.getDatabase(dbNamePrefix, RecordsMetadataRepositoryImpl.DB_NAME);
     }
-	
+
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
         DatastoreQueryResult result = new DatastoreQueryResult();
-        
+
         String initialId = validateCursor(cursor, dbSchema);
-		
+
 		int numRecords = PAGE_SIZE;
         if (limit != null) {
             numRecords = limit > 0 ? limit : PAGE_SIZE;
         }
-                
+
 		QueryResult<SchemaDoc> results = dbSchema.query(new QueryBuilder(
 				   gte("_id", initialId)).
 				   sort(Sort.asc("_id")).
 				   fields("_id").
 				   limit(numRecords+1).
 				   build(), SchemaDoc.class);
-		
+
 		List<String> ids = new ArrayList<>();
 		result.setCursor("");
 		for (SchemaDoc doc:results.getDocs()) {
@@ -102,31 +103,31 @@ public class QueryRepositoryImpl implements IQueryRepository {
 			}
 		}
 		result.setResults(ids);
-        
+
         return result;
     }
 
 	@Override
     public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
-        
+
     	List<String> ids = new ArrayList<>();
         DatastoreQueryResult result = new DatastoreQueryResult();
-        
+
         String initialId = validateCursor(cursor, dbRecords);
-        
+
         int numRecords = PAGE_SIZE;
         if (limit != null) {
             numRecords = limit > 0 ? limit : PAGE_SIZE;
         }
-                
+
         QueryResult<RecordMetadataDoc> results = dbRecords.query(new QueryBuilder(
         			and(eq("kind", kind), gte("_id", initialId))).
 				    sort(Sort.asc("_id")).
 				    fields("_id").
 				    limit(numRecords+1).
 				    build(), RecordMetadataDoc.class);
-        
-        
+
+
         result.setCursor("");
 		for (RecordMetadataDoc doc:results.getDocs()) {
 			if (ids.size() < numRecords) {
@@ -135,15 +136,15 @@ public class QueryRepositoryImpl implements IQueryRepository {
 				// last record is the cursor
 				result.setCursor(doc.getId());
 			}
-			
+
 		}
         result.setResults(ids);
-        
+
         return result;
     }
-	
+
 	public static String validateCursor(String cursor, Database db) {
-    	if (cursor != null && !cursor.isEmpty()) {
+    	if (!Strings.isNullOrEmpty(cursor)) {
     		if (db.contains(cursor)) {
     			return cursor;
     		} else {
@@ -156,4 +157,3 @@ public class QueryRepositoryImpl implements IQueryRepository {
 	}
 
 }
-

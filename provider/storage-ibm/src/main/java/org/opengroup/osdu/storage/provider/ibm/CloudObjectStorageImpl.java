@@ -18,42 +18,51 @@ package org.opengroup.osdu.storage.provider.ibm;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.core.ibm.objectstorage.CloudObjectStorageFactory;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.ibm.cloud.objectstorage.services.s3.AmazonS3;
-import com.ibm.cloud.objectstorage.services.s3.model.ObjectMetadata;
-import com.ibm.cloud.objectstorage.services.s3.model.PutObjectRequest;
+
+import io.minio.MinioClient;
+import io.minio.PutObjectOptions;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidBucketNameException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.RegionConflictException;
+import io.minio.errors.XmlParserException;
 
 @Repository
 public class CloudObjectStorageImpl implements ICloudStorage {
@@ -65,19 +74,29 @@ public class CloudObjectStorageImpl implements ICloudStorage {
     private EntitlementsAndCacheServiceIBM entitlementsService;
 
 	@Inject
-    private DpsHeaders headers;
+    private IRecordsMetadataRepository recordsMetadataRepository;
 
 	@Inject
-	private ITenantFactory tenant;
+    private DpsHeaders headers;
+
+	// @Inject
+	// private ITenantFactory tenant;
+	// TODO use tenant name at the bucket name
 
 	private static final Logger logger = LoggerFactory.getLogger(CloudObjectStorageImpl.class);
 
-	AmazonS3 cos;
 	String bucketName;
+	MinioClient minioClient;
 
 	@PostConstruct
-    public void init(){
-		cos = cosFactory.getClient("records");
+	public void init() {
+		try {
+			minioClient = cosFactory.getClient("records");
+		} catch (InvalidKeyException | ErrorResponseException | IllegalArgumentException | InsufficientDataException
+				| InternalException | InvalidBucketNameException | InvalidResponseException | NoSuchAlgorithmException
+				| XmlParserException | RegionConflictException | IOException e) {
+			e.printStackTrace();
+		}
 		bucketName = cosFactory.getBucketName();
 	}
 
@@ -98,18 +117,20 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 			InputStream newStream = new ByteArrayInputStream(bytes);
 
-			ObjectMetadata metadata = new ObjectMetadata();
-			metadata.setContentLength(bytesSize);
+			try {
+				minioClient.putObject(bucketName, itemName, newStream, new PutObjectOptions(bytesSize, -1));
+			} catch (InvalidKeyException | ErrorResponseException | IllegalArgumentException
+					| InsufficientDataException | InternalException | InvalidBucketNameException
+					| InvalidResponseException | NoSuchAlgorithmException | XmlParserException | IOException e) {
+				e.printStackTrace();
+			}
 
-			PutObjectRequest req = new PutObjectRequest(bucketName, itemName, newStream, metadata);
-			cos.putObject(req);
-
-			logger.info("Item created!\n" + itemName);
+			logger.info("Item created in minio bucket!\n" + itemName);
 
 		}
 
 	}
-	
+
 	@Override
     public Map<String, String> getHash(Collection<RecordMetadata> records)
     {
@@ -123,7 +144,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
         }
         return hashes;
     }
-	
+
 	private String getHash(RecordData data) {
 		Gson gson = new Gson();
         Crc32c checksumGenerator = new Crc32c();
@@ -141,8 +162,8 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 		validateOwnerAccessToRecord(record);
 		String itemName = getItemName(record);
 		logger.info("Delete item: " + itemName);
-	    cos.deleteObject(bucketName, itemName);
-	    logger.info("Item deleted: " + itemName);
+		deleteObject(bucketName, itemName);
+		logger.info("Item deleted: " + itemName);
 	}
 
 	@Override
@@ -150,8 +171,8 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 		validateOwnerAccessToRecord(record);
 		String itemName = getItemName(record, version);
 		logger.info("Delete item: " + itemName);
-	    cos.deleteObject(bucketName, itemName);
-	    logger.info("Item deleted: " + itemName);
+		deleteObject(bucketName, itemName);
+		logger.info("Item deleted: " + itemName);
 	}
 
 	@Override
@@ -172,21 +193,13 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Override
 	public boolean hasAccess(RecordMetadata... records) {
-        if (ArrayUtils.isEmpty(records)) {
-            return true;
+		for (RecordMetadata recordMetadata : records) {
+            if (!hasViewerAccessToRecord(recordMetadata)) {
+                return false;
+            }
         }
 
-        boolean hasAtLeastOneActiveRecord = false;
-		for (RecordMetadata record : records) {
-            if (!record.getStatus().equals(RecordState.active)) {
-                continue;
-		}
-            hasAtLeastOneActiveRecord = true;
-            if (hasViewerAccessToRecord(record))
-		return true;
-	}
-
-        return !hasAtLeastOneActiveRecord;
+        return true;
     }
 
     private boolean hasViewerAccessToRecord(RecordMetadata record)
@@ -221,6 +234,14 @@ public class CloudObjectStorageImpl implements ICloudStorage {
      * Ensures that the ACLs of the record are a subset of the ACLs
      * @param records the records to validate
      */
+    // TODO alanbraz: need to reimplement this after Entitlements refactor
+    /*
+     * Wyatt Nielsen Yesterday at 1:58 PM
+     * @Alan Braz [IBM] we raised this as a concern a while back (before we were tracking issues in GitLab).
+     * The security model in core is that a user can create a record with an ACL that they don't have access to;
+     * and the creator always has access regardless of ACL. We recently fixed this test in GitLab by
+     * adding a check to see if the user created the record.
+     */
     private void validateRecordAcls(RecordProcessing... records) {
         /*Set<String> validGroups = tenantRepo.findById(headers.getPartitionId())
                 .orElseThrow(() -> new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown Tenant", "Tenant was not found"))
@@ -229,8 +250,8 @@ public class CloudObjectStorageImpl implements ICloudStorage {
                 .map(group -> group.toLowerCase())
                 .collect(Collectors.toSet());
 		*/
-        for (RecordProcessing record : records) {
-        	validateOwnerAccessToRecord(record.getRecordMetadata());
+        //for (RecordProcessing record : records) {
+        	//validateOwnerAccessToRecord(record.getRecordMetadata());
             /*for (String acl : record.getRecordMetadata().getAcl().getOwners()) {
                 String groupName = acl.split("@")[0].toLowerCase();
                 if (!validGroups.contains(groupName)) {
@@ -240,36 +261,37 @@ public class CloudObjectStorageImpl implements ICloudStorage {
                             "Record ACL is not one of " + String.join(",", validGroups));
                 }
             }*/
-        }
+        //}
     }
 
 	@Override
 	public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
 		// TODO checkDataInconsistency implement
-
 		validateViewerAccessToRecord(record);
 
         String itemName = this.getItemName(record, version);
         logger.info("Reading item: " + itemName);
 
-        return cos.getObjectAsString(bucketName, itemName);
+		return getObjectAsString(itemName);
 
 	}
 
 	@Override
 	public Map<String, String> read(Map<String, String> objects) {
-
-		logger.info("Reading objects...");
-
+		// key -> record id
+        // value -> record version path
 		Map<String, String> map = new HashMap<>();
 
-		for (Entry<String, String> object : objects.entrySet()) {
-			String itemName = object.getValue();
-			logger.info("Reading item: " + itemName);
-			map.put(object.getKey(), cos.getObjectAsString(bucketName, itemName));
-		}
+        for (Map.Entry<String, String> record : objects.entrySet()) {
+            RecordMetadata recordMetadata = recordsMetadataRepository.get(record.getKey());
+            if (hasViewerAccessToRecord(recordMetadata))
+            	map.put(record.getKey(), getObjectAsString(record.getValue()));
+            else
+            	map.put(record.getKey(), null);
+        }
 
-		return map;
+        return map;
+
 	}
 
 	private String getItemName(RecordMetadata record) {
@@ -284,5 +306,39 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	public String getBucketName(TenantInfo tenant) {
 		return String.format("%s-%s-records", bucketName, tenant.getProjectId()).toLowerCase();
 	}
+
+
+	private void deleteObject(String bucketName, String itemName) {
+		try {
+			minioClient.removeObject(bucketName, itemName);
+			logger.info("Item deleted: " + itemName);
+		} catch (Exception  e) {
+		    logger.error("Failed to delete item " +itemName);
+		}
+	}
+
+	private String getObjectAsString(String objectName) {
+		try {
+			return getContentAsString(minioClient.getObject(bucketName, objectName));
+		} catch (InvalidKeyException | ErrorResponseException | IllegalArgumentException | InsufficientDataException
+				| InternalException | InvalidBucketNameException | InvalidResponseException | NoSuchAlgorithmException
+				| XmlParserException | IOException e) {
+			logger.error("Failed to read item " + objectName + " from " + bucketName + " bucket." );
+			return "";
+		}
+	}
+
+	 private String getContentAsString(InputStream input) throws IOException {
+	        // Read the text input stream one line at a time and display each line.
+	        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+	        StringBuffer content = new StringBuffer();
+	        String line = null;
+	        while ((line = reader.readLine()) != null) {
+	            content.append(line);
+	        }
+	        input.close();
+	        return content.toString();
+	    }
+
 
 }

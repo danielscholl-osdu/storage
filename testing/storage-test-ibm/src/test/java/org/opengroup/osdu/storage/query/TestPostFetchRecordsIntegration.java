@@ -48,6 +48,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
         this.testUtils = null;
 	}    
     
+    // TODO: remove all the ignored tests when Conversion service is deployed to IBM
+    
     @Ignore
     @Test
     public void should_returnConvertedRecords_whenConversionRequiredAndNoError() { }
@@ -59,5 +61,9 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     @Ignore
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() { }
-
+    
+    @Ignore
+    @Test
+    public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndConversionErrorExists() { }
+    
 }

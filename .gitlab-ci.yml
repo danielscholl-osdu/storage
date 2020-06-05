@@ -16,6 +16,8 @@ variables:
   AZURE_BUILD_SUBDIR: provider/storage-azure
   AZURE_TEST_SUBDIR: testing/storage-test-azure
 
+  IBM_BUILD_SUBDIR: provider/storage-ibm
+  IBM_INT_TEST_SUBDIR: testing/storage-test-ibm
 
 include:
   - project: "osdu/platform/ci-cd-pipelines"
@@ -31,7 +33,10 @@ include:
     file: "cloud-providers/gcp.yml"
 
   - project: 'osdu/platform/ci-cd-pipelines'
-    file: 'cloud-providers/aws.yml' 
+    file: 'cloud-providers/aws.yml'
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/ibm.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"

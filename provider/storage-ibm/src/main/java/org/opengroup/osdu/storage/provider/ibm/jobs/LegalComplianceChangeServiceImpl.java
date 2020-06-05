@@ -50,6 +50,9 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
                                                                   DpsHeaders headers) {
+    	
+    	// TODO implement the validation of the PUBSUB_TOKEN from the query param 'token'
+    	
         Map<String, LegalCompliance> output = new HashMap<>();
 
         // TODO: optimize to not have while loop inside a for each
