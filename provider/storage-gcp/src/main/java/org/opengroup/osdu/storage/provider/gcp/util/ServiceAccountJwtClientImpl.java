@@ -37,7 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -138,16 +139,15 @@ public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 		if (this.iam == null) {
 			HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
-			GoogleCredential credential = GoogleCredential.getApplicationDefault();
+			GoogleCredentials credential = GoogleCredentials.getApplicationDefault();
 			if (credential.createScopedRequired()) {
 				List<String> scopes = new ArrayList<>();
 				scopes.add(IamScopes.CLOUD_PLATFORM);
 				credential = credential.createScoped(scopes);
 			}
 
-			this.iam = new Iam.Builder(httpTransport, JSON_FACTORY, credential)
-					.setApplicationName(STORAGE_HOSTNAME)
-					.build();
+			this.iam = new Iam.Builder(httpTransport, JSON_FACTORY, new HttpCredentialsAdapter(credential))
+					.setApplicationName(STORAGE_HOSTNAME).build();
 		}
 
 		return this.iam;

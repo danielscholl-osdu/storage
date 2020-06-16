@@ -26,7 +26,6 @@ public class OperationTypeTest {
         // for coverage purposes
         assertEquals("create", OperationType.create.toString());
         assertEquals("delete", OperationType.delete.toString());
-        assertEquals("purge", OperationType.purge.toString());
         assertEquals("update", OperationType.update.toString());
     }
 }

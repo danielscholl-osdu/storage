@@ -32,7 +32,7 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG, token);
-		String jsonInput = RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG);
+		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG);
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getStatus());

@@ -19,6 +19,8 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 
+
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 // <K> is a serializable (e.g a Cursor, com.google.cloud.datastore.Cursor in case of gcp implementation)
@@ -31,5 +33,8 @@ public interface IRecordsMetadataRepository<K extends Serializable> {
 
 	Map<String, RecordMetadata> get(List<String> ids);
 
+	//TODO remove after all providers replace it with the new method queryByLegal
 	AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, K cursor);
+
+	AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit);
 }

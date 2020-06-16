@@ -93,8 +93,6 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
-        userAccessService.validateRecordAcl(this.queryHelper, recordsProcessing);
-
         // TODO: throughout this class userId isn't used, seems to be something to integrate with entitlements service
         // TODO: ensure that the threads come from the shared pool manager from the web server
         // Using threads to write records to S3 to increase efficiency, no impact to cost
@@ -141,17 +139,9 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
-        Collection<RecordMetadata> accessibleRecords = new ArrayList<>();
-
-        for (RecordMetadata record : records) {
-            if (userAccessService.userHasAccessToRecord(record, true)) {
-                accessibleRecords.add(record);
-            }
-        }
-
         Gson gson = new Gson();
         Map<String, String> base64Hashes = new HashMap<String, String>();
-        Map<String, String> recordsMap = recordsUtil.getRecordsValuesById(accessibleRecords);
+        Map<String, String> recordsMap = recordsUtil.getRecordsValuesById(records);
         for (Map.Entry<String, String> recordObj : recordsMap.entrySet()) {
             String recordId = recordObj.getKey();
             String contents = recordObj.getValue();
@@ -169,7 +159,12 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void delete(RecordMetadata record) {
-        if(userAccessService.userHasAccessToRecord(record, false)) {
+        if (!record.hasVersion()) {
+            this.logger.warning(String.format("Record %s does not have versions available", record.getId()));
+            return;
+        }
+
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
             s3RecordClient.deleteRecord(record);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
@@ -180,7 +175,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
-        if(userAccessService.userHasAccessToRecord(record, false)) {
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
             s3RecordClient.deleteRecordVersion(record, version);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
@@ -192,7 +187,12 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public boolean hasAccess(RecordMetadata... records) {
         for (RecordMetadata recordMetadata : records) {
-            if (!userAccessService.userHasAccessToRecord(recordMetadata, true)) {
+            if (!recordMetadata.hasVersion()) {
+                this.logger.warning(String.format("Record %s does not have versions available", recordMetadata.getId()));
+                continue;
+            }
+
+            if (!userAccessService.userHasAccessToRecord(recordMetadata.getAcl())) {
                 return false;
             }
         }
@@ -203,7 +203,7 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
         // checkDataInconsistency not used in other providers
-        if(userAccessService.userHasAccessToRecord(record, true)) {
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
             return s3RecordClient.getRecord(record, version);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
@@ -216,21 +216,7 @@ public class CloudStorageImpl implements ICloudStorage {
     public Map<String, String> read(Map<String, String> objects) {
         // key -> record id
         // value -> record version path
-        Map<String, String> accessibleRecords = new HashMap<>();
-
-        Map<String, String> response = new HashMap<>();
-
-        for (Map.Entry<String, String> record : objects.entrySet()) {
-            RecordMetadata recordMetadata = recordsMetadataRepository.get(record.getKey());
-            if (userAccessService.userHasAccessToRecord(recordMetadata, true))
-                accessibleRecords.put(record.getKey(), record.getValue());
-            else
-                response.put(record.getKey(), null);
-        }
-
-        response.putAll(recordsUtil.getRecordsValuesById(accessibleRecords));
-
-        return response;
+        return recordsUtil.getRecordsValuesById(objects);
     }
 
     @Override

@@ -52,15 +52,6 @@ public class GlobalExceptionMapperTest {
 	}
 
 	@Test
-	public void should_useGenericValuesInResponse_when_exceptionIsHandledByGlobalExceptionMapper() {
-
-		Exception exception = new Exception("any message");
-
-		ResponseEntity response = this.sut.handleGeneralException(exception);
-		assertEquals(500, response.getStatusCodeValue());
-	}
-
-	@Test
 	public void should_returnBadRequest_when_NotSupportedExceptionIsCaptured() {
 		ValidationException diException = new ValidationException("my bad");
 
@@ -74,7 +65,7 @@ public class GlobalExceptionMapperTest {
 		AppException appException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Server error.",
 				"An unknown error has occurred.", originalException);
 
-		this.sut.handleGeneralException(originalException);
+		this.sut.handleAppException(appException);
 
 		verify(this.logger).error("any message", appException);
 	}

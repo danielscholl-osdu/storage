@@ -18,15 +18,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
+import com.google.gson.JsonNull;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.base.Strings;
 import com.google.gson.JsonElement;
@@ -42,6 +47,8 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
 
 public abstract class BatchServiceImpl implements BatchService {
 
@@ -62,10 +69,16 @@ public abstract class BatchServiceImpl implements BatchService {
     private DpsHeaders headers;
 
     @Autowired
+    private JaxRsDpsLog logger;
+
+    @Autowired
     private DpsConversionService conversionService;
 
     @Autowired
     private CrsConverterClientFactory crsConverterClientFactory;
+
+    @Autowired
+    private IEntitlementsAndCacheService entitlementsAndCacheService;
 
     @Override
     public MultiRecordInfo getMultipleRecords(MultiRecordIds ids) {
@@ -97,8 +110,10 @@ public abstract class BatchServiceImpl implements BatchService {
             return response;
         }
 
-        Map<String, String> recordsMap = this.cloudStorage.read(validRecords);
+        Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords);
 
+        this.logUnauthorizedGCSRecords(validRecords, recordsPreAclMap);
+        Map<String, String> recordsMap = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata);
         this.auditLogger.readMultipleRecordsSuccess(validRecordObjects);
 
         validRecordObjects.clear();
@@ -179,7 +194,10 @@ public abstract class BatchServiceImpl implements BatchService {
             return response;
         }
 
-        Map<String, String> recordsFromCloudStorage = this.cloudStorage.read(validRecords);
+        Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords);
+        this.logUnauthorizedGCSRecords(validRecords, recordsPreAclMap);
+        Map<String, String> recordsFromCloudStorage = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata);
+
         this.auditLogger.readMultipleRecordsSuccess(validRecordObjects);
 
         List<JsonObject> jsonObjectRecords = new ArrayList<>();
@@ -199,14 +217,19 @@ public abstract class BatchServiceImpl implements BatchService {
 
         if (isConversionNeeded && !validRecords.isEmpty()) {
             RecordsAndStatuses recordsAndStatuses = this.conversionService.doConversion(jsonObjectRecords);
+            this.checkMismatchAndAddToNotFound(recordIds, recordsNotFound, recordsAndStatuses.getRecords());
             response.setConversionStatuses(recordsAndStatuses.getConversionStatuses());
             response.setRecords(this.convertFromJsonObjectListToStringList(recordsAndStatuses.getRecords()));
             response.setNotFound(recordsNotFound);
             return response;
         }
+
+        this.checkMismatchAndAddToNotFound(recordIds, recordsNotFound, jsonObjectRecords);
         response.setConversionStatuses(conversionStatuses);
         response.setRecords(this.convertFromJsonObjectListToStringList(jsonObjectRecords));
         response.setNotFound(recordsNotFound);
+        this.auditLog(validRecordObjects, this.auditLogger::readMultipleRecordsWithOptionalConversionSuccess,
+                recordsNotFound, this.auditLogger::readMultipleRecordsWithOptionalConversionFail);
         return response;
     }
 
@@ -216,5 +239,65 @@ public abstract class BatchServiceImpl implements BatchService {
             records.add(recordJsonObject.toString());
         }
         return records;
+    }
+
+    private Map<String, String> postCheckRecordsAcl(Map<String, String>recordsPreAclMap, Map<String, RecordMetadata> recordsMetadata) {
+        Map<String, String> recordsMap = new HashMap<>();
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        for (Map.Entry<String, String> record : recordsPreAclMap.entrySet()) {
+            RecordMetadata recordMetadata = recordsMetadata.get(record.getKey());
+            recordMetadataList.add(recordMetadata);
+        }
+
+        List<RecordMetadata> passAclCheckRecordsMetadata = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.headers);
+        for (RecordMetadata metadata : passAclCheckRecordsMetadata) {
+            String recordId = metadata.getId();
+            String recordData = recordsPreAclMap.get(recordId);
+
+            recordsMap.put(recordId, recordData);
+        }
+        return recordsMap;
+    }
+
+    private void logUnauthorizedGCSRecords(Map<String, String> validRecords, Map<String, String> recordsPreAclMap) {
+        for (Map.Entry<String, String> record : validRecords.entrySet()) {
+            String recordId = record.getKey();
+
+            if (recordsPreAclMap.get(recordId) == null) {
+                this.logger.warning("User not in storage object ACL: " + recordId);
+            }
+        }
+    }
+    private void checkMismatchAndAddToNotFound(List<String> requestIds, List<String> notFoundIds, List<JsonObject> fetchedRecords) {
+        if ((notFoundIds.size() + fetchedRecords.size()) == requestIds.size()) {
+            return;
+        }
+
+        List<String> fetchedIds = fetchedRecords.stream().map(e -> this.getRecordId(e)).collect(Collectors.toList());
+
+        for (String requestId : requestIds) {
+            if (!notFoundIds.contains(requestId) && !fetchedIds.contains(requestId)) {
+                this.logger.warning("Missing record when fetch records, adding to not found: " + requestId);
+                notFoundIds.add(requestId);
+            }
+        }
+        return;
+    }
+
+    private String getRecordId(JsonObject record) {
+        JsonElement recordId = record.get("id");
+        if (recordId == null || recordId instanceof JsonNull || recordId.getAsString().isEmpty()) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown error", "record does not have id");
+        }
+        return recordId.getAsString();
+    }
+
+    private void auditLog(List<String> successfulRecords, Consumer<List<String>> loggerConsumerSuccess, List<String> failedRecords, Consumer<List<String>> loggerConsumerFail) {
+        if (successfulRecords != null && !successfulRecords.isEmpty()) {
+            loggerConsumerSuccess.accept(successfulRecords);
+        }
+        if (failedRecords != null && !failedRecords.isEmpty()) {
+            loggerConsumerFail.accept(failedRecords);
+        }
     }
 }

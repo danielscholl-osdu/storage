@@ -42,7 +42,12 @@
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>core-lib-gcp</artifactId>
-			<version>0.1.17</version>
+			<version>0.1.21</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opengroup.osdu</groupId>
+			<artifactId>os-core-common</artifactId>
 		</dependency>
 
 		<dependency>
@@ -75,16 +80,14 @@
 			<version>v1-rev289-1.25.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.opengroup.osdu</groupId>
-			<artifactId>os-core-common</artifactId>
-			<version>0.0.13</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-config</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<repositories>

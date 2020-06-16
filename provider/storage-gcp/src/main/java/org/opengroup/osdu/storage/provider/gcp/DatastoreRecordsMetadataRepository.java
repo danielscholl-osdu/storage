@@ -106,11 +106,19 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 	}
 
 	@Override
-	public AbstractMap.SimpleEntry<Cursor, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit,
-			Cursor cursor) {
-		Query<Entity> query = Query.newEntityQueryBuilder().setKind(RECORD_KIND)
-				.setFilter(StructuredQuery.PropertyFilter.eq(String.format("%s.%s", LEGAL, LEGAL_TAGS), legalTagName))
-				.setStartCursor(cursor).setLimit(limit).build();
+	public AbstractMap.SimpleEntry<Cursor, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+
+		StructuredQuery.PropertyFilter legalNameFilter = StructuredQuery.PropertyFilter.eq(String.format("%s.%s", LEGAL, LEGAL_TAGS), legalTagName);
+		StructuredQuery.PropertyFilter legalStatusFilter = StructuredQuery.PropertyFilter.eq(String.format("%s.%s", LEGAL, LEGAL_COMPLIANCE), status.name());
+
+		StructuredQuery.CompositeFilter filter = StructuredQuery.CompositeFilter.and(legalNameFilter, legalStatusFilter);
+
+		Query<Entity> query = Query.newEntityQueryBuilder()
+				.setKind(RECORD_KIND)
+				.setFilter(filter)
+				.setLimit(limit)
+				.build();
+
 		QueryResults<Entity> results = this.datastoreFactory.getDatastore().run(query);
 		List<RecordMetadata> outputRecords = new ArrayList<>();
 
@@ -143,6 +151,12 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 		}
 
 		return output;
+	}
+
+	//TODO remove when other providers replace with new method queryByLegal
+	@Override
+	public AbstractMap.SimpleEntry<Cursor, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, Cursor cursor) {
+		return null;
 	}
 
 	private RecordMetadata parseEntityToRecordMetadata(Entity entity) {

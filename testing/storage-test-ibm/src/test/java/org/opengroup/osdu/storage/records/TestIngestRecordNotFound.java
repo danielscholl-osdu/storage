@@ -21,7 +21,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.IBMTestUtils;
 import org.opengroup.osdu.storage.util.HeaderUtils;
@@ -55,15 +54,13 @@ public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
         this.testUtils = null;
     }
     
-    @Ignore
-    // TODO alanbraz: there is no way in the current entitlements to get a list of valid groups
-    // will need to revisit after Entitlements refactor
+    @Override
 	@Test
 	public void should_returnBadRequest_when_userGroupDoesNotExist() throws Exception {
 
 		String group = String.format("data.thisDataGrpDoesNotExsist@%s", TestUtils.getAclSuffix());
 
-		String record = RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
+		String record = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
         // it's a much simpler implementation to just check if the user is in the group that is being saved and if not to skip

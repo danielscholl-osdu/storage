@@ -63,25 +63,20 @@ public class UserAccessService {
      * get around this and redesigning dynamo schema to stop parsing the acl out of
      * recordmetadata
      *
-     * @param record
+     * @param acl
      * @return
      */
     // TODO: Optimize entitlements record ACL design to not compare list against list
-    public boolean userHasAccessToRecord(RecordMetadata record, boolean isReadAccess) {
-
-
-        if (record.getUser().equalsIgnoreCase(dpsHeaders.getUserEmail()))
-            return true;
-
-        Acl acl = record.getAcl();
-
+    public boolean userHasAccessToRecord(Acl acl) {
         Groups groups = getGroups();
         HashSet<String> allowedGroups = new HashSet<>();
 
-        Collections.addAll(allowedGroups, acl.getOwners());
+        for (String owner : acl.getOwners()) {
+            allowedGroups.add(owner);
+        }
 
-        if(isReadAccess) {
-            Collections.addAll(allowedGroups, acl.getViewers());
+        for (String viewer : acl.getViewers()) {
+            allowedGroups.add(viewer);
         }
 
         List<GroupInfo> memberGroups = groups.getGroups();

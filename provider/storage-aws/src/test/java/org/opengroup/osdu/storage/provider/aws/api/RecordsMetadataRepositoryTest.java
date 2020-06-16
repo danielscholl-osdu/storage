@@ -101,7 +101,7 @@ public class RecordsMetadataRepositoryTest {
 
         Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedRmd));
 
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordMetadata), Mockito.anyBoolean())).thenReturn(true);
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         repo.createOrUpdate(recordsMetadata);
@@ -160,7 +160,7 @@ public class RecordsMetadataRepositoryTest {
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
 
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(expectedRecordMetadata), Mockito.anyBoolean())).thenReturn(true);
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         RecordMetadata recordMetadata = repo.get(id);
@@ -224,7 +224,7 @@ public class RecordsMetadataRepositoryTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(expectedRecordMetadata), Mockito.anyBoolean())).thenReturn(true);
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         Map<String, RecordMetadata> recordsMetadata = repo.get(ids);
@@ -270,7 +270,7 @@ public class RecordsMetadataRepositoryTest {
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
 
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordMetadata), Mockito.anyBoolean())).thenReturn(true);
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         repo.delete(id);

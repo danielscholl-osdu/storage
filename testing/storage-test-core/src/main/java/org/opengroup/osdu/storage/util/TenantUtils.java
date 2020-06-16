@@ -21,4 +21,8 @@ public class TenantUtils {
 		//return "opendes";
 		return System.getProperty("TENANT_NAME", System.getenv("TENANT_NAME"));
 	}
+
+	public static String getFirstTenantName() {
+		return getTenantName();
+	}
 }

@@ -31,10 +31,11 @@ import org.springframework.stereotype.Repository;
 
 import com.cloudant.client.api.Database;
 
+
 @Repository
 public class SchemaRepositoryImpl implements ISchemaRepository {
 
-	@Value("${ibm.db.url}")
+	@Value("${ibm.db.url}") 
 	private String dbUrl;
 	@Value("${ibm.db.apikey:#{null}}")
 	private String apiKey;
@@ -46,7 +47,7 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
 	private String dbNamePrefix;
 	
 	private static final Logger logger = LoggerFactory.getLogger(SchemaRepositoryImpl.class);
-
+	
 	private IBMCloudantClientFactory cloudantFactory;
 	
 	private Database db;

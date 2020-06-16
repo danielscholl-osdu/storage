@@ -53,6 +53,9 @@ public class StorageAuditEvents {
     private static final String UPDATE_RECORD_COMPLIANCE_STATE_ACTION_ID = "ST013";
     private static final String UPDATE_RECORD_COMPLIANCE_STATE_MESSAGE = "Record compliance state updated";
 
+    private static final String READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID = "ST014";
+    private static final String READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE = "Read multiple records with optional conversion";
+
     private final String user;
 
     public StorageAuditEvents(String user) {
@@ -269,6 +272,28 @@ public class StorageAuditEvents {
                 .status(AuditStatus.SUCCESS)
                 .actionId(UPDATE_RECORD_COMPLIANCE_STATE_ACTION_ID)
                 .message(UPDATE_RECORD_COMPLIANCE_STATE_MESSAGE)
+                .resources(resources)
+                .user(user)
+                .build();
+    }
+
+    public AuditPayload getReadMultipleRecordsWithOptionalConversionSuccess(List<String> resources) {
+        return AuditPayload.builder()
+                .action(AuditAction.READ)
+                .status(AuditStatus.SUCCESS)
+                .actionId(READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
+                .message(READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE)
+                .resources(resources)
+                .user(user)
+                .build();
+    }
+
+    public AuditPayload getReadMultipleRecordsWithOptionalConversionFail(List<String> resources) {
+        return AuditPayload.builder()
+                .action(AuditAction.READ)
+                .status(AuditStatus.FAILURE)
+                .actionId(READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
+                .message(READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE)
                 .resources(resources)
                 .user(user)
                 .build();

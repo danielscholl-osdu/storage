@@ -43,7 +43,7 @@ public abstract class DeleteRecordLogicallyAndItsVersionsTest extends TestBase {
 		LegalTagUtils.create(LEGAL_TAG, testUtils.getToken());
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
-				RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG, "v1"), "");
+				RecordUtil.createJsonRecordWithData(RECORD_ID, KIND, LEGAL_TAG, "v1"), "");
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
 	}
 
@@ -58,7 +58,7 @@ public abstract class DeleteRecordLogicallyAndItsVersionsTest extends TestBase {
 	public void should_deleteRecordAndAllVersionsLogically_when_userIsAuthorized() throws Exception {
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
-				RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG, "v2"), "");
+				RecordUtil.createJsonRecordWithData(RECORD_ID, KIND, LEGAL_TAG, "v2"), "");
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
 
 		ClientResponse versionResponse = TestUtils.send("records/versions/" + RECORD_ID, "GET",

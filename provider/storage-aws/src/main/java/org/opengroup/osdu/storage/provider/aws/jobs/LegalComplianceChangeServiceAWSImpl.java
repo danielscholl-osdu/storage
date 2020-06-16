@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.aws.jobs;
 
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.legal.jobs.*;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -62,7 +63,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
 
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
-                                                                  DpsHeaders headers) {
+                                                                  DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
 
         // TODO: optimize to not have while loop inside a for each

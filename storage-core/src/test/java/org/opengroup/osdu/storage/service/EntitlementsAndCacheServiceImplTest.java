@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
@@ -31,6 +32,7 @@ import org.opengroup.osdu.core.common.http.HttpResponse;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import java.util.*;
 
@@ -58,6 +60,12 @@ public class EntitlementsAndCacheServiceImplTest {
 
     @Mock
     private JaxRsDpsLog logger;
+
+    @Mock
+    private DpsHeaders dpsHeaders;
+
+    @Mock
+    private EntitlementsAndCacheServiceImpl entitlementsAndCacheService;
 
     @InjectMocks
     private EntitlementsAndCacheServiceImpl sut;
@@ -297,5 +305,81 @@ public class EntitlementsAndCacheServiceImplTest {
         acls.add("valid@tenant.gmail.com");
 
         this.sut.isValidAcl(this.headers, acls);
+    }
+
+    @Test
+    public void should_returnTrue_when_aclContainedInGroups() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@slb.com");
+        g1.setName("role1");
+
+        GroupInfo g2 = new GroupInfo();
+        g2.setEmail("role2@slb.com");
+        g2.setName("role2");
+
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        groupsInfo.add(g2);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        groups.setDesId(MEMBER_EMAIL);
+
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        String[] viewers = new String[]{"role1@slb.com"};
+        String[] owners = new String[]{"role2@slb.com"};
+        Acl storageAcl = new Acl();
+        storageAcl.setOwners(owners);
+        storageAcl.setViewers(viewers);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setId("acl-check-1");
+
+        List<RecordMetadata> input = new ArrayList<>();
+        input.add(recordMetadata);
+
+        List<RecordMetadata> result = this.sut.hasValidAccess(input, this.headers);
+        assertEquals(1, result.size());
+        assertEquals("acl-check-1", result.get(0).getId());
+    }
+
+    @Test
+    public void should_returnTrue_when_aclNotContainedInGroups() throws EntitlementsException {
+
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@slb.com");
+        g1.setName("role1");
+
+        GroupInfo g2 = new GroupInfo();
+        g2.setEmail("role2@slb.com");
+        g2.setName("role2");
+
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        groupsInfo.add(g2);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        groups.setDesId(MEMBER_EMAIL);
+
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        String[] viewers = new String[]{"role3@slb.com"};
+        String[] owners = new String[]{"role4@slb.com"};
+        Acl storageAcl = new Acl();
+        storageAcl.setOwners(owners);
+        storageAcl.setViewers(viewers);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setId("acl-check-2");
+
+        List<RecordMetadata> input = new ArrayList<>();
+        input.add(recordMetadata);
+
+        List<RecordMetadata> result = this.sut.hasValidAccess(input, this.headers);
+        assertEquals(0, result.size());
     }
 }

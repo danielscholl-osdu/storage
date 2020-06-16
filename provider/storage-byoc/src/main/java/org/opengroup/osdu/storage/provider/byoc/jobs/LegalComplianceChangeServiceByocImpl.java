@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.byoc.jobs;
 
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -28,7 +29,7 @@ public class LegalComplianceChangeServiceByocImpl implements ILegalComplianceCha
 
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
-                                                                  DpsHeaders headers) {
+                                                                  DpsHeaders headers) throws ComplianceUpdateStoppedException {
 
         Map<String, LegalCompliance> output = new HashMap<>();
 

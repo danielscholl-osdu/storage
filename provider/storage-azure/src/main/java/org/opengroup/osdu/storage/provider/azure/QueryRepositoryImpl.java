@@ -28,6 +28,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Repository
@@ -53,7 +54,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
             paginated = true;
         }
 
-        Sort sort = Sort.by(Sort.Direction.ASC, "kind");
         DatastoreQueryResult dqr = new DatastoreQueryResult();
         List<String> kinds = new ArrayList();
         Iterable<SchemaDoc> docs;
@@ -68,9 +68,13 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {
-                docs = dbSchema.findAll(sort);
+                // findAll with sorting paramter is throwing an exception related to the same issue reported in
+                // https://github.com/microsoft/spring-data-cosmosdb/issues/423
+                // As workaround, we are using findAll() and doing the sorting using java collecction utility in line 77
+                docs = dbSchema.findAll();
             }
             docs.forEach(d -> kinds.add(d.getKind()));
+            Collections.sort(kinds);
             dqr.setResults(kinds);
         } catch (Exception e) {
             if (e.getCause() instanceof CosmosClientException) {

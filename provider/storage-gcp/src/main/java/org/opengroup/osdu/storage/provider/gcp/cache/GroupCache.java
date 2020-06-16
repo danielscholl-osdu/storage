@@ -24,7 +24,7 @@ public class GroupCache extends RedisCache<String, Groups> {
 
 	public GroupCache(@Value("${REDIS_GROUP_HOST}") final String REDIS_GROUP_HOST,@Value("${REDIS_GROUP_PORT}") final String REDIS_GROUP_PORT)
 			{
-		super(REDIS_GROUP_HOST, Integer.parseInt(REDIS_GROUP_PORT), 5 * 60, String.class,
+		super(REDIS_GROUP_HOST, Integer.parseInt(REDIS_GROUP_PORT), 30, String.class,
 				Groups.class);
 
 	}

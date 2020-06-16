@@ -118,6 +118,14 @@ public class StorageAuditLogger {
 		this.writeLog(this.getAuditEvents().getUpdateRecordsComplianceStateEventSuccess(resource));
 	}
 
+	public void readMultipleRecordsWithOptionalConversionSuccess(List<String> resource) {
+		this.writeLog(getAuditEvents().getReadMultipleRecordsWithOptionalConversionSuccess(resource));
+	}
+
+	public void readMultipleRecordsWithOptionalConversionFail(List<String> resource) {
+		this.writeLog(getAuditEvents().getReadMultipleRecordsWithOptionalConversionFail(resource));
+	}
+
 	private void writeLog(AuditPayload log) {
 		this.logger.audit(log);
 	}

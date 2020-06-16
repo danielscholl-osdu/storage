@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.service;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -30,6 +31,8 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+//import com.google.cloud.datastore.DatastoreException;
+import org.apache.http.HttpStatus;
 
 import java.util.*;
 
@@ -113,7 +116,7 @@ public class PersistenceServiceImplTest {
 
     @Test
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void should_notPersistRecords_and_throw500AppException_when_datastoreErrorOccur() {
+    public void should_notPersistRecords_and_throw500AppException_when_nonDatastoreErrorOccur() {
 
         TransferBatch batch = this.createBatchTransfer();
 
@@ -125,6 +128,48 @@ public class PersistenceServiceImplTest {
             fail("Expected exception");
         } catch (AppException e) {
             assertEquals(500, e.getError().getCode());
+        }
+
+        ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture());
+        verify(this.pubSubClient, times(0)).publishMessage(any());
+    }
+    @Ignore
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void should_notPersistRecords_and_throw413AppException_when_datastoreTooBigEntityErrorOccur() {
+
+        TransferBatch batch = this.createBatchTransfer();
+
+        this.setupRecordRepository(23, 10, 25);
+        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any());
+        try {
+            this.sut.persistRecordBatch(batch);
+            fail("Expected exception");
+        } catch (AppException e) {
+            assertEquals(413, e.getError().getCode());
+            assertTrue(e.getError().toString().contains("The record metadata is too big"));
+        }
+
+        ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture());
+        verify(this.pubSubClient, times(0)).publishMessage(any());
+    }
+    @Ignore
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void should_notPersistRecords_and_throw500AppException_when_datastoreOtherErrorOccur() {
+
+        TransferBatch batch = this.createBatchTransfer();
+
+        this.setupRecordRepository(23, 10, 25);
+        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any());
+        try {
+            this.sut.persistRecordBatch(batch);
+            fail("Expected exception");
+        } catch (AppException e) {
+            assertEquals(500, e.getError().getCode());
+            assertTrue(e.getError().getMessage().contains("The server could not write metadata to Datastore at the moment"));
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);

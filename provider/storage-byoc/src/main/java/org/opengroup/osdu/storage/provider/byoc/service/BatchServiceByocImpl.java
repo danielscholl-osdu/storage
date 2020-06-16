@@ -23,13 +23,13 @@ import org.opengroup.osdu.storage.service.BatchServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
 
 import static java.util.Collections.singletonList;
 
 @Service
 public class BatchServiceByocImpl extends BatchServiceImpl {
-    @Inject
+
+    @Autowired
     private StorageAuditLogger auditLogger;
 
     @Autowired

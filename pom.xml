@@ -29,6 +29,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<docker.image.prefix>opendes</docker.image.prefix>
     	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<os-core-common.version>0.0.18</os-core-common.version>
 	</properties>
 
 	<licenses>
@@ -50,6 +51,12 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+
+				<dependency>
+					<groupId>org.opengroup.osdu</groupId>
+					<artifactId>os-core-common</artifactId>
+					<version>${os-core-common.version}</version>
+				</dependency>
 		</dependencies>
 	</dependencyManagement>
 

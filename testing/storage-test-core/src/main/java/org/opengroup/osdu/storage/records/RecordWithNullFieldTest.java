@@ -58,7 +58,7 @@ public abstract class RecordWithNullFieldTest extends TestBase {
 
 		// create record with null field
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
-				RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG, null), "");
+				RecordUtil.createJsonRecordWithData(RECORD_ID, KIND, LEGAL_TAG, null), "");
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
 
 		// get record

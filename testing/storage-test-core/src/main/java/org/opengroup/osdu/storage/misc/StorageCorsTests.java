@@ -39,7 +39,7 @@ public abstract class StorageCorsTests extends TestBase {
 
 		assertEquals("[*]", headers.get("Access-Control-Allow-Origin").get(0));
 		assertEquals(
-				"[origin, content-type, accept, authorization, account-id, data-partition-id, correlation-id, on-behalf-of, appkey]",
+				"[origin, content-type, accept, authorization, data-partition-id, correlation-id, appkey]",
 				headers.get("Access-Control-Allow-Headers").get(0));
 		assertEquals("[GET, POST, PUT, DELETE, OPTIONS, HEAD]",
 				headers.get("Access-Control-Allow-Methods").get(0));

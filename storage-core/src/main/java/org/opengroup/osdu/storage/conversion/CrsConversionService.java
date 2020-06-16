@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.model.crs.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.apache.http.HttpStatus;
@@ -49,7 +50,7 @@ public class CrsConversionService {
     private static final String PERSISTABLE_REFERENCE = "persistableReference";
     private static final String TO_CRS = "{\"wkt\":\"GEOGCS[\\\"GCS_WGS_1984\\\",DATUM[\\\"D_WGS_1984\\\",SPHEROID[\\\"WGS_1984\\\",6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0],UNIT[\\\"Degree\\\",0.0174532925199433],AUTHORITY[\\\"EPSG\\\",4326]]\",\"ver\":\"PE_10_3_1\",\"name\":\"GCS_WGS_1984\",\"authCode\":{\"auth\":\"EPSG\",\"code\":\"4326\"},\"type\":\"LBC\"}";
     private static final String UNKNOWN_ERROR = "unknown error";
-    private static final String CONVERSION_FAILURE = "CRS Conversion Error: Point Converted failed(CRS Converter is returning null), no conversion applied.";
+    private static final String CONVERSION_FAILURE = "CRS Conversion Error: Point Converted failed(CRS Converter is returning null), no conversion applied. Affected property names: %s, %s";
 
     @Autowired
     private CrsPropertySet crsPropertySet;
@@ -66,13 +67,13 @@ public class CrsConversionService {
     @Autowired
     private IServiceAccountJwtClient jwtClient;
 
-    public RecordsAndStatuses doCrsConversion(List<JsonObject> originalRecords, List<ConversionStatus> conversionStatuses) {
+    public RecordsAndStatuses doCrsConversion(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
         Map<String, List<PointConversionInfo>> pointConversionInfoList = this.gatherCrsConversionData(originalRecords, conversionStatuses);
 
         if (pointConversionInfoList.isEmpty()) {
             crsConversionResult.setRecords(originalRecords);
-            crsConversionResult.setConversionStatuses(conversionStatuses);
+            crsConversionResult.setConversionStatuses(this.buildConversionStatuses(conversionStatuses));
             return crsConversionResult;
         }
 
@@ -83,90 +84,58 @@ public class CrsConversionService {
             this.updateValuesInRecord(record, convertedInfo, conversionStatuses);
             originalRecords.set(convertedInfo.getRecordIndex(), record);
         }
-        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setConversionStatuses(this.buildConversionStatuses(conversionStatuses));
         crsConversionResult.setRecords(originalRecords);
         return crsConversionResult;
     }
 
-    private Map<String, List<PointConversionInfo>> gatherCrsConversionData(List<JsonObject> originalRecords, List<ConversionStatus> conversionStatuses) {
+    private List<ConversionStatus> buildConversionStatuses(List<ConversionStatus.ConversionStatusBuilder> builders) {
+        List<ConversionStatus> result = new ArrayList<>();
+        for (ConversionStatus.ConversionStatusBuilder builder : builders) {
+            result.add(builder.build());
+        }
+        return result;
+    }
+
+    private Map<String, List<PointConversionInfo>> gatherCrsConversionData(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         Map<String, List<PointConversionInfo>> batchPointConversionMap = new HashMap<>();
 
         for (int i = 0; i < originalRecords.size(); i++) {
             JsonObject recordJsonObject = originalRecords.get(i);
             String recordId = this.getRecordId(recordJsonObject);
+            ConversionStatus.ConversionStatusBuilder statusBuilder = this.getConversionStatusBuilderFromList(recordId, conversionStatuses);
             JsonObject dataBlcok = recordJsonObject.getAsJsonObject(DATA);
             if (dataBlcok == null) {
-                List<String> errorMsg = new ArrayList<>();
-                errorMsg.add(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
-                this.addConversionInfoToStatuses(errorMsg, recordId, conversionStatuses, true);
+                statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
                 continue;
             }
 
-            List<JsonObject> metaBlocks = this.extractValidMetaItemsFromRecord(recordJsonObject, recordId, conversionStatuses);
+            List<JsonObject> metaBlocks = this.extractValidMetaItemsFromRecord(recordJsonObject, statusBuilder);
             for (int j = 0; j < metaBlocks.size(); j++) {
                 JsonObject metaBlock = metaBlocks.get(j);
                 if (!metaBlock.get(KIND).getAsString().equalsIgnoreCase(CRS)) {
                     continue;
                 }
-                List<PointConversionInfo> pointConversionInfoList = this.constructPointConversionInfoList(originalRecords, recordId, metaBlock, i, batchPointConversionMap, dataBlcok, j, metaBlocks, conversionStatuses);
-                for (PointConversionInfo pointConversionInfo : pointConversionInfoList) {
-                    if (pointConversionInfo != null && !pointConversionInfo.getConversionStatus().isEmpty()) {
-                        this.addConversionInfoToStatuses(pointConversionInfo.getConversionStatus(), recordId, conversionStatuses, true);
-                    }
-                }
+                this.constructPointConversionInfoList(originalRecords, recordId, metaBlock, i, batchPointConversionMap, dataBlcok, j, metaBlocks, statusBuilder);
             }
         }
         return batchPointConversionMap;
     }
 
-    private List<JsonObject> extractValidMetaItemsFromRecord(JsonObject recordJsonObject, String recordId, List<ConversionStatus> conversionStatuses) {
-        List<String> metaItemErrors = new ArrayList<>();
-        List<JsonObject> validMetaItems = new ArrayList<>();
+    private List<JsonObject> extractValidMetaItemsFromRecord(JsonObject recordJsonObject, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         try {
             JsonArray metaItemsArray = recordJsonObject.getAsJsonArray(META);
             for (int i = 0; i < metaItemsArray.size(); i++) {
-                boolean addToValidMetaItems = true;
                 JsonObject metaItem = metaItemsArray.get(i).getAsJsonObject();
-                JsonElement kind = metaItem.get(KIND);
-                if (kind == null || kind.getAsString().isEmpty()) {
-                    metaItemErrors.add(CrsConversionServiceErrorMessages.MISSING_META_KIND);
-                    continue;
-                }
-                JsonElement propertyNamesElement = metaItem.get(PROPERTY_NAMES);
-                JsonArray propertyNames = null;
-                try {
-                    propertyNames = propertyNamesElement.getAsJsonArray();
-                } catch(IllegalStateException ex){
-                    metaItemErrors.add(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_NAMES);
-                    addToValidMetaItems = false;
-                }
-
-                if (propertyNames == null || propertyNames.size() == 0) {
-                    metaItemErrors.add(CrsConversionServiceErrorMessages.MISSING_PROPERTY_NAMES);
-                    addToValidMetaItems = false;
-                }
-
-                JsonElement persistableReferenceElement = metaItem.get(PERSISTABLE_REFERENCE);
-                if (persistableReferenceElement == null || persistableReferenceElement.getAsString().isEmpty()) {
-                    metaItemErrors.add(CrsConversionServiceErrorMessages.MISSING_REFERENCE);
-                    addToValidMetaItems = false;
-                }
-                if (addToValidMetaItems) {
-                    validMetaItems.add(metaItem);
-                }
+                conversionStatusBuilder.addErrorsFromMetaItemChecking(metaItem);
             }
         } catch (Exception e) {
-            metaItemErrors.add(String.format(CrsConversionServiceErrorMessages.ILLEGAL_METAITEM_ARRAY, e.getMessage()));
-            this.addConversionInfoToStatuses(metaItemErrors, recordId, conversionStatuses, true);
-            return validMetaItems;
+            conversionStatusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_METAITEM_ARRAY, e.getMessage()));
         }
-        if (!metaItemErrors.isEmpty()) {
-            this.addConversionInfoToStatuses(metaItemErrors, recordId, conversionStatuses, true);
-        }
-        return validMetaItems;
+        return conversionStatusBuilder.getValidMetaItems();
     }
 
-    private List<PointConversionInfo> constructPointConversionInfoList(List<JsonObject> originalRecords, String recordId, JsonObject metaItem, int recordIndex, Map<String, List<PointConversionInfo>> mapOfPoints, JsonObject dataBlock, int metaItemIndex, List<JsonObject> metaBlocks, List<ConversionStatus> conversionStatuses) {
+    private List<PointConversionInfo> constructPointConversionInfoList(List<JsonObject> originalRecords, String recordId, JsonObject metaItem, int recordIndex, Map<String, List<PointConversionInfo>> mapOfPoints, JsonObject dataBlock, int metaItemIndex, List<JsonObject> metaBlocks, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         List<PointConversionInfo> pointConversionInfoList = new ArrayList<>();
         String persistableReference = metaItem.get(PERSISTABLE_REFERENCE).getAsString();
         JsonArray propertyNamesArray = metaItem.get(PROPERTY_NAMES).getAsJsonArray();
@@ -177,9 +146,9 @@ public class CrsConversionService {
         }
         int propertySize = propertyNames.size();
 
-        // nested property
+        // nested property with point list
         if (propertySize == 1) {
-            PointConversionInfo pointConversionInfo = this.initializePoint(recordIndex, recordId, metaItemIndex, metaBlocks);
+            PointConversionInfo pointConversionInfo = this.initializePoint(recordIndex, recordId, metaItemIndex, metaBlocks, conversionStatusBuilder);
             pointConversionInfoList.add(this.crsConversionWithNestedPropertyNames(originalRecords, persistableReference, dataBlock, propertyNamesArray, pointConversionInfo, metaBlocks));
             return pointConversionInfoList;
         }
@@ -187,25 +156,39 @@ public class CrsConversionService {
         Map<String, String> propertyPairingMap = this.crsPropertySet.getPropertyPairing();
         for (int i = 0; i < propertyNames.size(); i++) {
             String propertyX = propertyNames.get(i);
-            if (propertyPairingMap.get(propertyX.toLowerCase() ) == null) {
+
+            String[] lowerCasePropertyXs = propertyX.toLowerCase().split("\\.");
+            int propertyXsLength = lowerCasePropertyXs.length;
+
+            String lowerCaseInnerX = lowerCasePropertyXs[propertyXsLength - 1];
+
+            if (propertyPairingMap.get(lowerCaseInnerX) == null) {
                 // either an y property or an unsupported property
                 continue;
             } else {
                 // find a pair of x,y
-                String propertyY = propertyPairingMap.get(propertyX.toLowerCase());
+                String innerY = propertyPairingMap.get(lowerCaseInnerX);
+                // if x is nested, then paired y should share the same outer structure
+                StringBuilder propertyYBuilder = new StringBuilder();
+                for (int j = 0; j < propertyXsLength - 1; j++) {
+                    propertyYBuilder.append(lowerCasePropertyXs[j]);
+                    propertyYBuilder.append(".");
+                }
+                propertyYBuilder.append(innerY);
+                String propertyY = propertyYBuilder.toString();
                 if (propertyNamesRemain.contains(propertyY)) {
                     propertyY = this.getCaseSensitivePropertyY(propertyNames, propertyY);
-                    PointConversionInfo pointConversionInfo = this.initializePoint(recordIndex, recordId, metaItemIndex, metaBlocks);
+                    PointConversionInfo pointConversionInfo = this.initializePoint(recordIndex, recordId, metaItemIndex, metaBlocks, conversionStatusBuilder);
 
                     pointConversionInfo.setXFieldName(propertyX);
                     pointConversionInfo.setYFieldName(propertyY);
-                    pointConversionInfo.setXValue(this.extractPropertyFromDataBlock(dataBlock, propertyX, pointConversionInfo));
-                    pointConversionInfo.setYValue(this.extractPropertyFromDataBlock(dataBlock, propertyY, pointConversionInfo));
+                    pointConversionInfo.setXValue(this.extractPropertyFromDataBlock(dataBlock, propertyX, conversionStatusBuilder));
+                    pointConversionInfo.setYValue(this.extractPropertyFromDataBlock(dataBlock, propertyY, conversionStatusBuilder));
                     pointConversionInfo.setZFieldName("Z");
                     pointConversionInfo.setZValue(0.0);
                     pointConversionInfoList.add(pointConversionInfo);
 
-                    if (pointConversionInfo.getConversionStatus().isEmpty()) {
+                    if (conversionStatusBuilder.getStatus().equalsIgnoreCase(ConvertStatus.SUCCESS.toString())) {
                         this.addPointConversionInfoIntoConversionMap(persistableReference, pointConversionInfo, mapOfPoints);
                     }
 
@@ -217,24 +200,20 @@ public class CrsConversionService {
             }
         }
         if (!propertyNamesRemain.isEmpty()) {
-            List<String> errorMsg = new ArrayList<>();
             for (String name : propertyNamesRemain) {
-                errorMsg.add(String.format(CrsConversionServiceErrorMessages.PAIR_FAILURE, name));
+                conversionStatusBuilder.addMessage(String.format(CrsConversionServiceErrorMessages.PAIR_FAILURE, name));
             }
-            this.addConversionInfoToStatuses(errorMsg, recordId, conversionStatuses, false);
         }
         return pointConversionInfoList;
     }
 
-    private PointConversionInfo initializePoint(int recordIndex, String recordId, int metaItemIndex, List<JsonObject> metaBlocks) {
+    private PointConversionInfo initializePoint(int recordIndex, String recordId, int metaItemIndex, List<JsonObject> metaBlocks, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         PointConversionInfo pointConversionInfo = new PointConversionInfo();
-        List<String> conversionStatusForAPoint = new ArrayList<>();
-        pointConversionInfo.setConversionStatus(conversionStatusForAPoint);
+        pointConversionInfo.setStatusBuilder(conversionStatusBuilder);
         pointConversionInfo.setRecordIndex(recordIndex);
         pointConversionInfo.setRecordId(recordId);
         pointConversionInfo.setMetaItemIndex(metaItemIndex);
         pointConversionInfo.setMetaItems(metaBlocks);
-        pointConversionInfo.setHasError(false);
 
         return pointConversionInfo;
     }
@@ -247,24 +226,35 @@ public class CrsConversionService {
         return propertyNames;
     }
 
-    private double extractPropertyFromDataBlock(JsonObject dataBlock, String fieldName, PointConversionInfo pointConversionInfo) {
-        List<String> conversionStatus = pointConversionInfo.getConversionStatus();
+    private double extractPropertyFromDataBlock(JsonObject dataBlock, String fieldName, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         double propertyValue = -1;
         try {
-            JsonElement fieldValue = dataBlock.get(fieldName);
+            String[] nestedNames = fieldName.split("\\.");
+            JsonObject outer = dataBlock;
+            JsonObject inner = dataBlock;
+
+            // This loop is to help get nested properties from data block, outer would be datablock itself, and get updated to next level each turn.
+            for (int i = 0; i < nestedNames.length - 1; i++) {
+                inner = outer.getAsJsonObject(nestedNames[i]);
+                outer = inner;
+            }
+            // get the very last nested property value, e.g, x.y.z, it should return the value of z
+            JsonElement fieldValue = inner.get(nestedNames[nestedNames.length - 1]);
+
             if (fieldValue == null || (fieldValue instanceof JsonNull) || fieldValue.getAsString().isEmpty()) {
-                conversionStatus.add(String.format(CrsConversionServiceErrorMessages.MISSING_PROPERTY,fieldName));
+                conversionStatusBuilder.addError(String.format(CrsConversionServiceErrorMessages.MISSING_PROPERTY,fieldName));
                 return propertyValue;
             }
             propertyValue = fieldValue.getAsDouble();
+
         } catch (ClassCastException ccEx) {
-            conversionStatus.add(String.format(CrsConversionServiceErrorMessages.PROPERTY_VALUE_CAST_ERROR, fieldName, ccEx.getMessage()));
+            conversionStatusBuilder.addError(String.format(CrsConversionServiceErrorMessages.PROPERTY_VALUE_CAST_ERROR, fieldName, ccEx.getMessage()));
         } catch (NumberFormatException nfEx) {
-            conversionStatus.add(String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE, fieldName, nfEx.getMessage()));
+            conversionStatusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE, fieldName, nfEx.getMessage()));
         } catch (IllegalStateException isEx) {
-            conversionStatus.add(String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE, fieldName, isEx.getMessage()));
+            conversionStatusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE, fieldName, isEx.getMessage()));
         } catch (Exception e) {
-            conversionStatus.add(String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE, fieldName, e.getMessage()));
+            conversionStatusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE, fieldName, e.getMessage()));
         }
         return propertyValue;
     }
@@ -280,27 +270,27 @@ public class CrsConversionService {
 
     private PointConversionInfo crsConversionWithNestedPropertyNames(List<JsonObject> originalRecords, String persistableReference, JsonObject dataBlock, JsonArray metaPropertyNames, PointConversionInfo pointConversionInfo, List<JsonObject> metaBlocks) {
         Set<String> nestedPropertyNames = this.crsPropertySet.getNestedPropertyNames();
-        List<String> conversionStatusForAMetaBlock = pointConversionInfo.getConversionStatus();
+        ConversionStatus.ConversionStatusBuilder statusBuilder = pointConversionInfo.getStatusBuilder();
         String nestedFieldName= metaPropertyNames.get(0).getAsString();
 
         if (!nestedPropertyNames.contains(nestedFieldName)) {
             String errorMessage = String.format(CrsConversionServiceErrorMessages.INVALID_NESTED_PROPERTY_NAME,nestedFieldName);
-            return this.addAndSetErrorInPointConversionInfo(conversionStatusForAMetaBlock, pointConversionInfo, errorMessage);
+            statusBuilder.addError(errorMessage);
+            return pointConversionInfo;
         }
 
         JsonElement nestedFieldValue = dataBlock.get(nestedFieldName);
         if (nestedFieldValue == null) {
             String errorMessage = String.format(CrsConversionServiceErrorMessages.MISSING_PROPERTY, nestedFieldName);
-            return this.addAndSetErrorInPointConversionInfo(conversionStatusForAMetaBlock, pointConversionInfo, errorMessage);
+            statusBuilder.addError(errorMessage);
+            return pointConversionInfo;
         }
 
         try {
             JsonObject nestedProperty = nestedFieldValue.getAsJsonObject();
             JsonArray originalJsonPoints = nestedProperty.getAsJsonArray(POINTS);
             if (originalJsonPoints == null || originalJsonPoints.size() == 0) {
-                conversionStatusForAMetaBlock.add(CrsConversionServiceErrorMessages.MISSING_POINTS_IN_NESTED_PROPERTY);
-                pointConversionInfo.setConversionStatus(conversionStatusForAMetaBlock);
-                pointConversionInfo.setHasError(true);
+                statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_POINTS_IN_NESTED_PROPERTY);
                 return pointConversionInfo;
             }
 
@@ -351,30 +341,18 @@ public class CrsConversionService {
             return pointConversionInfo;
         } catch (CrsConverterException cvEx) {
             if (cvEx.getHttpResponse().IsBadRequestCode()) {
-                conversionStatusForAMetaBlock.add(CrsConversionServiceErrorMessages.BAD_REQUEST_FROM_CRS);
+                statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.BAD_REQUEST_FROM_CRS, cvEx.getHttpResponse().getBody(), nestedFieldName));
             } else {
                 this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, cvEx.getHttpResponse().toString()));
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "crs conversion service error.");
             }
         } catch (ClassCastException ccEx) {
-            conversionStatusForAMetaBlock.add(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, ccEx.getMessage()));
+            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, ccEx.getMessage()));
         } catch (IllegalStateException isEx) {
-            conversionStatusForAMetaBlock.add(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, isEx.getMessage()));
+            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, isEx.getMessage()));
         } catch (Exception e) {
-            conversionStatusForAMetaBlock.add(e.getMessage());
+            statusBuilder.addError(e.getMessage());
         }
-
-        if (conversionStatusForAMetaBlock.size() != 0) {
-            pointConversionInfo.setConversionStatus(conversionStatusForAMetaBlock);
-            pointConversionInfo.setHasError(true);
-        }
-        return pointConversionInfo;
-    }
-
-    private PointConversionInfo addAndSetErrorInPointConversionInfo(List<String> conversionStatusForAMetaBlock, PointConversionInfo pointConversionInfo, String errorMessage) {
-        conversionStatusForAMetaBlock.add(errorMessage);
-        pointConversionInfo.setConversionStatus(conversionStatusForAMetaBlock);
-        pointConversionInfo.setHasError(true);
         return pointConversionInfo;
     }
 
@@ -393,7 +371,7 @@ public class CrsConversionService {
     }
 
 
-    List<PointConversionInfo> callClientLibraryDoConversion(Map<String, List<PointConversionInfo>> originalPointsMap, List<ConversionStatus> conversionStatuses) {
+    List<PointConversionInfo> callClientLibraryDoConversion(Map<String, List<PointConversionInfo>> originalPointsMap, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
         List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
 
@@ -414,7 +392,7 @@ public class CrsConversionService {
                 convertedPointInfo.addAll(this.putBackConvertedValueIntoPointsInfo(pointsList, convertedPoints, conversionStatuses));
             } catch (CrsConverterException e) {
                 if (e.getHttpResponse().IsBadRequestCode()) {
-                    convertedPointInfo.addAll(this.putDataErrorFromCrsIntoPointsInfo(pointsList));
+                    convertedPointInfo.addAll(this.putDataErrorFromCrsIntoPointsInfo(pointsList, e.getMessage()));
                     continue;
                 } else {
                     this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, e.getHttpResponse().toString()));
@@ -433,20 +411,14 @@ public class CrsConversionService {
         return point;
     }
 
-    private List<PointConversionInfo> putBackConvertedValueIntoPointsInfo(List<PointConversionInfo> convertedPointInfo, List<Point> convertedPoints, List<ConversionStatus> conversionStatuses) {
+    private List<PointConversionInfo> putBackConvertedValueIntoPointsInfo(List<PointConversionInfo> convertedPointInfo, List<Point> convertedPoints, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         for (int i = 0; i < convertedPointInfo.size(); i++) {
             Point point = convertedPoints.get(i);
             PointConversionInfo toBeUpdatedInfo = convertedPointInfo.get(i);
-            List<String> status = toBeUpdatedInfo.getConversionStatus();
-            if (status == null) {
-                status = new ArrayList<>();
-            }
+            ConversionStatus.ConversionStatusBuilder statusBuilder = toBeUpdatedInfo.getStatusBuilder();
 
             if (point == null) {
-                status.add(CONVERSION_FAILURE);
-                toBeUpdatedInfo.setConversionStatus(status);
-                toBeUpdatedInfo.setHasError(true);
-                this.addConversionInfoToStatuses(status, toBeUpdatedInfo.getRecordId(), conversionStatuses, true);
+                statusBuilder.addError(String.format(CONVERSION_FAILURE, toBeUpdatedInfo.getXFieldName(), toBeUpdatedInfo.getYFieldName()));
                 continue;
             }
             toBeUpdatedInfo.setXValue(point.getX());
@@ -464,31 +436,22 @@ public class CrsConversionService {
         return convertedPointInfo;
     }
 
-    private List<PointConversionInfo> putDataErrorFromCrsIntoPointsInfo(List<PointConversionInfo> convertedPointInfo) {
+    private List<PointConversionInfo> putDataErrorFromCrsIntoPointsInfo(List<PointConversionInfo> convertedPointInfo, String errMsg) {
         for (int i = 0; i < convertedPointInfo.size(); i++) {
             PointConversionInfo toBeUpdatedInfo = convertedPointInfo.get(i);
-            List<String> status = toBeUpdatedInfo.getConversionStatus();
-            if (status == null) {
-                status = new ArrayList<>();
-            }
+            ConversionStatus.ConversionStatusBuilder statusBuilder = toBeUpdatedInfo.getStatusBuilder();
 
-            status.add(CrsConversionServiceErrorMessages.BAD_REQUEST_FROM_CRS);
-            toBeUpdatedInfo.setConversionStatus(status);
-            toBeUpdatedInfo.setHasError(true);
+            statusBuilder.addCRSBadRequestError(errMsg, toBeUpdatedInfo.getXFieldName(), toBeUpdatedInfo.getYFieldName());
         }
         return convertedPointInfo;
     }
 
-    private void updateValuesInRecord(JsonObject recordJsonObject, PointConversionInfo convertedInfo, List<ConversionStatus> conversionStatuses) {
+    private void updateValuesInRecord(JsonObject recordJsonObject, PointConversionInfo convertedInfo, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         JsonObject dataBlcok = recordJsonObject.getAsJsonObject(DATA);
 
-        dataBlcok.remove(convertedInfo.getXFieldName());
-        dataBlcok.remove(convertedInfo.getYFieldName());
-        dataBlcok.remove(convertedInfo.getZFieldName());
-
-        dataBlcok.addProperty(convertedInfo.getXFieldName(), convertedInfo.getXValue());
-        dataBlcok.addProperty(convertedInfo.getYFieldName(), convertedInfo.getYValue());
-        dataBlcok.addProperty(convertedInfo.getZFieldName(), convertedInfo.getZValue());
+        this.overwritePropertyToData(convertedInfo.getXFieldName(), convertedInfo.getXValue(), dataBlcok);
+        this.overwritePropertyToData(convertedInfo.getYFieldName(), convertedInfo.getYValue(), dataBlcok);
+        this.overwritePropertyToData(convertedInfo.getZFieldName(), convertedInfo.getZValue(), dataBlcok);
 
         recordJsonObject.add(DATA, dataBlcok);
 
@@ -498,43 +461,29 @@ public class CrsConversionService {
             metas.add(m);
         }
         recordJsonObject.add(META, metas);
-
-        this.addConversionInfoToStatuses(convertedInfo.getConversionStatus(), this.getRecordId(recordJsonObject), conversionStatuses, convertedInfo.isHasError());
     }
 
-    private void addConversionInfoToStatuses(List<String> conversionInfo, String recordId, List<ConversionStatus> conversionStatuses, boolean hasEror) {
-        if (conversionStatuses== null) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "statuses is null");
+    private void overwritePropertyToData(String name, double value, JsonObject data) {
+        String[] nestedNames = name.split("\\.");
+        JsonObject outter = data;
+        JsonObject inner = data;
+
+        for (int i = 0; i < nestedNames.length - 1; i++) {
+            inner = outter.getAsJsonObject(nestedNames[i]);
+            outter = inner;
         }
 
-        int conversionStatusIndex = this.getConversionStatusIndexFromList(conversionStatuses, recordId);
-        ConversionStatus conversionStatus;
-        if (conversionStatusIndex == -1) {
-            conversionStatus = new ConversionStatus();
-            conversionStatus.setId(recordId);
-        } else {
-            conversionStatus = conversionStatuses.get(conversionStatusIndex);
-            List<String> errors = conversionStatus.getErrors();
-            conversionInfo.addAll(errors);
-        }
-        conversionStatus.setErrors(conversionInfo);
-        if (hasEror) {
-            conversionStatus.setStatus(ConvertStatus.ERROR.toString());
-        }
-        if (conversionStatusIndex == -1) {
-            conversionStatuses.add(conversionStatus);
-        } else {
-            conversionStatuses.set(conversionStatusIndex, conversionStatus);
-        }
+        inner.addProperty(nestedNames[nestedNames.length - 1], value);
     }
 
-    private int getConversionStatusIndexFromList(List<ConversionStatus> conversionStatuses, String recordId) {
+    private ConversionStatus.ConversionStatusBuilder getConversionStatusBuilderFromList(String recordId, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         for (int i = 0; i < conversionStatuses.size(); i++) {
-            if (conversionStatuses.get(i).getId().equalsIgnoreCase(recordId)) {
-                return i;
+            ConversionStatus.ConversionStatusBuilder builder = conversionStatuses.get(i);
+            if (builder.getId().equalsIgnoreCase(recordId)) {
+                return builder;
             }
         }
-        return -1;
+        return null;
     }
 
     private String getRecordId(JsonObject record) {
