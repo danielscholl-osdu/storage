@@ -109,7 +109,6 @@ public abstract class TestUtils {
 
 	private static void log(String method, String url, Map<String, String> headers, String body){
 		System.out.println(String.format("%s: %s", method, url));
-		System.out.println(headers.toString());
 		System.out.println(body);
 	}
 
