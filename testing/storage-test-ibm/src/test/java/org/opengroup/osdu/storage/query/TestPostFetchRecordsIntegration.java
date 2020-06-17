@@ -64,4 +64,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndConversionErrorExists() { }
     
+    @Ignore
+    @Test
+    public void should_returnConvertedRecords_whenConversionRequiredAndNoErrorWithMultiplePairOfCoordinates() throws Exception {}
+
 }
