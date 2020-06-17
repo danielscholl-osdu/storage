@@ -173,9 +173,9 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
 		QueryResult<RecordMetadataDoc> results = db
 				.query(new QueryBuilder(and(regex("legalTagsNames", "!" + legalTagName + "!"), gte("_id", initialId)))
-						.sort(Sort.asc("_id")).fields("_id").limit(numRecords + 1).build(), RecordMetadataDoc.class);
+						.sort(Sort.asc("_id")).fields("_id", "legal", "gcsVersionPaths").limit(numRecords + 1).build(), RecordMetadataDoc.class);
 
-		String nextCursor = "";
+		String nextCursor = null;
 		for (RecordMetadataDoc doc : results.getDocs()) {
 			if (outputRecords.size() < numRecords) {
 				outputRecords.add(doc.getRecordMetadata());

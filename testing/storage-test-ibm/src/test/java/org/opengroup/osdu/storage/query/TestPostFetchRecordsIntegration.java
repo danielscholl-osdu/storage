@@ -60,4 +60,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() { }
 
+    @Ignore
+    @Test
+    public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndConversionErrorExists() { }
+    
 }
