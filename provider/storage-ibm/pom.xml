@@ -28,7 +28,7 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<osdu.ibmcore.version>0.0.14-SNAPSHOT</osdu.ibmcore.version>
+		<os-core-lib-ibm.version>0.0.18</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 	</properties>
 
@@ -43,7 +43,7 @@
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-lib-ibm</artifactId>
-			<version>${osdu.ibmcore.version}</version>
+			<version>${os-core-lib-ibm.version}</version>
 		</dependency>
 
 		<dependency>

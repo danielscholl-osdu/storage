@@ -30,6 +30,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
         <MY_TENANT>opendes</MY_TENANT>
+        <os-core-lib-ibm.version>0.0.18</os-core-lib-ibm.version>
     </properties>
     <dependencies>
         <!-- Internal packages -->
@@ -42,7 +43,7 @@
         <dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-lib-ibm</artifactId>
-			<version>0.0.14-SNAPSHOT</version>
+			<version>${os-core-lib-ibm.version}</version>
 		</dependency>
 
         <!-- third party Apache 2.0 license packages -->
