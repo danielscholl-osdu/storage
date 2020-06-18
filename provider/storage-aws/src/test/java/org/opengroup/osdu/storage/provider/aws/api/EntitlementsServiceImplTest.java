@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.Whitebox;
+import org.opengroup.osdu.core.aws.entitlements.EntitlementsServiceAwsImpl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
@@ -35,7 +36,6 @@ import org.opengroup.osdu.core.aws.entitlements.GroupsRequest;
 import org.opengroup.osdu.core.aws.lambda.HttpMethods;
 import org.opengroup.osdu.core.aws.lambda.LambdaConfig;
 import org.opengroup.osdu.storage.StorageApplication;
-import org.opengroup.osdu.storage.provider.aws.di.EntitlementsServiceImpl;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -92,7 +92,7 @@ public class EntitlementsServiceImplTest {
         EntitlementsServiceHelper entitlementsServiceHelper = new EntitlementsServiceHelper(Regions.US_EAST_1, "mocked-group-function");
         Whitebox.setInternalState(entitlementsServiceHelper, "lambda", lambda);
 
-        EntitlementsServiceImpl service = new EntitlementsServiceImpl(headers);
+        EntitlementsServiceAwsImpl service = new EntitlementsServiceAwsImpl(headers);
         Whitebox.setInternalState(service, "entitlementsServiceHelper", entitlementsServiceHelper);
 
         Groups expectedGroups = new Groups();
