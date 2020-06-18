@@ -93,6 +93,8 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
+        userAccessService.validateRecordAcl(this.queryHelper, recordsProcessing);
+
         // TODO: throughout this class userId isn't used, seems to be something to integrate with entitlements service
         // TODO: ensure that the threads come from the shared pool manager from the web server
         // Using threads to write records to S3 to increase efficiency, no impact to cost
@@ -139,9 +141,17 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
+        Collection<RecordMetadata> accessibleRecords = new ArrayList<>();
+
+        for (RecordMetadata record : records) {
+            if (userAccessService.userHasAccessToRecord(record.getAcl())) {
+                accessibleRecords.add(record);
+            }
+        }
+
         Gson gson = new Gson();
         Map<String, String> base64Hashes = new HashMap<String, String>();
-        Map<String, String> recordsMap = recordsUtil.getRecordsValuesById(records);
+        Map<String, String> recordsMap = recordsUtil.getRecordsValuesById(accessibleRecords);
         for (Map.Entry<String, String> recordObj : recordsMap.entrySet()) {
             String recordId = recordObj.getKey();
             String contents = recordObj.getValue();

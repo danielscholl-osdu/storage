@@ -85,11 +85,13 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public void delete(String id) {
         RecordMetadata rmd = get(id); // needed for authorization check
+        if(userAccessService.userHasAccessToRecord(rmd.getAcl())) {
             queryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
-            for(String legalTag : rmd.getLegal().getLegaltags()){
+            for (String legalTag : rmd.getLegal().getLegaltags()) {
                 deleteLegalTagAssociation(id, legalTag);
             }
         }
+    }
 
     @Override
     public RecordMetadata get(String id) {
