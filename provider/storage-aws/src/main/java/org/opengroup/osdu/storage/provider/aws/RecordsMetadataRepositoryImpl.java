@@ -112,7 +112,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             if (doc == null) continue;
             RecordMetadata rmd = doc.getMetadata();
             if (rmd == null) continue;
-            output.put(id, rmd);
+                output.put(id, rmd);
         }
 
         return output;
