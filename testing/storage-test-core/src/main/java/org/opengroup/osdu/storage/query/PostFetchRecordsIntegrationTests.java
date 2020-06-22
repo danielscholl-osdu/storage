@@ -142,6 +142,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     }
 
     @Test
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     public void should_returnConvertedRecords_whenConversionRequiredAndNoError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
@@ -177,6 +178,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
     }
 
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnConvertedRecords_whenConversionRequiredAndNoErrorWithMultiplePairOfCoordinates() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -212,6 +214,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
     }
 
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnOriginalRecordsAndConversionStatusAsNoMeta_whenConversionRequiredAndNoMetaBlockInRecord() throws Exception{
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -287,6 +290,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     }
 
     @Test
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
@@ -318,6 +322,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
     }
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock1() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
