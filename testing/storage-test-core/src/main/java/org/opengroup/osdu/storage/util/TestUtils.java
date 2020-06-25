@@ -83,6 +83,7 @@ public abstract class TestUtils {
 	public static ClientResponse send(String path, String httpMethod, Map<String, String> headers, String requestBody,
 									  String query) throws Exception {
 
+		log(httpMethod, TestUtils.getApiPath(path + query), headers, requestBody);
 		Client client = TestUtils.getClient();
 
 		WebResource webResource = client.resource(TestUtils.getApiPath(path + query));
@@ -96,6 +97,7 @@ public abstract class TestUtils {
 	public static ClientResponse send(String url, String path, String httpMethod, Map<String, String> headers,
 									  String requestBody, String query) throws Exception {
 
+		log(httpMethod, url + path, headers, requestBody);
 		Client client = TestUtils.getClient();
 
 		WebResource webResource = client.resource(url + path);
@@ -103,6 +105,11 @@ public abstract class TestUtils {
 		headers.forEach(builder::header);
 
 		return builder.method(httpMethod, ClientResponse.class, requestBody);
+	}
+
+	private static void log(String method, String url, Map<String, String> headers, String body){
+		System.out.println(String.format("%s: %s", method, url));
+		System.out.println(body);
 	}
 
 	@SuppressWarnings("unchecked")

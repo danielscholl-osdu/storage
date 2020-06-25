@@ -104,7 +104,7 @@ public class UserAccessServiceTest {
         record.setAcl(acl);
 
         // Act
-        boolean actual = CUT.userHasAccessToRecord(record, true);
+        boolean actual = CUT.userHasAccessToRecord(acl);
 
         // Assert
         Assert.assertTrue(actual);
@@ -120,7 +120,7 @@ public class UserAccessServiceTest {
         record.setAcl(acl);
 
         // Act
-        boolean actual = CUT.userHasAccessToRecord(record, true);
+        boolean actual = CUT.userHasAccessToRecord(acl);
 
         // Assert
         Assert.assertFalse(actual);

@@ -117,7 +117,7 @@ public class SearchServiceFacade {
 
         if (srn != null && srn.contains("ovds")) {
             result = true;
-    }
+        }
 
         return result;
     }

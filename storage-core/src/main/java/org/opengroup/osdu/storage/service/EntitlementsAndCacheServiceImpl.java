@@ -15,8 +15,10 @@
 package org.opengroup.osdu.storage.service;
 
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -29,6 +31,9 @@ import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -77,6 +82,43 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheSer
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public List<RecordMetadata> hasValidAccess(List<RecordMetadata> recordsMetadata, DpsHeaders headers) {
+		Groups groups = this.getGroups(headers);
+		List<RecordMetadata> result = new ArrayList<>();
+
+		for (RecordMetadata recordMetadata : recordsMetadata) {
+			Acl storageAcl = recordMetadata.getAcl();
+			if (hasAccess(storageAcl, groups)) {
+				result.add(recordMetadata);
+			} else {
+				this.logger.warning("Post ACL check fails: " + recordMetadata.getId());
+			}
+		}
+
+		return result;
+	}
+
+	private boolean hasAccess(Acl storageAcl, Groups groups) {
+		String[] viewers = storageAcl.getViewers();
+		String[] owners = storageAcl.getOwners();
+		Set<String> aclList = new HashSet<>();
+
+		for (String viewer : viewers) {
+			aclList.add(viewer.split("@")[0]);
+		}
+		for (String owner : owners) {
+			aclList.add(owner.split("@")[0]);
+		}
+
+		String[] acls = new String[aclList.size()];
+		if (groups.any(aclList.toArray(acls))) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	protected Groups getGroups(DpsHeaders headers) {

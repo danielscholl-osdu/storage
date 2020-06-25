@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.azure.simpledelivery.integration.blo
 import com.azure.identity.DefaultAzureCredential;
 import com.azure.storage.blob.*;
 import com.azure.storage.blob.models.UserDelegationKey;
+import com.azure.storage.blob.sas.BlobContainerSasPermission;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import lombok.extern.java.Log;
@@ -52,13 +53,12 @@ public class BlobSasTokenFacade {
                 .containerName(parts.getBlobContainerName())
                 .buildClient();
 
-        // @todo review expiration date for container SAS
+        // @todo review expiration date for container SAS 
         OffsetDateTime expiresInHalfADay = calcTokenExpirationDate();
         UserDelegationKey key = rbacKeySource.getUserDelegationKey(null, expiresInHalfADay);
 
-        BlobSasPermission readOnlyPerms = BlobSasPermission.parse("r");
-        BlobServiceSasSignatureValues tokenProps = new BlobServiceSasSignatureValues(expiresInHalfADay, readOnlyPerms);
-
+        BlobContainerSasPermission perms = BlobContainerSasPermission.parse("lr");
+        BlobServiceSasSignatureValues tokenProps = new BlobServiceSasSignatureValues(expiresInHalfADay, perms);
         String sasToken = blobContainerClient.generateUserDelegationSas(tokenProps, key);
 
         String sasUri = String.format("%s?%s", containerUrl, sasToken);

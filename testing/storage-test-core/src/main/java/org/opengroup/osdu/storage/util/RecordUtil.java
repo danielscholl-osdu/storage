@@ -19,122 +19,30 @@ import com.google.gson.JsonObject;
 
 public class RecordUtil {
 
-	public static String createJsonRecord(String id, String kind, String legalTag) {
+    public static String createDefaultJsonRecord(String id, String kind, String legalTag) {
+        JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
+        JsonArray records = new JsonArray();
+        records.add(record);
+        return records.toString();
+    }
 
-		JsonObject scoreInt = new JsonObject();
-		scoreInt.addProperty("score-int", 58377304471659395L);
+    public static String createDefaultJsonRecords(int recordsCount, String id, String kind, String legalTag) {
+        JsonArray records = new JsonArray();
+        for (int i = 0; i < recordsCount; i++) {
+            JsonObject record = getDefaultRecordWithDefaultData(id +i, kind, legalTag);
+            records.add(record);
+        }
+        return records.toString();
+    }
 
-		JsonObject scoreDouble = new JsonObject();
-		scoreDouble.addProperty("score-double", 58377304.471659395);
-
-		JsonObject data = new JsonObject();
-		data.add("int-tag", scoreInt);
-		data.add("double-tag", scoreDouble);
-		data.addProperty("count", 123456789L);
-
-		JsonObject acl = new JsonObject();
-		JsonArray acls = new JsonArray();
-		acls.add(TestUtils.getAcl());
-		acl.add("viewers", acls);
-		acl.add("owners", acls);
-
-		JsonArray tags = new JsonArray();
-		tags.add(legalTag);
-
-		JsonArray ordcJson = new JsonArray();
-		ordcJson.add("BR");
-
-		JsonObject legal = new JsonObject();
-		legal.add("legaltags", tags);
-		legal.add("otherRelevantDataCountries", ordcJson);
-
-		JsonObject record = new JsonObject();
-		record.addProperty("id", id);
-		record.addProperty("kind", kind);
-		record.add("acl", acl);
-		record.add("legal", legal);
-		record.add("data", data);
-
-		JsonArray records = new JsonArray();
-		records.add(record);
-
-		return records.toString();
-	}
-
-	public static String createJsonRecord(int recordsNumber, String id, String kind, String legalTag) {
-
-		JsonArray records = new JsonArray();
-
-		for (int i = 0; i < recordsNumber; i++) {
-			JsonObject scoreInt = new JsonObject();
-			scoreInt.addProperty("score-int", 58377304471659395L);
-
-			JsonObject scoreDouble = new JsonObject();
-			scoreDouble.addProperty("score-double", 58377304.471659395);
-
-			JsonObject data = new JsonObject();
-			data.add("int-tag", scoreInt);
-			data.add("double-tag", scoreDouble);
-			data.addProperty("count", 123456789L);
-
-			JsonObject acl = new JsonObject();
-			JsonArray acls = new JsonArray();
-			acls.add(TestUtils.getAcl());
-			acl.add("viewers", acls);
-			acl.add("owners", acls);
-
-			JsonArray tags = new JsonArray();
-			tags.add(legalTag);
-
-			JsonArray ordcJson = new JsonArray();
-			ordcJson.add("BR");
-
-			JsonObject legal = new JsonObject();
-			legal.add("legaltags", tags);
-			legal.add("otherRelevantDataCountries", ordcJson);
-
-			JsonObject record = new JsonObject();
-			record.addProperty("id", id + i);
-			record.addProperty("kind", kind);
-			record.add("acl", acl);
-			record.add("legal", legal);
-			record.add("data", data);
-
-			records.add(record);
-		}
-
-		return records.toString();
-	}
-
-	public static String createJsonRecord(String id, String kind, String legalTag, String data) {
+	public static String createJsonRecordWithData(String id, String kind, String legalTag, String data) {
 
 		JsonObject dataJson = new JsonObject();
 		dataJson.addProperty("custom", data);
 		dataJson.addProperty("score-int", 58377304471659395L);
 		dataJson.addProperty("score-double", 58377304.471659395);
 
-		JsonObject acl = new JsonObject();
-		JsonArray acls = new JsonArray();
-		acls.add(TestUtils.getAcl());
-		acl.add("viewers", acls);
-		acl.add("owners", acls);
-
-		JsonArray tags = new JsonArray();
-		tags.add(legalTag);
-
-		JsonArray ordcJson = new JsonArray();
-		ordcJson.add("BR");
-
-		JsonObject legal = new JsonObject();
-		legal.add("legaltags", tags);
-		legal.add("otherRelevantDataCountries", ordcJson);
-
-		JsonObject record = new JsonObject();
-		record.addProperty("id", id);
-		record.addProperty("kind", kind);
-		record.add("acl", acl);
-		record.add("legal", legal);
-		record.add("data", dataJson);
+		JsonObject record = getRecordWithInputData(id, kind, legalTag, dataJson);
 
 		JsonArray records = new JsonArray();
 		records.add(record);
@@ -142,33 +50,17 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecord(int recordsNumber, String id, String kind, String legalTag, String fromCrs, String conversionType) {
+	public static String createJsonRecordWithReference(int recordsCount, String id, String kind, String legalTag, String fromCrs, String conversionType) {
 
 		JsonArray records = new JsonArray();
 
-		for (int i = 0; i < recordsNumber; i++) {
+		for (int i = 0; i < recordsCount; i++) {
 
 			JsonObject data = new JsonObject();
 			data.addProperty("X", 16.00);
 			data.addProperty("Y", 10.00);
 			data.addProperty("Z", 0.0);
 
-			JsonObject acl = new JsonObject();
-			JsonArray acls = new JsonArray();
-			acls.add(TestUtils.getAcl());
-			acl.add("viewers", acls);
-			acl.add("owners", acls);
-
-			JsonArray tags = new JsonArray();
-			tags.add(legalTag);
-
-			JsonArray ordcJson = new JsonArray();
-			ordcJson.add("BR");
-
-			JsonObject legal = new JsonObject();
-			legal.add("legaltags", tags);
-			legal.add("otherRelevantDataCountries", ordcJson);
-
 			JsonArray propertyNames = new JsonArray();
 			propertyNames.add("X");
 			propertyNames.add("Y");
@@ -182,12 +74,7 @@ public class RecordUtil {
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
-			JsonObject record = new JsonObject();
-			record.addProperty("id", id + i);
-			record.addProperty("kind", kind);
-			record.add("acl", acl);
-			record.add("legal", legal);
-			record.add("data", data);
+			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
 			record.add("meta", metaBlocks);
 
 			records.add(record);
@@ -196,32 +83,16 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordMisingValue(int recordsNumber, String id, String kind, String legalTag, String fromCrs, String conversionType) {
+	public static String createJsonRecordMissingValue(int recordsCount, String id, String kind, String legalTag, String fromCrs, String conversionType) {
 
 		JsonArray records = new JsonArray();
 
-		for (int i = 4; i < 4 + recordsNumber; i++) {
+		for (int i = 0; i < recordsCount; i++) {
 
 			JsonObject data = new JsonObject();
 			data.addProperty("X", 16.00);
 			data.addProperty("Z", 0.0);
 
-			JsonObject acl = new JsonObject();
-			JsonArray acls = new JsonArray();
-			acls.add(TestUtils.getAcl());
-			acl.add("viewers", acls);
-			acl.add("owners", acls);
-
-			JsonArray tags = new JsonArray();
-			tags.add(legalTag);
-
-			JsonArray ordcJson = new JsonArray();
-			ordcJson.add("BR");
-
-			JsonObject legal = new JsonObject();
-			legal.add("legaltags", tags);
-			legal.add("otherRelevantDataCountries", ordcJson);
-
 			JsonArray propertyNames = new JsonArray();
 			propertyNames.add("X");
 			propertyNames.add("Y");
@@ -235,12 +106,7 @@ public class RecordUtil {
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
-			JsonObject record = new JsonObject();
-			record.addProperty("id", id + i);
-			record.addProperty("kind", kind);
-			record.add("acl", acl);
-			record.add("legal", legal);
-			record.add("data", data);
+			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
 			record.add("meta", metaBlocks);
 
 			records.add(record);
@@ -249,40 +115,44 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordNoMetaBlock(int recordsNumber, String id, String kind, String legalTag, String fromCrs, String conversionType) {
+	public static String createJsonRecordNoMetaBlock(int recordsCount, String id, String kind, String legalTag) {
 
 		JsonArray records = new JsonArray();
 
-		for (int i = 6; i < 6 + recordsNumber; i++) {
-
+		for (int i = 0; i < recordsCount; i++) {
 			JsonObject data = new JsonObject();
 			data.addProperty("X", 16.00);
 			data.addProperty("Y", 16.00);
 			data.addProperty("Z", 0.0);
 
-			JsonObject acl = new JsonObject();
-			JsonArray acls = new JsonArray();
-			acls.add(TestUtils.getAcl());
-			acl.add("viewers", acls);
-			acl.add("owners", acls);
+			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
+			records.add(record);
+		}
 
-			JsonArray tags = new JsonArray();
-			tags.add(legalTag);
+		return records.toString();
+	}
 
-			JsonArray ordcJson = new JsonArray();
-			ordcJson.add("BR");
+	public static String createJsonRecordsWithDateFormat(int recordsCount, String id, String kind, String legalTag, String format, String propertyName, String date, String persistableReference) {
 
-			JsonObject legal = new JsonObject();
-			legal.add("legaltags", tags);
-			legal.add("otherRelevantDataCountries", ordcJson);
+		JsonArray records = new JsonArray();
 
-			JsonObject record = new JsonObject();
-			record.addProperty("id", id + i);
-			record.addProperty("kind", kind);
-			record.add("acl", acl);
-			record.add("legal", legal);
-			record.add("data", data);
+		for (int i = 0; i < recordsCount; i++) {
+			JsonObject data = new JsonObject();
+			data.addProperty(propertyName, date);
 
+			JsonArray propertyNames = new JsonArray();
+			propertyNames.add(propertyName);
+
+			JsonObject meta = new JsonObject();
+			meta.addProperty("persistableReference", persistableReference);
+			meta.addProperty("kind", "DateTime");
+			meta.add("propertyNames", propertyNames);
+
+			JsonArray metas = new JsonArray();
+			metas.add(meta);
+
+			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
+			record.add("meta", metas);
 			records.add(record);
 		}
 
@@ -313,22 +183,6 @@ public class RecordUtil {
 			data.addProperty("message", "integration-test-record");
 			data.add("projectOutlineLocalGeographic", nestedProperty);
 
-			JsonObject acl = new JsonObject();
-			JsonArray acls = new JsonArray();
-			acls.add(TestUtils.getAcl());
-			acl.add("viewers", acls);
-			acl.add("owners", acls);
-
-			JsonArray tags = new JsonArray();
-			tags.add(legalTag);
-
-			JsonArray ordcJson = new JsonArray();
-			ordcJson.add("BR");
-
-			JsonObject legal = new JsonObject();
-			legal.add("legaltags", tags);
-			legal.add("otherRelevantDataCountries", ordcJson);
-
 			JsonArray propertyNames = new JsonArray();
 			propertyNames.add("projectOutlineLocalGeographic");
 
@@ -340,11 +194,42 @@ public class RecordUtil {
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
-			JsonObject record = new JsonObject();
-			record.addProperty("id", id + i);
-			record.addProperty("kind", kind);
-			record.add("acl", acl);
-			record.add("legal", legal);
+			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
+			record.add("meta", metaBlocks);
+
+			records.add(record);
+		}
+
+		return records.toString();
+	}
+
+	public static String createJsonRecordWithMultiplePairOfCoordinates(int recordsNumber, String id, String kind, String legalTag, String fromCrs, String conversionType) {
+
+		JsonArray records = new JsonArray();
+
+		for (int i = 0; i <  recordsNumber; i++) {
+
+			JsonObject data = new JsonObject();
+			data.addProperty("X", 16.00);
+			data.addProperty("Y", 10.00);
+			data.addProperty("LON", 16.00);
+			data.addProperty("LAT", 10.00);
+
+			JsonArray propertyNames = new JsonArray();
+			propertyNames.add("X");
+			propertyNames.add("Y");
+			propertyNames.add("LON");
+			propertyNames.add("LAT");
+
+			JsonObject meta = new JsonObject();
+			meta.addProperty("kind", conversionType);
+			meta.addProperty("persistableReference", fromCrs);
+			meta.add("propertyNames", propertyNames);
+
+			JsonArray metaBlocks = new JsonArray();
+			metaBlocks.add(meta);
+
+			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
 			record.add("data", data);
 			record.add("meta", metaBlocks);
 
@@ -352,5 +237,51 @@ public class RecordUtil {
 		}
 
 		return records.toString();
+	}
+
+	private static JsonObject getDefaultRecord(String id, String kind, String legalTag) {
+		JsonObject acl = new JsonObject();
+		JsonArray acls = new JsonArray();
+		acls.add(TestUtils.getAcl());
+		acl.add("viewers", acls);
+		acl.add("owners", acls);
+
+		JsonArray tags = new JsonArray();
+		tags.add(legalTag);
+
+		JsonArray ordcJson = new JsonArray();
+		ordcJson.add("BR");
+
+		JsonObject legal = new JsonObject();
+		legal.add("legaltags", tags);
+		legal.add("otherRelevantDataCountries", ordcJson);
+
+		JsonObject record = new JsonObject();
+		record.addProperty("id", id);
+		record.addProperty("kind", kind);
+		record.add("acl", acl);
+		record.add("legal", legal);
+		return record;
+	}
+
+	private static JsonObject getDefaultRecordWithDefaultData(String id, String kind, String legalTag) {
+		JsonObject data = new JsonObject();
+		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
+		data.add("double-tag", getNumberPropertyObject("score-double", 58377304.471659395));
+		data.addProperty("count", 123456789L);
+		JsonObject record = getRecordWithInputData(id, kind, legalTag, data);
+		return record;
+	}
+
+	private static JsonObject getRecordWithInputData(String id, String kind, String legalTag, JsonObject data) {
+		JsonObject record = getDefaultRecord(id, kind, legalTag);
+		record.add("data", data);
+		return record;
+	}
+
+	private static JsonObject getNumberPropertyObject(String propertyName, Number intValue) {
+		JsonObject numberProperty = new JsonObject();
+		numberProperty.addProperty(propertyName, intValue);
+		return numberProperty;
 	}
 }

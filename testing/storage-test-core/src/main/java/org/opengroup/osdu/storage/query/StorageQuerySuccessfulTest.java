@@ -93,7 +93,7 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 	}
 
 	protected ClientResponse createTestRecord(String kind, String id, String legalName) throws Exception {
-		String jsonInputRecord = RecordUtil.createJsonRecord(id, kind, legalName);
+		String jsonInputRecord = RecordUtil.createDefaultJsonRecord(id, kind, legalName);
 		return TestUtils.send(RECORD, HttpMethod.PUT, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputRecord, "");
 	}
 }

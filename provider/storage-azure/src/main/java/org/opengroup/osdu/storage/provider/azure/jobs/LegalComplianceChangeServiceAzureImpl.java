@@ -16,11 +16,8 @@ package org.opengroup.osdu.storage.provider.azure.jobs;
 
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.legal.jobs.*;
 import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
-import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
-import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
-import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -56,7 +53,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
 
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
-                                                                  DpsHeaders headers) {
+                                                                  DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
 
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
@@ -68,6 +65,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
 
             String cursor = null;
             do {
+                //TODO replace with the new method queryByLegal
                 AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = this.recordsRepo
                         .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
                 cursor = results.getKey();

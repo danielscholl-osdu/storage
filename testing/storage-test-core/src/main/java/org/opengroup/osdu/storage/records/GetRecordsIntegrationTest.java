@@ -44,7 +44,7 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
         LegalTagUtils.create(LEGAL_TAG_NAME_A, token);
         LegalTagUtils.create(LEGAL_TAG_NAME_B, token);
 
-        String jsonInput = RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_A);
+		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_A);
 
 
         ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
@@ -111,17 +111,17 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 		assertNotNull(json.get("acl"));
 		assertNotNull(json.get("version"));
 		assertNotNull(json.get("data"));
+		assertNotNull(json.get("createTime"));
 
 		assertNull(json.get("bucket"));
 		assertNull(json.get("status"));
-		assertNull(json.get("createTime"));
 		assertNull(json.get("modifyUser"));
 		assertNull(json.get("modifyTime"));
 	}
 
     @Test
     public void should_legaltagChange_when_updateRecordWithLegaltag() throws Exception {
-        String newJsonInput = RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_B);
+		String newJsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_B);
         ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), newJsonInput, "?skipdupes=false");
         assertEquals(201, response.getStatus());
 

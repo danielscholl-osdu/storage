@@ -42,6 +42,7 @@ public class SrnToPresignedUrlMapper {
         for (String srn : input) {
             try {
                 FileSrnInfo info = searchFacade.findInfoForFileSrn(srn);
+
                 String fileSource = info.getFileSource();
                 String signedUrl;
 

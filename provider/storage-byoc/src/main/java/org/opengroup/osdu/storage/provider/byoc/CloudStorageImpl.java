@@ -87,6 +87,10 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public void delete(RecordMetadata record)
     {
+        if (!record.hasVersion()) {
+           return;
+        }
+
         Iterator<RecordProcessing> it = memList.iterator();
         while(it.hasNext())
         {
@@ -121,6 +125,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         for (RecordMetadata record : records)
         {
+            if (!record.hasVersion()) {
+                continue;
+            }
+
             if (!record.getStatus().equals(RecordState.active))
                 return false;
         }

@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.aws;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
@@ -84,9 +85,9 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public void delete(String id) {
         RecordMetadata rmd = get(id); // needed for authorization check
-        if(userAccessService.userHasAccessToRecord(rmd, false)) {
+        if(userAccessService.userHasAccessToRecord(rmd.getAcl())) {
             queryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
-            for(String legalTag : rmd.getLegal().getLegaltags()){
+            for (String legalTag : rmd.getLegal().getLegaltags()) {
                 deleteLegalTagAssociation(id, legalTag);
             }
         }
@@ -94,14 +95,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     @Override
     public RecordMetadata get(String id) {
-        RecordMetadata metadata = null;
         RecordMetadataDoc doc = queryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
-
-        if (doc != null) {
-            metadata = doc.getMetadata();
+        if (doc == null) {
+            return null;
+        } else {
+            return doc.getMetadata();
         }
-
-        return metadata;
     }
 
     @Override
@@ -109,14 +108,22 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         Map<String, RecordMetadata> output = new HashMap<>();
 
         for (String id: ids) {
-            RecordMetadata rmd = get(id);
+            RecordMetadataDoc doc = queryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
+            if (doc == null) continue;
+            RecordMetadata rmd = doc.getMetadata();
             if (rmd == null) continue;
-            output.put(id, rmd);
+                output.put(id, rmd);
         }
 
         return output;
     }
 
+    @Override
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+        return null;
+    }
+
+    //TODO replace with the new method queryByLegal
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor) {
@@ -135,9 +142,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
         List<RecordMetadata> associatedRecords = new ArrayList<>();
         for(String recordId : associatedRecordIds){
-            RecordMetadata rmd = get(recordId);
-            if (rmd != null)
-                associatedRecords.add(rmd);
+            associatedRecords.add(get(recordId));
         }
 
         return new AbstractMap.SimpleEntry<>(result.cursor, associatedRecords);

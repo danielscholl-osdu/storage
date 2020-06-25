@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.byoc;
 
 import com.google.gson.Gson;
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.stereotype.Repository;
@@ -67,6 +68,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         return output;
     }
 
+    @Override
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+        return null;
+    }
+
+    //TODO replace with the new method queryByLegal
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor)

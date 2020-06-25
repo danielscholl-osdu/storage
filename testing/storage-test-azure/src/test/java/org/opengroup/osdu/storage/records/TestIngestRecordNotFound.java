@@ -60,7 +60,7 @@ public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
 
 		String group = String.format("data.thisDataGrpDoesNotExsist@%s", TestUtils.getAclSuffix());
 
-		String record = RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
+		String record = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
 

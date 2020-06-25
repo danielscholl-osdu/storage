@@ -173,6 +173,11 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void delete(RecordMetadata record) {
+        if (!record.hasVersion()) {
+            this.logger.warning(String.format("Record %s does not have versions available", record.getId()));
+            return;
+        }
+
         validateOwnerAccessToRecord(record);
         String path = this.buildPath(record);
         BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(path).getBlockBlobClient();
@@ -198,6 +203,12 @@ public class CloudStorageImpl implements ICloudStorage {
             if (!record.getStatus().equals(RecordState.active)) {
                 continue;
             }
+
+            if (!record.hasVersion()) {
+                this.logger.warning(String.format("Record %s does not have versions available", record.getId()));
+                continue;
+            }
+
             hasAtLeastOneActiveRecord = true;
             if (hasViewerAccessToRecord(record))
                 return true;

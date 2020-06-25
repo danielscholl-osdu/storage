@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.swagger;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import springfox.documentation.builders.ParameterBuilder;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -36,6 +37,7 @@ import java.util.List;
 
 @Configuration
 @EnableSwagger2
+@Profile("!noswagger")
 public class SwaggerDocumentationConfig {
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String DEFAULT_INCLUDE_PATTERN = "/.*";

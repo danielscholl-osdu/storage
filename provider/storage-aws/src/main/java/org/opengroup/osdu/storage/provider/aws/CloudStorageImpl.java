@@ -144,7 +144,7 @@ public class CloudStorageImpl implements ICloudStorage {
         Collection<RecordMetadata> accessibleRecords = new ArrayList<>();
 
         for (RecordMetadata record : records) {
-            if (userAccessService.userHasAccessToRecord(record, true)) {
+            if (userAccessService.userHasAccessToRecord(record.getAcl())) {
                 accessibleRecords.add(record);
             }
         }
@@ -169,7 +169,12 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void delete(RecordMetadata record) {
-        if(userAccessService.userHasAccessToRecord(record, false)) {
+        if (!record.hasVersion()) {
+            this.logger.warning(String.format("Record %s does not have versions available", record.getId()));
+            return;
+        }
+
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
             s3RecordClient.deleteRecord(record);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
@@ -180,7 +185,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
-        if(userAccessService.userHasAccessToRecord(record, false)) {
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
             s3RecordClient.deleteRecordVersion(record, version);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
@@ -192,7 +197,12 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public boolean hasAccess(RecordMetadata... records) {
         for (RecordMetadata recordMetadata : records) {
-            if (!userAccessService.userHasAccessToRecord(recordMetadata, true)) {
+            if (!recordMetadata.hasVersion()) {
+                this.logger.warning(String.format("Record %s does not have versions available", recordMetadata.getId()));
+                continue;
+            }
+
+            if (!userAccessService.userHasAccessToRecord(recordMetadata.getAcl())) {
                 return false;
             }
         }
@@ -203,7 +213,7 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
         // checkDataInconsistency not used in other providers
-        if(userAccessService.userHasAccessToRecord(record, true)) {
+        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
             return s3RecordClient.getRecord(record, version);
         } else {
             logger.error(String.format("User not in ACL for record %s", record.getId()));
@@ -216,21 +226,7 @@ public class CloudStorageImpl implements ICloudStorage {
     public Map<String, String> read(Map<String, String> objects) {
         // key -> record id
         // value -> record version path
-        Map<String, String> accessibleRecords = new HashMap<>();
-
-        Map<String, String> response = new HashMap<>();
-
-        for (Map.Entry<String, String> record : objects.entrySet()) {
-            RecordMetadata recordMetadata = recordsMetadataRepository.get(record.getKey());
-            if (userAccessService.userHasAccessToRecord(recordMetadata, true))
-                accessibleRecords.put(record.getKey(), record.getValue());
-            else
-                response.put(record.getKey(), null);
-        }
-
-        response.putAll(recordsUtil.getRecordsValuesById(accessibleRecords));
-
-        return response;
+        return recordsUtil.getRecordsValuesById(objects);
     }
 
     @Override

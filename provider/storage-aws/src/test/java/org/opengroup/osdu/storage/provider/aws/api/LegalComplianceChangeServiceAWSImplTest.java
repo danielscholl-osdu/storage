@@ -26,6 +26,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.StorageApplication;
@@ -64,7 +65,7 @@ public class LegalComplianceChangeServiceAWSImplTest {
     private LegalTagCache legalTagCache;
 
     @Test
-    public void updateComplianceOnRecordsTest(){
+    public void updateComplianceOnRecordsTest() throws ComplianceUpdateStoppedException {
         // arrange
         String incompliantTagName = "incompliant-test-tag";
         String incompliantRecordId = "incompliant-record";

@@ -69,7 +69,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Inject
 	private CloudObjectStorageFactory cosFactory;
-
+	
 	@Inject
     private EntitlementsAndCacheServiceIBM entitlementsService;
 
@@ -82,7 +82,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	// @Inject
 	// private ITenantFactory tenant;
 	// TODO use tenant name at the bucket name
-
+	
 	private static final Logger logger = LoggerFactory.getLogger(CloudObjectStorageImpl.class);
 
 	String bucketName;
@@ -102,7 +102,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 
 	@Override
 	public void write(RecordProcessing... recordsProcessing) {
-
+		
 		validateRecordAcls(recordsProcessing);
 
 		Gson gson = new GsonBuilder().serializeNulls().create();
@@ -132,29 +132,28 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	}
 
 	@Override
-    public Map<String, String> getHash(Collection<RecordMetadata> records)
-    {
-        Gson gson = new Gson();
-        Map<String, String> hashes = new HashMap<>();
-        for (RecordMetadata rm : records) {
-            String jsonData = this.read(rm, rm.getLatestVersion(), false);
-            RecordData data = gson.fromJson(jsonData, RecordData.class);
-            String hash = getHash(data);
-            hashes.put(rm.getId(), hash);
-        }
-        return hashes;
-    }
+	public Map<String, String> getHash(Collection<RecordMetadata> records) {
+		Gson gson = new Gson();
+		Map<String, String> hashes = new HashMap<>();
+		for (RecordMetadata rm : records) {
+			String jsonData = this.read(rm, rm.getLatestVersion(), false);
+			RecordData data = gson.fromJson(jsonData, RecordData.class);
+			String hash = getHash(data);
+			hashes.put(rm.getId(), hash);
+		}
+		return hashes;
+	}
 
 	private String getHash(RecordData data) {
 		Gson gson = new Gson();
-        Crc32c checksumGenerator = new Crc32c();
+		Crc32c checksumGenerator = new Crc32c();
 
-        String newRecordStr = gson.toJson(data);
-        byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
-        checksumGenerator.update(bytes, 0, bytes.length);
-        bytes = checksumGenerator.getValueAsBytes();
-        String newHash = new String(encodeBase64(bytes));
-        return newHash;
+		String newRecordStr = gson.toJson(data);
+		byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
+		checksumGenerator.update(bytes, 0, bytes.length);
+		bytes = checksumGenerator.getValueAsBytes();
+		String newHash = new String(encodeBase64(bytes));
+		return newHash;
 	}
 
 	@Override
@@ -176,31 +175,32 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	}
 
 	@Override
-    public boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap, Map.Entry<RecordMetadata, RecordData> kv) {
-        RecordMetadata updatedRecordMetadata = kv.getKey();
-        RecordData recordData = kv.getValue();
-        String recordHash = hashMap.get(updatedRecordMetadata.getId());
+	public boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap,
+			Map.Entry<RecordMetadata, RecordData> kv) {
+		RecordMetadata updatedRecordMetadata = kv.getKey();
+		RecordData recordData = kv.getValue();
+		String recordHash = hashMap.get(updatedRecordMetadata.getId());
 
-        String newHash = getHash(recordData);
+		String newHash = getHash(recordData);
 
-        if (newHash.equals(recordHash)) {
-            transfer.getSkippedRecords().add(updatedRecordMetadata.getId());
-            return true;
-        }else{
-            return false;
-        }
-    }
-
+		if (newHash.equals(recordHash)) {
+			transfer.getSkippedRecords().add(updatedRecordMetadata.getId());
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 	@Override
-	public boolean hasAccess(RecordMetadata... records) {
+    public boolean hasAccess(RecordMetadata... records) {
 		for (RecordMetadata recordMetadata : records) {
             if (!hasViewerAccessToRecord(recordMetadata)) {
                 return false;
-            }
         }
+            }
 
-        return true;
-    }
+                return true;
+        }
 
     private boolean hasViewerAccessToRecord(RecordMetadata record)
     {
@@ -229,7 +229,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
             throw new AppException(HttpStatus.SC_FORBIDDEN,  ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
     }
-
+    
     /**
      * Ensures that the ACLs of the record are a subset of the ACLs
      * @param records the records to validate
@@ -267,10 +267,11 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	@Override
 	public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
 		// TODO checkDataInconsistency implement
+		
 		validateViewerAccessToRecord(record);
-
-        String itemName = this.getItemName(record, version);
-        logger.info("Reading item: " + itemName);
+		
+		String itemName = this.getItemName(record, version);
+		logger.info("Reading item: " + itemName);
 
 		return getObjectAsString(itemName);
 
@@ -288,10 +289,9 @@ public class CloudObjectStorageImpl implements ICloudStorage {
             	map.put(record.getKey(), getObjectAsString(record.getValue()));
             else
             	map.put(record.getKey(), null);
-        }
+		}
 
-        return map;
-
+		return map;
 	}
 
 	private String getItemName(RecordMetadata record) {

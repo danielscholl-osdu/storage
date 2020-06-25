@@ -44,5 +44,5 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     @Override
     public void tearDown() throws Exception {
         this.testUtils = null;
-	}    
+	}
 }

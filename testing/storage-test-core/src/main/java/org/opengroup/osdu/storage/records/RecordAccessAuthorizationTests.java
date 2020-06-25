@@ -38,7 +38,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		LegalTagUtils.create(LEGAL_TAG, token);
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token),
-				RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
+				RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
 	}
@@ -113,13 +113,13 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 				testUtils.getNoDataAccessToken());
 
 		ClientResponse response = TestUtils.send("records", "PUT", headers,
-				RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
+				RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
 		this.assertNotAuthorized(response);
 	}
 
 	@Test
-	public void should_retrievePartOfRecords_when_fetchingMultipleRecords_and_notAuthorizedToSomeRecords()
+	public void should_NoneRecords_when_fetchingMultipleRecords_and_notAuthorizedToRecords()
 			throws Exception {
 
 		// Creates a new record
@@ -129,7 +129,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 				testUtils.getNoDataAccessToken());
 
 		ClientResponse response = TestUtils.send("records", "PUT", headers,
-				RecordUtil.createJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
+				RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
 
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
 
@@ -147,12 +147,9 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 
 		DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
 
-		assertEquals(1, responseObject.records.length);
+		assertEquals(0, responseObject.records.length);
 		assertEquals(0, responseObject.invalidRecords.length);
-		assertEquals(1, responseObject.retryRecords.length);
-
-		assertEquals(newRecordId, responseObject.records[0].id);
-		assertEquals(RECORD_ID, responseObject.retryRecords[0]);
+		assertEquals(0, responseObject.retryRecords.length);
 
 		TestUtils.send("records/" + newRecordId, "DELETE", headers, "", "");
 	}

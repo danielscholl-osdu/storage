@@ -96,7 +96,7 @@ public class LegalTagConsistencyValidatorTest {
             LegalTagChangedCollection validatedTags = this.sut
                     .checkLegalTagStatusWithLegalService(this.toBeValidatedDto);
             Assert.assertEquals(expected, validatedTags);
-            verify(this.logger).warning("Inconsistency between pubsub message and legal: test-legaltag-2");
+            verify(this.logger).warning("Inconsistency between pubsub message and legal: test-legaltag-2. Expected incompliant.");
         } catch (Exception e) {
             fail("should not throw exception");
         }

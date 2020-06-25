@@ -29,8 +29,10 @@ public class StorageIBMApplication {
 	void f() {
 
 	}
+	
 	public static void main(String[] args) {
-
+		
 		SpringApplication.run(StorageIBMApplication.class, args);
-       }
+    }
+	
 }

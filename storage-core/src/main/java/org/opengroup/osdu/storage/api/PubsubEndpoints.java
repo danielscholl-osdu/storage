@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.api;
 
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +36,9 @@ public class PubsubEndpoints {
     @Autowired
     private ComplianceMessagePushReceiver pushReceiver;
 
-    @Autowired
-    private JaxRsDpsLog logger;
-
     @PostMapping("/legaltag-changed")
     @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "', '" + StorageRole.PUBSUB + "')")
-    public ResponseEntity legaltagChanged() {
-        logger.info("received message from pubsub Server");
+    public ResponseEntity legaltagChanged() throws ComplianceUpdateStoppedException {
         this.pushReceiver.receiveMessageFromHttpRequest();
         return new ResponseEntity(HttpStatus.OK);
     }

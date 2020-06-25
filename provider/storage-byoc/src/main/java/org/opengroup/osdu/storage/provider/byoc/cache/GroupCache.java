@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class GroupCache extends VmCache<String, Groups> {
 
     public GroupCache() {
-        super(5*60, 1000);
+        super(30, 1000);
     }
 }
 

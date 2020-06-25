@@ -16,8 +16,11 @@ package org.opengroup.osdu.storage.conversion;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.crs.dates.DatesConversionImpl;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.crs.ConversionRecord;
 import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
@@ -38,12 +41,16 @@ public class DpsConversionService {
     @Autowired
     private CrsConversionService crsConversionService;
 
+    @Autowired
+    private JaxRsDpsLog logger;
+
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
+    private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
     private static final String CONVERSION_NO_META_BLOCK = "No Meta Block in This Record.";
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
-        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
         List<ConversionRecord> recordsWithoutMetaBlock = new ArrayList<>();
         List<JsonObject> recordsWithMetaBlock = this.classifyRecords(originalRecords, conversionStatuses,
                 recordsWithoutMetaBlock);
@@ -68,25 +75,22 @@ public class DpsConversionService {
             }
 
             this.unitConversionService.convertUnitsToSI(conversionRecords);
+            this.datesConversionService.convertDatesToISO(conversionRecords);
             allRecords.addAll(conversionRecords);
         }
+        this.checkMismatchAndLogMissing(originalRecords, allRecords);
+
         return this.MakeResponseStatus(allRecords);
     }
 
-    private List<JsonObject> classifyRecords(List<JsonObject> originalRecords,
-                                             List<ConversionStatus> conversionStatuses, List<ConversionRecord> recordsWithoutMetaBlock) {
+    private List<JsonObject> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<ConversionRecord> recordsWithoutMetaBlock) {
         List<JsonObject> recordsWithMetaBlock = new ArrayList<>();
         for (int i = 0; i < originalRecords.size(); i++) {
             JsonObject recordJsonObject = originalRecords.get(i);
             if (this.isMetaBlockPresent(recordJsonObject)) {
                 recordsWithMetaBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
-                ConversionStatus conversionStatus = new ConversionStatus();
-                List<String> errors = new ArrayList<>();
-                conversionStatus.setId(recordId);
-                conversionStatus.setStatus(ConvertStatus.SUCCESS.toString());
-                conversionStatus.setErrors(errors);
-                conversionStatuses.add(conversionStatus);
+                conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
             } else {
                 ConversionRecord conversionRecord = new ConversionRecord();
                 conversionRecord.setRecordJsonObject(recordJsonObject);
@@ -143,5 +147,21 @@ public class DpsConversionService {
         result.setRecords(records);
         result.setConversionStatuses(conversionStatuses);
         return result;
+    }
+
+    private void checkMismatchAndLogMissing(List<JsonObject> originalRecords, List<ConversionRecord> convertedRecords) {
+        if (originalRecords.size() == convertedRecords.size()) {
+            return;
+        }
+
+        List<String> convertedIds = convertedRecords.stream()
+                .map(ConversionRecord::getRecordId).collect(Collectors.toList());
+
+        for (JsonObject originalRecord : originalRecords) {
+            String originalId = this.getRecordId(originalRecord);
+            if (!convertedIds.contains(originalId) ) {
+                this.logger.warning("Missing record after conversion: " + originalId);
+            }
+        }
     }
 }

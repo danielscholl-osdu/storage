@@ -100,7 +100,7 @@ public class CloudStorageTest {
         bytes = checksumGenerator.getValueAsBytes();
         String expectedHash = new String(encodeBase64(bytes));
 
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject(), Mockito.anyBoolean()))
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
                 .thenReturn(true);
         Mockito.when(recordsUtil.getRecordsValuesById(Mockito.eq(records)))
                 .thenReturn(mapRecords);
@@ -116,7 +116,7 @@ public class CloudStorageTest {
     public void delete(){
         // arrange
         Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(record));
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject(), Mockito.anyBoolean()))
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
                 .thenReturn(true);
 
         // act
@@ -132,7 +132,7 @@ public class CloudStorageTest {
         Long version = 1L;
         Mockito.when(s3RecordClient.getRecord(Mockito.eq(record), Mockito.eq(version)))
                 .thenReturn("test-response");
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject(), Mockito.anyBoolean()))
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
                 .thenReturn(true);
 
         // act
@@ -154,7 +154,7 @@ public class CloudStorageTest {
         RecordMetadata recordMetadata = new RecordMetadata();
 
         Mockito.when(recordsMetadataRepository.get("test-record-id")).thenReturn(recordMetadata);
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordMetadata), Mockito.anyBoolean()))
+        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
                 .thenReturn(true);
 
         Mockito.when(recordsUtil.getRecordsValuesById(Mockito.eq(map)))

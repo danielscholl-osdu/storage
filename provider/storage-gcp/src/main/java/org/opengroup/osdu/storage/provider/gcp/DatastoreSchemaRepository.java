@@ -51,7 +51,7 @@ public class DatastoreSchemaRepository implements ISchemaRepository {
 
 		if (txn.get(schemaKey) != null) {
            try {
-			   throw new IllegalArgumentException("A schema for the specified kind has already been registered.");
+			throw new IllegalArgumentException("A schema for the specified kind has already been registered.");
 		   } finally {
 			   if (txn.isActive()) {
 				   txn.rollback();

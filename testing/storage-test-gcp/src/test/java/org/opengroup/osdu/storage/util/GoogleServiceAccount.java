@@ -89,7 +89,6 @@ class GoogleServiceAccount {
 		HttpResponse response = client.execute(httpPost);
 
 		String responseEntity = EntityUtils.toString(response.getEntity());
-	//	System.out.println(responseEntity);
 		JsonObject content = new JsonParser().parse(responseEntity).getAsJsonObject();
 		return content.get("id_token").getAsString();
 	}

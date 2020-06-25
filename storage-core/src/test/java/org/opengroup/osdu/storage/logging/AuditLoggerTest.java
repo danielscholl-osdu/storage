@@ -161,5 +161,21 @@ public class AuditLoggerTest {
 
         verify(this.log).audit(any());
     }
+
+    @Test
+    public void should_readMultipleRecordsWithOptionalConversionSuccessEvent() {
+        List<String> resource = Collections.singletonList("1");
+        this.sut.readMultipleRecordsWithOptionalConversionSuccess(resource);
+
+        verify(this.log).audit(any());
+    }
+
+    @Test
+    public void should_readMultipleRecordsWithOptionalConversionFailEvent() {
+        List<String> resource = Collections.singletonList("1");
+        this.sut.readMultipleRecordsWithOptionalConversionFail(resource);
+
+        verify(this.log).audit(any());
+    }
 }
 

@@ -120,20 +120,55 @@ public class GoogleCloudStorage implements ICloudStorage {
 		}
 
 		String bucket = this.getBucketName(this.tenant);
-		List<BlobId> ids = new ArrayList<>();
 		for (RecordMetadata record : records) {
 			if (!record.getStatus().equals(RecordState.active)) {
 				continue;
 			}
-			ids.add(BlobId.of(bucket, record.getVersionPath(record.getLatestVersion())));
+
+			if (!record.hasVersion()) {
+				this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+				continue;
+			}
+
+			try {
+				String path = record.getVersionPath(record.getLatestVersion());
+				Blob blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).get(bucket, path);
+				if (blob == null) {
+					throw new StorageException(HttpStatus.SC_NOT_FOUND, String.format("'%s' not found", path));
+				}
+			} catch (StorageException e) {
+				// Before we return false, we have to check whether there is any data
+				// inconsistency then cleanup and check the access again
+				// This makes all the APIs robust to inconsistent data, but will add some
+				// latency
+				if (!this.hasAccessRobustToDataCorruption(bucket, record, this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()))) {
+					return false;
+				}
+			}
 		}
 
-		if (ids.isEmpty()) {
-			return true;
+		return true;
+	}
+
+	public boolean hasAccessRobustToDataCorruption(String bucket, RecordMetadata record,
+												   Storage storageClientUserCredential) {
+		// Get the latest version from GCS by using datafier service account first,
+		// since gcs API can't distinguish 404 or 403
+		// If datafier can get meaning user does not have permission, if datafier can't
+		// get meaning data has been corrupted
+		// (This is ok for DR, because DR service only revoke the data store written
+		// permission from datafier)
+		Storage storageClientDatafierCredential = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		if (storageClientDatafierCredential
+				.get(BlobId.of(bucket, record.getVersionPath(record.getLatestVersion()))) != null) {
+			return false;
 		} else {
-			Storage storageClientUserCredential = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
-			List<Blob> latestVersionFiles = storageClientUserCredential.get(ids);
-			return !latestVersionFiles.contains(null);
+			this.log.warning(String.format(
+					"Record %s's version metadata (%s) is inconsistent with gcs records, it tries to cleanup",
+					record.getId(), String.join(",", record.getGcsVersionPaths())));
+			this.log.info(String.format("Cleanup finished for record %s's metadata", record.getId()));
+			// No files stored in the bucket, then we always allow to access
+			return true;
 		}
 	}
 
@@ -215,6 +250,10 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 	@Override
 	public void delete(RecordMetadata record) {
+		if (!record.hasVersion()) {
+			this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+			return;
+		}
 
 		boolean mustSubmit = false;
 		String bucket = this.getBucketName(this.tenant);

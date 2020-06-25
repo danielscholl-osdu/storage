@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.conversion;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -38,6 +40,9 @@ public class ConversionServiceTest {
 
     @Mock
     private CrsConversionService crsConversionService;
+
+    @Mock
+    private JaxRsDpsLog logger;
 
     @InjectMocks
     private DpsConversionService sut;
@@ -202,6 +207,41 @@ public class ConversionServiceTest {
         JsonElement data = resultRecord.get("data");
         double  actualMDValue = data.getAsJsonObject().get("MD").getAsDouble();
         Assert.assertEquals(3.048, actualMDValue, 0.00001);
+    }
+
+    @Test
+    public void should_returnRecordsAfterCrsConversionTogetherWithNoMetaRecordsAndLogMissing_whenProvidedMixedRecords_OneRecordMissing() {
+        this.originalRecords.add(this.jsonParser.parse(RECORD_1).getAsJsonObject());
+        this.originalRecords.add(this.jsonParser.parse(RECORD_2).getAsJsonObject());
+        this.originalRecords.add(this.jsonParser.parse(RECORD_3).getAsJsonObject());
+
+        List<JsonObject> convertedRecords = new ArrayList<>();
+        convertedRecords.add(this.jsonParser.parse(CONVERTED_RECORD_1).getAsJsonObject());
+        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        ConversionStatus conversionStatus1 = new ConversionStatus();
+        conversionStatus1.setStatus(ConvertStatus.SUCCESS.toString());
+        conversionStatus1.setId("unit-test-1");
+        ConversionStatus conversionStatus2 = new ConversionStatus();
+        conversionStatus2.setStatus(ConvertStatus.NO_FRAME_OF_REFERENCE.toString());
+        conversionStatus2.setId("unit-test-2");
+        ConversionStatus conversionStatus3 = new ConversionStatus();
+        conversionStatus3.setStatus(ConvertStatus.SUCCESS.toString());
+        conversionStatus3.setId("unit-test-3");
+        conversionStatuses.add(conversionStatus1);
+        conversionStatuses.add(conversionStatus2);
+        conversionStatuses.add(conversionStatus3);
+        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
+        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setRecords(convertedRecords);
+
+        when(this.crsConversionService.doCrsConversion(any(), any())).thenReturn(crsConversionResult);
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+
+        Assert.assertEquals(2, result.getRecords().size());
+
+        verify(this.logger).warning("Missing record after conversion: unit-test-3");
+        Assert.assertTrue(result.getRecords().contains(this.jsonParser.parse(CONVERTED_RECORD_1).getAsJsonObject()));
+        Assert.assertTrue(result.getRecords().contains(this.jsonParser.parse(RECORD_2).getAsJsonObject()));
     }
 
 }

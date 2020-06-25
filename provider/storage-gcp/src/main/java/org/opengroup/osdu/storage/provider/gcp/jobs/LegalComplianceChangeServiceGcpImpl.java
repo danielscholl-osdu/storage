@@ -21,10 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
-import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
-import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
-import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
+import org.opengroup.osdu.core.common.model.legal.jobs.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.gcp.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -40,6 +37,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.stereotype.Service;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 
 @Service
 public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChangeService {
@@ -59,10 +57,14 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
     @Autowired
     private LegalTagCache legalTagCache;
 
+    private long maxRunningTimeMills = 115000;
+
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
-                                                                  DpsHeaders headers) {
+                                                                  DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
+        long currentTimeMills;
+        long start = System.currentTimeMillis();
 
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
 
@@ -72,22 +74,23 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
             }
 
             AbstractMap.SimpleEntry<Cursor, List<RecordMetadata>> results = this.recordsRepo
-                    .queryByLegalTagName(lt.getChangedTagName(), 500, null);
+                    .queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);
 
             while (results.getValue() != null && !results.getValue().isEmpty()) {
-                Cursor cursor = results.getKey();
+                currentTimeMills = System.currentTimeMillis() - start;
+                if(currentTimeMills >= maxRunningTimeMills)
+                    throw new ComplianceUpdateStoppedException(currentTimeMills / 1000);
                 List<RecordMetadata> recordsMetadata = results.getValue();
                 PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-                this.recordsRepo.createOrUpdate(recordsMetadata);
                 StringBuilder recordsId = new StringBuilder();
                 for (RecordMetadata recordMetadata : recordsMetadata) {
                     recordsId.append(", ").append(recordMetadata.getId());
                 }
+                this.recordsRepo.createOrUpdate(recordsMetadata);
+                this.pubSubclient.publishMessage(headers, pubsubInfos);
                 this.auditLogger.updateRecordsComplianceStateSuccess(
                         singletonList("[" + recordsId.toString().substring(2) + "]"));
-
-                this.pubSubclient.publishMessage(headers, pubsubInfos);
-                results = this.recordsRepo.queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
+                results = this.recordsRepo.queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);
             }
         }
 

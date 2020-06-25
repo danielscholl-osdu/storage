@@ -18,6 +18,7 @@ import com.azure.data.cosmos.CosmosClientException;
 import com.microsoft.azure.spring.data.cosmosdb.core.query.DocumentDbPageRequest;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         return doc.get().getMetadata();
     }
 
+    @Override
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+        return null;
+    }
+
+    //TODO replace with the new method queryByLegal
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor)

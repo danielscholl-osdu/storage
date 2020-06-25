@@ -41,12 +41,12 @@ public abstract class PubsubEndpointTest extends TestBase {
 
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG_1, token);
-		String record1 = RecordUtil.createJsonRecord(RECORD_ID, KIND, LEGAL_TAG_1);
+		String record1 = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_1);
 		ClientResponse responseValid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), record1, "");
 		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid.getStatus());
 
 		LegalTagUtils.create(LEGAL_TAG_2, token);
-		String record2 = RecordUtil.createJsonRecord(RECORD_ID_2, KIND, LEGAL_TAG_2);
+		String record2 = RecordUtil.createDefaultJsonRecord(RECORD_ID_2, KIND, LEGAL_TAG_2);
 		ClientResponse responseValid2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), record2, "");
 		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid2.getStatus());
 	}
@@ -82,9 +82,9 @@ public abstract class PubsubEndpointTest extends TestBase {
 		long later = now + 2000L;
 		String recordIdTemp1 = TenantUtils.getTenantName() + ":testendtoend:1.1." + now;
 		String kindTemp = TenantUtils.getTenantName() + ":test:endtoend:1.1." + now;
-		String recordTemp1 = RecordUtil.createJsonRecord(recordIdTemp1, kindTemp, LEGAL_TAG_1);
+		String recordTemp1 = RecordUtil.createDefaultJsonRecord(recordIdTemp1, kindTemp, LEGAL_TAG_1);
 		String recordIdTemp2 = TenantUtils.getTenantName() + ":testendtoend:1.1." + later;
-		String recordTemp2 = RecordUtil.createJsonRecord(recordIdTemp2, kindTemp, LEGAL_TAG_2);
+		String recordTemp2 = RecordUtil.createDefaultJsonRecord(recordIdTemp2, kindTemp, LEGAL_TAG_2);
 
 		ClientResponse responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, responseInvalid.getStatus());
