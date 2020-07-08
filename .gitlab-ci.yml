@@ -15,7 +15,7 @@ variables:
   EPAM_GCP_BUILD_SUBDIR: provider/storage-gcp
   EPAM_GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
   EPAM_GCP_APPLICATION_NAME: os-storage
-  EPAM_GCP_ENVIRONMENT: testing
+  EPAM_GCP_ENVIRONMENT: epam
   EPAM_GCP_PROJECT: nice-etching-277309
   EPAM_GCP_TENANT_NAME: osdu
   EPAM_GCP_DEPLOY_ENV: p4d
