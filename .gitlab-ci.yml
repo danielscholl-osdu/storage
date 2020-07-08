@@ -18,7 +18,7 @@ variables:
   EPAM_GCP_ENVIRONMENT: epam
   EPAM_GCP_PROJECT: nice-etching-277309
   EPAM_GCP_TENANT_NAME: osdu
-  EPAM_GCP_DEPLOY_ENV: p4d
+  EPAM_GCP_DEPLOY_ENV: empty
 
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
