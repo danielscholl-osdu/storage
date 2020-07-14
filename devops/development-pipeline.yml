@@ -42,13 +42,12 @@ stages:
     parameters:
       mavenGoal: "package"
       mavenPublishJUnitResults: true
-      serviceCoreMavenOptions: "-P legal-core"
-      mavenOptions: "-P legal-azure"
+      mavenOptions: "-P storage-azure"
       copyFileContents: |
         pom.xml
-        provider/legal-azure/maven/settings.xml
-        provider/legal-azure/pom.xml
-        provider/legal-azure/target/*-spring-boot.jar
+        provider/storage-azure/maven/settings.xml
+        provider/storage-azure/pom.xml
+        provider/storage-azure/target/*-spring-boot.jar
       copyFileContentsToFlatten: ""
       mavenSettingsFile: "./maven/settings.xml"
       serviceBase: ${{ variables.serviceName }}
@@ -56,7 +55,7 @@ stages:
   - template: devops/service-pipelines/deploy-stages.yml@osdu-infrastructure
     parameters:
       serviceName: ${{ variables.serviceName }}
-      testCoreMavenPomFile: "testing/legal-test-core/pom.xml"
+      testCoreMavenPomFile: "testing/storage-test-core/pom.xml"
       testCoreMavenOptions: "--settings $(System.DefaultWorkingDirectory)/drop/deploy/testing/maven/settings.xml"
       providers:
         - name: Azure
