@@ -19,6 +19,7 @@ import static java.util.Collections.singletonList;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.apache.http.HttpStatus;
@@ -57,10 +58,20 @@ public class RecordServiceImpl implements RecordService {
 	@Autowired
 	private StorageAuditLogger auditLogger;
 
+	@Autowired
+	private IEntitlementsAndCacheService entitlementsAndCacheService;
+
 	@Override
 	public void purgeRecord(String recordId) {
 
 		RecordMetadata recordMetadata = this.getRecordMetadata(recordId, true);
+		boolean hasOwnerAccess = this.entitlementsAndCacheService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
+
+		if (!hasOwnerAccess) {
+			this.auditLogger.purgeRecordFail(singletonList(recordId));
+			throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+					"The user is not authorized to purge the record");
+		}
 
 		try {
 			this.recordRepository.delete(recordId);

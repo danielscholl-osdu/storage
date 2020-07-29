@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PersistenceServiceImpl implements IPersistenceService {
@@ -63,7 +64,13 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
 	}
 
-	private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata) {
+    // TODO Implement later for bulk update API
+    @Override
+    public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap) {
+        return new ArrayList<>();
+    }
+
+    private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata) {
 
 		try {
 			this.commitCloudStorageTransaction(recordsProcessing);

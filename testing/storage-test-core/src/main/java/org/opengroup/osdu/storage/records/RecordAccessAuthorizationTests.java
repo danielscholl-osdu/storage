@@ -104,8 +104,12 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 
 		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
 
-		this.assertNotAuthorized(response);
-	}
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatus());
+        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        assertEquals(403, json.get("code").getAsInt());
+        assertEquals("Access denied", json.get("reason").getAsString());
+        assertEquals("The user is not authorized to purge the record", json.get("message").getAsString());
+    }
 
 	@Test
 	public void should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord() throws Exception {

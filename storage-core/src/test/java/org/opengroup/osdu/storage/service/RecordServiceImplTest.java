@@ -26,6 +26,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
@@ -80,6 +81,9 @@ public class RecordServiceImplTest {
     @Mock
     private StorageAuditLogger auditLogger;
 
+    @Mock
+    private EntitlementsAndCacheServiceImpl entitlementsAndCacheService;
+
     @Before
     public void setup() {
         mock(PersistenceHelper.class);
@@ -107,12 +111,21 @@ public class RecordServiceImplTest {
 
     @Test
     public void should_purgeRecordSuccessfully_when_recordExistsAndHaveProperPermissions() {
+
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
+        record.setAcl(storageAcl);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.purgeRecord(RECORD_ID);
         verify(this.auditLogger).purgeRecordSuccess(any());
@@ -126,16 +139,54 @@ public class RecordServiceImplTest {
         verify(this.pubSubClient).publishMessage(this.headers, pubsubMsg);
     }
 
+
     @Test
-    public void should_returnThrowOriginalException_when_deletingRecordInDatastoreFails() {
+    public void should_return403_when_recordExistsButWithoutOwnerPermissions() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
+        record.setAcl(storageAcl);
+        record.setStatus(RecordState.active);
+        record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
+
+        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
+
+        try {
+            this.sut.purgeRecord(RECORD_ID);
+
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(403, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("The user is not authorized to purge the record", e.getError().getMessage());
+        }
+    }
+
+    @Test
+    public void should_returnThrowOriginalException_when_deletingRecordInDatastoreFails() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata record = new RecordMetadata();
+        record.setKind("any kind");
+        record.setAcl(storageAcl);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(originalException).when(this.recordRepository).delete(RECORD_ID);
 
@@ -170,14 +221,22 @@ public class RecordServiceImplTest {
 
 
     @Test
-    @Ignore
     public void should_rollbackDatastoreRecord_when_deletingRecordInGCSFails() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
+        record.setAcl(storageAcl);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
+
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                 "The user is not authorized to perform this action")).when(this.cloudStorage).delete(record);
         try {
