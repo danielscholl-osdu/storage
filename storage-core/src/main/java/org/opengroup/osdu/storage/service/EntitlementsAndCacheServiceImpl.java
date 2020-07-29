@@ -85,6 +85,19 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheSer
 	}
 
 	@Override
+	public boolean hasOwnerAccess(DpsHeaders headers, String[] ownerList) {
+		Groups groups = this.getGroups(headers);
+		Set<String> aclList = new HashSet<>();
+
+		for (String owner : ownerList) {
+			aclList.add(owner.split("@")[0]);
+		}
+
+		String[] acls = new String[aclList.size()];
+		return groups.any(aclList.toArray(acls));
+	}
+
+	@Override
 	public List<RecordMetadata> hasValidAccess(List<RecordMetadata> recordsMetadata, DpsHeaders headers) {
 		Groups groups = this.getGroups(headers);
 		List<RecordMetadata> result = new ArrayList<>();

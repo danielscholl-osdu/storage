@@ -168,6 +168,12 @@ public class IngestionServiceImpl implements IngestionService {
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
 				RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
+
+				if (!this.entitlementsAndCacheService.hasOwnerAccess(this.headers, existingRecordMetadata.getAcl().getOwners())) {
+					this.logger.warning(String.format("User does not have owner access to record %s", record.getId()));
+					throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
+				}
+
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
 
 				List<String> versions = new ArrayList<>();
