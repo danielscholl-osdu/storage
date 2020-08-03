@@ -73,15 +73,14 @@ public class QueryRepositoryImpl implements IQueryRepository {
             // Query by DataPartitionId global secondary index with User range key
             SchemaDoc queryObject = new SchemaDoc();
             queryObject.setDataPartitionId(headers.getPartitionId());
-            queryPageResult = queryHelper.queryByGSI(SchemaDoc.class,
-                    queryObject, "User", headers.getUserEmail(), numRecords, cursor);
+            queryPageResult = queryHelper.queryByGSI(SchemaDoc.class, queryObject, numRecords, cursor);
 
             for (SchemaDoc schemaDoc : queryPageResult.results) {
                 kinds.add(schemaDoc.getKind());
             }
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
-                    e.getMessage(),e);
+                    e.getMessage(), e);
         }
 
         // Set the cursor for the next page, if applicable
@@ -94,8 +93,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor)
-    {
+    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
         // Set the page size, or use the default constant
         int numRecords = PAGE_SIZE;
         if (limit != null) {
@@ -111,10 +109,10 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
         QueryPageResult<RecordMetadataDoc> scanPageResults;
         try {
-            scanPageResults = queryHelper.queryPage(RecordMetadataDoc.class, recordMetadataKey, "Status","active", numRecords, cursor);
+            scanPageResults = queryHelper.queryPage(RecordMetadataDoc.class, recordMetadataKey, "Status", "active", numRecords, cursor);
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
-                    e.getMessage(),e);
+                    e.getMessage(), e);
         }
         dqr.setCursor(scanPageResults.cursor); // set the cursor for the next page, if applicable
         scanPageResults.results.forEach(schemaDoc -> ids.add(schemaDoc.getId())); // extract the Kinds from the SchemaDocs
@@ -138,7 +136,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 AttributeValue pairAttributeValue = new AttributeValue(attributeValueSplit[1]);
                 cursorMap.put(keyValue[0], pairAttributeValue); // append the pair to the Map
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new InvalidCursorException(e.getMessage());
         }
         return cursorMap;
