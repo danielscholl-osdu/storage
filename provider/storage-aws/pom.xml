@@ -21,7 +21,7 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.0.5-SNAPSHOT</version>
+        <version>0.0.6-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
 
@@ -34,7 +34,7 @@
     <properties>
         <aws.version>1.11.637</aws.version>
         <deployment.environment>dev</deployment.environment>
-        <version.number>0.0.5-SNAPSHOT</version.number>
+        <version.number>0.0.6-SNAPSHOT</version.number>
     </properties>
 
     <dependencyManagement>
@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.3.1</version>
+            <version>0.3.5</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
