@@ -20,7 +20,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>os-storage</artifactId>
-	<version>0.0.6-SNAPSHOT</version>
+	<version>0.0.5-SNAPSHOT</version>
 	<description>Root Storage Service project</description>
 
 	<properties>
@@ -29,7 +29,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<docker.image.prefix>opendes</docker.image.prefix>
     	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<os-core-common.version>0.3.5</os-core-common.version>
+		<os-core-common.version>0.3.3</os-core-common.version>
 	</properties>
 
 	<licenses>

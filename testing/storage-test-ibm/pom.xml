@@ -21,7 +21,7 @@
 
     <groupId>org.opengroup.osdu.storage</groupId>
     <artifactId>storage-test-ibm</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.storage</groupId>
             <artifactId>storage-test-core</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         
         <dependency>
