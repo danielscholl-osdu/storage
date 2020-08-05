@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.records;
 
-import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
-import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
+import org.junit.After;
+import org.junit.Before;
+import org.opengroup.osdu.storage.util.GCPTestUtils;
 
-public interface RecordService {
+public class TestUpdateRecordsMetadata extends UpdateRecordsMetadataTest{
+    @Before
+    @Override
+    public void setup() throws Exception {
+        this.testUtils = new GCPTestUtils();
+        super.setup();
+    }
 
-	void purgeRecord(String recordId);
-
-	void deleteRecord(String recordId, String user);
-
-	BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user);
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        this.testUtils = null;
+    }
 }
