@@ -30,27 +30,27 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public abstract class StorageCorsTests extends TestBase {
 
-	@Test
-	public void should_returnProperStatusCodeAndResponseHeaders_when_sendingPreflightOptionsRequest() throws Exception {
-		ClientResponse response = TestUtils.send("query/kinds", "OPTIONS", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+    @Test
+    public void should_returnProperStatusCodeAndResponseHeaders_when_sendingPreflightOptionsRequest() throws Exception {
+        ClientResponse response = TestUtils.send("query/kinds", "OPTIONS", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-		MultivaluedMap<String, String> headers = response.getHeaders();
+        MultivaluedMap<String, String> headers = response.getHeaders();
 
-		assertEquals("[*]", headers.get("Access-Control-Allow-Origin").get(0));
-		assertEquals(
-				"[origin, content-type, accept, authorization, data-partition-id, correlation-id, appkey]",
-				headers.get("Access-Control-Allow-Headers").get(0));
-		assertEquals("[GET, POST, PUT, DELETE, OPTIONS, HEAD]",
-				headers.get("Access-Control-Allow-Methods").get(0));
-		assertEquals("[true]", headers.get("Access-Control-Allow-Credentials").get(0));
-		assertEquals("DENY", headers.get("X-Frame-Options").get(0));
-		assertEquals("1; mode=block", headers.get("X-XSS-Protection").get(0));
-		assertEquals("nosniff", headers.get("X-Content-Type-Options").get(0));
-		assertEquals("[no-cache, no-store, must-revalidate]", headers.get("Cache-Control").get(0));
-		assertEquals("[default-src 'self']", headers.get("Content-Security-Policy").get(0));
-		assertEquals("[max-age=31536000; includeSubDomains]", headers.get("Strict-Transport-Security").get(0));
-		assertEquals("[0]", headers.get("Expires").get(0));
-		assertNotNull(headers.get("correlation-id").get(0));
-	}
+        assertEquals("[*]", headers.get("Access-Control-Allow-Origin").get(0));
+        assertEquals(
+                "[origin, content-type, accept, authorization, data-partition-id, correlation-id, appkey]",
+                headers.get("Access-Control-Allow-Headers").get(0));
+        assertEquals("[GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH]",
+                headers.get("Access-Control-Allow-Methods").get(0));
+        assertEquals("[true]", headers.get("Access-Control-Allow-Credentials").get(0));
+        assertEquals("DENY", headers.get("X-Frame-Options").get(0));
+        assertEquals("1; mode=block", headers.get("X-XSS-Protection").get(0));
+        assertEquals("nosniff", headers.get("X-Content-Type-Options").get(0));
+        assertEquals("[no-cache, no-store, must-revalidate]", headers.get("Cache-Control").get(0));
+        assertEquals("[default-src 'self']", headers.get("Content-Security-Policy").get(0));
+        assertEquals("[max-age=31536000; includeSubDomains]", headers.get("Strict-Transport-Security").get(0));
+        assertEquals("[0]", headers.get("Expires").get(0));
+        assertNotNull(headers.get("correlation-id").get(0));
+    }
 }

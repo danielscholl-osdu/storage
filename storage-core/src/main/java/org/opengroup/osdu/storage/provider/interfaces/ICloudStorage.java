@@ -15,31 +15,44 @@
 package org.opengroup.osdu.storage.provider.interfaces;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.NotImplementedException;
+
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 
+
 public interface ICloudStorage {
 
-	static final String ACCESS_DENIED_ERROR_REASON = "Access denied";
-	static final String ACCESS_DENIED_ERROR_MSG = "The user is not authorized to perform this action";
+    static final String ACCESS_DENIED_ERROR_REASON = "Access denied";
+    static final String ACCESS_DENIED_ERROR_MSG = "The user is not authorized to perform this action";
 
-	void write(RecordProcessing... recordsProcessing);
+    void write(RecordProcessing... recordsProcessing);
 
-	Map<String, String> getHash(Collection<RecordMetadata> records);
+    default Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+        throw new NotImplementedException("TODO");
+    }
 
-	void delete(RecordMetadata record);
+    default void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls) {
+        throw new NotImplementedException("TODO");
+    }
 
-	void deleteVersion(RecordMetadata record, Long version);
+    Map<String, String> getHash(Collection<RecordMetadata> records);
 
-	boolean hasAccess(RecordMetadata... records);
+    void delete(RecordMetadata record);
 
-	String read(RecordMetadata record, Long version, boolean checkDataInconsistency);
+    void deleteVersion(RecordMetadata record, Long version);
 
-	Map<String, String> read(Map<String, String> objects);
+    boolean hasAccess(RecordMetadata... records);
 
-	boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap, Map.Entry<RecordMetadata, RecordData> kv);
+    String read(RecordMetadata record, Long version, boolean checkDataInconsistency);
+
+    Map<String, String> read(Map<String, String> objects);
+
+    boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap, Map.Entry<RecordMetadata, RecordData> kv);
 }

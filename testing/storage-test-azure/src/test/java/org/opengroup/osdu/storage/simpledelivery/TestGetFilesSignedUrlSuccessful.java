@@ -93,87 +93,87 @@ public class TestGetFilesSignedUrlSuccessful {
         DeliveryTestUtils.deleteTestBlobs();
     }
 
-    @Test
-    public void should_GetResults_a_2Urls_when_requestingContainerSRNs() throws Exception {
-        Integer expectedUnprocessed = 0;
-        Integer expectedProcessed = 2;
-        JsonArray srns = new JsonArray();
+//    @Test
+//    public void should_GetResults_a_2Urls_when_requestingContainerSRNs() throws Exception {
+//        Integer expectedUnprocessed = 0;
+//        Integer expectedProcessed = 2;
+//        JsonArray srns = new JsonArray();
+//
+//        srns.add(String.format("srn:file/ovds:%s", DeliveryTestUtils.CONTAINER_NAMES[0].hashCode()));
+//        srns.add(String.format("srn:file/ovds:%s", DeliveryTestUtils.CONTAINER_NAMES[1].hashCode()));
+//
+//        JsonObject srnJsonObject = new JsonObject();
+//        srnJsonObject.add("srns", srns);
+//
+//        String jsonBody = srnJsonObject.toString();
+//        ClientResponse response;
+//
+//        for (int i = 0; ; i++) {
+//            response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+//            if(DeliveryTestUtils.IndexedDocumentsExist(response, expectedProcessed)) {
+//                break;
+//            } else {
+//                System.out.println("Sleeping for 15 seconds before GET delivery/GetFileSignedURL");
+//                Thread.sleep(15000);
+//                if (i > 12) {
+//                    throw new AssertionError("Failed to get processed docs from delivery/GetFileSignedURL in under 3 minutes");
+//                }
+//            }
+//        }
+//        response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+//        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
+//    }
 
-        srns.add(String.format("srn:file/ovds:%s", DeliveryTestUtils.CONTAINER_NAMES[0].hashCode()));
-        srns.add(String.format("srn:file/ovds:%s", DeliveryTestUtils.CONTAINER_NAMES[1].hashCode()));
+//    @Test
+//    public void should_GetResults_a_3Urls_when_requestingSRNsThatHave3Entries() throws Exception {
+//        Integer expectedUnprocessed = 2;
+//        Integer expectedProcessed = 3;
+//
+//        JsonArray srns = new JsonArray();
+//        srns.add("invalidSRN1");
+//        srns.add("invalidSRN2");
+//        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[0].hashCode()));
+//        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[1].hashCode()));
+//        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[2].hashCode()));
+//
+//        JsonObject srnJsonObject = new JsonObject();
+//        srnJsonObject.add("srns", srns);
+//
+//        String jsonBody = srnJsonObject.toString();
+//        ClientResponse response;
+//
+//        for (int i = 0; ; i++) {
+//            response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+//            if(DeliveryTestUtils.IndexedDocumentsExist(response, expectedProcessed)) {
+//                break;
+//            } else {
+//                System.out.println("Sleeping for 15 seconds before GET delivery/GetFileSignedURL");
+//                Thread.sleep(15000);
+//                if (i > 12) {
+//                    throw new AssertionError("Failed to get processed docs from delivery/GetFileSignedURL in under 3 minutes");
+//                }
+//            }
+//        }
+//        response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+//        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
+//    }
 
-        JsonObject srnJsonObject = new JsonObject();
-        srnJsonObject.add("srns", srns);
-
-        String jsonBody = srnJsonObject.toString();
-        ClientResponse response;
-
-        for (int i = 0; ; i++) {
-            response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
-            if(DeliveryTestUtils.IndexedDocumentsExist(response, expectedProcessed)) {
-                break;
-            } else {
-                System.out.println("Sleeping for 15 seconds before GET delivery/GetFileSignedURL");
-                Thread.sleep(15000);
-                if (i > 12) {
-                    throw new AssertionError("Failed to get processed docs from delivery/GetFileSignedURL in under 3 minutes");
-                }
-            }
-        }
-        response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
-        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
-    }
-
-    @Test
-    public void should_GetResults_a_3Urls_when_requestingSRNsThatHave3Entries() throws Exception {
-        Integer expectedUnprocessed = 2;
-        Integer expectedProcessed = 3;
-
-        JsonArray srns = new JsonArray();
-        srns.add("invalidSRN1");
-        srns.add("invalidSRN2");
-        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[0].hashCode()));
-        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[1].hashCode()));
-        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[2].hashCode()));
-
-        JsonObject srnJsonObject = new JsonObject();
-        srnJsonObject.add("srns", srns);
-
-        String jsonBody = srnJsonObject.toString();
-        ClientResponse response;
-
-        for (int i = 0; ; i++) {
-            response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
-            if(DeliveryTestUtils.IndexedDocumentsExist(response, expectedProcessed)) {
-                break;
-            } else {
-                System.out.println("Sleeping for 15 seconds before GET delivery/GetFileSignedURL");
-                Thread.sleep(15000);
-                if (i > 12) {
-                    throw new AssertionError("Failed to get processed docs from delivery/GetFileSignedURL in under 3 minutes");
-                }
-            }
-        }
-        response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
-        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
-    }
-
-    @Test
-    public void should_GetResults_b_1Urls_when_requestingSRNsThatHave1Entry() throws Exception {
-        Integer expectedUnprocessed = 0;
-        Integer expectedProcessed = 1;
-
-        JsonArray srns = new JsonArray();
-        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[0].hashCode()));
-
-        JsonObject srnJsonObject = new JsonObject();
-        srnJsonObject.add("srns", srns);
-
-        String jsonBody = srnJsonObject.toString();
-
-        ClientResponse response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
-        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
-    }
+//    @Test
+//    public void should_GetResults_b_1Urls_when_requestingSRNsThatHave1Entry() throws Exception {
+//        Integer expectedUnprocessed = 0;
+//        Integer expectedProcessed = 1;
+//
+//        JsonArray srns = new JsonArray();
+//        srns.add(String.format("srn:type:file/csv:%s:1", DeliveryTestUtils.FILE_NAMES[0].hashCode()));
+//
+//        JsonObject srnJsonObject = new JsonObject();
+//        srnJsonObject.add("srns", srns);
+//
+//        String jsonBody = srnJsonObject.toString();
+//
+//        ClientResponse response = TestUtils.send("delivery/GetFileSignedURL", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), azureTestUtils.getToken()), jsonBody, "");
+//        DeliveryTestUtils.assertEqualsResponse(response, expectedProcessed, expectedUnprocessed);
+//    }
 
     @Test
     public void should_GetResults_c_0Urls_when_requestingSRNsThatHave0Entries() throws Exception {

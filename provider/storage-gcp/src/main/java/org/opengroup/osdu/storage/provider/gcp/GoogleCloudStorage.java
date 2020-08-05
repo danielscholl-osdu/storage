@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.gcp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.datastore.Cursor;
 import com.google.cloud.storage.*;
 import com.google.cloud.storage.Acl.Group;
 import com.google.cloud.storage.Acl.Role;
@@ -30,6 +31,7 @@ import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -68,6 +70,9 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 	@Autowired
 	private IStorageFactory storageFactory;
+
+	@Autowired
+	private IRecordsMetadataRepository<Cursor> recordRepository;
 
 	@Autowired
 	private ExecutorService threadPool;
@@ -113,6 +118,47 @@ public class GoogleCloudStorage implements ICloudStorage {
 	}
 
 	@Override
+	public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+		String bucket = getBucketName(this.tenant);
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
+		Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
+
+		for (RecordMetadata recordMetadata : recordsMetadata) {
+			String id = recordMetadata.getId();
+			String idWithVersion = recordsIdMap.get(id);
+			List<Acl> acls = this.constructObjectAcls(tenant.getServiceAccount(), recordMetadata.getAcl());
+
+			if (!id.equalsIgnoreCase(idWithVersion)) {
+				long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
+				long currentVersion = currentRecords.get(id).getLatestVersion();
+				if (previousVersion != currentVersion) {
+					lockedRecords.add(idWithVersion);
+					continue;
+				}
+			}
+			validMetadata.add(recordMetadata);
+			Blob blob = storage.get(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+			originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
+			blob.toBuilder().setAcl(acls).build().update();
+		}
+
+		return originalAcls;
+	}
+
+	@Override
+	public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
+		String bucket = getBucketName(this.tenant);
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+
+		for (RecordMetadata recordMetadata : recordsMetadata) {
+			Blob blob = storage.get(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+			List<Acl> acls = this.constructObjectAcls(tenant.getServiceAccount(), originalAcls.get(recordMetadata.getId()));
+			blob.toBuilder().setAcl(acls).build().update();
+		}
+	}
+
+	@Override
 	public boolean hasAccess(RecordMetadata... records) {
 
 		if (ArrayUtils.isEmpty(records)) {
@@ -151,7 +197,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	}
 
 	public boolean hasAccessRobustToDataCorruption(String bucket, RecordMetadata record,
-												   Storage storageClientUserCredential) {
+	                                               Storage storageClientUserCredential) {
 		// Get the latest version from GCS by using datafier service account first,
 		// since gcs API can't distinguish 404 or 403
 		// If datafier can get meaning user does not have permission, if datafier can't
@@ -333,7 +379,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		if (newHash.equals(recordHash)) {
 			transfer.getSkippedRecords().add(updatedRecordMetadata.getId());
 			return true;
-		}else{
+		} else {
 			return false;
 		}
 	}
@@ -345,17 +391,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		org.opengroup.osdu.core.common.model.entitlements.Acl storageAcl = metadata.getAcl();
 		String objectPath = metadata.getVersionPath(metadata.getLatestVersion());
 
-		List<Acl> acls = new ArrayList<>();
-
-		for (String acl : storageAcl.getViewers()) {
-			acls.add(Acl.newBuilder(new Group(acl), Role.READER).build());
-		}
-
-		for (String acl : storageAcl.getOwners()) {
-			acls.add(Acl.newBuilder(new Group(acl), Role.OWNER).build());
-		}
-
-		acls.add(Acl.newBuilder(new User(serviceAccount), Role.OWNER).build());
+		List<Acl> acls = this.constructObjectAcls(serviceAccount, storageAcl);
 
 		BlobInfo blobInfo = BlobInfo
 				.newBuilder(bucket, objectPath)
@@ -404,4 +440,20 @@ public class GoogleCloudStorage implements ICloudStorage {
 	private static String getBucketName(TenantInfo tenant) {
 		return String.format("%s-records", tenant.getProjectId());
 	}
+
+	private List<Acl> constructObjectAcls(String serviceAccount, org.opengroup.osdu.core.common.model.entitlements.Acl osduAcl) {
+		List<Acl> acls = new ArrayList<>();
+
+		for (String acl : osduAcl.getViewers()) {
+			acls.add(Acl.newBuilder(new Group(acl), Role.READER).build());
+		}
+
+		for (String acl : osduAcl.getOwners()) {
+			acls.add(Acl.newBuilder(new Group(acl), Role.OWNER).build());
+		}
+
+		acls.add(Acl.newBuilder(new User(serviceAccount), Role.OWNER).build());
+		return acls;
+	}
+
 }

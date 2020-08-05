@@ -147,8 +147,8 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheSer
 
 			} catch (EntitlementsException e) {
 				e.printStackTrace();
-                HttpResponse response = e.getHttpResponse();
-                this.logger.error( String.format("Error requesting entitlements service %s", response));
+				HttpResponse response = e.getHttpResponse();
+				this.logger.error(String.format("Error requesting entitlements service %s", response));
 				throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, ERROR_MSG, e);
 			}
 		}

@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -33,6 +34,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 //import com.google.cloud.datastore.DatastoreException;
 import org.apache.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -61,6 +63,9 @@ public class PersistenceServiceImplTest {
 
     @Mock
     private TenantInfo tenant;
+
+    @Mock
+    private JaxRsDpsLog logger;
 
     @InjectMocks
     private PersistenceServiceImpl sut;
@@ -177,6 +182,73 @@ public class PersistenceServiceImplTest {
         verify(this.pubSubClient, times(0)).publishMessage(any());
     }
 
+    @Ignore
+    @Test
+    public void should_LogError_AndThrowException_whenDataStoreTooBigEntityErrorOccur() {
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+
+        List<String> recordsId = new ArrayList<>();
+        recordsId.add("id:access:1");
+        recordsId.add("id:access:2");
+
+        Map<String, RecordMetadata> currentRecords = new HashMap<>();
+        currentRecords.put("id:access:1", recordMetadataList.get(0));
+        currentRecords.put("id:access:2", recordMetadataList.get(1));
+
+        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any());
+        when(this.recordRepository.get(recordsId)).thenReturn(currentRecords);
+
+        try {
+            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>());
+            fail("expected exception");
+        } catch (AppException e) {
+            assertEquals(413, e.getError().getCode());
+            assertTrue(e.getError().toString().contains("The record metadata is too big"));
+            verify(this.logger, times(1)).warning("Reverting meta data changes");
+        }
+    }
+
+    @Test
+    public void should_LogError_andThrowException_whenDataStoreOtherErrorOccur() {
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+
+        List<String> recordsId = new ArrayList<>();
+        recordsId.add("id:access:1");
+        recordsId.add("id:access:2");
+
+        Map<String, RecordMetadata> currentRecords = new HashMap<>();
+        currentRecords.put("id:access:1", recordMetadataList.get(0));
+        currentRecords.put("id:access:2", recordMetadataList.get(1));
+
+        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any());
+        when(this.recordRepository.get(recordsId)).thenReturn(currentRecords);
+
+        try {
+            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>());
+            fail("expected exception");
+        } catch (AppException e) {
+            verify(this.logger, times(1)).warning("Reverting meta data changes");
+        }
+    }
+
+    @Test
+    public void should_updateValidRecordsMetadata_whenNoErrorOccurs() {
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+
+        List<String> recordsId = new ArrayList<>();
+        recordsId.add("id:access:1");
+        recordsId.add("id:access:2");
+
+        Map<String, RecordMetadata> currentRecords = new HashMap<>();
+        currentRecords.put("id:access:1", recordMetadataList.get(0));
+        currentRecords.put("id:access:2", recordMetadataList.get(1));
+
+        when(this.recordRepository.get(recordsId)).thenReturn(currentRecords);
+        List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>());
+
+        assertEquals(0, result.size());
+    }
+
     @SuppressWarnings("unchecked")
     private void setupRecordRepository(int batch1Size, int batch2Size, int idStartPoint) {
         List<Record> entities1 = new ArrayList<>();
@@ -256,5 +328,26 @@ public class PersistenceServiceImplTest {
             assertEquals(OperationType.create, pubSubInfo.getOp());
             assertTrue(pubSubInfo.getId().startsWith("ID"));
         }
+    }
+
+    private List<RecordMetadata> createListOfRecordMetadata() {
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+
+        RecordMetadata record = new RecordMetadata();
+        record.setKind("any kind");
+        record.setId("id:access:1");
+        record.setStatus(RecordState.active);
+        record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
+
+        RecordMetadata record2= new RecordMetadata();
+        record2.setKind("any kind");
+        record2.setId("id:access:2");
+        record2.setStatus(RecordState.active);
+        record2.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
+
+        recordMetadataList.add(record);
+        recordMetadataList.add(record2);
+
+        return recordMetadataList;
     }
 }

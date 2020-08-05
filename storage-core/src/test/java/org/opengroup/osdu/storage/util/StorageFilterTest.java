@@ -36,7 +36,7 @@ public class StorageFilterTest {
 
         Mockito.verify(httpServletResponse).addHeader("Access-Control-Allow-Origin", Collections.singletonList("*").toString());
         Mockito.verify(httpServletResponse).addHeader("Access-Control-Allow-Headers", Collections.singletonList("origin, content-type, accept, authorization, data-partition-id, correlation-id, appkey").toString());
-        Mockito.verify(httpServletResponse).addHeader("Access-Control-Allow-Methods", Collections.singletonList("GET, POST, PUT, DELETE, OPTIONS, HEAD").toString());
+        Mockito.verify(httpServletResponse).addHeader("Access-Control-Allow-Methods", Collections.singletonList("GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH").toString());
         Mockito.verify(httpServletResponse).addHeader("Access-Control-Allow-Credentials", Collections.singletonList("true").toString());
         Mockito.verify(httpServletResponse).addHeader("X-Frame-Options", Collections.singletonList("DENY").toString());
         Mockito.verify(httpServletResponse).addHeader("X-XSS-Protection", Collections.singletonList("1; mode=block").toString());
