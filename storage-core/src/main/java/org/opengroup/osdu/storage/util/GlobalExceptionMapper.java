@@ -16,6 +16,8 @@ package org.opengroup.osdu.storage.util;
 
 import javax.validation.ValidationException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import javassist.NotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +57,18 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleNotFoundException(NotFoundException e) {
         return this.getErrorResponse(
                 new AppException(HttpStatus.NOT_FOUND.value(), "Resource not found.", e.getMessage(), e));
+    }
+
+    @ExceptionHandler(UnrecognizedPropertyException.class)
+    protected ResponseEntity<Object> handleUnrecognizedPropertyException(UnrecognizedPropertyException e) {
+        return this.getErrorResponse(
+                new AppException(HttpStatus.BAD_REQUEST.value(), "Unrecognized property.", e.getMessage(), e));
+    }
+
+    @ExceptionHandler(JsonProcessingException.class)
+    protected ResponseEntity<Object> handleJsonProcessingException(JsonProcessingException e) {
+        return this.getErrorResponse(
+                new AppException(HttpStatus.BAD_REQUEST.value(), "Failed to process JSON.", e.getMessage(), e));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
