@@ -12,13 +12,13 @@ variables:
   GCP_TENANT_NAME: opendesevt
   GCP_DEPLOY_ENV: p4d
 
-  EPAM_GCP_BUILD_SUBDIR: provider/storage-gcp
-  EPAM_GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
-  EPAM_GCP_APPLICATION_NAME: os-storage
-  EPAM_GCP_ENVIRONMENT: epam
-  EPAM_GCP_PROJECT: nice-etching-277309
-  EPAM_GCP_TENANT_NAME: osdu
-  EPAM_GCP_DEPLOY_ENV: empty
+  OSDU_GCP_BUILD_SUBDIR: provider/storage-gcp
+  OSDU_GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
+  OSDU_GCP_APPLICATION_NAME: os-storage
+  OSDU_GCP_ENVIRONMENT: osdu-gcp
+  OSDU_GCP_PROJECT: nice-etching-277309
+  OSDU_GCP_TENANT_NAME: osdu
+  OSDU_GCP_DEPLOY_ENV: empty
 
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
