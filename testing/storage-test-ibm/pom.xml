@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.storage</groupId>
             <artifactId>storage-test-core</artifactId>
-            <version>0.0.2-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
         
         <dependency>

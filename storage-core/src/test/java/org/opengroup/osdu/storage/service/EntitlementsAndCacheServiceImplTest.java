@@ -240,6 +240,38 @@ public class EntitlementsAndCacheServiceImplTest {
         assertEquals(false, this.sut.isValidAcl(this.headers, acls));
     }
 
+    @Test
+    public void should_returnFalse_when_NotInOwnerList() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@tenant.slb.com");
+        g1.setName("role1");
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        String[] ownerList = new String[]{"owner1@tenant.slb.com", "owner2@tenant.slb.com"};
+
+        assertEquals(false, this.sut.hasOwnerAccess(this.headers, ownerList));
+    }
+
+    @Test
+    public void should_returnTrue_when_UserInOwnerList() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@tenant.slb.com");
+        g1.setName("role1");
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        String[] ownerList = new String[]{"role1@tenant.slb.com", "owner2@tenant.slb.com"};
+
+        assertEquals(true, this.sut.hasOwnerAccess(this.headers, ownerList));
+    }
+
     @Test(expected = AppException.class)
     public void should_throwAppException_when_NoGroupGotFromCacheOrEntitlements() throws EntitlementsException {
         List<GroupInfo> groupsInfo = new ArrayList<>();

@@ -14,7 +14,10 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
@@ -27,7 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PersistenceServiceImpl implements IPersistenceService {
@@ -43,6 +48,9 @@ public class PersistenceServiceImpl implements IPersistenceService {
 
 	@Autowired
 	private DpsHeaders headers;
+
+	@Autowired
+	private JaxRsDpsLog logger;
 
 	@Override
 	public void persistRecordBatch(TransferBatch transfer) {
@@ -63,7 +71,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
 	}
 
-	private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata) {
+    private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata) {
 
 		try {
 			this.commitCloudStorageTransaction(recordsProcessing);
@@ -77,6 +85,36 @@ public class PersistenceServiceImpl implements IPersistenceService {
 
 			throw e;
 		}
+	}
+
+	@Override
+	public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap) {
+		Map<String, Acl> originalAcls = new HashMap<>();
+		List<String> lockedRecords = new ArrayList<>();
+		List<RecordMetadata> validMetadata = new ArrayList<>();
+		try {
+			originalAcls = this.cloudStorage.updateObjectMetadata(recordMetadata, recordsId, validMetadata, lockedRecords, recordsIdMap);
+			this.commitDatastoreTransaction(validMetadata);
+		} catch (NotImplementedException e) {
+			throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+		} catch (Exception e) {
+			this.logger.warning("Reverting meta data changes");
+			try {
+				this.cloudStorage.revertObjectMetadata(recordMetadata, originalAcls);
+			} catch (NotImplementedException innerEx) {
+				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+			} catch (Exception innerEx) {
+				e.addSuppressed(innerEx);
+			}
+			throw e;
+		}
+		PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
+		for (int i = 0; i < recordMetadata.size(); i++) {
+			RecordMetadata metadata = recordMetadata.get(i);
+			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.create);
+		}
+		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		return lockedRecords;
 	}
 
 	private void tryCleanupCloudStorage(List<RecordProcessing> recordsProcessing) {

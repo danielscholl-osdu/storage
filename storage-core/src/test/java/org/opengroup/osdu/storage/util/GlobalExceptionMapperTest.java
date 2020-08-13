@@ -15,10 +15,15 @@
 package org.opengroup.osdu.storage.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.verify;
 
 import javax.validation.ValidationException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import org.mockito.Mockito;
+import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import javassist.NotFoundException;
 import org.apache.http.HttpStatus;
@@ -81,5 +86,27 @@ public class GlobalExceptionMapperTest {
 
 		verify(this.logger).warning("any message", appException);
 
+	}
+
+	@Test
+	public void should_returnUnprocessableEntity_with_correct_reason_when_JsonProcessingException_Is_Captured() {
+		JsonProcessingException exception = Mockito.mock(JsonProcessingException.class);
+		ResponseEntity response = this.sut.handleJsonProcessingException(exception);
+
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertNotNull(response.getBody());
+		assertEquals(AppError.class, response.getBody().getClass());
+		assertEquals("Failed to process JSON.", ((AppError)response.getBody()).getReason());
+	}
+
+	@Test
+	public void should_returnUnprocessableEntity_with_correct_reason_when_UnrecognizedPropertyException_Is_Captured() {
+		UnrecognizedPropertyException exception = Mockito.mock(UnrecognizedPropertyException.class);
+		ResponseEntity response = this.sut.handleUnrecognizedPropertyException(exception);
+
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertNotNull(response.getBody());
+		assertEquals(AppError.class, response.getBody().getClass());
+		assertEquals("Unrecognized property.", ((AppError)response.getBody()).getReason());
 	}
 }
