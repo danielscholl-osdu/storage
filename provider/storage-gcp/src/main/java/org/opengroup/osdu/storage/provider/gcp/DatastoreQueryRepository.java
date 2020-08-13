@@ -17,7 +17,7 @@ package org.opengroup.osdu.storage.provider.gcp;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opengroup.osdu.storage.provider.gcp.credentials.IDatastoreFactory;
+import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 

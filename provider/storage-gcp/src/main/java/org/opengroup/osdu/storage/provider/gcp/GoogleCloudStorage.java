@@ -25,7 +25,7 @@ import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.provider.gcp.credentials.IStorageFactory;
+import org.opengroup.osdu.core.gcp.multitenancy.IStorageFactory;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.apache.commons.lang3.ArrayUtils;
