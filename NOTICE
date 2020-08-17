@@ -541,7 +541,6 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
 - Netty Reactive Streams Implementation (from )
@@ -570,7 +569,6 @@ The following software have components provided under the terms of this license:
 - Nimbus LangTag (from https://bitbucket.org/connect2id/nimbus-language-tags)
 - Non-Blocking Reactive Foundation for the JVM (from https://github.com/reactor/reactor)
 - OAuth 2.0 SDK with OpenID Connect extensions (from https://bitbucket.org/connect2id/oauth-2.0-sdk-with-openid-connect-extensions)
-- Objenesis (from http://objenesis.org)
 - Objenesis (from http://objenesis.org)
 - OkHttp (from )
 - OkHttp (from )
@@ -761,7 +759,6 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Mockito (from http://www.mockito.org)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - NanoHttpd-Core (from )
 - Netty/Codec/HTTP (from )
@@ -995,9 +992,8 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure client library for Identity (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for KeyVault Secrets (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure common module for Storage (from https://github.com/Azure/azure-sdk-for-java)
+- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
-- Mockito (from http://mockito.org)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
 - Netty/Codec/HTTP (from )
@@ -1085,6 +1081,5 @@ unknown
 The following software have components provided under the terms of this license:
 
 - Byte Buddy (without dependencies) (from )
-- Objenesis (from http://objenesis.org)
 
 
