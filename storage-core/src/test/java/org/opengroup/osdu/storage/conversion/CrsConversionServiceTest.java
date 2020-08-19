@@ -166,8 +166,6 @@ public class CrsConversionServiceTest {
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
         Assert.assertEquals(1, crsResult.getRecords().size());
         Assert.assertEquals(1, crsResult.getConversionStatuses().size());
-        String error = String.format(CrsConversionServiceErrorMessages.ILLEGAL_METAITEM_ARRAY, "com.google.gson.JsonObject cannot be cast to com.google.gson.JsonArray");
-        Assert.assertEquals(error, crsResult.getConversionStatuses().get(0).getErrors().get(0));
         Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_19));
     }
 

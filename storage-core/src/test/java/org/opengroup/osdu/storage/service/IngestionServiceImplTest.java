@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -40,10 +41,8 @@ import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.security.Timestamp;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
@@ -79,6 +78,9 @@ public class IngestionServiceImplTest {
 
     @Mock
     private IEntitlementsAndCacheService authService;
+
+    @Mock
+    private JaxRsDpsLog logger;
 
     @InjectMocks
     private IngestionServiceImpl sut;
@@ -131,6 +133,7 @@ public class IngestionServiceImplTest {
         when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT);
         when(this.tenantFactory.exists(TENANT)).thenReturn(true);
         when(this.tenantFactory.getTenantInfo(TENANT)).thenReturn(this.tenant);
+        when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
     }
 
     @Test
@@ -282,6 +285,43 @@ public class IngestionServiceImplTest {
     }
 
     @Test
+    public void should_return403_when_updatingARecordThatDoesNotHaveOwnerAccessOnOriginalRecord() {
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(this.acl);
+        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
+
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        recordMetadataList.add(existingRecordMetadata1);
+        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
+        when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
+
+        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        try {
+            this.sut.createUpdateRecords(false, this.records, USER);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+            assertEquals("User Unauthorized", e.getError().getReason());
+            assertEquals("User is not authorized to update records.", e.getError().getMessage());
+        }
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     public void should_updateTwoRecords_when_twoRecordIDsAreAlreadyPresentInDataLake() {
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
@@ -295,12 +335,14 @@ public class IngestionServiceImplTest {
         existingRecordMetadata1.setUser(NEW_USER);
         existingRecordMetadata1.setKind(KIND_1);
         existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(this.acl);
         existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
 
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
         existingRecordMetadata2.setKind(KIND_2);
         existingRecordMetadata2.setStatus(RecordState.active);
+        existingRecordMetadata2.setAcl(this.acl);
         existingRecordMetadata2.setGcsVersionPaths(Lists.newArrayList("path/4", "path/5"));
 
         Map<String, RecordMetadata> output = new HashMap<>();
@@ -391,11 +433,11 @@ public class IngestionServiceImplTest {
         this.acl.setViewers(VALID_ACL);
         this.acl.setOwners(VALID_ACL);
 
-        final long currentTimestamp = System.currentTimeMillis();
-
         RecordMetadata existingRecordMetadata = new RecordMetadata();
+        existingRecordMetadata.setKind(KIND_1);
         existingRecordMetadata.setUser(NEW_USER);
-        existingRecordMetadata.setCreateTime(currentTimestamp);
+        existingRecordMetadata.setStatus(RecordState.active);
+        existingRecordMetadata.setAcl(this.acl);
         existingRecordMetadata.setGcsVersionPaths(Lists.newArrayList("kind/path/123"));
 
         Map<String, RecordMetadata> existingRecords = new HashMap<>();
@@ -411,6 +453,11 @@ public class IngestionServiceImplTest {
         String recordFromStorage = new Gson().toJson(recordInStorage);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
+
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        recordMetadataList.add(existingRecordMetadata);
+        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
+
         when(this.cloudStorage.read(existingRecordMetadata, 123456L, false)).thenReturn(recordFromStorage);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
@@ -420,6 +467,7 @@ public class IngestionServiceImplTest {
         verify(this.persistenceService, times(1)).persistRecordBatch(any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
     }
+
 
     @Test
     public void should_throwAppException400_whenAclDoesNotMatchTenant() {
@@ -459,6 +507,7 @@ public class IngestionServiceImplTest {
         existingRecordMetadata.setId(RECORD_ID1);
         existingRecordMetadata.setKind(KIND_1);
         existingRecordMetadata.setStatus(RecordState.deleted);
+        existingRecordMetadata.setAcl(this.acl);
         existingRecordMetadata.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
 
         Map<String, RecordMetadata> output = new HashMap<>();

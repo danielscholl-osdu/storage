@@ -21,19 +21,21 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import com.google.common.collect.Lists;
 
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -45,10 +47,8 @@ import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
+import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RecordServiceImplTest {
@@ -64,6 +64,12 @@ public class RecordServiceImplTest {
 
     @Mock
     private IMessageBus pubSubClient;
+
+    @Mock
+    private IEntitlementsAndCacheService entitlementsAndCacheService;
+
+    @Mock
+    private IPersistenceService persistenceService;
 
     @Mock
     private DpsHeaders headers;
@@ -107,12 +113,21 @@ public class RecordServiceImplTest {
 
     @Test
     public void should_purgeRecordSuccessfully_when_recordExistsAndHaveProperPermissions() {
+
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
+        record.setAcl(storageAcl);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.purgeRecord(RECORD_ID);
         verify(this.auditLogger).purgeRecordSuccess(any());
@@ -126,16 +141,54 @@ public class RecordServiceImplTest {
         verify(this.pubSubClient).publishMessage(this.headers, pubsubMsg);
     }
 
+
     @Test
-    public void should_returnThrowOriginalException_when_deletingRecordInDatastoreFails() {
+    public void should_return403_when_recordExistsButWithoutOwnerPermissions() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
+        record.setAcl(storageAcl);
+        record.setStatus(RecordState.active);
+        record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
+
+        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
+
+        try {
+            this.sut.purgeRecord(RECORD_ID);
+
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(403, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("The user is not authorized to purge the record", e.getError().getMessage());
+        }
+    }
+
+    @Test
+    public void should_returnThrowOriginalException_when_deletingRecordInDatastoreFails() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata record = new RecordMetadata();
+        record.setKind("any kind");
+        record.setAcl(storageAcl);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(originalException).when(this.recordRepository).delete(RECORD_ID);
 
@@ -170,14 +223,22 @@ public class RecordServiceImplTest {
 
 
     @Test
-    @Ignore
     public void should_rollbackDatastoreRecord_when_deletingRecordInGCSFails() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
+        record.setAcl(storageAcl);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
+
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                 "The user is not authorized to perform this action")).when(this.cloudStorage).delete(record);
         try {
@@ -193,7 +254,7 @@ public class RecordServiceImplTest {
     }
 
     @Test
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void should_updateRecordAndPublishMessage_when_deletingRecordSuccessfully() {
         RecordMetadata record = new RecordMetadata();
         record.setKind("any kind");
@@ -277,5 +338,125 @@ public class RecordServiceImplTest {
         } catch (Exception e) {
             fail("Should not get different exception");
         }
+    }
+
+    @Test
+    public void should_throw400_whenRecordIdsInvalid() {
+        List<String> ids = new ArrayList<>();
+        ids.add("invalidId");
+
+        RecordQuery query = new RecordQuery();
+        query.setIds(ids);
+        List<PatchOperation> ops = new ArrayList<>();
+        PatchOperation op = new PatchOperation();
+        ops.add(op);
+
+        RecordBulkUpdateParam param = new RecordBulkUpdateParam();
+        param.setOps(ops);
+        param.setQuery(query);
+
+        try {
+            this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+            assertEquals(String.format("The record 'invalidId' does not follow the naming convention: the first id component must be '%s'", TENANT_NAME), e.getError().getMessage());
+        }
+    }
+
+    @Test
+    public void should_return400_whenAclInvalid() {
+        List<String> ids = new ArrayList<>();
+        ids.add("tenant1:test:id1");
+        ids.add("tenant1:test:id2");
+
+        String[] viewers = new String[]{"viewer1@tenant1.gmail.com", "viewer2@tenant1.gmail.com"};
+
+        RecordQuery query = new RecordQuery();
+        query.setIds(ids);
+        List<PatchOperation> ops = new ArrayList<>();
+        PatchOperation op = PatchOperation.builder().op("replace").path("/acl/viewers").value(viewers).build();
+        ops.add(op);
+
+        RecordBulkUpdateParam param = new RecordBulkUpdateParam();
+        param.setOps(ops);
+        param.setQuery(query);
+
+        when(this.entitlementsAndCacheService.isValidAcl(any(), any())).thenReturn(false);
+
+        try {
+            this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+            assertEquals("Invalid ACLs provided in acl path.", e.getError().getMessage());
+        }
+    }
+
+    @Test
+    public void should_returnValidResponse_whenBulkUpdateParamValid_UserNotHaveOwnerAccess() {
+        List<String> ids = new ArrayList<>();
+        ids.add("tenant1:test:id1");
+        ids.add("tenant1:test:id2");
+        ids.add("tenant1:test:id3");
+        ids.add("tenant1:test:id4");
+
+        Acl acl = new Acl();
+        Acl acl2 = new Acl();
+        String[] viewers = new String[]{"viewer1@tenant1.gmail.com", "viewer2@tenant1.gmail.com"};
+        String[] owners = new String[]{"owner1@tenant1.gmail.com", "owner2@tenant1.gmail.com"};
+        String[] owners2 = new String[]{"owner1@tenant1.gmail.com"};
+        acl.setViewers(viewers);
+        acl.setOwners(owners);
+        acl2.setViewers(viewers);
+        acl2.setOwners(owners2);
+
+        List<PatchOperation> ops = new ArrayList<>();
+        PatchOperation op = PatchOperation.builder().op("replace").path("/acl/viewers").value(viewers).build();
+        ops.add(op);
+
+        RecordQuery query = new RecordQuery();
+        query.setIds(ids);
+
+        RecordBulkUpdateParam param = new RecordBulkUpdateParam();
+        param.setOps(ops);
+        param.setQuery(query);
+
+        when(this.entitlementsAndCacheService.isValidAcl(any(), any())).thenReturn(true);
+
+        RecordMetadata record = new RecordMetadata();
+        record.setAcl(acl);
+        record.setKind("any kind");
+        record.setId("id:access");
+        record.setStatus(RecordState.active);
+        record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
+        RecordMetadata record2= new RecordMetadata();
+        record2.setAcl(acl2);
+        record2.setKind("any kind");
+        record2.setId("id:noAccess");
+        record2.setStatus(RecordState.active);
+        record2.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
+        Map<String, RecordMetadata> existingRecords = new HashMap<>();
+        existingRecords.put("tenant1:test:id1", record);
+        existingRecords.put("tenant1:test:id2", record);
+        existingRecords.put("tenant1:test:id3", record2);
+        when(this.recordRepository.get(anyList())).thenReturn(existingRecords);
+
+        when(this.cloudStorage.hasAccess(record)).thenReturn(true);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners)).thenReturn(true);
+        when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners2)).thenReturn(false);
+
+        List<String> lockedId = new ArrayList<>();
+        lockedId.add("tenant1:test:id2");
+        when(this.persistenceService.updateMetadata(any(), any(), any())).thenReturn(lockedId);
+
+        BulkUpdateRecordsResponse response = this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
+
+        assertEquals(1, (long)response.getRecordCount());
+        assertEquals("tenant1:test:id1", response.getRecordIds().get(0));
+        assertEquals(1, response.getNotFoundRecordIds().size());
+        assertEquals("tenant1:test:id4", response.getNotFoundRecordIds().get(0));
+        assertEquals(1, response.getUnAuthorizedRecordIds().size());
+        assertEquals("tenant1:test:id3", response.getUnAuthorizedRecordIds().get(0));
+        assertEquals(1, response.getLockedRecordIds().size());
+        assertEquals("tenant1:test:id2", response.getLockedRecordIds().get(0));
     }
 }

@@ -40,6 +40,7 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
 | `LOG_PREFIX` | `storage` | Logging prefix | no | - |
+| `server.servlet.contextPath` | `/api/storage/v2/` | Servlet context path | no | - |
 | `AUTHORIZE_API` | ex `https://foo-entitlements.azurewebsites.net` | Entitlements API endpoint | no | output of infrastructure deployment |
 | `AUTHORIZE_API_KEY` | `********` | The API key clients will need to use when calling the entitlements | yes | -- |
 | `LEGALTAG_API` | ex `https://foo-legal.azurewebsites.net` | Legal API endpoint | no | output of infrastructure deployment |
