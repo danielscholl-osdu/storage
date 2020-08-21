@@ -17,8 +17,8 @@
 package org.opengroup.osdu.storage.provider.ibm;
 
 import static com.cloudant.client.api.query.Expression.gte;
-import static com.cloudant.client.api.query.Expression.in;
-import static com.cloudant.client.api.query.Expression.regex;
+import static com.cloudant.client.api.query.PredicatedOperation.elemMatch;
+import static com.cloudant.client.api.query.PredicateExpression.eq;
 import static com.cloudant.client.api.query.Operation.and;
 
 import java.net.MalformedURLException;
@@ -40,11 +40,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import com.cloudant.client.api.Database;
+import com.cloudant.client.api.model.Params;
 import com.cloudant.client.api.model.Response;
 import com.cloudant.client.api.query.JsonIndex;
 import com.cloudant.client.api.query.QueryBuilder;
 import com.cloudant.client.api.query.QueryResult;
 import com.cloudant.client.api.query.Sort;
+import com.cloudant.client.org.lightcouch.NoDocumentException;
 
 @Repository
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
@@ -76,8 +78,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 		}
 		db = cloudantFactory.getDatabase(dbNamePrefix, DB_NAME);
 		System.out.println("creating indexes...");
-		db.createIndex(JsonIndex.builder().name("kind-json-index").asc("kind").definition());
-		db.createIndex(JsonIndex.builder().name("legalTagsNames-json-index").asc("legalTagsNames").definition());
+		db.createIndex(JsonIndex.builder().name("kind-json-index").asc("kind").asc("_id").definition());
+		db.createIndex(JsonIndex.builder().name("legalTagsNames-json-index").asc("legal.legaltags").asc("_id").definition());
 	}
 
 	@Override
@@ -87,21 +89,18 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
 		if (recordsMetadata != null) {
 
-			// get ids
-			List<String> ids = new ArrayList<String>();
-			for (RecordMetadata rm : recordsMetadata) {
-				ids.add(rm.getId());
-			}
-
-			// lookup for ids to check if already exists
-			QueryResult<RecordMetadataDoc> results = db.query(
-					new QueryBuilder(in("_id", ids.toArray())).fields("_id", "_rev").build(), RecordMetadataDoc.class);
-
 			// map id with revs
-			Map<String, String> idRevs = new HashMap<String, String>();
-			for (RecordMetadataDoc doc : results.getDocs()) {
-				idRevs.put(doc.getId(), doc.getRev());
-			}
+            Map<String, String> idRevs = new HashMap<String, String>();
+
+            for (RecordMetadata rm : recordsMetadata) {
+            	try {
+    				RecordMetadataDoc rmc = db.find(RecordMetadataDoc.class, rm.getId(), new Params().revsInfo());
+    				idRevs.put(rm.getId(), rmc.getRev());
+    			} catch (NoDocumentException e) {
+    				// ignore
+    			}
+            }
+            
 			Date date = new Date();
 			long now = date.getTime();
 
@@ -134,10 +133,10 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
 	@Override
 	public RecordMetadata get(String id) {
-		if (db.contains(id)) {
+		try {
 			RecordMetadataDoc rm = db.find(RecordMetadataDoc.class, id);
 			return rm.getRecordMetadata();
-		} else {
+		} catch (NoDocumentException e) {
 			return null;
 		}
 	}
@@ -146,12 +145,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 	public Map<String, RecordMetadata> get(List<String> ids) {
 		Map<String, RecordMetadata> output = new HashMap<>();
 
-		if (ids != null && ids.size() > 0) {
-	        QueryResult<RecordMetadataDoc> results = db.query(new QueryBuilder(
-	    			in("_id", ids.toArray())).
-				    build(), RecordMetadataDoc.class);
-			for (RecordMetadataDoc doc : results.getDocs()) {
-				output.put(doc.getId(), doc.getRecordMetadata());
+		for (String id : ids) {
+			try {
+				RecordMetadataDoc rm = db.find(RecordMetadataDoc.class, id);
+				output.put(rm.getId(), rm.getRecordMetadata());
+			} catch (NoDocumentException e) {
+				// ignore
 			}
 		}
 
@@ -172,7 +171,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 		List<RecordMetadata> outputRecords = new ArrayList<>();
 
 		QueryResult<RecordMetadataDoc> results = db
-				.query(new QueryBuilder(and(regex("legalTagsNames", "!" + legalTagName + "!"), gte("_id", initialId)))
+				.query(new QueryBuilder(and(elemMatch("legal.legaltags", eq(legalTagName)), gte("_id", initialId)))
 						.sort(Sort.asc("_id")).fields("_id", "legal", "gcsVersionPaths").limit(numRecords + 1).build(), RecordMetadataDoc.class);
 
 		String nextCursor = null;
@@ -189,6 +188,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
 	@Override
 	public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+		// TODO implement this!!!
 		return null;
 	}
 
