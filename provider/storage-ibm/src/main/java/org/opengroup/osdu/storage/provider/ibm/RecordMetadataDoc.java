@@ -17,7 +17,6 @@
 package org.opengroup.osdu.storage.provider.ibm;
 
 import java.util.List;
-import java.util.Set;
 
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
@@ -25,7 +24,6 @@ public class RecordMetadataDoc extends RecordMetadata {
 	
 	private String _id;
     private String _rev;
-    private String legalTagsNames;
     
     public RecordMetadataDoc(String id, String rev) {
 		this._id = id;
@@ -34,7 +32,6 @@ public class RecordMetadataDoc extends RecordMetadata {
     
     public RecordMetadataDoc(RecordMetadata recordMetadata) {
     	this.setId(recordMetadata.getId());
-    	this.setLegalTagsNames(recordMetadata.getLegal().getLegaltags());
     	
     	super.setKind(recordMetadata.getKind());
     	super.setAcl(recordMetadata.getAcl());
@@ -77,18 +74,6 @@ public class RecordMetadataDoc extends RecordMetadata {
 	}
 	public void setRev(String rev) {
 		this._rev = rev;
-	}
-	
-	public String getLegalTagsNames() {
-		return legalTagsNames;
-	}
-	
-	public void setLegalTagsNames(Set<String> legalTags) {
-		String tags = "";
-		for (String tag : legalTags) {
-			tags += "!"+tag+"! ";
-		}
-		this.legalTagsNames = tags;
 	}
 	
 	public void addGcsPath(long version) {
