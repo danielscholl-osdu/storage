@@ -27,7 +27,6 @@ phases:
       - apt-get install -y maven
       - java -version
       - mvn -version
-      - echo $JAVA_HOME #WHY
       - mkdir -p /root/.m2
       - cp ./provider/storage-aws/maven/settings.xml /root/.m2/settings.xml # copy the AWS-specific settings.xml to the CodeBuild instance's .m2 folder
       - export AWS_ACCOUNT_ID=`aws sts get-caller-identity | grep Account | cut -d':' -f 2 | cut -d'"' -f 2`
