@@ -30,6 +30,11 @@
 		<docker.image.prefix>opendes</docker.image.prefix>
     	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<os-core-common.version>0.3.6</os-core-common.version>
+		<jackson.version>2.11.2</jackson.version>
+		<netty.version>4.1.51.Final</netty.version>
+		<snakeyaml.version>1.26</snakeyaml.version>
+		<commons-codec.version>1.14</commons-codec.version>
+		<nimbusds.version>7.9</nimbusds.version>
 	</properties>
 
 	<licenses>
@@ -45,18 +50,49 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-bom</artifactId>
+				<version>${netty.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>2.1.16.RELEASE</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-
-				<dependency>
-					<groupId>org.opengroup.osdu</groupId>
-					<artifactId>os-core-common</artifactId>
-					<version>${os-core-common.version}</version>
-				</dependency>
+			<dependency>
+				<groupId>com.nimbusds</groupId>
+				<artifactId>nimbus-jose-jwt</artifactId>
+				<version>${nimbusds.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-codec</groupId>
+				<artifactId>commons-codec</artifactId>
+				<version>${commons-codec.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.yaml</groupId>
+				<artifactId>snakeyaml</artifactId>
+				<version>${snakeyaml.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.opengroup.osdu</groupId>
+				<artifactId>os-core-common</artifactId>
+				<version>${os-core-common.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

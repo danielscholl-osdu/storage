@@ -75,6 +75,20 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>os-core-common</artifactId>
+      <exclusions>
+        <exclusion>
+          <artifactId>elasticsearch</artifactId>
+          <groupId>org.elasticsearch</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>elasticsearch-rest-client</artifactId>
+          <groupId>org.elasticsearch.client</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>elasticsearch-rest-high-level-client</artifactId>
+          <groupId>org.elasticsearch.client</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
@@ -84,6 +98,16 @@
     <dependency> 
       <groupId>org.projectlombok</groupId>  
       <artifactId>lombok</artifactId> 
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor.netty</groupId>
+      <artifactId>reactor-netty</artifactId>
+      <version>0.9.5.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+      <version>3.3.0.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
