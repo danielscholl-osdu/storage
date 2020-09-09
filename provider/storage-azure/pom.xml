@@ -28,7 +28,7 @@
   <description>Storage service on Azure</description>
   <packaging>jar</packaging>  
   <properties> 
-    <azure.version>2.1.7</azure.version>
+    <azure.version>2.1.10</azure.version>
     <azure.appservice.resourcegroup></azure.appservice.resourcegroup>
     <azure.appservice.plan></azure.appservice.plan>
     <azure.appservice.appname></azure.appservice.appname>
@@ -98,16 +98,6 @@
     <dependency> 
       <groupId>org.projectlombok</groupId>  
       <artifactId>lombok</artifactId> 
-    </dependency>
-    <dependency>
-      <groupId>io.projectreactor.netty</groupId>
-      <artifactId>reactor-netty</artifactId>
-      <version>0.9.5.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>io.projectreactor</groupId>
-      <artifactId>reactor-core</artifactId>
-      <version>3.3.0.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
