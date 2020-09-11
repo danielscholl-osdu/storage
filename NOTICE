@@ -394,6 +394,7 @@ The following software have components provided under the terms of this license:
 - Adapter: RxJava (from )
 - Apache Commons BeanUtils (from http://commons.apache.org/proper/commons-beanutils/)
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
+- Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
 - Apache Commons Collections (from http://commons.apache.org/proper/commons-collections/)
 - Apache Commons FileUpload (from http://commons.apache.org/proper/commons-fileupload/)
 - Apache Commons Lang (from http://commons.apache.org/proper/commons-lang/)
@@ -546,9 +547,9 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Mockito (from http://mockito.org)
-- Mockito (from http://www.mockito.org)
-- Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
+- Mockito (from http://www.mockito.org)
+- Mockito (from http://www.mockito.org)
 - Netty Reactive Streams Implementation (from )
 - Netty/Buffer (from http://netty.io/)
 - Netty/Buffer (from http://netty.io/)
@@ -590,6 +591,7 @@ The following software have components provided under the terms of this license:
 - QpidJMS Client (from )
 - Reactive Streams Netty driver (from https://github.com/reactor/reactor-netty)
 - Retrofit (from )
+- SnakeYAML (from http://www.snakeyaml.org)
 - SnakeYAML (from http://www.snakeyaml.org)
 - Spring AOP (from https://github.com/spring-projects/spring-framework)
 - Spring AOP (from https://github.com/spring-projects/spring-framework)
@@ -674,8 +676,8 @@ The following software have components provided under the terms of this license:
 - java-cloudant (from https://cloudant.com)
 - java-cloudant (from https://cloudant.com)
 - javatuples (from http://www.javatuples.org)
-- javax.inject (from http://code.google.com/p/atinject/)
 - javax.inject (from )
+- javax.inject (from http://code.google.com/p/atinject/)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - jersey-repackaged-guava (from )
 - jose4j (from https://bitbucket.org/b_c/jose4j/)
@@ -762,6 +764,7 @@ The following software have components provided under the terms of this license:
 - API Common (from https://github.com/googleapis)
 - ASM Core (from )
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
+- Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis)
@@ -787,6 +790,7 @@ The following software have components provided under the terms of this license:
 - Protocol Buffer Java API (from https://developers.google.com/protocol-buffers/)
 - Protocol Buffers [Util] (from )
 - Reflections (from http://github.com/ronmamo/reflections)
+- SnakeYAML (from http://www.snakeyaml.org)
 - SnakeYAML (from http://www.snakeyaml.org)
 - Spring Core (from https://github.com/spring-projects/spring-framework)
 - Spring Core (from https://github.com/spring-projects/spring-framework)
@@ -867,6 +871,7 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - SnakeYAML (from http://www.snakeyaml.org)
+- SnakeYAML (from http://www.snakeyaml.org)
 
 ========================================================================
 GPL-2.0-only
@@ -896,6 +901,7 @@ GPL-2.0-or-later
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- SnakeYAML (from http://www.snakeyaml.org)
 - SnakeYAML (from http://www.snakeyaml.org)
 
 ========================================================================
@@ -960,6 +966,7 @@ The following software have components provided under the terms of this license:
 - Java Native Access (from https://github.com/java-native-access/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Javassist (from http://www.javassist.org/)
+- SnakeYAML (from http://www.snakeyaml.org)
 - SnakeYAML (from http://www.snakeyaml.org)
 
 ========================================================================
