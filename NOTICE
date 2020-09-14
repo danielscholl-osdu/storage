@@ -1023,9 +1023,9 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure client library for Identity (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for KeyVault Secrets (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure common module for Storage (from https://github.com/Azure/azure-sdk-for-java)
-- Mockito (from http://mockito.org)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
+- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - Netty/Codec/HTTP (from )
 - Netty/Codec/HTTP (from )
@@ -1116,5 +1116,3 @@ unknown
 The following software have components provided under the terms of this license:
 
 - Byte Buddy (without dependencies) (from )
-
-
