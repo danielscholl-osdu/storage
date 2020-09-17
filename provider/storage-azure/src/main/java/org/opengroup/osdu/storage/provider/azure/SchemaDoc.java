@@ -21,6 +21,7 @@ import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.annotation.Id;
 
 import java.util.Map;
@@ -37,5 +38,5 @@ public class SchemaDoc {
     private String user;
     private SchemaItem[] schemaItems;
 }
-
+@Primary
 interface CosmosDBSchema extends DocumentDbRepository<SchemaDoc, String> {}
