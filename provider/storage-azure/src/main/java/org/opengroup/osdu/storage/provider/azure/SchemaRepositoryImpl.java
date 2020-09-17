@@ -17,10 +17,12 @@ package org.opengroup.osdu.storage.provider.azure;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
+@Primary
 public class SchemaRepositoryImpl implements ISchemaRepository {
 
     @Autowired

@@ -25,6 +25,7 @@ import org.opengroup.osdu.storage.provider.azure.util.QueryItemMixIn;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Repository
+@Primary
 public class QueryRepositoryImpl implements IQueryRepository {
     @Autowired
     private CosmosDBRecord dbRecord;

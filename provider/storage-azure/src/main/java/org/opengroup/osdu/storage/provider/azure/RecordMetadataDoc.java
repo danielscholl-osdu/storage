@@ -21,6 +21,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +38,7 @@ public class RecordMetadataDoc {
     private String id;
     private RecordMetadata metadata;
 }
-
+@Primary
 interface CosmosDBRecord extends DocumentDbRepository<RecordMetadataDoc, String> {
     List<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status);
     Page<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable);

@@ -22,6 +22,7 @@ import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 
 @Repository
+@Primary
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
     @Autowired
     private CosmosDBRecord db;
