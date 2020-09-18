@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.microsoft.azure.spring.data.cosmosdb.core.mapping.Document;
 import com.microsoft.azure.spring.data.cosmosdb.core.mapping.PartitionKey;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
@@ -31,7 +32,9 @@ import java.util.Map;
 public class SchemaDoc {
     @PartitionKey
     @Id
+    //@JsonProperty("id")
     private String kind;
+    private String id;
     private Map<String,Object> extension;
     private String user;
     private SchemaItem[] schemaItems;

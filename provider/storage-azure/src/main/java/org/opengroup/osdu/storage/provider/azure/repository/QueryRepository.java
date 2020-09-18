@@ -49,24 +49,29 @@ public class QueryRepository implements IQueryRepository {
         }
 
         Sort sort = Sort.by(Sort.Direction.ASC, "kind");
+        System.out.println(sort.toString());
         DatastoreQueryResult dqr = new DatastoreQueryResult();
         List<String> kinds = new ArrayList();
         Iterable<SchemaDoc> docs;
 
         try {
             if (paginated) {
-                final Page<SchemaDoc> docPage =
-                        schema.findAll(CosmosDbPageRequest.of(0, numRecords, cursor, sort));
+                System.out.println("ERIK PAGINATED" + paginated);
+                final Page<SchemaDoc> docPage = schema.findAll(CosmosDbPageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
                 String continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {
+                System.out.println("ERIK NOT PAGINATED" + paginated);
                 docs = schema.findAll(sort);
             }
-            docs.forEach(d -> kinds.add(d.getKind()));
+            docs.forEach(
+                    d -> kinds.add(d.getKind()));
+            System.out.println(kinds.size());
             dqr.setResults(kinds);
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             if (e.getCause() instanceof CosmosClientException) {
                 CosmosClientException ce = (CosmosClientException) e.getCause();
                 if(ce.statusCode() == HttpStatus.SC_BAD_REQUEST && ce.getMessage().contains("Invalid Continuation Token"))
@@ -102,6 +107,7 @@ public class QueryRepository implements IQueryRepository {
 
         try {
             if (paginated) {
+                System.out.println("getAllRecordIdsFromKind paginated=" + paginated);
                 final Page<RecordMetadataDoc> docPage = record.findByMetadata_kindAndMetadata_status(kind, status,
                         CosmosDbPageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
@@ -109,11 +115,13 @@ public class QueryRepository implements IQueryRepository {
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {
+                System.out.println("getAllRecordIdsFromKind paginated=" + paginated);
                 docs = record.findByMetadata_kindAndMetadata_status(kind, status);
             }
             docs.forEach(d -> ids.add(d.getId()));
             dqr.setResults(ids);
         } catch (Exception e) {
+            System.out.println("EXCEPTION!!!=" + e.getMessage() + " " + e.getCause() + " " + e.getStackTrace());
             if (e.getCause() instanceof CosmosClientException) {
                 CosmosClientException ce = (CosmosClientException) e.getCause();
                 if(ce.statusCode() == HttpStatus.SC_BAD_REQUEST && ce.getMessage().contains("Invalid Continuation Token"))

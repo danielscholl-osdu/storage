@@ -69,9 +69,6 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
     @Override
     public synchronized RecordMetadata get(String id) {
         RecordMetadataDoc item = this.getOne(id);
-        if (item == null) {
-            System.out.println("ERIK item is null");
-        }
         return (item == null) ? null : item.getMetadata();
     }
 
@@ -87,10 +84,10 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
 
         Iterable<RecordMetadataDoc> docs;
 
+        long start = System.currentTimeMillis();
         try {
-            SqlQuerySpec query = new SqlQuerySpec("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, @legalTagName)");
-            SqlParameterList pars = query.getParameters();
-            pars.add(new SqlParameter("@legalTagName", legalTagName));
+            String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '%s')", legalTagName);
+            SqlQuerySpec query = new SqlQuerySpec(queryText);
             final Page<RecordMetadataDoc> docPage = this.query(CosmosDbPageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
             docs.forEach(d -> {
@@ -105,6 +102,12 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
                 if (ce.statusCode() == HttpStatus.SC_BAD_REQUEST && ce.getMessage().contains("Invalid Continuation Token"))
                     throw this.getInvalidCursorException();
             }
+        }
+        long finish = System.currentTimeMillis();
+        long timeElapsed = finish - start;
+        System.out.println("!!!!!!!!!!!!! queryByLegalTagName time elapsed = " + timeElapsed);
+        for (RecordMetadata metadata : outputRecords) {
+            System.out.println("!!!!!!!!!!!!! metadata : " + metadata.getId() + " " + metadata.getKind());
         }
         return new AbstractMap.SimpleEntry<>(continuation, outputRecords);
     }
@@ -131,7 +134,7 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
-        FeedOptions options = new FeedOptions();
+        FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
         return this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
     }
 
@@ -139,14 +142,14 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
+        FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
         return this.query(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
 
     private static SqlQuerySpec getMetadata_kindAndMetada_statusQuery(String kind, String status) {
-        SqlQuerySpec query = new SqlQuerySpec("SELECT * FROM c WHERE c.metadata.kind = @kind AND c.metadata.status = @status");
-        SqlParameterList pars = query.getParameters();
-        pars.add(new SqlParameter("@kind", kind));
-        pars.add(new SqlParameter("@status", status));
+        String queryText = String.format("SELECT * FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status ='%s'", kind, status);
+        SqlQuerySpec query = new SqlQuerySpec(queryText);
+        System.out.println("query=" + query);
         return query;
     }
 
@@ -155,7 +158,7 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
     }
 
     public synchronized RecordMetadataDoc getOne(@NonNull String id) {
-        return this.getOne(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id, headers.getPartitionId());
+        return this.getOne(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id, id);
     }
 
     public RecordMetadataDoc save(RecordMetadataDoc entity) {
@@ -164,6 +167,6 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
 
     @Override
     public void delete(String id) {
-        this.deleteById(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, headers.getPartitionId());
+        this.deleteById(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id);
     }
 }

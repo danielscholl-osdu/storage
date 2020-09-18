@@ -145,7 +145,6 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 	}
 
 	protected RecordResultMock retrieveRecord(String recordId) throws Exception {
-		recordId = "opendes:parent:1600396085920";
 		System.out.println("Retrieving record=" + recordId);
 		ClientResponse response = TestUtils.send("records/" + recordId, "GET",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");

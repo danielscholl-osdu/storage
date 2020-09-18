@@ -39,7 +39,7 @@ public class TenantInfoRepository extends CosmosStoreRepository<TenantInfoDoc> {
     }
 
     public Optional<TenantInfoDoc> findById(@NonNull String id) {
-        return this.findById(id, headers.getPartitionId(), cosmosDBName, tenantInfoCollection, headers.getPartitionId());
+        return this.findById(id, headers.getPartitionId(), cosmosDBName, tenantInfoCollection, id);
      }
 
     public Iterable<TenantInfoDoc> findAll() {

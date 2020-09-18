@@ -297,6 +297,7 @@ public class ExtendedCosmosStore {
         String continuationToken = null;
         int currentPage = 0;
         HashMap<String, List<T>> results;
+        System.out.println("dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum);
         do {
             String nextContinuationToken = "";
             AsyncDocumentClient client = cosmosClientFactory.getAsyncClient(dataPartitionId);
@@ -309,7 +310,7 @@ public class ExtendedCosmosStore {
 
         } while (currentPage < pageNum && continuationToken != null);
 
-        CosmosDbPageRequest pageRequest = CosmosDbPageRequest.of(pageNum, pageSize, continuationToken, null);
+        CosmosDbPageRequest pageRequest = CosmosDbPageRequest.of(pageNum, pageSize, continuationToken);
         return new PageImpl(results.get(continuationToken), pageRequest, 0);
     }
 
@@ -370,6 +371,7 @@ public class ExtendedCosmosStore {
             final String collection,
             final T item) {
         try {
+            System.out.println("UPSERTITEM " + dataPartitionId + " " + cosmosDBName + " " + collection + " " + item);
             CosmosContainer cosmosContainer = getCosmosContainer(dataPartitionId, cosmosDBName, collection);
             cosmosContainer.upsertItem(item);
         } catch (CosmosClientException e) {
