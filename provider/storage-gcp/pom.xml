@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>core-lib-gcp</artifactId>
-			<version>0.1.21</version>
+      <version>0.3.21</version>
 		</dependency>
 
 		<dependency>
