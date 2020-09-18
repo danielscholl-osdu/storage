@@ -135,7 +135,7 @@ public class CosmosStoreRepository<T> implements IRepository<T> {
 
     public void deleteById(@NonNull String id, String dataPartitionId, String cosmosDBName, String collection, String partitionKey) {
         Assert.notNull(id, ID_MUST_NOT_BE_NULL);
-        this.deleteItem(dataPartitionId, cosmosDBName, id, collection, partitionKey);
+        this.deleteItem(dataPartitionId, cosmosDBName, collection, id, partitionKey);
     }
 
     public boolean existsById(@NonNull String primaryKey, String dataPartitionId, String cosmosDBName, String collection, String partitionKey) {
@@ -172,6 +172,7 @@ public class CosmosStoreRepository<T> implements IRepository<T> {
         //}
         int pageNum = pageable.getPageNumber();
         short pageSize = (short) pageable.getPageSize();
+        System.out.println("pageNum pageSize=" + pageNum + " " + pageSize);
         return this.findAllItemsAsyncPage(dataPartitionId, cosmosDBName, collection, pageSize, pageNum);
     }
 

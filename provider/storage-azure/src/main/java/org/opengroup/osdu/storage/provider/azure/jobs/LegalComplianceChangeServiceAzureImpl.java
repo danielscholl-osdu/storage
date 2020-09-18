@@ -66,6 +66,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
             String cursor = null;
             do {
                 //TODO replace with the new method queryByLegal
+
                 AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = this.recordsRepo
                         .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
                 cursor = results.getKey();

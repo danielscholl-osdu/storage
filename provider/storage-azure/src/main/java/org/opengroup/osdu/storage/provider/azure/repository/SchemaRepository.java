@@ -66,12 +66,13 @@ public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implement
         Assert.notNull(schema, "schema must not be null");
         Assert.notNull(user, "user must not be null");
         String kind = schema.getKind();
-        if (this.exists(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, headers.getPartitionId())) {
+        if (this.exists(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, kind)) {
             System.out.println("ERIK   Schema " + kind + " already exists. Can't create again.");
             throw new IllegalArgumentException("Schema " + kind + " already exists. Can't create again.");
         }
         SchemaDoc sd = new SchemaDoc();
         sd.setKind(kind);
+        sd.setId(kind);
         sd.setExtension(schema.getExt());
         sd.setUser(user);
         sd.setSchemaItems(schema.getSchema());
@@ -80,7 +81,7 @@ public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implement
 
     @Override
     public Schema get(String kind) {
-        SchemaDoc item = this.getOne(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, headers.getPartitionId());
+        SchemaDoc item = this.getOne(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, kind);
         return (item == null) ? null : map(item);
     }
 
@@ -94,19 +95,20 @@ public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implement
 
     @Override
     public void delete(String id) {
-        this.deleteById(id, headers.getPartitionId(), cosmosDBName, schemaCollection, headers.getPartitionId());
+        this.deleteById(id, headers.getPartitionId(), cosmosDBName, schemaCollection, id);
     }
 
     public Iterable<SchemaDoc> findAll(@NonNull Sort sort) {
         FeedOptions options = new FeedOptions();
-        return super.findAll(sort, headers.getPartitionId(), cosmosDBName, schemaCollection, options);
+        return this.findAll(sort, headers.getPartitionId(), cosmosDBName, schemaCollection, options);
     }
 
     public Page<SchemaDoc> findAll(@NonNull Pageable pageable) {
-        return super.findAll(pageable, headers.getPartitionId(), cosmosDBName, schemaCollection);
+        System.out.println("got here");
+        return this.findAll(pageable, headers.getPartitionId(), cosmosDBName, schemaCollection);
     }
 
     public Page<SchemaDoc> findAll(@NonNull Pageable pageable, @NonNull Sort sort) {
-        return super.findAll(pageable, sort, headers.getPartitionId(), cosmosDBName, schemaCollection, null);
+        return this.findAll(pageable, sort, headers.getPartitionId(), cosmosDBName, schemaCollection, null);
     }
 }
