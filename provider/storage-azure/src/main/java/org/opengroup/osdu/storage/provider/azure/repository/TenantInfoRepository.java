@@ -42,4 +42,8 @@ public class TenantInfoRepository extends CosmosStoreRepository<TenantInfoDoc> {
         return this.findById(id, headers.getPartitionId(), cosmosDBName, tenantInfoCollection, headers.getPartitionId());
      }
 
+    public Iterable<TenantInfoDoc> findAll() {
+        return this.findAllItems(headers.getPartitionId(), cosmosDBName, tenantInfoCollection);
+    }
+
 }

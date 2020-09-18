@@ -22,7 +22,6 @@ import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.storage.provider.azure.SchemaDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
-import org.opengroup.osdu.storage.provider.azure.util.OSDUAssert;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -64,11 +63,13 @@ public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implement
 
     @Override
     public synchronized void add(Schema schema, String user) {
-        OSDUAssert.notNull(schema, "schema must not be null");
-        OSDUAssert.notNull(user, "user must not be null");
+        Assert.notNull(schema, "schema must not be null");
+        Assert.notNull(user, "user must not be null");
         String kind = schema.getKind();
-        if (this.exists(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, headers.getPartitionId()))
-            throw new IllegalArgumentException("Schema " + kind + " already exist. Can't create again.");
+        if (this.exists(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, headers.getPartitionId())) {
+            System.out.println("ERIK   Schema " + kind + " already exists. Can't create again.");
+            throw new IllegalArgumentException("Schema " + kind + " already exists. Can't create again.");
+        }
         SchemaDoc sd = new SchemaDoc();
         sd.setKind(kind);
         sd.setExtension(schema.getExt());

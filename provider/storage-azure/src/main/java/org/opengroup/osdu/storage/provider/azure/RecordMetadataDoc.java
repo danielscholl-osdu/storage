@@ -16,7 +16,6 @@ package org.opengroup.osdu.storage.provider.azure;
 
 import com.microsoft.azure.spring.data.cosmosdb.core.mapping.Document;
 import com.microsoft.azure.spring.data.cosmosdb.core.mapping.PartitionKey;
-import com.microsoft.azure.spring.data.cosmosdb.repository.DocumentDbRepository;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,8 +37,4 @@ public class RecordMetadataDoc {
     private String id;
     private RecordMetadata metadata;
 }
-@Primary
-interface CosmosDBRecord extends DocumentDbRepository<RecordMetadataDoc, String> {
-    List<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status);
-    Page<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable);
-}
+

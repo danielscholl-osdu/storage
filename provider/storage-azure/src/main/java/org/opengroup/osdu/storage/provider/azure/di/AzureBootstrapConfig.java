@@ -14,6 +14,9 @@
 
 package org.opengroup.osdu.storage.provider.azure.di;
 
+import com.azure.cosmos.ConnectionMode;
+import com.azure.cosmos.ConnectionPolicy;
+import com.azure.cosmos.internal.AsyncDocumentClient;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import org.springframework.beans.factory.annotation.Value;
@@ -102,7 +105,7 @@ public class AzureBootstrapConfig {
 
         return secretValue;
     }
-/*
+
     @Bean
     public AsyncDocumentClient asyncDocumentClient(final @Named("COSMOS_ENDPOINT") String endpoint, final @Named("COSMOS_KEY") String key) {
 
@@ -115,6 +118,5 @@ public class AzureBootstrapConfig {
                 .withConnectionPolicy(connectionPolicy)
                 .build();
     }
-*/
 
 }
