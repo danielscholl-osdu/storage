@@ -15,19 +15,20 @@
 package org.opengroup.osdu.storage.provider.azure.di;
 
 import org.opengroup.osdu.core.common.cache.ICache;
-import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
+import org.opengroup.osdu.storage.provider.azure.repository.TenantInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class TenantFactoryImpl implements ITenantFactory {
     @Autowired
-    private CosmosDBTenantInfo db;
+    private TenantInfoRepository db;
 
     private Map<String, TenantInfo> tenants;
 

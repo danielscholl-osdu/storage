@@ -1,6 +1,4 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
-
-import com.microsoft.azure.spring.data.cosmosdb.core.query.DocumentDbPageRequest;
 import org.opengroup.osdu.azure.CosmosStore;
 
 import com.azure.cosmos.ConflictException;
@@ -17,6 +15,7 @@ import com.azure.cosmos.internal.AsyncDocumentClient;
 import com.azure.cosmos.internal.Document;
 import org.opengroup.osdu.azure.ICosmosClientFactory;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosDbPageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -127,6 +126,7 @@ public class ExtendedCosmosStore {
             final String partitionKey,
             final Class<T> clazz) {
         try {
+            System.out.println(dataPartitionId + " " + cosmosDBName + " " + collection + " " + id + " " + partitionKey + " " + clazz);
             CosmosContainer cosmosContainer = getCosmosContainer(dataPartitionId, cosmosDBName, collection);
             T item = findItem(cosmosContainer, id, partitionKey)
                     .read(new CosmosItemRequestOptions(partitionKey))
@@ -309,7 +309,7 @@ public class ExtendedCosmosStore {
 
         } while (currentPage < pageNum && continuationToken != null);
 
-        DocumentDbPageRequest pageRequest = DocumentDbPageRequest.of(pageNum, pageSize, continuationToken, null);
+        CosmosDbPageRequest pageRequest = CosmosDbPageRequest.of(pageNum, pageSize, continuationToken, null);
         return new PageImpl(results.get(continuationToken), pageRequest, 0);
     }
 

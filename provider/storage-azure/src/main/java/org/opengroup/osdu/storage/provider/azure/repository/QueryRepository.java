@@ -1,7 +1,6 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
 import com.azure.data.cosmos.CosmosClientException;
-import com.microsoft.azure.spring.data.cosmosdb.core.query.DocumentDbPageRequest;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -9,7 +8,7 @@ import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.SchemaDoc;
-import org.opengroup.osdu.storage.provider.azure.util.OSDUAssert;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosDbPageRequest;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -17,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,9 +56,9 @@ public class QueryRepository implements IQueryRepository {
         try {
             if (paginated) {
                 final Page<SchemaDoc> docPage =
-                        schema.findAll(DocumentDbPageRequest.of(0, numRecords, cursor), sort);
+                        schema.findAll(CosmosDbPageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
-                String continuation = ((DocumentDbPageRequest) pageable).getRequestContinuation();
+                String continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {
@@ -80,7 +80,7 @@ public class QueryRepository implements IQueryRepository {
 
     @Override
     public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
-        OSDUAssert.notNull(kind, "kind must not be null");
+        Assert.notNull(kind, "kind must not be null");
 
         boolean paginated  = false;
 
@@ -103,9 +103,9 @@ public class QueryRepository implements IQueryRepository {
         try {
             if (paginated) {
                 final Page<RecordMetadataDoc> docPage = record.findByMetadata_kindAndMetadata_status(kind, status,
-                        DocumentDbPageRequest.of(0, numRecords, cursor));
+                        CosmosDbPageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
-                String continuation = ((DocumentDbPageRequest) pageable).getRequestContinuation();
+                String continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {

@@ -6,7 +6,6 @@ import com.azure.cosmos.SqlParameter;
 import com.azure.cosmos.SqlParameterList;
 import com.azure.cosmos.SqlQuerySpec;
 import com.azure.data.cosmos.CosmosClientException;
-import com.microsoft.azure.spring.data.cosmosdb.core.query.DocumentDbPageRequest;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -16,7 +15,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
-import org.opengroup.osdu.storage.provider.azure.util.OSDUAssert;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosDbPageRequest;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -70,6 +69,9 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
     @Override
     public synchronized RecordMetadata get(String id) {
         RecordMetadataDoc item = this.getOne(id);
+        if (item == null) {
+            System.out.println("ERIK item is null");
+        }
         return (item == null) ? null : item.getMetadata();
     }
 
@@ -80,27 +82,23 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
 
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, String cursor) {
-        // TODO REWRITE QUERY
         List<RecordMetadata> outputRecords = new ArrayList<>();
         String continuation = null;
 
         Iterable<RecordMetadataDoc> docs;
 
         try {
-            // ERIK ARRAY_CONTAINS
             SqlQuerySpec query = new SqlQuerySpec("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, @legalTagName)");
             SqlParameterList pars = query.getParameters();
             pars.add(new SqlParameter("@legalTagName", legalTagName));
-            final Page<RecordMetadataDoc> docPage = this.query(DocumentDbPageRequest.of(0, limit, cursor), query);
+            final Page<RecordMetadataDoc> docPage = this.query(CosmosDbPageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
             docs.forEach(d -> {
-                // ERIK
-                // if (d.getMetadata().getLegal().getLegaltags().contains(legalTagName))
                 outputRecords.add(d.getMetadata());
             });
 
             Pageable pageable = docPage.getPageable();
-            continuation = ((DocumentDbPageRequest) pageable).getRequestContinuation();
+            continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
         } catch (Exception e) {
             if (e.getCause() instanceof CosmosClientException) {
                 CosmosClientException ce = (CosmosClientException) e.getCause();
@@ -130,16 +128,16 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
     }
 
     public List<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status) {
-        OSDUAssert.notNull(kind, "kind must not be null");
-        OSDUAssert.notNull(status, "status must not be null");
+        Assert.notNull(kind, "kind must not be null");
+        Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
         FeedOptions options = new FeedOptions();
         return this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
     }
 
     public Page<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable) {
-        OSDUAssert.notNull(kind, "kind must not be null");
-        OSDUAssert.notNull(status, "status must not be null");
+        Assert.notNull(kind, "kind must not be null");
+        Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
         return this.query(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
