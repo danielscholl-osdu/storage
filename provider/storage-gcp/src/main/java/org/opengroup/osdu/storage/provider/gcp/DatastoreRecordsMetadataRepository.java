@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.cloud.Timestamp;
-import org.opengroup.osdu.storage.provider.gcp.credentials.IDatastoreFactory;
+import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 

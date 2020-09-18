@@ -18,7 +18,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.provider.gcp.credentials.IStorageFactory;
+import org.opengroup.osdu.core.gcp.multitenancy.IStorageFactory;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 
 import java.util.*;
