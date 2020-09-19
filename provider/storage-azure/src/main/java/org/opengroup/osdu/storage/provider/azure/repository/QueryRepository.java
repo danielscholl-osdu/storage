@@ -8,10 +8,9 @@ import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.SchemaDoc;
-import org.opengroup.osdu.storage.provider.azure.query.CosmosDbPageRequest;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -56,20 +55,25 @@ public class QueryRepository implements IQueryRepository {
 
         try {
             if (paginated) {
-                System.out.println("ERIK PAGINATED" + paginated);
-                final Page<SchemaDoc> docPage = schema.findAll(CosmosDbPageRequest.of(0, numRecords, cursor, sort));
+                System.out.println(" getAllKinds(Integer limit, String cursor) ERIK PAGINATED=" + paginated);
+                final Page<SchemaDoc> docPage = schema.findAll(CosmosStorePageRequest.of(0, numRecords, cursor, sort));
+                System.out.println(" 01getAllKinds(Integer limit, String cursor) ERIK PAGINATED=" + paginated);
                 Pageable pageable = docPage.getPageable();
-                String continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
+                System.out.println(" 1getAllKinds(Integer limit, String cursor) ERIK PAGINATED=" + paginated);
+                String continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                System.out.println(" 2getAllKinds(Integer limit, String cursor) ERIK PAGINATED=" + paginated);
                 dqr.setCursor(continuation);
+                System.out.println(" 3getAllKinds(Integer limit, String cursor) ERIK PAGINATED=" + paginated);
                 docs = docPage.getContent();
+                System.out.println(" 4getAllKinds(Integer limit, String cursor) ERIK PAGINATED=" + paginated);
             } else {
-                System.out.println("ERIK NOT PAGINATED" + paginated);
+                System.out.println(" getAllKinds(Integer limit, String cursor) ERIK NOT PAGINATED=" + paginated);
                 docs = schema.findAll(sort);
             }
             docs.forEach(
                     d -> kinds.add(d.getKind()));
             System.out.println(kinds.size());
-            System.out.println("getAllKinds PAGE=" + dqr.getCursor());
+            System.out.println(" getAllKinds(Integer limit, String cursor) getAllKinds PAGE=" + dqr.getCursor());
             dqr.setResults(kinds);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -110,9 +114,9 @@ public class QueryRepository implements IQueryRepository {
             if (paginated) {
                 System.out.println("getAllRecordIdsFromKind paginated=" + paginated);
                 final Page<RecordMetadataDoc> docPage = record.findByMetadata_kindAndMetadata_status(kind, status,
-                        CosmosDbPageRequest.of(0, numRecords, cursor, sort));
+                        CosmosStorePageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
-                String continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
+                String continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {

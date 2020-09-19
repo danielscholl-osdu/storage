@@ -5,26 +5,26 @@ package org.opengroup.osdu.storage.provider.azure.query;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
-public class CosmosDbPageRequest extends PageRequest {
+public class CosmosStorePageRequest extends PageRequest {
     private static final long serialVersionUID = 6093304300037688375L;
     private String requestContinuation;
 
-    public CosmosDbPageRequest(int page, int size, String requestContinuation) {
+    public CosmosStorePageRequest(int page, int size, String requestContinuation) {
         super(page, size);
         this.requestContinuation = requestContinuation;
     }
 
-    public static CosmosDbPageRequest of(int page, int size, String requestContinuation) {
-        return new CosmosDbPageRequest(page, size, requestContinuation);
+    public static CosmosStorePageRequest of(int page, int size, String requestContinuation) {
+        return new CosmosStorePageRequest(page, size, requestContinuation);
     }
 
-    public CosmosDbPageRequest(int page, int size, String requestContinuation, Sort sort) {
+    public CosmosStorePageRequest(int page, int size, String requestContinuation, Sort sort) {
         super(page, size, sort);
         this.requestContinuation = requestContinuation;
     }
 
-    public static CosmosDbPageRequest of(int page, int size, String requestContinuation, Sort sort) {
-        return new CosmosDbPageRequest(page, size, requestContinuation, sort);
+    public static CosmosStorePageRequest of(int page, int size, String requestContinuation, Sort sort) {
+        return new CosmosStorePageRequest(page, size, requestContinuation, sort);
     }
 
     public String getRequestContinuation() {
@@ -40,10 +40,10 @@ public class CosmosDbPageRequest extends PageRequest {
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
-        } else if (!(obj instanceof CosmosDbPageRequest)) {
+        } else if (!(obj instanceof CosmosStorePageRequest)) {
             return false;
         } else {
-            CosmosDbPageRequest that = (CosmosDbPageRequest)obj;
+            CosmosStorePageRequest that = (CosmosStorePageRequest)obj;
             boolean continuationTokenEquals = this.requestContinuation != null ? this.requestContinuation.equals(that.requestContinuation) : that.requestContinuation == null;
             return continuationTokenEquals && super.equals(that);
         }
