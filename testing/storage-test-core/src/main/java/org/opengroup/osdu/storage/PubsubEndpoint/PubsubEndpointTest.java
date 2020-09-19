@@ -71,9 +71,9 @@ public abstract class PubsubEndpointTest extends TestBase {
 		String requestBody = this.requestBodyToEndpoint(legalTagNames);
 		ClientResponse responseEndpoint = TestUtils.send("push-handlers/legaltag-changed?token=" + PUBSUB_TOKEN, "POST",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-		System.out.println(responseEndpoint.getEntity(String.class));
+		System.out.println(" getEntity"  + responseEndpoint.getEntity(String.class));
 		Assert.assertEquals(HttpStatus.SC_OK, responseEndpoint.getStatus());
-
+		System.out.println("ok");
 		ClientResponse responseRecordQuery = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"");
 		Assert.assertEquals(HttpStatus.SC_NOT_FOUND, responseRecordQuery.getStatus());

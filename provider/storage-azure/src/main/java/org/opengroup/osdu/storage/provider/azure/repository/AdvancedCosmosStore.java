@@ -14,7 +14,7 @@ import com.azure.cosmos.internal.AsyncDocumentClient;
 import com.azure.cosmos.internal.Document;
 import org.opengroup.osdu.azure.ICosmosClientFactory;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.storage.provider.azure.query.CosmosDbPageRequest;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -309,8 +309,93 @@ public class AdvancedCosmosStore {
 
         } while (currentPage < pageNum && continuationToken != null);
 
-        CosmosDbPageRequest pageRequest = CosmosDbPageRequest.of(pageNum, pageSize, continuationToken);
+        CosmosStorePageRequest pageRequest = CosmosStorePageRequest.of(pageNum, pageSize, continuationToken);
         return new PageImpl(results.get(continuationToken), pageRequest, 0);
+    }
+
+
+    /**
+     * @param dataPartitionId Data partition id to fetch appropriate cosmos client for each partition
+     * @param cosmosDBName    Database to be used
+     * @param collection      Collection to be used
+     * @param query           {@link SqlQuerySpec} to execute
+     * @param clazz           Class type of response
+     * @param <T>             Type of response
+     * @return Specific Page of items found in container
+     */
+    public <T> Page<T> queryItemsAsyncPage(
+            final String dataPartitionId,
+            final String cosmosDBName,
+            final String collection,
+            final SqlQuerySpec query,
+            final Class<T> clazz,
+            final int pageSize,
+            final String continuationToken) {
+
+        HashMap<String, List<T>> results;
+        String internalContinuationToken = continuationToken;
+        System.out.println("dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
+
+         String nextContinuationToken = null;
+         AsyncDocumentClient client = cosmosClientFactory.getAsyncClient(dataPartitionId);
+         results = returnItemsWithContinuationToken(client, cosmosDBName, collection, query, clazz, pageSize, internalContinuationToken);
+        System.out.println("dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
+        for (Map.Entry<String, List<T>> entry : results.entrySet()) {
+             nextContinuationToken = entry.getKey();
+         }
+         internalContinuationToken = nextContinuationToken;
+        System.out.println("internalContinuationToken1 dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
+
+        CosmosStorePageRequest pageRequest = CosmosStorePageRequest.of(0, pageSize, internalContinuationToken);
+        System.out.println("internalContinuationTokenPR dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
+
+        return new PageImpl(results.get(internalContinuationToken), pageRequest, 0);
+    }
+
+
+    /**
+     * @param client            {@link AsyncDocumentClient} used to configure/execute requests against database service
+     * @param dbName            Cosmos DB name
+     * @param container         Container to query
+     * @param query             {@link SqlQuerySpec} to execute
+     * @param clazz             Class type of response
+     * @param <T>               Type of response
+     * @param pageSize          Number of items returned
+     * @param continuationToken Token used to continue the enumeration
+     * @return Continuation Token and list of documents in container
+     */
+    private static <T> HashMap<String, List<T>> returnItemsWithContinuationToken(
+            final AsyncDocumentClient client,
+            final String dbName,
+            final String container,
+            final SqlQuerySpec query,
+            final Class<T> clazz,
+            final int pageSize,
+            final String continuationToken) {
+
+        HashMap<String, List<T>> map = new HashMap<>();
+        List<T> items = new ArrayList<T>();
+
+        FeedOptions feedOptions = new FeedOptions()
+                .maxItemCount((int) pageSize)
+                .setEnableCrossPartitionQuery(true)
+                .requestContinuation(continuationToken);
+
+        String collectionLink = String.format("/dbs/%s/colls/%s", dbName, container);
+        Flux<FeedResponse<Document>> queryFlux = client.queryDocuments(collectionLink, query, feedOptions);
+
+        Iterator<FeedResponse<Document>> it = queryFlux.toIterable().iterator();
+
+        FeedResponse<Document> page = it.next();
+        List<Document> results = page.getResults();
+        for (Document doc : results) {
+            T obj = doc.toObject(clazz);
+            items.add(obj);
+        }
+        System.out.println("returnItemsWithToken PAGE=" + page.getContinuationToken());
+        map.put(page.getContinuationToken(), items);
+        System.out.println("returnItemsWithToken SIZE=" + items.size());
+        return map;
     }
 
     /**
@@ -352,7 +437,7 @@ public class AdvancedCosmosStore {
             T obj = doc.toObject(clazz);
             items.add(obj);
         }
-        System.out.println("PAGE=" + page.getContinuationToken());
+
         map.put(page.getContinuationToken(), items);
         return map;
     }

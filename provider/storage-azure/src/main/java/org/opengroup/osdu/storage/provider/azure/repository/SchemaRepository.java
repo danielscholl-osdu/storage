@@ -103,11 +103,7 @@ public class SchemaRepository extends SimpleCosmosStoreRepository<SchemaDoc> imp
     }
 
     public Page<SchemaDoc> findAll(@NonNull Pageable pageable) {
-        FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
         return this.findAll(pageable, headers.getPartitionId(), cosmosDBName, schemaCollection);
     }
 
-    public Page<SchemaDoc> findAll(@NonNull Pageable pageable, @NonNull Sort sort) {
-        return this.findAll(pageable, sort, headers.getPartitionId(), cosmosDBName, schemaCollection);
-    }
 }

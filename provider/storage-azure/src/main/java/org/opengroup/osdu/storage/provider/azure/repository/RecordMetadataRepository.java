@@ -15,10 +15,9 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
-import org.opengroup.osdu.storage.provider.azure.query.CosmosDbPageRequest;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
@@ -86,18 +85,16 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
         long start = System.currentTimeMillis();
         try {
-            String queryText = "SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, @legalTagName)";
-            SqlQuerySpec query = new SqlQuerySpec(queryText);
-            SqlParameterList pars = query.getParameters();
-            pars.add(new SqlParameter("@legalTagName", legalTagName));
-            final Page<RecordMetadataDoc> docPage = this.find(CosmosDbPageRequest.of(0, limit, cursor), query);
+            String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '%s')", legalTagName);
+            SqlQuerySpec query = new SqlQuerySpec(queryText);;
+            final Page<RecordMetadataDoc> docPage = this.find(CosmosStorePageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
             docs.forEach(d -> {
                 outputRecords.add(d.getMetadata());
             });
 
             Pageable pageable = docPage.getPageable();
-            continuation = ((CosmosDbPageRequest) pageable).getRequestContinuation();
+            continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
         } catch (Exception e) {
             if (e.getCause() instanceof CosmosClientException) {
                 CosmosClientException ce = (CosmosClientException) e.getCause();
@@ -150,11 +147,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     private static SqlQuerySpec getMetadata_kindAndMetada_statusQuery(String kind, String status) {
-        String queryText = "SELECT * FROM c WHERE c.metadata.kind = @kind AND c.metadata.status = @status";
+        String queryText = String.format("SELECT * FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
         SqlQuerySpec query = new SqlQuerySpec(queryText);
-        SqlParameterList pars = query.getParameters();
-        pars.add(new SqlParameter("@kind", kind));
-        pars.add(new SqlParameter("@status", status));
         System.out.println("query=" + query);
         return query;
     }
