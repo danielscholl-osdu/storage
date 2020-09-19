@@ -308,7 +308,6 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
 
 
     public Page<T> paginationQuery(Pageable pageable, SqlQuerySpec query, Class<T> domainClass, String dataPartitionId, String cosmosDBName, String collectionName) {
-        System.out.println("!!!!paginationQuery");
         Assert.isTrue(pageable.getPageSize() > 0, "pageable should have page size larger than 0");
         Assert.hasText(collectionName, "collection should not be null, empty or only whitespaces");
         FeedOptions feedOptions = new FeedOptions();
@@ -320,7 +319,6 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         //feedOptions.setEnableCrossPartitionQuery(true);
         int pageNum = pageable.getPageNumber();
         int pageSize = pageable.getPageSize();
-        System.out.println("pageNum pageSize=" + pageNum + " " + pageSize);
         return this.queryItemsAsyncPage(dataPartitionId, cosmosDBName, collectionName, query, pageSize, continuationToken);
     }
 }
