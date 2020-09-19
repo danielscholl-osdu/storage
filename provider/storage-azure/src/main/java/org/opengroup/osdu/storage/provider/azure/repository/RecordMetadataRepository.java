@@ -94,7 +94,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
             });
 
             Pageable pageable = docPage.getPageable();
-            continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
+            if (pageable instanceof CosmosStorePageRequest) {
+                continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
+            }
         } catch (Exception e) {
             if (e.getCause() instanceof CosmosClientException) {
                 CosmosClientException ce = (CosmosClientException) e.getCause();
