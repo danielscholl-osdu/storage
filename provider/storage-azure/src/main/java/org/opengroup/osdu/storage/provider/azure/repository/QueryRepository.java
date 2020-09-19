@@ -58,7 +58,7 @@ public class QueryRepository implements IQueryRepository {
                 Pageable pageable = docPage.getPageable();
                 String continuation = null;
                 if (pageable instanceof CosmosStorePageRequest) {
-                    ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                    continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
                 }
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
@@ -106,7 +106,7 @@ public class QueryRepository implements IQueryRepository {
                 Pageable pageable = docPage.getPageable();
                 String continuation = null;
                 if (pageable instanceof CosmosStorePageRequest) {
-                    ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                    continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
                 }
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
