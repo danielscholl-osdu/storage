@@ -36,12 +36,11 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     private static final String ID_MUST_NOT_BE_NULL = "id must not be null";
     private static final String ENTITY_MUST_NOT_BE_NULL = "entity must not be null";
     private static final String PAGEABLE_MUST_NOT_BE_NULL = "pageable must not be null";
-    private static final Boolean requirePagination = false;
 
     private final Class<T> domainClass;
 
     @Autowired
-    private CosmosStore operation;
+    private AdvancedCosmosStore operation;
 
     public SimpleCosmosStoreRepository(Class<T> domainClass) {
          this.domainClass = domainClass;
@@ -111,32 +110,30 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     public Optional<T> findById(String id, String partitionKey) {
         return Optional.empty();
     }
-    1
+
     @Override
     public void deleteById(String id, String partitionKey) {
-
     }
-    2
     @Override
     public Iterable<T> findAll(Sort var1) {
         return null;
     }
-    3
+
     @Override
     public Page<T> findAll(Pageable var1) {
         return null;
     }
-    4
+
     @Override
     public <T> T save(T entity) {
         return null;
     }
-    5
+
     @Override
     public <T> Iterable<T> saveAll(Iterable<T> entities) {
         return null;
     }
-    6
+
     @Override
     public Optional<T> findById(String id) {
         return Optional.empty();
@@ -146,7 +143,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     public boolean existsById(String id) {
         return false;
     }
-    9
+
     @Override
     public Iterable<T> findAll() {
         return null;
@@ -156,16 +153,17 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     public Iterable<T> findAllById(Iterable<String> ids) {
         return null;
     }
-    X'd
+
     @Override
     public long count() {
         return 0;
     }
-    8
+
     @Override
     public void deleteById(String id) {
     }
     */
+
     // Start Spring data repository like methods
 
     @Override
