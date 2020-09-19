@@ -76,12 +76,8 @@ public class QueryRepository implements IQueryRepository {
             System.out.println(" getAllKinds(Integer limit, String cursor) getAllKinds PAGE=" + dqr.getCursor());
             dqr.setResults(kinds);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            if (e.getCause() instanceof CosmosClientException) {
-                CosmosClientException ce = (CosmosClientException) e.getCause();
-                if(ce.statusCode() == HttpStatus.SC_BAD_REQUEST && ce.getMessage().contains("Invalid Continuation Token"))
-                    throw this.getInvalidCursorException();
-            }
+            if (e.getMessage().contains("Invalid Continuation Token"))
+                throw this.getInvalidCursorException();
         }
 
         return dqr;
@@ -127,12 +123,8 @@ public class QueryRepository implements IQueryRepository {
             dqr.setResults(ids);
             System.out.println("getAllRecordIdsFromKind PAGE=" + dqr.getCursor());
         } catch (Exception e) {
-            System.out.println("EXCEPTION!!!=" + e.getMessage() + " " + e.getCause() + " " + e.getStackTrace());
-            if (e.getCause() instanceof CosmosClientException) {
-                CosmosClientException ce = (CosmosClientException) e.getCause();
-                if(ce.statusCode() == HttpStatus.SC_BAD_REQUEST && ce.getMessage().contains("Invalid Continuation Token"))
-                    throw this.getInvalidCursorException();
-            }
+            if (e.getMessage().contains("Invalid Continuation Token"))
+                throw this.getInvalidCursorException();
         }
 
         return dqr;
