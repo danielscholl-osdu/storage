@@ -69,6 +69,7 @@ public class QueryRepository implements IQueryRepository {
             docs.forEach(
                     d -> kinds.add(d.getKind()));
             System.out.println(kinds.size());
+            System.out.println("getAllKinds PAGE=" + dqr.getCursor());
             dqr.setResults(kinds);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -120,6 +121,7 @@ public class QueryRepository implements IQueryRepository {
             }
             docs.forEach(d -> ids.add(d.getId()));
             dqr.setResults(ids);
+            System.out.println("getAllRecordIdsFromKind PAGE=" + dqr.getCursor());
         } catch (Exception e) {
             System.out.println("EXCEPTION!!!=" + e.getMessage() + " " + e.getCause() + " " + e.getStackTrace());
             if (e.getCause() instanceof CosmosClientException) {

@@ -37,7 +37,7 @@ import java.util.List;
 
 
 @Repository
-public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implements ISchemaRepository {
+public class SchemaRepository extends SimpleCosmosStoreRepository<SchemaDoc> implements ISchemaRepository {
 
     @Autowired
     private DpsHeaders headers;
@@ -81,7 +81,7 @@ public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implement
 
     @Override
     public Schema get(String kind) {
-        SchemaDoc item = this.getOne(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, kind);
+        SchemaDoc item = this.getOne(kind, headers.getPartitionId(), cosmosDBName, schemaCollection, kind);
         return (item == null) ? null : map(item);
     }
 
@@ -99,16 +99,15 @@ public class SchemaRepository extends CosmosStoreRepository<SchemaDoc> implement
     }
 
     public Iterable<SchemaDoc> findAll(@NonNull Sort sort) {
-        FeedOptions options = new FeedOptions();
-        return this.findAll(sort, headers.getPartitionId(), cosmosDBName, schemaCollection, options);
+        return this.findAll(sort, headers.getPartitionId(), cosmosDBName, schemaCollection);
     }
 
     public Page<SchemaDoc> findAll(@NonNull Pageable pageable) {
-        System.out.println("got here");
+        FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
         return this.findAll(pageable, headers.getPartitionId(), cosmosDBName, schemaCollection);
     }
 
     public Page<SchemaDoc> findAll(@NonNull Pageable pageable, @NonNull Sort sort) {
-        return this.findAll(pageable, sort, headers.getPartitionId(), cosmosDBName, schemaCollection, null);
+        return this.findAll(pageable, sort, headers.getPartitionId(), cosmosDBName, schemaCollection);
     }
 }

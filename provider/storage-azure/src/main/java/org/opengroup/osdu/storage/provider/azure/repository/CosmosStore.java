@@ -1,5 +1,4 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
-import org.opengroup.osdu.azure.CosmosStore;
 
 import com.azure.cosmos.ConflictException;
 import com.azure.cosmos.CosmosClientException;
@@ -74,7 +73,7 @@ import org.slf4j.LoggerFactory;
 
 @Component
 @Lazy
-public class ExtendedCosmosStore {
+public class CosmosStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CosmosStore.class.getName());
 
@@ -353,7 +352,7 @@ public class ExtendedCosmosStore {
             T obj = doc.toObject(clazz);
             items.add(obj);
         }
-
+        System.out.println("PAGE=" + page.getContinuationToken());
         map.put(page.getContinuationToken(), items);
         return map;
     }
