@@ -73,9 +73,9 @@ import org.slf4j.LoggerFactory;
 
 @Component
 @Lazy
-public class CosmosStore {
+public class AdvancedCosmosStore {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CosmosStore.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdvancedCosmosStore.class.getName());
 
     @Autowired
     private ICosmosClientFactory cosmosClientFactory;
