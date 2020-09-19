@@ -56,8 +56,11 @@ public class QueryRepository implements IQueryRepository {
             if (paginated) {
                 final Page<SchemaDoc> docPage = schema.findAll(CosmosStorePageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
-                String continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
-                 dqr.setCursor(continuation);
+                String continuation = null;
+                if (pageable instanceof CosmosStorePageRequest) {
+                    ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                }
+                dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {
                 docs = schema.findAll(sort);
@@ -101,7 +104,10 @@ public class QueryRepository implements IQueryRepository {
                 final Page<RecordMetadataDoc> docPage = record.findByMetadata_kindAndMetadata_status(kind, status,
                         CosmosStorePageRequest.of(0, numRecords, cursor, sort));
                 Pageable pageable = docPage.getPageable();
-                String continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                String continuation = null;
+                if (pageable instanceof CosmosStorePageRequest) {
+                    ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                }
                 dqr.setCursor(continuation);
                 docs = docPage.getContent();
             } else {
