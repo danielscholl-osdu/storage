@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 
 public interface PagingAndSortingRepository<T>  extends CrudRepository<T> {
+    // Standard Spring Data Repository
     /*
     Iterable<T> findAll(Sort sort);
     Page<T> findAll(Pageable pageable);

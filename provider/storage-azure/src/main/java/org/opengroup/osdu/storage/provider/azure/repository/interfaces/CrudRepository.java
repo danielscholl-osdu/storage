@@ -7,6 +7,7 @@ import org.springframework.lang.NonNull;
 import java.util.List;
 
 public interface CrudRepository<T> extends Repository<T> {
+        // Standard Spring Data Repository
         /*
         <T> T save(T entity);
 

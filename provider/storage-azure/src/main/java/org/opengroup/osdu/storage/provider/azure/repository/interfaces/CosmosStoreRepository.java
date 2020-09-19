@@ -9,7 +9,8 @@ import java.util.Optional;
 
 public interface CosmosStoreRepository<T> extends PagingAndSortingRepository<T> {
 
-   /*
+    // Standard Spring Data Repository
+    /*
        Optional<T> findById(String id, String partitionKey);
         void deleteById(String id,  String partitionKey);
     */
@@ -18,7 +19,9 @@ public interface CosmosStoreRepository<T> extends PagingAndSortingRepository<T> 
 
     void deleteById(@NonNull String id, String dataPartitionId, String cosmosDBName, String collection, String partitionKey);
 
-    // Internal
+
+    // Internal Cosmos Store methods
+
     void deleteItem(String dataPartitionId, String cosmosDBName, String collection, String id, String partitionKey);
 
     Optional<T> findItem(String dataPartitionId, String cosmosDBName, String collection, String id, String partitionKey);
@@ -32,9 +35,11 @@ public interface CosmosStoreRepository<T> extends PagingAndSortingRepository<T> 
     List<T> queryItems(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec
             query, FeedOptions options);
 
+    @Deprecated
     List<T> findAllItemsAsync(String dataPartitionId, String cosmosDBName, String collection, short pageSize,
                               int pageNum);
 
+    @Deprecated
     List<T> queryItemsAsync(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query,
                             short pageSize, int pageNum);
 
@@ -42,9 +47,10 @@ public interface CosmosStoreRepository<T> extends PagingAndSortingRepository<T> 
 
     void createItem(String dataPartitionId, String cosmosDBName, String collection, T item);
 
+    @Deprecated
     Page<T> findAllItemsAsyncPage(String dataPartitionId, String cosmosDBName, String collection, short pageSize,
                                   int pageNum);
-
+    @Deprecated
     Page<T> queryItemsAsyncPage(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query,
                                 short pageSize, int pageNum);
 
