@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 import java.util.Optional;
 
 @Repository
-public class TenantInfoRepository extends CosmosStoreRepository<TenantInfoDoc> {
+public class TenantInfoRepository extends SimpleCosmosStoreRepository<TenantInfoDoc> {
 
     @Autowired
     private DpsHeaders headers;

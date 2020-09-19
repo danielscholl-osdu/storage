@@ -28,7 +28,7 @@ import org.springframework.util.Assert;
 import java.util.*;
 
 @Repository
-public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetadataDoc> implements IRecordsMetadataRepository<String> {
+public class RecordMetadataRepository extends SimpleCosmosStoreRepository<RecordMetadataDoc> implements IRecordsMetadataRepository<String> {
 
     @Autowired
     private DpsHeaders headers;
@@ -86,9 +86,11 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
 
         long start = System.currentTimeMillis();
         try {
-            String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '%s')", legalTagName);
+            String queryText = "SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, @legalTagName)";
             SqlQuerySpec query = new SqlQuerySpec(queryText);
-            final Page<RecordMetadataDoc> docPage = this.query(CosmosDbPageRequest.of(0, limit, cursor), query);
+            SqlParameterList pars = query.getParameters();
+            pars.add(new SqlParameter("@legalTagName", legalTagName));
+            final Page<RecordMetadataDoc> docPage = this.find(CosmosDbPageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
             docs.forEach(d -> {
                 outputRecords.add(d.getMetadata());
@@ -109,6 +111,7 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
         for (RecordMetadata metadata : outputRecords) {
             System.out.println("!!!!!!!!!!!!! metadata : " + metadata.getId() + " " + metadata.getKind());
         }
+        System.out.println("queryByLegalTagName continuation=" + continuation);
         return new AbstractMap.SimpleEntry<>(continuation, outputRecords);
     }
 
@@ -143,26 +146,29 @@ public class RecordMetadataRepository extends CosmosStoreRepository<RecordMetada
         Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
         FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
-        return this.query(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
+        return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
 
     private static SqlQuerySpec getMetadata_kindAndMetada_statusQuery(String kind, String status) {
-        String queryText = String.format("SELECT * FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status ='%s'", kind, status);
+        String queryText = "SELECT * FROM c WHERE c.metadata.kind = @kind AND c.metadata.status = @status";
         SqlQuerySpec query = new SqlQuerySpec(queryText);
+        SqlParameterList pars = query.getParameters();
+        pars.add(new SqlParameter("@kind", kind));
+        pars.add(new SqlParameter("@status", status));
         System.out.println("query=" + query);
         return query;
     }
 
-    public Page<RecordMetadataDoc> query(@NonNull Pageable pageable, SqlQuerySpec query) {
-        return this.query(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
+    public Page<RecordMetadataDoc> find(@NonNull Pageable pageable, SqlQuerySpec query) {
+        return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
 
     public synchronized RecordMetadataDoc getOne(@NonNull String id) {
-        return this.getOne(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id, id);
+        return this.getOne(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id);
     }
 
     public RecordMetadataDoc save(RecordMetadataDoc entity) {
-        return this.save(headers.getPartitionId(),cosmosDBName,recordMetadataCollection, entity);
+        return this.save(entity, headers.getPartitionId(),cosmosDBName,recordMetadataCollection);
     }
 
     @Override
