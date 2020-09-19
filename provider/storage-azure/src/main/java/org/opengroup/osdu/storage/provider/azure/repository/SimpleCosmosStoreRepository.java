@@ -81,14 +81,17 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         return  this.operation.findAllItemsAsync(dataPartitionId, cosmosDBName, collection, this.getDomainClass(), pageSize, pageNum);
     }
 
+    @Deprecated
     public Page<T> findAllItemsAsyncPage(String dataPartitionId, String cosmosDBName, String collection, short pageSize, int pageNum) {
         return this.operation.findAllItemsAsyncPage(dataPartitionId, cosmosDBName, collection, this.getDomainClass(), pageSize, pageNum);
     }
 
+    @Deprecated
     public List<T> queryItemsAsync(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query, short pageSize, int pageNum) {
         return this.operation.queryItemsAsync(dataPartitionId, cosmosDBName, collection, query, this.getDomainClass(), pageSize, pageNum);
     }
 
+    @Deprecated
     public Page<T> queryItemsAsyncPage(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query, short pageSize, int pageNum) {
         return this.operation.queryItemsAsyncPage(dataPartitionId, cosmosDBName, collection, query, this.getDomainClass(), pageSize, pageNum);
     }
@@ -234,7 +237,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     }
 
     @Override
-    public synchronized T getOne(@NonNull String id, String dataPartitionId, String cosmosDBName, String collection, String partitionKey) {
+    public T getOne(@NonNull String id, String dataPartitionId, String cosmosDBName, String collection, String partitionKey) {
         Assert.notNull(id, ID_MUST_NOT_BE_NULL);
         Optional<T> doc = this.findItem(dataPartitionId, cosmosDBName, collection, id, partitionKey);
         if (!doc.isPresent())
@@ -305,8 +308,6 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         return pageable.isUnpaged();
     }
 
-
-
     public Page<T> paginationQuery(Pageable pageable, SqlQuerySpec query, Class<T> domainClass, String dataPartitionId, String cosmosDBName, String collectionName) {
         Assert.isTrue(pageable.getPageSize() > 0, "pageable should have page size larger than 0");
         Assert.hasText(collectionName, "collection should not be null, empty or only whitespaces");
@@ -315,9 +316,9 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         if (pageable instanceof CosmosStorePageRequest) {
             continuationToken = ((CosmosStorePageRequest)pageable).getRequestContinuation();
         }
-        //feedOptions.maxItemCount(pageable.getPageSize());
-        //feedOptions.setEnableCrossPartitionQuery(true);
-        int pageNum = pageable.getPageNumber();
+        // feedOptions.maxItemCount(pageable.getPageSize());
+        // feedOptions.setEnableCrossPartitionQuery(true);
+        // int pageNum = pageable.getPageNumber();
         int pageSize = pageable.getPageSize();
         return this.queryItemsAsyncPage(dataPartitionId, cosmosDBName, collectionName, query, pageSize, continuationToken);
     }
