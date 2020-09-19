@@ -11,7 +11,7 @@ public interface PagingAndSortingRepository<T>  extends CrudRepository<T> {
     Iterable<T> findAll(Sort sort);
     Page<T> findAll(Pageable pageable);
     */
-    Page<T> findAll(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collection);
     Iterable<T> findAll(@NonNull Sort sort, String dataPartitionId, String cosmosDBName, String collection);
+    Page<T> findAll(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collection);
     Page<T> find(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query);
 }

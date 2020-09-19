@@ -125,7 +125,6 @@ public class AdvancedCosmosStore {
             final String partitionKey,
             final Class<T> clazz) {
         try {
-            System.out.println(dataPartitionId + " " + cosmosDBName + " " + collection + " " + id + " " + partitionKey + " " + clazz);
             CosmosContainer cosmosContainer = getCosmosContainer(dataPartitionId, cosmosDBName, collection);
             T item = findItem(cosmosContainer, id, partitionKey)
                     .read(new CosmosItemRequestOptions(partitionKey))
@@ -296,7 +295,6 @@ public class AdvancedCosmosStore {
         String continuationToken = null;
         int currentPage = 0;
         HashMap<String, List<T>> results;
-        System.out.println("dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum);
         do {
             String nextContinuationToken = "";
             AsyncDocumentClient client = cosmosClientFactory.getAsyncClient(dataPartitionId);
@@ -334,20 +332,16 @@ public class AdvancedCosmosStore {
 
         HashMap<String, List<T>> results;
         String internalContinuationToken = continuationToken;
-        System.out.println("dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
 
-         String nextContinuationToken = null;
-         AsyncDocumentClient client = cosmosClientFactory.getAsyncClient(dataPartitionId);
-         results = returnItemsWithContinuationToken(client, cosmosDBName, collection, query, clazz, pageSize, internalContinuationToken);
-        System.out.println("dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
+        String nextContinuationToken = null;
+        AsyncDocumentClient client = cosmosClientFactory.getAsyncClient(dataPartitionId);
+        results = returnItemsWithContinuationToken(client, cosmosDBName, collection, query, clazz, pageSize, internalContinuationToken);
         for (Map.Entry<String, List<T>> entry : results.entrySet()) {
-             nextContinuationToken = entry.getKey();
-         }
-         internalContinuationToken = nextContinuationToken;
-        System.out.println("internalContinuationToken1 dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
+            nextContinuationToken = entry.getKey();
+        }
+        internalContinuationToken = nextContinuationToken;
 
         CosmosStorePageRequest pageRequest = CosmosStorePageRequest.of(0, pageSize, internalContinuationToken);
-        System.out.println("internalContinuationTokenPR dataPartitionId + cosmosDBName + collection + query + clazz + pageSize + pageNum" + dataPartitionId + cosmosDBName + collection + query + clazz);
 
         return new PageImpl(results.get(internalContinuationToken), pageRequest, 0);
     }
@@ -392,9 +386,7 @@ public class AdvancedCosmosStore {
             T obj = doc.toObject(clazz);
             items.add(obj);
         }
-        System.out.println("returnItemsWithToken PAGE=" + page.getContinuationToken());
         map.put(page.getContinuationToken(), items);
-        System.out.println("returnItemsWithToken SIZE=" + items.size());
         return map;
     }
 
@@ -455,7 +447,6 @@ public class AdvancedCosmosStore {
             final String collection,
             final T item) {
         try {
-            System.out.println("UPSERTITEM " + dataPartitionId + " " + cosmosDBName + " " + collection + " " + item);
             CosmosContainer cosmosContainer = getCosmosContainer(dataPartitionId, cosmosDBName, collection);
             cosmosContainer.upsertItem(item);
         } catch (CosmosClientException e) {

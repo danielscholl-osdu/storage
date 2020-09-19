@@ -104,11 +104,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         }
         long finish = System.currentTimeMillis();
         long timeElapsed = finish - start;
-        System.out.println("!!!!!!!!!!!!! queryByLegalTagName time elapsed = " + timeElapsed);
-        for (RecordMetadata metadata : outputRecords) {
-            System.out.println("!!!!!!!!!!!!! metadata : " + metadata.getId() + " " + metadata.getKind());
-        }
-        System.out.println("queryByLegalTagName continuation=" + continuation);
+        System.out.println("!! queryByLegalTagName time elapsed = " + timeElapsed);
         return new AbstractMap.SimpleEntry<>(continuation, outputRecords);
     }
 
@@ -149,7 +145,6 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     private static SqlQuerySpec getMetadata_kindAndMetada_statusQuery(String kind, String status) {
         String queryText = String.format("SELECT * FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
         SqlQuerySpec query = new SqlQuerySpec(queryText);
-        System.out.println("query=" + query);
         return query;
     }
 

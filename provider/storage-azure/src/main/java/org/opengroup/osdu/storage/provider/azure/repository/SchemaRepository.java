@@ -67,7 +67,6 @@ public class SchemaRepository extends SimpleCosmosStoreRepository<SchemaDoc> imp
         Assert.notNull(user, "user must not be null");
         String kind = schema.getKind();
         if (this.exists(headers.getPartitionId(), cosmosDBName, schemaCollection, kind, kind)) {
-            System.out.println("ERIK   Schema " + kind + " already exists. Can't create again.");
             throw new IllegalArgumentException("Schema " + kind + " already exists. Can't create again.");
         }
         SchemaDoc sd = new SchemaDoc();
