@@ -16,10 +16,9 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 
 import com.azure.cosmos.FeedOptions;
 import com.azure.cosmos.SqlQuerySpec;
-import com.microsoft.azure.spring.data.cosmosdb.core.generator.FindQuerySpecGenerator;
-import com.microsoft.azure.spring.data.cosmosdb.core.query.Criteria;
-import com.microsoft.azure.spring.data.cosmosdb.core.query.CriteriaType;
-import com.microsoft.azure.spring.data.cosmosdb.core.query.DocumentQuery;
+
+import org.opengroup.osdu.storage.provider.azure.generator.FindQuerySpecGenerator;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosQuery;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.storage.provider.azure.repository.interfaces.CosmosStoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -225,9 +224,10 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     @Override
     public List<T> findByIds(Iterable<String> ids, String dataPartitionId, String cosmosDBName, String collection, String partitionKey) {
         Assert.notNull(ids, "Id list should not be null");
-        DocumentQuery documentQuery = new DocumentQuery(Criteria.getInstance(CriteriaType.IN, "id", Collections.singletonList(ids)));
-        SqlQuerySpec query = new SqlQuerySpec(documentQuery.toString());
-        return this.find(dataPartitionId, cosmosDBName,  collection, query);
+        throw new UnsupportedOperationException();
+        //DocumentQuery documentQuery = new DocumentQuery(Criteria.getInstance(CriteriaType.IN, "id", Collections.singletonList(ids)));
+        //SqlQuerySpec query = new SqlQuerySpec(documentQuery.toString());
+        //return this.find(dataPartitionId, cosmosDBName,  collection, query);
     }
 
     @Override
@@ -245,63 +245,38 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         return doc.get();
     }
 
+    // Finds with Query
+
     public Page<T> findAll(Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName) {
-        StringBuilder query = new StringBuilder("SELECT * FROM c");
+        CosmosQuery query = (new CosmosQuery());
         if (pageable.getSort().isSorted()) {
-            query.append(toOrderBy(pageable.getSort()));
+            query.with(pageable.getSort());
         }
-        SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(query.toString());
+        SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmos(query);
+        //System.out.println("SimpleCosmosStoreRepository sqlQuerySpec.getQueryText()=" + sqlQuerySpec.getQueryText());
         return this.paginationQuery(pageable, sqlQuerySpec, domainClass, dataPartitionId, cosmosDBName, collectionName);
     }
 
     @Override
     public Page<T> find(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName, SqlQuerySpec query) {
         Assert.notNull(pageable, PAGEABLE_MUST_NOT_BE_NULL);
-        StringBuilder sb = new StringBuilder(query.getQueryText());
+        CosmosQuery cosmosQuery = (new CosmosQuery()).with(query.getQueryText());
         if (pageable.getSort().isSorted()) {
-            sb.append(toOrderBy(pageable.getSort()));
+            cosmosQuery.with(pageable.getSort());
         }
-        SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(sb.toString());
+        SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmosWithQueryText(cosmosQuery, cosmosQuery.getQuery());
+        //System.out.println("SimpleCosmosStoreRepository sqlQuerySpec.getQueryText()=" + sqlQuerySpec.getQueryText());
         return this.paginationQuery(pageable, sqlQuerySpec, domainClass, dataPartitionId, cosmosDBName, collectionName);
     }
 
     @Override
     public Iterable<T> findAll(@NonNull Sort sort, String dataPartitionId, String cosmosDBName, String collection) {
         Assert.notNull(sort, "sort of findAll should not be null");
-        StringBuilder sb = new StringBuilder("SELECT * FROM c");
-        if (sort.isSorted()) {
-            sb.append(toOrderBy(sort));
-        }
-        SqlQuerySpec query = new SqlQuerySpec();
-        query.setQueryText(sb.toString());
+        CosmosQuery query = (new CosmosQuery()).with(sort);
+        SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmos(query);
         FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
-        return this.queryItems(dataPartitionId, cosmosDBName, collection, query, options);
-    }
-
-    private String toOrderBy(Sort sort) {
-        StringBuilder sb = new StringBuilder();
-        List<Sort.Order> orders = toOrders(sort);
-        Assert.notNull(orders, "sort orders of findAll should not be null");
-        if (orders.size() > 0) {
-            sb.append(" ORDER BY ");
-            int i = 0;
-            for (Sort.Order order : orders) {
-                if (i++ > 0) sb.append(", ");
-                sb.append("c." + order.getProperty() + " " + order.getDirection());
-            }
-        }
-        return sb.toString();
-    }
-
-    private static List<Sort.Order> toOrders(Sort sort) {
-        if (sort.isUnsorted()) {
-            return Collections.emptyList();
-        }
-        List<Sort.Order> orders = new ArrayList<>();
-        for (Sort.Order order : sort) {
-            orders.add(order);
-        }
-        return orders;
+        //System.out.println("SimpleCosmosStoreRepository sqlQuerySpec.getQueryText()=" + sqlQuerySpec.getQueryText());
+        return this.queryItems(dataPartitionId, cosmosDBName, collection, sqlQuerySpec, options);
     }
 
     private static boolean isUnpaged(Pageable pageable) {
