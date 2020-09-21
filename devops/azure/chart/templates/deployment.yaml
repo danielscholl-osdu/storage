@@ -136,3 +136,5 @@ spec:
           value: southcentralus
         - name: search_service_endpoint
           value: http://legal/api/legal/v1
+        - name: azure_istioauth_enabled
+          value: "true"

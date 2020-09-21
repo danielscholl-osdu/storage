@@ -1,4 +1,4 @@
-// Copyright © Amazon Web Services
+// Copyright © 2020 Amazon Web Services
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import com.google.gson.Gson;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
@@ -249,4 +250,45 @@ public class CloudStorageImpl implements ICloudStorage {
             return false;
         }
     }
+
+    @Override
+    public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+
+        Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
+        Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId);
+
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            String id = recordMetadata.getId();
+            String idWithVersion = recordsIdMap.get(id);
+
+            if (!id.equalsIgnoreCase(idWithVersion)) {
+                long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
+                long currentVersion = currentRecords.get(id).getLatestVersion();
+                if (previousVersion != currentVersion) {
+                    lockedRecords.add(idWithVersion);
+                    continue;
+                }
+            }
+            validMetadata.add(recordMetadata);
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
+        }
+        return originalAcls;
+    }
+
+    @Override
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
+        List<RecordMetadata> originalAclRecords = new ArrayList<>();
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            Acl acl = originalAcls.get(recordMetadata.getId());
+            recordMetadata.setAcl(acl);
+            originalAclRecords.add(recordMetadata);
+        }
+        try {
+            this.recordsMetadataRepository.createOrUpdate(originalAclRecords);
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
+        }
+    }
+
+
 }
