@@ -72,7 +72,8 @@ public class QueryRepository implements IQueryRepository {
             if (e.getMessage().contains("Invalid Continuation Token"))
                 throw this.getInvalidCursorException();
         }
-
+        //for (String id : dqr.getResults())
+        //    System.out.println("getAllKinds ID="+id);
         return dqr;
 
     }
@@ -119,7 +120,8 @@ public class QueryRepository implements IQueryRepository {
             if (e.getMessage().contains("Invalid Continuation Token"))
                 throw this.getInvalidCursorException();
         }
-
+        //for (String id : dqr.getResults())
+        //    System.out.println("getAllRecordIdsFromKind ID="+id);
         return dqr;
     }
 
