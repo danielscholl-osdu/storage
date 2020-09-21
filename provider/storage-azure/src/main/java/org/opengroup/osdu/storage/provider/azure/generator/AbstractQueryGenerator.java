@@ -2,7 +2,7 @@ package org.opengroup.osdu.storage.provider.azure.generator;
 
 import com.azure.cosmos.SqlQuerySpec;
 
-import org.opengroup.osdu.storage.provider.azure.query.CosmosQuery;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
@@ -31,19 +31,19 @@ public abstract class AbstractQueryGenerator {
     }
 
     @NonNull
-    private String generateQueryTail(@NonNull CosmosQuery query) {
+    private String generateQueryTail(@NonNull CosmosStoreQuery query) {
         List<String> queryTails = new ArrayList();
         queryTails.add(this.generateQuerySort(query.getSort()));
         return String.join(" ", (Iterable)queryTails.stream().filter(StringUtils::hasText).collect(Collectors.toList()));
     }
 
-    protected SqlQuerySpec generateQuery(@NonNull CosmosQuery query, @NonNull String queryHead) {
+    protected SqlQuerySpec generateQuery(@NonNull CosmosStoreQuery query, @NonNull String queryHead) {
         Assert.hasText(queryHead, "query head should have text.");
         String queryString = String.join(" ", queryHead, this.generateQueryTail(query));
         return new SqlQuerySpec(queryString);
     }
 
-    protected SqlQuerySpec generateCosmosQuery(@NonNull CosmosQuery query, @NonNull String queryHead) {
+    protected SqlQuerySpec generateCosmosQuery(@NonNull CosmosStoreQuery query, @NonNull String queryHead) {
         Assert.hasText(queryHead, "query head should have text.");
         String queryString = String.join(" ", queryHead, this.generateQueryTail(query));
         return new SqlQuerySpec(queryString);

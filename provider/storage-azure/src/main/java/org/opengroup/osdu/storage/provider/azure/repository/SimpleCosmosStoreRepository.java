@@ -18,8 +18,8 @@ import com.azure.cosmos.FeedOptions;
 import com.azure.cosmos.SqlQuerySpec;
 
 import org.opengroup.osdu.storage.provider.azure.generator.FindQuerySpecGenerator;
-import org.opengroup.osdu.storage.provider.azure.query.CosmosQuery;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
+import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.opengroup.osdu.storage.provider.azure.repository.interfaces.CosmosStoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -248,7 +248,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     // Finds with Query
 
     public Page<T> findAll(Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName) {
-        CosmosQuery query = (new CosmosQuery());
+        CosmosStoreQuery query = (new CosmosStoreQuery());
         if (pageable.getSort().isSorted()) {
             query.with(pageable.getSort());
         }
@@ -260,7 +260,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     @Override
     public Page<T> find(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName, SqlQuerySpec query) {
         Assert.notNull(pageable, PAGEABLE_MUST_NOT_BE_NULL);
-        CosmosQuery cosmosQuery = (new CosmosQuery()).with(query.getQueryText());
+        CosmosStoreQuery cosmosQuery = (new CosmosStoreQuery()).with(query.getQueryText());
         if (pageable.getSort().isSorted()) {
             cosmosQuery.with(pageable.getSort());
         }
@@ -272,7 +272,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     @Override
     public Iterable<T> findAll(@NonNull Sort sort, String dataPartitionId, String cosmosDBName, String collection) {
         Assert.notNull(sort, "sort of findAll should not be null");
-        CosmosQuery query = (new CosmosQuery()).with(sort);
+        CosmosStoreQuery query = (new CosmosStoreQuery()).with(sort);
         SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmos(query);
         FeedOptions options = new FeedOptions().setEnableCrossPartitionQuery(true);
         //System.out.println("SimpleCosmosStoreRepository sqlQuerySpec.getQueryText()=" + sqlQuerySpec.getQueryText());
