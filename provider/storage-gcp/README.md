@@ -139,6 +139,15 @@ cd provider/storage-gcp/ && mvn spring-boot:run
  $ (cd testing/storage-test-gcp/ && mvn clean test)
  ```
 
+## Deployment
+Storage Service is compatible with App Engine Flexible Environment and Cloud Run.
+
+* To deploy into Cloud run, please, use this documentation:
+https://cloud.google.com/run/docs/quickstarts/build-and-deploy
+
+* To deploy into App Engine, please, use this documentation:
+https://cloud.google.com/appengine/docs/flexible/java/quickstart
+
 ## License
 Copyright © Google LLC
 
