@@ -5,6 +5,10 @@ The Storage Service is a Maven multi-module project with each cloud implemention
 
 Instructions for running the Azure implementation locally can be found [here](./provider/storage-azure/README.md).
 
+## GCP Implementation
+
+All documentation for the GCP implementation of Storage service lives [here](./provider/storage-gcp/README.md)
+
 ### Other platforms
 
 1. Navigate to the module of the cloud of interest, for example, ```storage-azure```. Configure ```application.properties``` and optionally ```logback-spring.xml```. Intead of changing these files in the source, you can also provide external files at run time. 

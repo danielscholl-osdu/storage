@@ -1,18 +1,19 @@
-# storage-gcp
+# Storage Service
+storage-gcp is a [Spring Boot](https://spring.io/projects/spring-boot) service that provides a set of APIs to manage the entire metadata life-cycle such as ingestion (persistence), modification, deletion, versioning and data schema.
 
-## Running Locally
+## Getting Started
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
-### Requirements
+### Prerequisites
+Pre-requisites
 
-In order to run this service locally, you will need the following:
+* GCloud SDK with java (latest version)
+* JDK 8
+* Lombok 1.16 or later
+* Maven
 
-- [Maven 3.6.0+](https://maven.apache.org/download.cgi)
-- [AdoptOpenJDK8](https://adoptopenjdk.net/)
-- Infrastructure dependencies, deployable through the relevant [infrastructure template](https://community.opengroup.org/osdu/platform/deployment-and-operations/infra-gcp-provisioning)
-
-### Environment Variables
-
-In order to run the service locally, you will need to have the following environment variables defined.
+### Installation
+In order to run the service locally or remotely, you will need to have the following environment variables defined.
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
@@ -21,35 +22,15 @@ In order to run the service locally, you will need to have the following environ
 | `AUTHORIZE_API` | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint | no | output of infrastructure deployment |
 | `LEGALTAG_API` | ex `https://legal.com/api/legal/v1` | Legal API endpoint | no | output of infrastructure deployment |
 | `PUBSUB_SEARCH_TOPIC` | ex `records-changed` | PubSub topic name | no | https://console.cloud.google.com/cloudpubsub/topic |
-| `REDIS_GROUP_HOST` | ex `records-changed` | Redis host for groups | no | https://console.cloud.google.com/memorystore/redis/instances |
-| `REDIS_STORAGE_HOST` | ex `records-changed` | Redis host for storage | no | https://console.cloud.google.com/memorystore/redis/instances |
+| `REDIS_GROUP_HOST` | ex `127.0.0.1` | Redis host for groups | no | https://console.cloud.google.com/memorystore/redis/instances |
+| `REDIS_STORAGE_HOST` | ex `127.0.0.1` | Redis host for storage | no | https://console.cloud.google.com/memorystore/redis/instances |
 | `STORAGE_HOSTNAME` | ex `os-storage-dot-opendes.appspot.com` | Hostname | no | - |
 | `GOOGLE_AUDIENCES` | ex `*****.apps.googleusercontent.com` | Client ID for getting access to cloud resources | yes | https://console.cloud.google.com/apis/credentials |
 | `GOOGLE_APPLICATION_CREDENTIALS` | ex `/path/to/directory/service-key.json` | Service account credentials, you only need this if running locally | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
 
-**Required to run integration tests**
-
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `INTEGRATION_TEST_AUDIENCE` | `********` | client application ID | yes | https://console.cloud.google.com/apis/credentials |
-| `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
-| `DOMAIN` | `contoso.com` | OSDU R2 to run tests under | no | - |
-| `INTEGRATION_TESTER` | `********` | Service account for API calls. Note: this user must have entitlements configured already | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
-| `LEGAL_URL` | `http://localhsot:8080/api/legal/v1/` | - | no | - |
-| `NO_DATA_ACCESS_TESTER` | `********` | Service account without data access | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
-| `PUBSUB_TOKEN` | `****` | ? | no | - |
-| `STORAGE_URL` | `http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
-| `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
-
-**Entitlements configuration for integration accounts**
-
-| INTEGRATION_TESTER | NO_DATA_ACCESS_TESTER | 
-| ---  | ---   |
-| users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin |
-
-### Configure Maven
-
+### Run Locally
 Check that maven is installed:
+
 ```bash
 $ mvn --version
 Apache Maven 3.6.0
@@ -59,6 +40,7 @@ Java version: 1.8.0_212, vendor: AdoptOpenJDK, runtime: /usr/lib/jvm/jdk8u212-b0
 ```
 
 You may need to configure access to the remote maven repository that holds the OSDU dependencies. This file should live within `~/.mvn/community-maven.settings.xml`:
+
 ```bash
 $ cat ~/.m2/settings.xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -82,39 +64,94 @@ $ cat ~/.m2/settings.xml
     </servers>
 </settings>
 ```
-### Build and run the application
+* Update the Google cloud SDK to the latest version:
+
+```bash
+gcloud components update
+```
+* Set Google Project Id:
+
+```bash
+gcloud config set project <YOUR-PROJECT-ID>
+```
+
+* Perform a basic authentication in the selected project:
+
+```bash
+gcloud auth application-default login
+```
+
+* Navigate to storage service's root folder and run:
+
+```bash
+mvn clean install   
+```
+
+* If you wish to see the coverage report then go to target\site\jacoco\index.html and open index.html
+
+* If you wish to build the project without running tests
+
+```bash
+mvn clean install -DskipTests
+```
 
 After configuring your environment as specified above, you can follow these steps to build and run the application. These steps should be invoked from the *repository root.*
+
 ```bash
 cd provider/storage-gcp/ && mvn spring-boot:run
 ```
-### Test the application
 
-After the service has started it should be accessible via a web browser by visiting [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html). If the request does not fail, you can then run the integration tests.
-
-```bash
-# build + install integration test core
-$ (cd testing/storage-test-core/ && mvn clean install)
-
-# build + run GCP integration tests.
-#
-# Note: this assumes that the environment variables for integration tests as outlined
-#       above are already exported in your environment.
-$ (cd testing/storage-test-gcp/ && mvn clean test)
-```
+## Testing
+ 
+ ### Running E2E Tests 
+ This section describes how to run cloud OSDU E2E tests (testing/storage-test-gcp).
+ 
+ You will need to have the following environment variables defined.
+ 
+ | name | value | description | sensitive? | source |
+ | ---  | ---   | ---         | ---        | ---    |
+ | `INTEGRATION_TEST_AUDIENCE` | `*****.apps.googleusercontent.com` | client application ID | yes | https://console.cloud.google.com/apis/credentials |
+ | `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
+ | `DOMAIN` | ex`opendes-gcp.projects.com` | OSDU R2 to run tests under | no | - |
+ | `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
+ | `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
+ | `NO_DATA_ACCESS_TESTER` | `********` | Service account base64 encoded string without data access | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
+ | `PUBSUB_TOKEN` | `****` | ? | no | - |
+ | `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
+ | `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
+ 
+ **Entitlements configuration for integration accounts**
+ 
+ | INTEGRATION_TESTER | NO_DATA_ACCESS_TESTER | 
+ | ---  | ---   |
+ | users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin |
+ 
+ Execute following command to build code and run all the integration tests:
+ 
+ ```bash
+ # Note: this assumes that the environment variables for integration tests as outlined
+ #       above are already exported in your environment.
+ # build + install integration test core
+ $ (cd testing/storage-test-core/ && mvn clean install)
+ ```
+ ```bash
+ # build + run GCP integration tests.
+ $ (cd testing/storage-test-gcp/ && mvn clean test)
+ ```
 
 ## License
-  Copyright 2020 Google LLC
-  Copyright 2020 EPAM Systems, Inc
+Copyright © Google LLC
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+Copyright © EPAM Systems
+ 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+ 
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+ 
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
