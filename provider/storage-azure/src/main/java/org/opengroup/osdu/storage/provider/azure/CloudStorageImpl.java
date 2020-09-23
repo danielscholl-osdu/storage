@@ -26,7 +26,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
-import org.opengroup.osdu.storage.provider.azure.di.CosmosDBTenantInfo;
+import org.opengroup.osdu.storage.provider.azure.repository.TenantInfoRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +66,7 @@ public class CloudStorageImpl implements ICloudStorage {
     private BlobContainerClient blobContainerClient;
 
     @Autowired
-    private CosmosDBTenantInfo tenantRepo;
+    private TenantInfoRepository tenantRepo;
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
