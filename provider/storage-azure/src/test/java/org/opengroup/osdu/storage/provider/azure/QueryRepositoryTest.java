@@ -11,6 +11,8 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
+import org.opengroup.osdu.storage.provider.azure.repository.QueryRepository;
+import org.opengroup.osdu.storage.provider.azure.repository.SchemaRepository;
 import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
@@ -22,10 +24,10 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class QueryRepositoryTest {
 
     @InjectMocks
-    private QueryRepositoryImpl repo = new QueryRepositoryImpl();
+    private QueryRepository repo = new QueryRepository();
 
     @Mock
-    private CosmosDBSchema dbSchema;
+    private SchemaRepository dbSchema;
 
     @Before
     public void setUp() {

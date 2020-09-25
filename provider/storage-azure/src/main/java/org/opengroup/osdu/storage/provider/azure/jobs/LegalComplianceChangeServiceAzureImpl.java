@@ -66,10 +66,11 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
             String cursor = null;
             do {
                 //TODO replace with the new method queryByLegal
+
                 AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = this.recordsRepo
                         .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
                 cursor = results.getKey();
-
+                System.out.println("cursor=" + cursor);
                 if (results.getValue() != null && !results.getValue().isEmpty()) {
                     List<RecordMetadata> recordsMetadata = results.getValue();
                     PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);

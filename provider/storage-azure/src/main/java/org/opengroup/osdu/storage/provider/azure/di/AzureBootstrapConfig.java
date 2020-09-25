@@ -14,6 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.azure.di;
 
+import com.azure.cosmos.ConnectionMode;
+import com.azure.cosmos.ConnectionPolicy;
+import com.azure.cosmos.internal.AsyncDocumentClient;
+import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.models.KeyVaultSecret;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -55,6 +60,63 @@ public class AzureBootstrapConfig {
     @Named("SERVICE_BUS_TOPIC")
     public String serviceBusTopic() {
         return serviceBusTopic;
+    }
+
+    @Value("${azure.keyvault.url}")
+    private String keyVaultURL;
+
+    @Value("${azure.cosmosdb.database}")
+    private String cosmosDBName;
+
+    @Bean
+    @Named("KEY_VAULT_URL")
+    public String keyVaultURL() {
+        return keyVaultURL;
+    }
+
+    @Bean
+    @Named("COSMOS_KEY")
+    public String cosmosKey(SecretClient kv) {
+        return getKeyVaultSecret(kv, "cosmos-primary-key");
+    }
+
+    @Bean
+    @Named("COSMOS_ENDPOINT")
+    public String cosmosEndpoint(SecretClient kv) {
+        return getKeyVaultSecret(kv, "cosmos-endpoint");
+    }
+
+    @Bean
+    public String cosmosDBName() {
+        return cosmosDBName;
+    }
+
+    public String getKeyVaultSecret(SecretClient kv, String secretName) {
+        KeyVaultSecret secret = kv.getSecret(secretName);
+        if (secret == null) {
+            throw new IllegalStateException(String.format("No secret found with name %s", secretName));
+        }
+
+        String secretValue = secret.getValue();
+        if (secretValue == null) {
+            throw new IllegalStateException(String.format(
+                    "Secret unexpectedly missing from KeyVault response for secret with name %s", secretName));
+        }
+
+        return secretValue;
+    }
+
+    @Bean
+    public AsyncDocumentClient asyncDocumentClient(final @Named("COSMOS_ENDPOINT") String endpoint, final @Named("COSMOS_KEY") String key) {
+
+        ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+        connectionPolicy.setConnectionMode(ConnectionMode.DIRECT);
+
+        return new AsyncDocumentClient.Builder()
+                .withServiceEndpoint(endpoint)
+                .withMasterKeyOrResourceToken(key)
+                .withConnectionPolicy(connectionPolicy)
+                .build();
     }
 
 }
