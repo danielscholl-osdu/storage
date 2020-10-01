@@ -145,9 +145,11 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 	}
 
 	protected RecordResultMock retrieveRecord(String recordId) throws Exception {
+		System.out.println("Retrieving record=" + recordId);
 		ClientResponse response = TestUtils.send("records/" + recordId, "GET",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		String responseBody = response.getEntity(String.class);
+		System.out.println(" responseBody=" + responseBody);
 		assertEquals(SC_OK, response.getStatus());
 
 		return GSON.fromJson(responseBody, RecordResultMock.class);
@@ -206,11 +208,13 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 	protected static void createAndAssertRecord(String parentId, String legalTagForParent, String dataValue,
 			ArrayList<String> ordc, List<String> parents, String token) throws Exception {
 		String parentBody = createBody(parentId, dataValue, Lists.newArrayList(legalTagForParent), ordc, parents);
-
+		System.out.println("createAndAssertRecord");
+		System.out.println("parentBody=" + parentId + " " + parentBody);
 		ClientResponse response = TestUtils.send("records", "PUT",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), parentBody, "");
 
 		String responseBody = response.getEntity(String.class);
+		System.out.println("responseBody=" + parentId + " " + responseBody);
 		assertEquals(SC_CREATED, response.getStatus());
 		assertEquals("application/json; charset=UTF-8", response.getType().toString());
 
