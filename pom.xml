@@ -105,14 +105,14 @@
 		</dependency>
 	</dependencies>
 
-	<repositories>
-		<repository>
-			<id>${gitlab-server}</id>
-			<url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</url>
-		</repository>
-	</repositories>
+  <repositories>
+    <repository>
+      <id>${gitlab-server}</id>
+      <url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</url>
+    </repository>
+  </repositories>
 
-	<modules>
+  <modules>
 		<module>storage-core</module>
 		<module>provider/storage-gcp</module>
 		<module>provider/storage-byoc</module>
@@ -121,15 +121,15 @@
 		<module>provider/storage-ibm</module>
 	</modules>
 
-	<distributionManagement>
-		<repository>
-			<id>${gitlab-server}</id>
-			<url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-		</repository>
-		<snapshotRepository>
-			<id>${gitlab-server}</id>
-			<url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-		</snapshotRepository>
-	</distributionManagement>
+  <distributionManagement>
+    <repository>
+      <id>${gitlab-server}</id>
+      <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
+    </repository>
+    <snapshotRepository>
+      <id>${gitlab-server}</id>
+      <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
+    </snapshotRepository>
+  </distributionManagement>
 
 </project>

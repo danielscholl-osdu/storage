@@ -5,6 +5,10 @@ The Storage Service is a Maven multi-module project with each cloud implemention
 
 Instructions for running the Azure implementation locally can be found [here](./provider/storage-azure/README.md).
 
+## GCP Implementation
+
+All documentation for the GCP implementation of Storage service lives [here](./provider/storage-gcp/README.md)
+
 ### Other platforms
 
 1. Navigate to the module of the cloud of interest, for example, ```storage-azure```. Configure ```application.properties``` and optionally ```logback-spring.xml```. Intead of changing these files in the source, you can also provide external files at run time. 
@@ -122,13 +126,8 @@ Instructions for running the Azure integration tests can be found [here](./provi
 
 
 ### GCP
-These tests integrate with other datalake services as well as Google datasources in your currently set default GCloud project (normally a sandbox when runing locally). They require the service to be running locally (see above) and for you to be a datalake-admin in the datalake identity service for your currenly set default project.
 
-They can then be run/debugged directly in your IDE of choice using the GUI or via the commandline using
-
-```sh
-gradlew build
-```
+Instructions for running the GCP integration tests can be found [here](./provider/storage-gcp/README.md).
 
 ##***REMOVED***
 
