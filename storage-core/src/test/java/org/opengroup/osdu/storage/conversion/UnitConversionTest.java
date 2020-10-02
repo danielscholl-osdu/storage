@@ -289,5 +289,33 @@ public class UnitConversionTest {
         Assert.assertEquals(record, resultRecord);
     }
 
+    @Test
+    public void shouldReturnUpdatedRecordWhenPersistableReferenceIsJsonObject() {
+        String stringRecord = "{\"id\": \"unit-test-1\",\"kind\": \"unit:test:1.0.0\",\"data\": {\"MD\": 10.0},\"meta\": [{\"path\": \"\",\"kind\": \"UNIT\",\"persistableReference\": { \"scaleOffset\": {\"scale\": 0.3048, \"offset\": 0 }, \"symbol\": \"ft/s\", \"baseMeasurement\": { \"type\": \"UM\", \"ancestry\": \"Velocity\" }, \"type\": \"USO\" },\"propertyNames\": [\"MD\"],\"name\": \"ft\"}]}";
+        JsonObject record = (JsonObject) this.jsonParser.parse(stringRecord);
+        JsonArray metaArray = record.getAsJsonArray("meta");
+        Assert.assertEquals(1, metaArray.size());
+        JsonObject meta = (JsonObject) metaArray.get(0);
+        String persistableReference = meta.get("persistableReference").toString();
+        List<ConversionRecord> conversionRecords = new ArrayList<>();
+        ConversionRecord conversionRecord = new ConversionRecord();
+        conversionRecord.setRecordJsonObject(record);
+        conversionRecords.add(conversionRecord);
+        this.unitConversion.convertUnitsToSI(conversionRecords);
+        Assert.assertEquals(1, conversionRecords.size());
+        Assert.assertTrue(conversionRecords.get(0).getConversionMessages().size() == 0);
+        JsonObject resultRecord = conversionRecords.get(0).getRecordJsonObject();
+        JsonElement data = resultRecord.get("data");
+        double actualMDValue = data.getAsJsonObject().get("MD").getAsDouble();
+        Assert.assertEquals(3.048, actualMDValue, 0.00001);
+        JsonArray resultMetaArray = resultRecord.getAsJsonArray("meta");
+        Assert.assertEquals(1, resultMetaArray.size());
+        JsonObject resultMeta = (JsonObject) resultMetaArray.get(0);
+        String resultPersistableReference = resultMeta.get("persistableReference").getAsString();
+        Assert.assertTrue(persistableReference != resultPersistableReference);
+        String resultName = resultMeta.get("name").getAsString();
+        Assert.assertEquals("m/s", resultName);
+    }
+
 }
 
