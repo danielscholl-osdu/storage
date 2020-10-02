@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.model.crs.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -38,6 +37,8 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
+
+import static org.opengroup.osdu.core.common.util.JsonUtils.jsonElementToString;
 
 @Service
 public class CrsConversionService {
@@ -137,7 +138,7 @@ public class CrsConversionService {
 
     private List<PointConversionInfo> constructPointConversionInfoList(List<JsonObject> originalRecords, String recordId, JsonObject metaItem, int recordIndex, Map<String, List<PointConversionInfo>> mapOfPoints, JsonObject dataBlock, int metaItemIndex, List<JsonObject> metaBlocks, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         List<PointConversionInfo> pointConversionInfoList = new ArrayList<>();
-        String persistableReference = metaItem.get(PERSISTABLE_REFERENCE).getAsString();
+        String persistableReference = jsonElementToString(metaItem.get(PERSISTABLE_REFERENCE));
         JsonArray propertyNamesArray = metaItem.get(PROPERTY_NAMES).getAsJsonArray();
         List<String> propertyNames = this.convertPropertyNamesToStringList(propertyNamesArray);
         List<String> propertyNamesRemain = new ArrayList<>();
