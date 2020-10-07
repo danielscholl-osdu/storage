@@ -118,6 +118,8 @@ public class SchemaServiceImpl implements SchemaService {
 		this.auditLogger.deleteSchemaSuccess(singletonList(schema.getKind()));
 
 		this.cache.delete(this.getSchemaCacheKey(kind));
+		this.pubSubClient.publishMessage(this.headers,
+				new PubSubInfo(null, schema.getKind(), OperationType.purge_schema));
 	}
 
 	@Override
