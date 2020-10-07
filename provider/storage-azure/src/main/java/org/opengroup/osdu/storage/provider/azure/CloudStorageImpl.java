@@ -21,17 +21,19 @@ import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 
+import org.opengroup.osdu.azure.blobstorage.IBlobContainerClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
-import org.opengroup.osdu.storage.provider.azure.repository.TenantInfoRepository;
+import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import javax.inject.Named;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -63,17 +65,26 @@ public class CloudStorageImpl implements ICloudStorage {
     private IRecordsMetadataRepository recordRepository;
 
     @Autowired
-    private BlobContainerClient blobContainerClient;
+    private IBlobContainerClientFactory blobContainerClientFactory;
 
     @Autowired
-    private TenantInfoRepository tenantRepo;
+    private GroupsInfoRepository groupsInfoRepository;
+
+    @Autowired
+    @Named("STORAGE_CONTAINER_NAME")
+    private String containerName;
+
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
         validateRecordAcls(recordsProcessing);
 
         List<Callable<Boolean>> tasks = new ArrayList<>();
+        String partitionId = headers.getPartitionId();
+        BlobContainerClient blobContainerClient = blobContainerClientFactory.getClient(partitionId, containerName);
         for (RecordProcessing rp : recordsProcessing) {
+            //have to pass partitionId separately because of multithreading scenario. 'headers' object is request scoped (autowired) and
+            //children threads lose their context down the stream, we get a bean creation exception
             tasks.add(() -> this.writeBlobThread(rp, blobContainerClient));
         }
 
@@ -92,9 +103,10 @@ public class CloudStorageImpl implements ICloudStorage {
      * @param records the records to validate
      */
     private void validateRecordAcls(RecordProcessing... records) {
-        Set<String> validGroups = tenantRepo.findById(headers.getPartitionId())
+        String[] groups = groupsInfoRepository.findById(headers.getPartitionId())
                 .orElseThrow(() -> new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown Tenant", "Tenant was not found"))
-                .getGroups()
+                .getGroups();
+        Set<String> validGroups = Arrays.asList(groups)
                 .stream()
                 .map(group -> group.toLowerCase())
                 .collect(Collectors.toSet());
@@ -180,7 +192,8 @@ public class CloudStorageImpl implements ICloudStorage {
 
         validateOwnerAccessToRecord(record);
         String path = this.buildPath(record);
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(path).getBlockBlobClient();
+        //NOTE: pass partitionId separately if this function is multithreaded
+        BlockBlobClient blockBlobClient = blobContainerClientFactory.getClient(headers.getPartitionId(), containerName).getBlobClient(path).getBlockBlobClient();
         blockBlobClient.delete();
     }
 
@@ -188,7 +201,8 @@ public class CloudStorageImpl implements ICloudStorage {
     public void deleteVersion(RecordMetadata record, Long version) {
         validateOwnerAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(path).getBlockBlobClient();
+        //NOTE: pass partitionId separately if this function is multithreaded
+        BlockBlobClient blockBlobClient = blobContainerClientFactory.getClient(headers.getPartitionId(), containerName).getBlobClient(path).getBlockBlobClient();
         blockBlobClient.delete();
     }
 
@@ -252,7 +266,7 @@ public class CloudStorageImpl implements ICloudStorage {
         String content = "";
         validateViewerAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(path).getBlockBlobClient();
+        BlockBlobClient blockBlobClient = blobContainerClientFactory.getClient(headers.getPartitionId(), containerName).getBlobClient(path).getBlockBlobClient();
         try (ByteArrayOutputStream downloadStream = new ByteArrayOutputStream()) {
             blockBlobClient.download(downloadStream);
             content = downloadStream.toString(StandardCharsets.UTF_8.name());
@@ -271,6 +285,8 @@ public class CloudStorageImpl implements ICloudStorage {
         List<String> recordIds = new ArrayList<>(objects.keySet());
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
 
+        String partitionId = headers.getPartitionId();
+        BlobContainerClient blobContainerClient = blobContainerClientFactory.getClient(partitionId, containerName);
         for (String recordId : recordIds) {
             RecordMetadata recordMetadata = recordsMetadata.get(recordId);
             if (!hasViewerAccessToRecord(recordMetadata)) {
@@ -278,6 +294,8 @@ public class CloudStorageImpl implements ICloudStorage {
                 continue;
             }
             String path = objects.get(recordId);
+            //have to pass partitionId separately because of multithreading scenario. 'headers' object is request scoped (autowired) and
+            //children threads lose their context down the stream, we get a bean creation exception
             tasks.add(() -> this.readBlobThread(recordId, path, map, blobContainerClient));
         }
 

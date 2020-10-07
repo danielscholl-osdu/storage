@@ -17,7 +17,8 @@ package org.opengroup.osdu.storage.provider.azure.cache;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.MultiTenantCache;
 import org.opengroup.osdu.core.common.cache.VmCache;
-import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,10 @@ import org.springframework.stereotype.Component;
 public class LegalTagCache implements ICache<String, String> {
 
     @Autowired
-    private TenantInfo tenant;
+    private ITenantFactory tenantFactory;
+
+    @Autowired
+    private DpsHeaders dpsHeaders;
 
     private final MultiTenantCache<String> caches;
 
@@ -55,7 +59,7 @@ public class LegalTagCache implements ICache<String, String> {
     }
 
     private ICache<String, String> partitionCache() {
-        return this.caches.get(String.format("%s:legalTag", this.tenant));
+        return this.caches.get(String.format("%s:legalTag", this.tenantFactory.getTenantInfo(dpsHeaders.getPartitionId())));
     }
 }
 
