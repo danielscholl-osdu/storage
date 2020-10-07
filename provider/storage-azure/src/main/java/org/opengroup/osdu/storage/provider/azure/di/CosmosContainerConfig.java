@@ -14,7 +14,7 @@ public class CosmosContainerConfig {
     private String recordMetadataCollectionName;
 
     @Value("${azure.cosmosdb.tenantinfo.collection}")
-    private String tenantInfoCollectionName;
+    private String tenantInfoCollection;
 
     @Bean
     public String schemaCollection() {
@@ -28,7 +28,7 @@ public class CosmosContainerConfig {
 
     @Bean
     public String tenantInfoCollection() {
-        return tenantInfoCollectionName;
+        return tenantInfoCollection;
     }
 
 }

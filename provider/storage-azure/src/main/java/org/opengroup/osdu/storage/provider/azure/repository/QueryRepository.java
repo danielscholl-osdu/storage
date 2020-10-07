@@ -1,6 +1,5 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
-import com.azure.data.cosmos.CosmosClientException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;

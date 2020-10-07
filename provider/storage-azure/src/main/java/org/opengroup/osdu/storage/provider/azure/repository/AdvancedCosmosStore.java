@@ -12,7 +12,7 @@ import com.azure.cosmos.NotFoundException;
 import com.azure.cosmos.SqlQuerySpec;
 import com.azure.cosmos.internal.AsyncDocumentClient;
 import com.azure.cosmos.internal.Document;
-import org.opengroup.osdu.azure.ICosmosClientFactory;
+import org.opengroup.osdu.azure.cosmosdb.ICosmosClientFactory;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
