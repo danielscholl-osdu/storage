@@ -1,13 +1,27 @@
+// Copyright © Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package org.opengroup.osdu.storage.provider.azure.repository;
 
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.SchemaDoc;
-import org.opengroup.osdu.storage.provider.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -68,11 +82,10 @@ public class QueryRepository implements IQueryRepository {
                     d -> kinds.add(d.getKind()));
             dqr.setResults(kinds);
         } catch (Exception e) {
-            if (e.getMessage().contains("Invalid Continuation Token"))
+            if (e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
         }
-        //for (String id : dqr.getResults())
-        //    System.out.println("getAllKinds ID="+id);
+
         return dqr;
 
     }
@@ -82,7 +95,7 @@ public class QueryRepository implements IQueryRepository {
         Assert.notNull(kind, "kind must not be null");
 
         boolean paginated  = false;
-
+        System.out.println("!!!" + limit + "" +  cursor);
         int numRecords = PAGE_SIZE;
         if (limit != null) {
             numRecords = limit > 0 ? limit : PAGE_SIZE;
@@ -92,7 +105,7 @@ public class QueryRepository implements IQueryRepository {
         if (cursor != null && !cursor.isEmpty()) {
             paginated = true;
         }
-
+        System.out.println("!!!" + paginated);
         String status = RecordState.active.toString();
         Sort sort = Sort.by(Sort.Direction.ASC, "id");
         DatastoreQueryResult dqr = new DatastoreQueryResult();
@@ -116,11 +129,10 @@ public class QueryRepository implements IQueryRepository {
             docs.forEach(d -> ids.add(d.getId()));
             dqr.setResults(ids);
         } catch (Exception e) {
-            if (e.getMessage().contains("Invalid Continuation Token"))
+            if (e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
         }
-        //for (String id : dqr.getResults())
-        //    System.out.println("getAllRecordIdsFromKind ID="+id);
+
         return dqr;
     }
 
