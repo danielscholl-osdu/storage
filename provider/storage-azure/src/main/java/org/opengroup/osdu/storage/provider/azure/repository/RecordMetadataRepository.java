@@ -110,15 +110,13 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
             }
         } catch (Exception e) {
-            if (e.getCause() instanceof CosmosException) {
-                CosmosException ce = (CosmosException) e.getCause();
-                if (ce.getStatusCode() == HttpStatus.SC_BAD_REQUEST && ce.getMessage().contains("Invalid Continuation Token"))
-                    throw this.getInvalidCursorException();
+            if (e.getMessage().contains("INVALID JSON in continuation token")) {
+                throw this.getInvalidCursorException();
             }
         }
         long finish = System.currentTimeMillis();
         long timeElapsed = finish - start;
-        System.out.println("!! queryByLegalTagName time elapsed = " + timeElapsed);
+        //System.out.println("!! queryByLegalTagName time elapsed = " + timeElapsed);
         return new AbstractMap.SimpleEntry<>(continuation, outputRecords);
     }
 
