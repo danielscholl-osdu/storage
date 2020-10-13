@@ -17,7 +17,7 @@ package org.opengroup.osdu.storage.provider.azure;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.microsoft.azure.servicebus.Message;
-import com.microsoft.azure.servicebus.TopicClient;
+import org.opengroup.osdu.azure.servicebus.ITopicClientFactory;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -25,6 +25,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Named;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,10 +34,15 @@ import java.util.Map;
 @Component
 public class MessageBusImpl implements IMessageBus {
     @Autowired
-    private TopicClient topicClient;
+    private ITopicClientFactory topicClientFactory;
 
     @Autowired
     private JaxRsDpsLog logger;
+
+    @Autowired
+    @Named("SERVICE_BUS_TOPIC")
+    private String serviceBusTopic;
+
 
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
@@ -71,10 +77,8 @@ public class MessageBusImpl implements IMessageBus {
 
             try {
                 logger.info("Storage publishes message " + headers.getCorrelationId());
-                topicClient.send(message);
-            }
-            catch (Exception e)
-            {
+                topicClientFactory.getClient(headers.getPartitionId(), serviceBusTopic).send(message);
+            } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
         }

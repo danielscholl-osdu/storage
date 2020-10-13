@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.apache.http.HttpStatus;
 
@@ -39,7 +40,6 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
 import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
@@ -74,6 +74,7 @@ public class RecordServiceImpl implements RecordService {
 
     @Autowired
     private DpsHeaders headers;
+
 
     @Autowired
     private StorageAuditLogger auditLogger;

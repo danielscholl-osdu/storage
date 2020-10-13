@@ -408,6 +408,7 @@ The following software have components provided under the terms of this license:
 - Apache HttpAsyncClient (from http://hc.apache.org/httpcomponents-asyncclient)
 - Apache HttpClient (from http://hc.apache.org/httpcomponents-client)
 - Apache HttpClient (from http://hc.apache.org/httpcomponents-client)
+- Apache HttpClient Cache (from http://hc.apache.org/httpcomponents-client)
 - Apache HttpClient Mime (from http://hc.apache.org/httpcomponents-client)
 - Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
 - Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
@@ -422,6 +423,7 @@ The following software have components provided under the terms of this license:
 - AssertJ fluent assertions (from )
 - Asynchronous Http Client (from )
 - Asynchronous Http Client Netty Utils (from )
+- Azure Cosmos DB Spring Boot Starter (from https://github.com/Microsoft/azure-spring-boot)
 - Bean Validation API (from http://beanvalidation.org)
 - Byte Buddy (without dependencies) (from )
 - Byte Buddy Java agent (from )
@@ -546,6 +548,8 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Spring Boot starter (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
+- Microsoft Azure Netty HTTP Client Library (from https://github.com/Azure/azure-sdk-for-java)
+- Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
 - Mockito (from http://mockito.org)
 - Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
@@ -1037,7 +1041,6 @@ The following software have components provided under the terms of this license:
 - SLF4J API Module (from http://www.slf4j.org)
 - Spring Data for Azure Cosmos DB SQL API (from https://github.com/Microsoft/spring-data-cosmosdb)
 - adal4j (from https://github.com/AzureAD/azure-activedirectory-library-for-java)
-- azure-documentdb (from https://azure.microsoft.com/en-us/services/cosmos-db/)
 - micrometer-core (from https://github.com/micrometer-metrics/micrometer)
 - msal4j (from https://github.com/AzureAD/microsoft-authentication-library-for-java)
 - powermock-api-mockito (from )
@@ -1116,3 +1119,5 @@ unknown
 The following software have components provided under the terms of this license:
 
 - Byte Buddy (without dependencies) (from )
+
+

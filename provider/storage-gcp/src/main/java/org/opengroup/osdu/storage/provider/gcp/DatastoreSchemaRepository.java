@@ -45,7 +45,7 @@ public class DatastoreSchemaRepository implements ISchemaRepository {
 
 	@Override
 	public void add(Schema schema, String user) {
-		Datastore datastore = this.datastoreFactory.getDatastoreDefaultNamespace();
+		Datastore datastore = this.datastoreFactory.getDatastore();
 		Key schemaKey = datastore.newKeyFactory().setKind(SCHEMA_KIND).newKey(schema.getKind());
 		Transaction txn = datastore.newTransaction();
 
@@ -89,7 +89,7 @@ public class DatastoreSchemaRepository implements ISchemaRepository {
 
 	@Override
 	public Schema get(String kind) {
-		Datastore datastore = this.datastoreFactory.getDatastoreDefaultNamespace();
+		Datastore datastore = this.datastoreFactory.getDatastore();
 		Key schemaKey = datastore.newKeyFactory().setKind(SCHEMA_KIND).newKey(kind);
 		Entity schemaEntity = datastore.get(schemaKey);
 
@@ -122,7 +122,7 @@ public class DatastoreSchemaRepository implements ISchemaRepository {
 
 	@Override
 	public void delete(String kind) {
-		Datastore datastore = this.datastoreFactory.getDatastoreDefaultNamespace();
+		Datastore datastore = this.datastoreFactory.getDatastore();
 		Key key = datastore.newKeyFactory().setKind(SCHEMA_KIND).newKey(kind);
 		datastore.delete(key);
 	}
