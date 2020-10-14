@@ -61,7 +61,7 @@ public class QueryRepository implements IQueryRepository {
         }
 
         Sort sort = Sort.by(Sort.Direction.ASC, "kind");
-         DatastoreQueryResult dqr = new DatastoreQueryResult();
+        DatastoreQueryResult dqr = new DatastoreQueryResult();
         List<String> kinds = new ArrayList();
         Iterable<SchemaDoc> docs;
 
@@ -95,7 +95,6 @@ public class QueryRepository implements IQueryRepository {
         Assert.notNull(kind, "kind must not be null");
 
         boolean paginated  = false;
-        System.out.println("!!!" + limit + "" +  cursor);
         int numRecords = PAGE_SIZE;
         if (limit != null) {
             numRecords = limit > 0 ? limit : PAGE_SIZE;
@@ -105,7 +104,6 @@ public class QueryRepository implements IQueryRepository {
         if (cursor != null && !cursor.isEmpty()) {
             paginated = true;
         }
-        System.out.println("!!!" + paginated);
         String status = RecordState.active.toString();
         Sort sort = Sort.by(Sort.Direction.ASC, "id");
         DatastoreQueryResult dqr = new DatastoreQueryResult();
