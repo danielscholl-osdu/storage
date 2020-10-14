@@ -110,7 +110,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
             }
         } catch (CosmosException e) {
-            if (e.getStatusCode() == 400 && e.getMessage().contains("INVALID JSON in continuation token"))
+            if (e.getStatusCode() == HttpStatus.SC_BAD_REQUEST && e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
             else
                 throw e;
