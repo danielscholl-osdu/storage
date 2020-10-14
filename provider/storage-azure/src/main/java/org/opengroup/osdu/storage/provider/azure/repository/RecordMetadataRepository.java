@@ -109,10 +109,13 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
             if (pageable instanceof CosmosStorePageRequest) {
                 continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
             }
-        } catch (Exception e) {
-            if (e.getMessage().contains("INVALID JSON in continuation token")) {
+        } catch (CosmosException e) {
+            if (e.getStatusCode() == 400 && e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
-            }
+            else
+                throw e;
+        } catch (Exception e) {
+            throw e;
         }
         long finish = System.currentTimeMillis();
         long timeElapsed = finish - start;
