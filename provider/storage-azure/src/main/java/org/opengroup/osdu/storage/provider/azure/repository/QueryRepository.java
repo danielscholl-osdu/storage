@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.repository;
 
+import com.azure.cosmos.CosmosException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -81,9 +82,13 @@ public class QueryRepository implements IQueryRepository {
             docs.forEach(
                     d -> kinds.add(d.getKind()));
             dqr.setResults(kinds);
-        } catch (Exception e) {
-            if (e.getMessage().contains("INVALID JSON in continuation token"))
+        } catch (CosmosException e) {
+            if (e.getStatusCode() == 400 && e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
+            else
+                throw e;
+        } catch (Exception e) {
+            throw e;
         }
 
         return dqr;
@@ -126,9 +131,13 @@ public class QueryRepository implements IQueryRepository {
             }
             docs.forEach(d -> ids.add(d.getId()));
             dqr.setResults(ids);
-        } catch (Exception e) {
-            if (e.getMessage().contains("INVALID JSON in continuation token"))
+        } catch (CosmosException e) {
+            if (e.getStatusCode() == 400 && e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
+            else
+                throw e;
+        } catch (Exception e) {
+            throw e;
         }
 
         return dqr;
