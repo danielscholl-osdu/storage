@@ -83,7 +83,7 @@ public class QueryRepository implements IQueryRepository {
                     d -> kinds.add(d.getKind()));
             dqr.setResults(kinds);
         } catch (CosmosException e) {
-            if (e.getStatusCode() == 400 && e.getMessage().contains("INVALID JSON in continuation token"))
+            if (e.getStatusCode() == HttpStatus.SC_BAD_REQUEST && e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
             else
                 throw e;
@@ -132,7 +132,7 @@ public class QueryRepository implements IQueryRepository {
             docs.forEach(d -> ids.add(d.getId()));
             dqr.setResults(ids);
         } catch (CosmosException e) {
-            if (e.getStatusCode() == 400 && e.getMessage().contains("INVALID JSON in continuation token"))
+            if (e.getStatusCode() == HttpStatus.SC_BAD_REQUEST && e.getMessage().contains("INVALID JSON in continuation token"))
                 throw this.getInvalidCursorException();
             else
                 throw e;
