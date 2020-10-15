@@ -394,14 +394,11 @@ The following software have components provided under the terms of this license:
 - Adapter: RxJava (from )
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/)
-- Apache Commons Collections (from http://commons.apache.org/proper/commons-collections/)
 - Apache Commons FileUpload (from http://commons.apache.org/proper/commons-fileupload/)
 - Apache Commons Lang (from http://commons.apache.org/proper/commons-lang/)
 - Apache Commons Lang (from http://commons.apache.org/proper/commons-lang/)
 - Apache Commons Logging (from http://commons.apache.org/proper/commons-logging/)
 - Apache Commons Logging (from http://commons.apache.org/proper/commons-logging/)
-- Apache Commons Text (from http://commons.apache.org/proper/commons-text/)
-- Apache Commons Validator (from http://commons.apache.org/proper/commons-validator/)
 - Apache Geronimo JMS Spec 2.0 (from http://geronimo.apache.org/maven/${siteId}/${version})
 - Apache HttpAsyncClient (from http://hc.apache.org/httpcomponents-asyncclient)
 - Apache HttpAsyncClient (from http://hc.apache.org/httpcomponents-asyncclient)
@@ -430,8 +427,6 @@ The following software have components provided under the terms of this license:
 - Cloud Storage JSON API v1-rev58-1.21.0 (from )
 - CloudWatch Metrics for AWS Java SDK (from https://aws.amazon.com/sdkforjava)
 - CloudWatch Metrics for AWS Java SDK (from https://aws.amazon.com/sdkforjava)
-- Commons Digester (from http://commons.apache.org/digester/)
-- Commons IO (from http://commons.apache.org/io/)
 - Commons IO (from http://commons.apache.org/io/)
 - Commons IO (from http://commons.apache.org/io/)
 - Converter: Jackson (from )
@@ -503,7 +498,6 @@ The following software have components provided under the terms of this license:
 - Java Native Access (from https://github.com/java-native-access/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Java Servlet API (from http://servlet-spec.java.net)
-- Java UUID Generator (from http://wiki.fasterxml.com/JugHome)
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
@@ -654,7 +648,6 @@ The following software have components provided under the terms of this license:
 - com.google.api.grpc:proto-google-cloud-pubsub-v1 (from https://github.com/googleapis/googleapis)
 - com.google.api.grpc:proto-google-common-protos (from https://github.com/googleapis/googleapis)
 - com.google.api.grpc:proto-google-iam-v1 (from https://github.com/googleapis/googleapis)
-- commons-collections (from )
 - compiler (from http://github.com/spullara/mustache.java)
 - datastore-v1-proto-client (from )
 - elasticsearch-core (from https://github.com/elastic/elasticsearch)
@@ -710,7 +703,6 @@ The following software have components provided under the terms of this license:
 - rest (from https://github.com/elastic/elasticsearch)
 - rest-high-level (from https://github.com/elastic/elasticsearch)
 - rest-high-level (from https://github.com/elastic/elasticsearch)
-- rxjava (from https://github.com/ReactiveX/RxJava)
 - rxjava (from https://github.com/ReactiveX/RxJava)
 - secure-sm (from https://github.com/elastic/elasticsearch)
 - secure-sm (from https://github.com/elastic/elasticsearch)
@@ -936,13 +928,6 @@ The following software have components provided under the terms of this license:
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 
 ========================================================================
-JSON
-========================================================================
-The following software have components provided under the terms of this license:
-
-- JSON in Java (from https://github.com/douglascrockford/JSON-java)
-
-========================================================================
 LGPL-2.1-only
 ========================================================================
 The following software have components provided under the terms of this license:
@@ -1018,14 +1003,13 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure Netty HTTP Client Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure SDK annotations (from https://github.com/Microsoft/java-api-annotations)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
-- Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure SDK for Service Bus (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for Blob Storage (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for Identity (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for KeyVault Secrets (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure common module for Storage (from https://github.com/Azure/azure-sdk-for-java)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
 - Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - Netty/Codec/HTTP (from )
@@ -1036,7 +1020,7 @@ The following software have components provided under the terms of this license:
 - Project Lombok (from https://projectlombok.org)
 - SLF4J API Module (from http://www.slf4j.org)
 - SLF4J API Module (from http://www.slf4j.org)
-- Spring Data for Azure Cosmos DB SQL API (from https://github.com/Microsoft/spring-data-cosmosdb)
+- Spring Data for Azure Cosmos DB SQL API (from https://github.com/Azure/azure-sdk-for-java/tree/master/sdk/cosmos/azure-spring-data-cosmos)
 - adal4j (from https://github.com/AzureAD/azure-activedirectory-library-for-java)
 - micrometer-core (from https://github.com/micrometer-metrics/micrometer)
 - msal4j (from https://github.com/AzureAD/microsoft-authentication-library-for-java)
@@ -1102,13 +1086,11 @@ The following software have components provided under the terms of this license:
 - LatencyUtils (from http://latencyutils.github.io/LatencyUtils/)
 - Microsoft Application Insights Java SDK Core (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
-- Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for Blob Storage (from https://github.com/Azure/azure-sdk-for-java)
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
-- msal4j (from https://github.com/AzureAD/microsoft-authentication-library-for-java)
 - reactive-streams (from http://www.reactive-streams.org/)
 
 ========================================================================

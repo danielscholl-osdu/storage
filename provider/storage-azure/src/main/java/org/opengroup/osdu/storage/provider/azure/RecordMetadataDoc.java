@@ -14,27 +14,19 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
-import com.microsoft.azure.spring.data.cosmosdb.core.mapping.Document;
-import com.microsoft.azure.spring.data.cosmosdb.core.mapping.PartitionKey;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.context.annotation.Primary;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "StorageRecord") //collection name
 public class RecordMetadataDoc {
     @PartitionKey
     @Id
     private String id;
     private RecordMetadata metadata;
 }
-
