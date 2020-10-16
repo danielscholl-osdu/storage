@@ -125,7 +125,8 @@ public class AuditLoggerTest {
 
     @Test
     public void should_writeReadAllKindsEvent() {
-        this.sut.readAllKindsSuccess();
+      List<String> resource = Collections.singletonList("1");
+        this.sut.readAllKindsSuccess(resource);
 
         verify(this.log).audit(any());
     }

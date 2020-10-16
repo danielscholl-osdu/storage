@@ -98,8 +98,8 @@ public class StorageAuditLogger {
 		this.writeLog(this.getAuditEvents().getReadAllRecordsOfGivenKindSuccess(resource));
 	}
 
-	public void readAllKindsSuccess() {
-		this.writeLog(this.getAuditEvents().getAllKindsEventSuccess());
+	public void readAllKindsSuccess(List<String> resource) {
+		this.writeLog(this.getAuditEvents().getAllKindsEventSuccess(resource));
 	}
 
 	public void createSchemaSuccess(List<String> resource) {

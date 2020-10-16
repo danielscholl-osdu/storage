@@ -44,7 +44,7 @@ public class BatchServiceAWSImpl extends BatchServiceImpl {
     {
         try {
             DatastoreQueryResult result = this.queryRepository.getAllKinds(limit, cursor);
-            this.auditLogger.readAllKindsSuccess();
+            this.auditLogger.readAllKindsSuccess(result.getResults());
             return result;
         } catch (InvalidCursorException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Cursor invalid", "The requested cursor does not exist or is invalid", e);

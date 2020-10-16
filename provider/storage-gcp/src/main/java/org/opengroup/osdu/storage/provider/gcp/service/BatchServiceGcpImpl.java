@@ -42,7 +42,7 @@ public class BatchServiceGcpImpl extends BatchServiceImpl {
         try {
 
             DatastoreQueryResult result = this.queryRepository.getAllKinds(limit, cursor);
-            this.auditLogger.readAllKindsSuccess();
+            this.auditLogger.readAllKindsSuccess(result.getResults());
             return result;
         } catch (DatastoreException e) {
             // Is invalid cursor (code = 3) exception?
