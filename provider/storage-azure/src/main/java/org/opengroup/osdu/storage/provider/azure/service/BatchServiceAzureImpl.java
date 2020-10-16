@@ -39,7 +39,7 @@ public class BatchServiceAzureImpl extends BatchServiceImpl {
     public DatastoreQueryResult getAllKinds(String cursor, Integer limit)
     {
         DatastoreQueryResult result = this.queryRepository.getAllKinds(limit, cursor);
-        this.auditLogger.readAllKindsSuccess();
+        this.auditLogger.readAllKindsSuccess(result.getResults());
         return result;
     }
 

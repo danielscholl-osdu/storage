@@ -40,7 +40,7 @@ public class BatchServiceByocImpl extends BatchServiceImpl {
     {
         try {
             DatastoreQueryResult result = this.queryRepository.getAllKinds(limit, cursor);
-            this.auditLogger.readAllKindsSuccess();
+            this.auditLogger.readAllKindsSuccess(result.getResults());
             return result;
         } catch (Exception e) {
             throw this.getInternalErrorException();
