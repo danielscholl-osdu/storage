@@ -39,7 +39,7 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
-| `runtime.env.local` | false (set to `true` when running locally) | Var to check if app is running locally | no | - |
+| `runtime.env.local` | false (change this to `true` when running locally) | Var to check if app is running locally | no | - |
 | `LOG_PREFIX` | `storage` | Logging prefix | no | - |
 | `server.servlet.contextPath` | `/api/storage/v2/` | Servlet context path | no | - |
 | `AUTHORIZE_API` | ex `https://foo-entitlements.azurewebsites.net/entitlements/v1` | Entitlements API endpoint | no | output of infrastructure deployment |
