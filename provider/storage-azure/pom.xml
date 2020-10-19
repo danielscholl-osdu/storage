@@ -35,17 +35,20 @@
         <azure.appservice.appname></azure.appservice.appname>
         <azure.appservice.subscription></azure.appservice.subscription>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.opengroup.osdu</groupId>
+                <artifactId>core-lib-azure</artifactId>
+                <version>0.0.33</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty</artifactId>
-            <version>0.9.12.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-            <version>3.3.4.RELEASE</version>
-        </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-active-directory-spring-boot-starter</artifactId>
