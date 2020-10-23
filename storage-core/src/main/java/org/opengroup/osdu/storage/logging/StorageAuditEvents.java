@@ -222,13 +222,13 @@ public class StorageAuditEvents {
     }
 
 
-    public AuditPayload getAllKindsEventSuccess() {
+    public AuditPayload getAllKindsEventSuccess(List<String> resource) {
         return AuditPayload.builder()
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
                 .actionId(READ_GET_ALL_KINDS_ACTION_ID)
                 .message(READ_GET_ALL_KINDS_MESSAGE)
-                .resources(singletonList("All Kinds"))
+                .resources(resource)
                 .user(user)
                 .build();
     }
