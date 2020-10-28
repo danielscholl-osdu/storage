@@ -41,19 +41,19 @@
 
 	<repositories>
 		<repository>
-			<id>${gitlab-server}</id>
-			<url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</url>
+			<id>${repo.releases.id}</id>
+			<url>${repo.releases.url}</url>
 		</repository>
 	</repositories>
 
 	<distributionManagement>
 		<repository>
-			<id>${gitlab-server}</id>
-			<url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
+			<id>${publish.releases.id}</id>
+			<url>${publish.releases.url}</url>
 		</repository>
 		<snapshotRepository>
-			<id>${gitlab-server}</id>
-			<url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
+			<id>${publish.snapshots.id}</id>
+			<url>${publish.snapshots.url}</url>
 		</snapshotRepository>
 	</distributionManagement>
 
