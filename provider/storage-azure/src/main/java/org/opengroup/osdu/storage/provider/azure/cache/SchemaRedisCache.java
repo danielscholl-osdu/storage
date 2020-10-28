@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.azure.cache;
 
 import org.opengroup.osdu.core.common.cache.RedisCache;
 import org.opengroup.osdu.core.common.model.storage.Schema;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -29,8 +30,9 @@ public class SchemaRedisCache extends RedisCache<String, Schema> {
             final @Named("REDIS_HOST") String host,
             final @Named("REDIS_PORT") int port,
             final @Named("REDIS_PASSWORD") String password,
-            final @Named("REDIS_TIMEOUT") int timeout)
+            final @Named("REDIS_TIMEOUT") int timeout,
+            @Value("${redis.database}") final int database)
     {
-        super(host, port, password, timeout, String.class, Schema.class);
+        super(host, port, password, timeout, database, String.class, Schema.class);
     }
 }
