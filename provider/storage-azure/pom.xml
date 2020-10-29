@@ -81,7 +81,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>0.3.12</version>
+            <version>0.3.16</version>
             <exclusions>
                 <exclusion>
                     <artifactId>elasticsearch</artifactId>

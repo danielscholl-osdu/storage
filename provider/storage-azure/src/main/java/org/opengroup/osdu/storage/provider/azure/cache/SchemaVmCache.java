@@ -16,11 +16,13 @@ package org.opengroup.osdu.storage.provider.azure.cache;
 
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.cache.VmCache;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SchemaCache extends VmCache<String, Schema> {
-    public SchemaCache() {
+@ConditionalOnProperty(value = "runtime.env.local", havingValue = "true")
+public class SchemaVmCache extends VmCache<String, Schema> {
+    public SchemaVmCache() {
         super(5 * 60, 1000);
     }
 }
