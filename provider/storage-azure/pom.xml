@@ -29,11 +29,11 @@
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
     <properties>
-        <azure.version>2.2.0</azure.version>
         <azure.appservice.resourcegroup></azure.appservice.resourcegroup>
         <azure.appservice.plan></azure.appservice.plan>
         <azure.appservice.appname></azure.appservice.appname>
         <azure.appservice.subscription></azure.appservice.subscription>
+        <osdu.azurecore.version>0.0.37</osdu.azurecore.version>
     </properties>
 
     <dependencyManagement>
@@ -41,7 +41,7 @@
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
                 <artifactId>core-lib-azure</artifactId>
-                <version>0.0.33</version>
+                <version>${osdu.azurecore.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -52,7 +52,12 @@
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-active-directory-spring-boot-starter</artifactId>
-            <version>${azure.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -79,7 +84,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-azure</artifactId>
-            <version>0.0.36</version>
+            <version>${osdu.azurecore.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -135,12 +140,6 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-storage-blob</artifactId>
-            <version>12.6.1</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 
