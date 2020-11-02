@@ -1,7 +1,5 @@
 package org.opengroup.osdu.storage.provider.reference.di;
 
-import static org.opengroup.osdu.storage.provider.reference.repository.SchemaRepositoryImpl.SCHEMA_DATABASE;
-
 import com.google.gson.Gson;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -24,7 +22,8 @@ import org.springframework.stereotype.Component;
 public class TenantFactoryImpl implements ITenantFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(TenantFactoryImpl.class);
-  public static final String TENANT_INFO = "TenantInfo";
+  public static final String TENANT_INFO = "tenantinfo";
+  public static final String MAIN_DATABASE = "main";
 
   @Autowired
   private MongoDdmsClient mongoClient;
@@ -63,7 +62,7 @@ public class TenantFactoryImpl implements ITenantFactory {
   private void initTenants() {
     this.tenants = new HashMap<>();
     MongoCollection<Document> mongoCollection = mongoClient
-        .getMongoCollection(SCHEMA_DATABASE, TENANT_INFO);
+        .getMongoCollection(MAIN_DATABASE, TENANT_INFO);
     FindIterable<Document> results = mongoCollection.find();
     if (Objects.isNull(results) && Objects.isNull(results.first())) {
       LOG.error(String.format("Collection \'%s\' is empty.", results));
