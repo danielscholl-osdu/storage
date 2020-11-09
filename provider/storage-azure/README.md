@@ -39,6 +39,7 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
+| `runtime.env.local` | false (change this to `true` when running locally) | Var to check if app is running locally | no | - |
 | `LOG_PREFIX` | `storage` | Logging prefix | no | - |
 | `server.servlet.contextPath` | `/api/storage/v2/` | Servlet context path | no | - |
 | `AUTHORIZE_API` | ex `https://foo-entitlements.azurewebsites.net/entitlements/v1` | Entitlements API endpoint | no | output of infrastructure deployment |
@@ -49,7 +50,7 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 | `azure.activedirectory.client-id` | `********` | AAD client application ID | yes | output of infrastructure deployment |
 | `azure.activedirectory.AppIdUri` | `api://${azure.activedirectory.client-id}` | URI for AAD Application | no | -- |
 | `azure.activedirectory.session-stateless` | `true` | Flag run in stateless mode (needed by AAD dependency) | no | -- |
-| `cosmosdb_database` | ex `dev-osdu-r2-db` | Cosmos database for storage documents | no | output of infrastructure deployment |
+| `cosmosdb_database` | ex `osdu-db` | Cosmos database for storage documents | no | output of infrastructure deployment |
 | `azure.storage.enable-https` | `true` | Used by spring boot starter library | no | - |
 | `servicebus_topic_name` | `recordstopic` | Topic for async messaging | no | output of infrastructure deployment |
 | `azure.application-insights.instrumentation-key` | `********` | API Key for App Insights | yes | output of infrastructure deployment |

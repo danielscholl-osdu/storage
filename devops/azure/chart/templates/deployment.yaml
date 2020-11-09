@@ -63,6 +63,11 @@ spec:
             configMapKeyRef:
               name: osdu-svc-properties
               key: ENV_KEYVAULT
+        - name: REDIS_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: redis-configmap
+              key: storage
         - name: AZURE_CLIENT_ID
           valueFrom:
             secretKeyRef:
