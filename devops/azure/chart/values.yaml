@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 global:
-  replicaCount: 2
+  replicaCount: 1
 
 image:
   repository: community.opengroup.org:5555/osdu/platform/system/storage
