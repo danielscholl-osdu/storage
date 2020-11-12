@@ -29,27 +29,41 @@
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
     <properties>
-        <azure.version>2.2.0</azure.version>
         <azure.appservice.resourcegroup></azure.appservice.resourcegroup>
         <azure.appservice.plan></azure.appservice.plan>
         <azure.appservice.appname></azure.appservice.appname>
         <azure.appservice.subscription></azure.appservice.subscription>
+        <osdu.corelibazure.version>0.0.40</osdu.corelibazure.version>
+        <osdu.oscorecommon.version>0.3.16</osdu.oscorecommon.version>
+        <osdu.storage-core.version>0.0.5-SNAPSHOT</osdu.storage-core.version>
+        <junit.version>4.12</junit.version>
+        <mockito.version>1.10.19</mockito.version>
+        <powermock.version>2.0.2</powermock.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Inherit managed dependencies from core-lib-azure -->
+            <dependency>
+                <groupId>org.opengroup.osdu</groupId>
+                <artifactId>core-lib-azure</artifactId>
+                <version>${osdu.corelibazure.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty</artifactId>
-            <version>0.9.12.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-            <version>3.3.4.RELEASE</version>
-        </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-active-directory-spring-boot-starter</artifactId>
-            <version>${azure.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -76,12 +90,12 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-azure</artifactId>
-            <version>0.0.36</version>
+            <version>${osdu.corelibazure.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>0.3.16</version>
+            <version>${osdu.oscorecommon.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>elasticsearch</artifactId>
@@ -100,7 +114,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <version>${osdu.storage-core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -109,19 +123,19 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.powermock</groupId>
             <artifactId>powermock-module-junit4</artifactId>
-            <version>2.0.2</version>
+            <version>${powermock.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -132,12 +146,6 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-storage-blob</artifactId>
-            <version>12.6.1</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 
