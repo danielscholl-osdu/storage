@@ -105,13 +105,6 @@
 		</dependency>
 	</dependencies>
 
-  <repositories>
-    <repository>
-      <id>${gitlab-server}</id>
-      <url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</url>
-    </repository>
-  </repositories>
-
   <modules>
 		<module>storage-core</module>
 		<module>provider/storage-gcp</module>
@@ -121,15 +114,42 @@
 		<module>provider/storage-ibm</module>
 	</modules>
 
-  <distributionManagement>
-    <repository>
-      <id>${gitlab-server}</id>
-      <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-    </repository>
-    <snapshotRepository>
-      <id>${gitlab-server}</id>
-      <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-    </snapshotRepository>
-  </distributionManagement>
+	<repositories>
+		<repository>
+			<id>${repo.releases.id}</id>
+			<url>${repo.releases.url}</url>
+		</repository>
+	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>${publish.releases.id}</id>
+			<url>${publish.releases.url}</url>
+		</repository>
+		<snapshotRepository>
+			<id>${publish.snapshots.id}</id>
+			<url>${publish.snapshots.url}</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<profiles>
+		<profile>
+			<id>Default</id>
+			<activation>
+				<property>
+					<name>!repo.releases.id</name>
+				</property>
+			</activation>
+			<properties>
+				<repo.releases.id>community-maven-repo</repo.releases.id>
+				<publish.snapshots.id>community-maven-via-job-token</publish.snapshots.id>
+				<publish.releases.id>community-maven-via-job-token</publish.releases.id>
+				<repo.releases.url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</repo.releases.url>
+				<publish.snapshots.url>https://community.opengroup.org/api/v4/projects/44/packages/maven</publish.snapshots.url>
+				<publish.releases.url>https://community.opengroup.org/api/v4/projects/44/packages/maven</publish.releases.url>
+			</properties>
+		</profile>
+	</profiles>
+
 
 </project>
