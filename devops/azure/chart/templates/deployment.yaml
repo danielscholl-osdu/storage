@@ -48,7 +48,7 @@ spec:
             cpu: "800"
         readinessProbe:
           httpGet:
-            path: /api/storage/v2/actuator/health
+            path: /api/storage/v2/health
             port: 80
         volumeMounts:
         - name: azure-keyvault
