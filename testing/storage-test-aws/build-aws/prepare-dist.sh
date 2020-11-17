@@ -46,3 +46,5 @@ chmod +x "${INTEGRATION_TEST_OUTPUT_BIN_DIR}"/install-deps.sh
 mvn clean -f "$INTEGRATION_TEST_SOURCE_DIR_AWS"/pom.xml
 cp -R "$INTEGRATION_TEST_SOURCE_DIR_AWS"/* "${INTEGRATION_TEST_OUTPUT_DIR}"/
 
+#copy testing parent pom to output
+cp "$INTEGRATION_TEST_SOURCE_DIR/pom.xml" "${OUTPUT_DIR}/testing"
