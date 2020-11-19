@@ -564,10 +564,10 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Azure Netty HTTP Client Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
-- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
 - Netty Reactive Streams Implementation (from )
 - Netty/Buffer (from http://netty.io/)
 - Netty/Buffer (from http://netty.io/)
@@ -696,8 +696,8 @@ The following software have components provided under the terms of this license:
 - java-cloudant (from https://cloudant.com)
 - java-cloudant (from https://cloudant.com)
 - javatuples (from http://www.javatuples.org)
-- javax.inject (from http://code.google.com/p/atinject/)
 - javax.inject (from )
+- javax.inject (from http://code.google.com/p/atinject/)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - jersey-repackaged-guava (from )
 - jose4j (from https://bitbucket.org/b_c/jose4j/)
@@ -750,7 +750,6 @@ The following software have components provided under the terms of this license:
 - swagger-jaxrs (from )
 - swagger-models (from )
 - tomcat-annotations-api (from http://tomcat.apache.org/)
-- tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-el (from http://tomcat.apache.org/)
@@ -877,7 +876,6 @@ The following software have components provided under the terms of this license:
 - OSGi resource locator (from )
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
-- tomcat-embed-core (from http://tomcat.apache.org/)
 
 ========================================================================
 EPL-1.0
@@ -915,7 +913,6 @@ The following software have components provided under the terms of this license:
 - jersey-repackaged-guava (from )
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
-- tomcat-embed-core (from http://tomcat.apache.org/)
 
 ========================================================================
 GPL-2.0-or-later
@@ -940,7 +937,6 @@ The following software have components provided under the terms of this license:
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
-- tomcat-embed-core (from http://tomcat.apache.org/)
 
 ========================================================================
 GPL-3.0-only
@@ -948,7 +944,6 @@ GPL-3.0-only
 The following software have components provided under the terms of this license:
 
 - OSGi resource locator (from )
-- Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
 - SnakeYAML (from http://www.snakeyaml.org)
@@ -1046,7 +1041,6 @@ The following software have components provided under the terms of this license:
 - Netty/Common (from )
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
-- Project Lombok (from https://projectlombok.org)
 - SLF4J API Module (from http://www.slf4j.org)
 - SLF4J API Module (from http://www.slf4j.org)
 - Spongy Castle (from http://rtyley.github.io/spongycastle/)
@@ -1127,7 +1121,6 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Core (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure client library for Blob Storage (from https://github.com/Azure/azure-sdk-for-java)
-- Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
