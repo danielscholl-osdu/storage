@@ -68,21 +68,6 @@ spec:
             configMapKeyRef:
               name: osdu-svc-properties
               key: ENV_KEYVAULT
-        - name: AZURE_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: active-directory
-              key: principal-clientid
-        - name: AZURE_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: active-directory
-              key: principal-clientpassword
-        - name: AZURE_TENANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: active-directory
-              key: tenantid
         - name: aad_client_id
           valueFrom:
             secretKeyRef:
