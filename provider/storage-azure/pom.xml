@@ -34,7 +34,7 @@
         <azure.appservice.appname></azure.appservice.appname>
         <azure.appservice.subscription></azure.appservice.subscription>
         <osdu.corelibazure.version>0.0.40</osdu.corelibazure.version>
-        <osdu.oscorecommon.version>0.3.16</osdu.oscorecommon.version>
+        <osdu.oscorecommon.version>0.3.18</osdu.oscorecommon.version>
         <osdu.storage-core.version>0.0.5-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
