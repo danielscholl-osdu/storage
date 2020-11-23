@@ -14,9 +14,11 @@
 
 package org.opengroup.osdu.storage.di;
 
+import org.opengroup.osdu.core.common.http.json.HttpResponseBodyMapper;
 import org.opengroup.osdu.core.common.legal.ILegalFactory;
 import org.opengroup.osdu.core.common.legal.LegalAPIConfig;
 import org.opengroup.osdu.core.common.legal.LegalFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.stereotype.Component;
@@ -32,11 +34,14 @@ public class LegalClientFactory extends AbstractFactoryBean<ILegalFactory> {
 		return ILegalFactory.class;
 	}
 
+	@Autowired
+	private HttpResponseBodyMapper httpResponseBodyMapper;
+
 	@Override
 	protected ILegalFactory createInstance() throws Exception {
 		return new LegalFactory(LegalAPIConfig
 				.builder()
 				.rootUrl(LEGALTAG_API)
-				.build());
+				.build(), httpResponseBodyMapper);
 	}
 }
