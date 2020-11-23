@@ -21,6 +21,7 @@ import com.google.cloud.storage.*;
 import com.google.cloud.storage.Acl.Group;
 import com.google.cloud.storage.Acl.Role;
 import com.google.cloud.storage.Acl.User;
+import com.google.cloud.storage.StorageException;
 import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;

@@ -161,10 +161,9 @@ public abstract class BatchServiceImpl implements BatchService {
         boolean isConversionNeeded = true;
         if (frameOfRef == null || (frameOfRef.equalsIgnoreCase(NO_FRAME_OF_REFERENCE)) ||
                 //TODO: remove when converter service is available in all clouds
-                (crsConverterClientFactory.CRS_API == null || crsConverterClientFactory.CRS_API.isEmpty())) {
+                (Strings.isNullOrEmpty(crsConverterClientFactory.crsApi))) {
             isConversionNeeded = false;
-        }
-        else if (!frameOfRef.equalsIgnoreCase(SI_FRAME_OF_REFERENCE)) {
+        } else if (!frameOfRef.equalsIgnoreCase(SI_FRAME_OF_REFERENCE)) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Frame of reference is not appropriately provided",
                     "please use customized header frame-of-reference and either 'none' or 'units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc' would be valid");
         }
@@ -241,7 +240,7 @@ public abstract class BatchServiceImpl implements BatchService {
         return records;
     }
 
-    private Map<String, String> postCheckRecordsAcl(Map<String, String>recordsPreAclMap, Map<String, RecordMetadata> recordsMetadata) {
+    private Map<String, String> postCheckRecordsAcl(Map<String, String> recordsPreAclMap, Map<String, RecordMetadata> recordsMetadata) {
         Map<String, String> recordsMap = new HashMap<>();
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         for (Map.Entry<String, String> record : recordsPreAclMap.entrySet()) {
@@ -268,6 +267,7 @@ public abstract class BatchServiceImpl implements BatchService {
             }
         }
     }
+
     private void checkMismatchAndAddToNotFound(List<String> requestIds, List<String> notFoundIds, List<JsonObject> fetchedRecords) {
         if ((notFoundIds.size() + fetchedRecords.size()) == requestIds.size()) {
             return;
