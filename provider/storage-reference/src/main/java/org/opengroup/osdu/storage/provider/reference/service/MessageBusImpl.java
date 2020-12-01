@@ -31,7 +31,7 @@ public class MessageBusImpl implements IMessageBus {
       message.put(DpsHeaders.DATA_PARTITION_ID, headers.getPartitionIdWithFallbackToAccountId());
       headers.addCorrelationIdIfMissing();
       message.put(DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
-
+      message.put(DpsHeaders.AUTHORIZATION,headers.getAuthorization());
       messageQueue.sendMessage(gson.toJson(message));
     }
   }

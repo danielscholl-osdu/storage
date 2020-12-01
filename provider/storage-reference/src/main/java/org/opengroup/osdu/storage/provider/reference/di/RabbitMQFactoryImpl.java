@@ -38,8 +38,8 @@ public class RabbitMQFactoryImpl implements IMessageFactory {
       this.channel = conn.createChannel();
       LOG.debug("RabbitMQ Channel was created.");
       for (String queue : Arrays.asList(DEFAULT_QUEUE_NAME, INDEXER_QUEUE_NAME, LEGAL_QUEUE_NAME)) {
-        channel.queueDeclare("os-storage-" + queue, false, false, false, null);
-        LOG.debug("Queue [os-storage-" + queue + "] was declared.");
+        channel.queueDeclare(queue, true, false, false, null);
+        LOG.debug("Queue [" + queue + "] was declared.");
       }
     } catch (KeyManagementException | NoSuchAlgorithmException | URISyntaxException | IOException | TimeoutException e) {
       LOG.error(e.getMessage(), e);
@@ -53,7 +53,7 @@ public class RabbitMQFactoryImpl implements IMessageFactory {
 
   @Override
   public void sendMessage(String queueName, String msg) {
-    String queueNameWithPrefix = "os-storage-" + queueName;
+    String queueNameWithPrefix = queueName;
     try {
       channel.basicPublish("", queueNameWithPrefix, null, msg.getBytes());
       LOG.info(" [x] Sent '" + msg + "' to queue [" + queueNameWithPrefix + "]");

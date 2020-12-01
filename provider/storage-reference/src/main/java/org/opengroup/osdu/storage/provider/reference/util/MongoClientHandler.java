@@ -16,7 +16,7 @@ public class MongoClientHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(MongoClientHandler.class);
   private static final String MONGO_PREFIX = "mongodb://";
-  private static final String MONGO_OPTIONS = "retryWrites=true&w=majority";
+  private static final String MONGO_OPTIONS = "retryWrites=true&w=majority&maxIdleTimeMS=10000";
 
   private com.mongodb.client.MongoClient mongoClient = null;
 

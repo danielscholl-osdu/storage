@@ -1,17 +1,20 @@
 package org.opengroup.osdu.storage.provider.reference.di;
 
+import static java.util.Objects.isNull;
+
 import com.google.gson.Gson;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
-import org.opengroup.osdu.storage.provider.reference.model.TenantInfoDocument;
 import org.opengroup.osdu.storage.provider.reference.persistence.MongoDdmsClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,21 +67,16 @@ public class TenantFactoryImpl implements ITenantFactory {
     MongoCollection<Document> mongoCollection = mongoClient
         .getMongoCollection(MAIN_DATABASE, TENANT_INFO);
     FindIterable<Document> results = mongoCollection.find();
-    if (Objects.isNull(results) && Objects.isNull(results.first())) {
+    if (isNull(results) || isNull(results.first())) {
       LOG.error(String.format("Collection \'%s\' is empty.", results));
     }
     for (Document document : results) {
-      TenantInfoDocument tenantInfoDocument = new Gson()
-          .fromJson(document.toJson(), TenantInfoDocument.class);
-      TenantInfo tenantInfo = convertToTenantInfo(tenantInfoDocument);
+      TenantInfo tenantInfo = new Gson().fromJson(document.toJson(),TenantInfo.class);
+      ObjectId id = (ObjectId) document.get("_id");
+      tenantInfo.setId((long) id.getCounter());
+      tenantInfo.setCrmAccountIds((ArrayList<String>) document.get("crmAccountID"));
       this.tenants.put(tenantInfo.getName(), tenantInfo);
     }
-  }
-
-  private TenantInfo convertToTenantInfo(TenantInfoDocument tenantInfoDocument) {
-    TenantInfo tenantInfo = new TenantInfo();
-    tenantInfo.setName(tenantInfoDocument.getId());
-    return tenantInfo;
   }
 }
 
