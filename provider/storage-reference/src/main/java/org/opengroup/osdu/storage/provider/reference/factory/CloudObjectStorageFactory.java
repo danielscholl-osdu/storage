@@ -13,11 +13,11 @@ import org.springframework.stereotype.Component;
 public class CloudObjectStorageFactory {
   private static final Logger logger = LoggerFactory.getLogger(CloudObjectStorageFactory.class);
 
-  @Value("${minio.endpoint_url}")
+  @Value("${minio.endpoint.url}")
   private String endpointURL;
-  @Value("${minio.access_key}")
+  @Value("${minio.access.key}")
   private String accessKey;
-  @Value("${minio.secret_key}")
+  @Value("${minio.secret.key}")
   private String secretKey;
   @Value("${minio.region:us-east-1}")
   private String region;
