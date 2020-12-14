@@ -29,7 +29,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<docker.image.prefix>opendes</docker.image.prefix>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<os-core-common.version>0.3.21</os-core-common.version>
+		<os-core-common.version>0.3.23</os-core-common.version>
 		<jackson.version>2.11.2</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
 		<snakeyaml.version>1.26</snakeyaml.version>
