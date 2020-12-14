@@ -823,12 +823,6 @@ CC-BY-2.5
 The following software have components provided under the terms of this license:
 
 - Checker Qual (from https://checkerframework.org)
-
-========================================================================
-CC-BY-3.0
-========================================================================
-The following software have components provided under the terms of this license:
-
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
 
 ========================================================================
@@ -855,7 +849,6 @@ The following software have components provided under the terms of this license:
 
 - HK2 API module (from git://java.net/hk2~git/hk2-api)
 - HK2 Implementation Utilities (from )
-- JavaBeans(TM) Activation Framework (from http://java.sun.com/javase/technologies/desktop/javabeans/jaf/index.jsp)
 - ServiceLocator Default Implementation (from git://java.net/hk2~git/hk2-locator)
 - aopalliance-repackaged (from )
 - javax.annotation-api (from http://jcp.org/en/jsr/detail?id=250)
@@ -872,6 +865,7 @@ The following software have components provided under the terms of this license:
 
 - Java Servlet API (from http://servlet-spec.java.net)
 - JavaBeans Activation Framework (from )
+- JavaBeans(TM) Activation Framework (from http://java.sun.com/javase/technologies/desktop/javabeans/jaf/index.jsp)
 - JavaMail API (from )
 - OSGi resource locator (from )
 - tomcat-embed-core (from http://tomcat.apache.org/)
@@ -973,7 +967,6 @@ LGPL-2.1-or-later
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- Java Native Access (from https://github.com/java-native-access/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Javassist (from http://www.javassist.org/)
 - SnakeYAML (from http://www.snakeyaml.org)
@@ -1125,6 +1118,7 @@ The following software have components provided under the terms of this license:
 - Project Lombok (from https://projectlombok.org)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
+- StAX API (from http://stax.codehaus.org/)
 - msal4j (from https://github.com/AzureAD/microsoft-authentication-library-for-java)
 - reactive-streams (from http://www.reactive-streams.org/)
 
