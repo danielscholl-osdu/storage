@@ -21,6 +21,7 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.PubsubMessage.Builder;
+import java.util.Objects;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.apache.http.HttpStatus;
@@ -39,6 +40,8 @@ public class GooglePubSub implements IMessageBus {
 	@Value("${PUBSUB_SEARCH_TOPIC}")
 	public String PUBSUB_SEARCH_TOPIC;
 
+	private Publisher publisher;
+
 
 	private static final RetrySettings RETRY_SETTINGS = RetrySettings.newBuilder()
 			.setTotalTimeout(Duration.ofSeconds(10))
@@ -56,17 +59,17 @@ public class GooglePubSub implements IMessageBus {
 	@Override
 	public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
 
-		Publisher publisher = null;
-
-		try {
-			publisher = Publisher.newBuilder(
+		if(Objects.isNull(publisher)) {
+			try {
+				publisher = Publisher.newBuilder(
 					ProjectTopicName.newBuilder()
-							.setProject(this.tenant.getProjectId())
-							.setTopic(PUBSUB_SEARCH_TOPIC).build())
+						.setProject(this.tenant.getProjectId())
+						.setTopic(PUBSUB_SEARCH_TOPIC).build())
 					.setRetrySettings(RETRY_SETTINGS).build();
-		} catch (Exception e) {
-			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Internal error",
+			} catch (Exception e) {
+				throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Internal error",
 					"A fatal internal error has occurred.", e);
+			}
 		}
 
 		final int BATCH_SIZE = 50;
