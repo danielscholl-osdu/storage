@@ -48,6 +48,8 @@ variables:
     value: "devops/azure/chart/helm-config.yaml"
   - name: 'MANIFEST_REPO'
     value: $[ resources.repositories['FluxRepo'].name ]
+  - name: 'MAVEN_CACHE_FOLDER'
+    value: $(Pipeline.Workspace)/.m2/repository
   - name: SKIP_TESTS
     value: 'false'
 
@@ -56,8 +58,8 @@ stages:
     parameters:
       mavenGoal: 'package'
       mavenPublishJUnitResults: true
-      serviceCoreMavenOptions: '-P storage-core'
-      mavenOptions: '-P storage-azure'
+      serviceCoreMavenOptions: '-P storage-core --settings .mvn/community-maven.settings.xml -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      mavenOptions: '-P storage-azure --settings .mvn/community-maven.settings.xml -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
       copyFileContents: |
         pom.xml
         provider/storage-azure/maven/settings.xml
