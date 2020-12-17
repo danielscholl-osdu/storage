@@ -872,11 +872,17 @@ The following software have components provided under the terms of this license:
 - tomcat-embed-core (from http://tomcat.apache.org/)
 
 ========================================================================
-EPL-1.0
+CPL-1.0
 ========================================================================
 The following software have components provided under the terms of this license:
 
 - JUnit (from http://junit.org)
+
+========================================================================
+EPL-1.0
+========================================================================
+The following software have components provided under the terms of this license:
+
 - Logback Classic Module (from )
 - Logback Core Module (from )
 - Microsoft Application Insights Java SDK Core (from https://github.com/Microsoft/ApplicationInsights-Java)
@@ -1128,6 +1134,7 @@ unknown
 The following software have components provided under the terms of this license:
 
 - Byte Buddy (without dependencies) (from )
+- JUnit (from http://junit.org)
 - JavaBeans Activation Framework API jar (from )
 - Spongy Castle (from http://rtyley.github.io/spongycastle/)
 - jakarta.xml.bind-api (from )
