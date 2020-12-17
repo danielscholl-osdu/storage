@@ -1,16 +1,19 @@
-// Copyright 2017-2019, Schlumberger
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+  Copyright 2020 Google LLC
+  Copyright 2020 EPAM Systems, Inc
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.gcp.util;
 
@@ -73,10 +76,10 @@ public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 	private JaxRsDpsLog logger;
 
 	@Value("${STORAGE_HOSTNAME}")
-	public String STORAGE_HOSTNAME;
+	public String storageHostname;
 
 	@Value("${GOOGLE_AUDIENCES}")
-	public String GOOGLE_AUDIENCES;
+	public String googleAudiences;
 
 	@Override
 	public String getIdToken(String tenantName) {
@@ -147,14 +150,14 @@ public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 			}
 
 			this.iam = new Iam.Builder(httpTransport, JSON_FACTORY, new HttpCredentialsAdapter(credential))
-					.setApplicationName(STORAGE_HOSTNAME).build();
+					.setApplicationName(storageHostname).build();
 		}
 
 		return this.iam;
 	}
 
 	private Map<String, Object> getJwtCreationPayload(TenantInfo tenantInfo) {
-		String googleAudience = GOOGLE_AUDIENCES;
+		String googleAudience = googleAudiences;
 		if (googleAudience.contains(",")) {
 			googleAudience = googleAudience.split(",")[0];
 		}
