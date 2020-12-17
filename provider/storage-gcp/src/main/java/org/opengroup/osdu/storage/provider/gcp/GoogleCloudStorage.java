@@ -1,16 +1,19 @@
-// Copyright 2017-2019, Schlumberger
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+  Copyright 2020 Google LLC
+  Copyright 2020 EPAM Systems, Inc
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.gcp;
 
@@ -53,15 +56,17 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64;
 public class GoogleCloudStorage implements ICloudStorage {
 
 	private static final String RECORD_WRITING_ERROR_REASON = "Error on writing record";
+	private static final String RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG = "Record %s does not have versions available";
+	private static final String ERROR_ON_WRITING_THE_RECORD_HAS_OCCURRED_MSG = "An unexpected error on writing the record has occurred";
 
 	@Value("${PUBSUB_SEARCH_TOPIC}")
-	public String PUBSUB_SEARCH_TOPIC;
+	public String pubsubSearchTopic;
 
 	@Value("${GOOGLE_AUDIENCES}")
-	public String GOOGLE_AUDIENCES;
+	public String googleAudiences;
 
 	@Value("${STORAGE_HOSTNAME}")
-	public String STORAGE_HOSTNAME;
+	public String storageHostname;
 
 	@Autowired
 	private DpsHeaders headers;
@@ -83,7 +88,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 	@Override
 	public void write(RecordProcessing... records) {
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -113,7 +118,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 				throw (AppException) e.getCause();
 			} else {
 				throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
-						"An unexpected error on writing the record has occurred", e);
+						ERROR_ON_WRITING_THE_RECORD_HAS_OCCURRED_MSG, e);
 			}
 		}
 	}
@@ -166,14 +171,14 @@ public class GoogleCloudStorage implements ICloudStorage {
 			return true;
 		}
 
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 		for (RecordMetadata record : records) {
 			if (!record.getStatus().equals(RecordState.active)) {
 				continue;
 			}
 
 			if (!record.hasVersion()) {
-				this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+				this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
 				continue;
 			}
 
@@ -225,7 +230,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		try {
 			String path = record.getVersionPath(version);
 
-			byte[] blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).readAllBytes(this.getBucketName(this.tenant), path);
+			byte[] blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).readAllBytes(getBucketName(this.tenant), path);
 			return new String(blob, UTF_8);
 
 		} catch (StorageException e) {
@@ -245,7 +250,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public Map<String, String> read(Map<String, String> objects) {
 
-		String bucketName = this.getBucketName(this.tenant);
+		String bucketName = getBucketName(this.tenant);
 
 		Map<String, String> map = new HashMap<>();
 
@@ -273,7 +278,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public Map<String, String> getHash(Collection<RecordMetadata> records) {
 
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 
 		BlobId[] blobIds = records
 				.stream()
@@ -298,12 +303,12 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public void delete(RecordMetadata record) {
 		if (!record.hasVersion()) {
-			this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+			this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
 			return;
 		}
 
 		boolean mustSubmit = false;
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
 
 		StorageBatch batch = storage.batch();
@@ -336,14 +341,14 @@ public class GoogleCloudStorage implements ICloudStorage {
 	public void deleteVersion(RecordMetadata record, Long version) {
 
 		boolean mustSubmit = false;
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), this.tenant.getServiceAccount(), this.tenant.getProjectId(), this.tenant.getName());
 
 		StorageBatch batch = storage.batch();
 
 		try {
 			if (!record.hasVersion()) {
-				this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+				this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
 			}
 
 			Blob blob = storage.get(BlobId.of(bucket, record.getVersionPath(version)));
