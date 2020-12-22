@@ -186,7 +186,7 @@ export DEPLOY_ENV: "empty"
 ```
 
 __Azure Service Deployment__
-
+0. The Service is utilizing a new infrastructural component - Event Grid. before the deployment of __service version > 6.0.0__, the partition date has to be updated. The data is to be populated by hitting create endpoint as described [here](https://community.opengroup.org/osdu/platform/deployment-and-operations/infra-azure-provisioning/-/blob/master/tools/rest/partition.http#L2) 
 
 1. Deploy the service using the Maven Plugin  _(azure_deploy)_
 

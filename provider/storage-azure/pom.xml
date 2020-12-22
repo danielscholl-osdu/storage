@@ -28,12 +28,13 @@
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
+    <version>6.0.0-SNAPSHOT</version>
     <properties>
         <azure.appservice.resourcegroup></azure.appservice.resourcegroup>
         <azure.appservice.plan></azure.appservice.plan>
         <azure.appservice.appname></azure.appservice.appname>
         <azure.appservice.subscription></azure.appservice.subscription>
-        <osdu.corelibazure.version>0.0.40</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.0.50</osdu.corelibazure.version>
         <osdu.oscorecommon.version>0.3.18</osdu.oscorecommon.version>
         <osdu.storage-core.version>0.0.5-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
@@ -115,6 +116,21 @@
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
             <version>${osdu.storage-core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.powermock</groupId>
+                    <artifactId>powermock-api-mockito</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mockito</groupId>
+                    <artifactId>mockito-all</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-eventgrid</artifactId>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -128,14 +144,15 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${mockito.version}</version>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>2.23.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <version>${powermock.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.6.0</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

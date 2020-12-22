@@ -87,5 +87,4 @@ public class AzureBootstrapConfig {
     public String redisPassword(SecretClient kv) {
         return KeyVaultFacade.getSecretWithValidation(kv, "redis-password");
     }
-
 }
