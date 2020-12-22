@@ -79,7 +79,7 @@ public class GoogleCloudStorageTest {
     @SuppressWarnings("unchecked")
     public void setup() throws Exception {
 
-        when(this.storageFactory.getStorage(any(), eq(SERVICE_ACCOUNT), eq(PROJECT_ID), any(), anyBoolean())).thenReturn(this.storage);
+        when(this.storageFactory.getStorage(any(), eq(SERVICE_ACCOUNT), eq(PROJECT_ID), any(), any())).thenReturn(this.storage);
 
         this.acl = new Acl();
         this.acl.setViewers(new String[]{ACL_VIEWER_1, ACL_VIEWER_2});
