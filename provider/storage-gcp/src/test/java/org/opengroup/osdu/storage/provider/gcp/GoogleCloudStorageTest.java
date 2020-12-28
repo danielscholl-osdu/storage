@@ -19,6 +19,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.gcp.multitenancy.IStorageFactory;
+import org.opengroup.osdu.storage.provider.gcp.config.StorageConfigProperties;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 
 import java.util.*;
@@ -58,6 +59,9 @@ public class GoogleCloudStorageTest {
     private Storage storage;
 
     @Mock
+    private StorageConfigProperties properties;
+
+    @Mock
     private IRecordsMetadataRepository<Cursor> recordRepository;
 
     @Mock
@@ -78,7 +82,7 @@ public class GoogleCloudStorageTest {
     @Before
     @SuppressWarnings("unchecked")
     public void setup() throws Exception {
-
+        when(this.properties.isEnableImpersonalization()).thenReturn(false);
         when(this.storageFactory.getStorage(any(), eq(SERVICE_ACCOUNT), eq(PROJECT_ID), any(), any())).thenReturn(this.storage);
 
         this.acl = new Acl();
