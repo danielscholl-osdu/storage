@@ -19,8 +19,11 @@ import com.amazonaws.services.cognitoidp.AWSCognitoIdentityProviderClientBuilder
 
 public class AWSCognitoBuilder {
     public static AWSCognitoIdentityProvider generateCognitoClient(){
-        return AWSCognitoIdentityProviderClientBuilder.standard()
-                .withCredentials(new EnvironmentVariableCredentialsProvider())
-                .build();
+        AWSCognitoIdentityProviderClientBuilder builder =  AWSCognitoIdentityProviderClientBuilder.standard()
+                .withCredentials(new EnvironmentVariableCredentialsProvider());
+        String region = System.getenv("AWS_COGNITO_REGION");
+        if (region != null)
+            builder.withRegion(region);
+        return builder.build();
     }
 }
