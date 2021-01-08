@@ -137,26 +137,6 @@ public class IngestionServiceImplTest {
     }
 
     @Test
-    public void should_throwAppException400_when_kindDoesNotBelongToTenant() {
-
-        when(this.tenant.getName()).thenReturn("gasguys");
-
-        try {
-            this.sut.createUpdateRecords(false, this.records, USER);
-
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals("Invalid kind", e.getError().getReason());
-            assertEquals(
-                    "The kind 'tenant1:test:kind:1.0.0' does not follow the required naming convention: the first kind component must be 'gasguys'",
-                    e.getError().getMessage());
-        } catch (Exception e) {
-            fail("Should not get different exception");
-        }
-    }
-
-    @Test
     public void should_throwAppException400_when_updatingSameRecordMoreThanOnceInRequest() {
 
         final String NEW_RECORD_ID = "tenant1:record:123";
