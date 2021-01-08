@@ -72,13 +72,13 @@ public class SchemaEndToEndTest {
     }
 
     @Test
-    public void givenDifferentTenant_whenAccessSchema_thenForbidden() throws Exception{
+    public void givenDifferentTenant_whenAccessSchema_thenSuccess() throws Exception{
         RequestBuilder getSchemaRequest = MockMvcRequestBuilders
                 .get(schemaApiEndpoint + kind)
                 .with(viewerUser)
                 .header(DpsHeaders.DATA_PARTITION_ID, tenant2)
                 .accept(MediaType.APPLICATION_JSON);
-        mockMvc.perform(getSchemaRequest).andExpect(status().isForbidden());
+        mockMvc.perform(getSchemaRequest).andExpect(status().isOk());
     }
 
     @Test

@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -235,12 +236,11 @@ public class SchemaServiceImpl implements SchemaService {
 	}
 
 	private void validateKindFromTenant(String kind) {
-		String tenantName = this.tenant.getName();
 
-		if (!KindValidator.isKindFromTenantValid(kind, tenantName)) {
-			String msg = String.format("The kind '%s' does not belong to the account '%s'", kind, tenantName);
+		if (!kind.matches(ValidationDoc.KIND_REGEX)) {
+			String msg = String.format("Invalid kind: '%s', does not follow the required naming convention", kind);
 
-			throw new AppException(HttpStatus.SC_FORBIDDEN, "Invalid kind", msg);
+			throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid kind", msg);
 		}
 	}
 
