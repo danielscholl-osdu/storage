@@ -209,26 +209,6 @@ public class SchemaServiceImplTest {
     }
 
     @Test
-    public void should_returnHttp403_when_creatingSchemaFromDifferentTenant() {
-        Schema schema = new Schema();
-        schema.setKind("another:tenant:schema:1.0.0");
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>()) });
-
-        try {
-            this.sut.createSchema(schema);
-
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
-            assertEquals("Invalid kind", e.getError().getReason());
-            assertEquals("The kind 'another:tenant:schema:1.0.0' does not belong to the account 'TENANT1'",
-                    e.getError().getMessage());
-        } catch (Exception e) {
-            fail("Should not get different exception");
-        }
-    }
-
-    @Test
     public void should_deleteSchema_when_noValidationErrorOccurs() {
         when(this.schemaRepository.get(KIND)).thenReturn(new Schema());
 
