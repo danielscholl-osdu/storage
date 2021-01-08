@@ -40,6 +40,8 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 			+ System.currentTimeMillis();
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:inttest:1.0."
 			+ System.currentTimeMillis();
+	protected static final String KIND_WITH_OTHER_TENANT = "tenant1" + ":ds:inttest:1.0."
+			+ System.currentTimeMillis();
 
 	protected static String LEGAL_TAG = LegalTagUtils.createRandomName();
 
@@ -230,6 +232,23 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	}
 
 	@Test
+	public void should_returnWholeRecord_when_recordIsIngestedWithOtherTenantInKind() throws Exception {
+		final String RECORD_ID = TenantUtils.getTenantName() + ":test:wholerecord-" + System.currentTimeMillis();
+		String body = createJsonBody(RECORD_ID, "Foo", KIND_WITH_OTHER_TENANT);
+		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+		TestUtils.getResult(response, 201, String.class);
+		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		String responseString = TestUtils.getResult(response, 200, String.class);
+		JsonObject responseJson = new JsonParser().parse(responseString).getAsJsonObject();
+		assertEquals(RECORD_ID, responseJson.get("id").getAsString());
+		assertEquals(KIND_WITH_OTHER_TENANT, responseJson.get("kind").getAsString());
+		JsonObject acl = responseJson.get("acl").getAsJsonObject();
+		assertEquals(TestUtils.getAcl(), acl.get("owners").getAsString());
+		assertEquals(TestUtils.getAcl(), acl.get("viewers").getAsString());
+		assertEquals("Foo", responseJson.getAsJsonObject("data").get("name").getAsString());
+	}
+
+	@Test
 	public void should_insertNewRecord_when_skipDupesIsTrue() throws Exception {
 		final String RECORD_ID = TenantUtils.getTenantName() + ":test:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo");
@@ -245,6 +264,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	protected static String createJsonBody(String id, String name) {
 		return "[" + singleEntityBody(id, name, KIND, LEGAL_TAG) + "]";
+	}
+
+	protected static String createJsonBody(String id, String name, String kind) {
+		return "[" + singleEntityBody(id, name, kind, LEGAL_TAG) + "]";
 	}
 
 	public class RecordAncestry {

@@ -63,7 +63,7 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     public void tearDown() throws Exception {
         this.testUtils = null;
     }
-    
+
     //TODO: remove all the overridden tests when Conversion service is deployed to Azure
     @Override
     @Test
