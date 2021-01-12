@@ -90,6 +90,11 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Autowired
 	private JaxRsDpsLog log;
 
+	@Autowired
+	public void setProperties(StorageConfigProperties properties){
+		this.properties = properties;
+	}
+
 	@Override
 	public void write(RecordProcessing... records) {
 		String bucket = getBucketName(this.tenant);
