@@ -31,6 +31,7 @@ import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.gcp.multitenancy.IStorageFactory;
 import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.storage.provider.gcp.config.StorageConfigProperties;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
@@ -69,6 +70,9 @@ public class GoogleCloudStorage implements ICloudStorage {
 	public String storageHostname;
 
 	@Autowired
+	private StorageConfigProperties properties;
+
+	@Autowired
 	private DpsHeaders headers;
 
 	@Autowired
@@ -85,6 +89,11 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 	@Autowired
 	private JaxRsDpsLog log;
+
+	@Autowired
+	public void setProperties(StorageConfigProperties properties){
+		this.properties = properties;
+	}
 
 	@Override
 	public void write(RecordProcessing... records) {
@@ -126,7 +135,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
 		String bucket = getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 		Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
 		Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
 
@@ -155,7 +164,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
 		String bucket = getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 
 		for (RecordMetadata recordMetadata : recordsMetadata) {
 			Blob blob = storage.get(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
@@ -184,7 +193,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 			try {
 				String path = record.getVersionPath(record.getLatestVersion());
-				Blob blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).get(bucket, path);
+				Blob blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()).get(bucket, path);
 				if (blob == null) {
 					throw new StorageException(HttpStatus.SC_NOT_FOUND, String.format("'%s' not found", path));
 				}
@@ -193,7 +202,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 				// inconsistency then cleanup and check the access again
 				// This makes all the APIs robust to inconsistent data, but will add some
 				// latency
-				if (!this.hasAccessRobustToDataCorruption(bucket, record, this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()))) {
+				if (!this.hasAccessRobustToDataCorruption(bucket, record, this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()))) {
 					return false;
 				}
 			}
@@ -210,7 +219,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		// get meaning data has been corrupted
 		// (This is ok for DR, because DR service only revoke the data store written
 		// permission from datafier)
-		Storage storageClientDatafierCredential = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storageClientDatafierCredential = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 		if (storageClientDatafierCredential
 				.get(BlobId.of(bucket, record.getVersionPath(record.getLatestVersion()))) != null) {
 			return false;
@@ -230,7 +239,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		try {
 			String path = record.getVersionPath(version);
 
-			byte[] blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).readAllBytes(getBucketName(this.tenant), path);
+			byte[] blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()).readAllBytes(getBucketName(this.tenant), path);
 			return new String(blob, UTF_8);
 
 		} catch (StorageException e) {
@@ -285,7 +294,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 				.map(rm -> BlobId.of(bucket, rm.getVersionPath(rm.getLatestVersion())))
 				.toArray(BlobId[]::new);
 
-		List<Blob> blobs = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).get(blobIds);
+		List<Blob> blobs = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()).get(blobIds);
 
 		Map<String, String> hashes = new HashMap<>();
 
@@ -309,7 +318,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 		boolean mustSubmit = false;
 		String bucket = getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 
 		StorageBatch batch = storage.batch();
 
@@ -342,7 +351,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 		boolean mustSubmit = false;
 		String bucket = getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), this.tenant.getServiceAccount(), this.tenant.getProjectId(), this.tenant.getName());
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), this.tenant.getServiceAccount(), this.tenant.getProjectId(), this.tenant.getName(), properties.isEnableImpersonalization());
 
 		StorageBatch batch = storage.batch();
 
@@ -408,7 +417,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 		try {
 			String content = mapper.writeValueAsString(processing.getRecordData());
-			this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName).create(blobInfo, content.getBytes(UTF_8));
+			this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName, properties.isEnableImpersonalization()).create(blobInfo, content.getBytes(UTF_8));
 		} catch (StorageException e) {
 			if (e.getCode() == HttpStatus.SC_BAD_REQUEST) {
 				throw new AppException(HttpStatus.SC_BAD_REQUEST, RECORD_WRITING_ERROR_REASON, e.getMessage(), e);
@@ -434,7 +443,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		String key = tokens[tokens.length - 2];
 
 		try {
-			String value = new String(this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName).readAllBytes(bucket, object), UTF_8);
+			String value = new String(this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName, properties.isEnableImpersonalization()).readAllBytes(bucket, object), UTF_8);
 			map.put(key, value);
 		} catch (StorageException e) {
 			map.put(key, null);
