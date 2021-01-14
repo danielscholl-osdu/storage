@@ -792,12 +792,13 @@ definitions:
         description: "Unique identifier in whole Data Lake. When not provided, Data\
           \ Lake will create and assign an id to the record. Must follow the naming\
           \ convention: {OSDU-Account-Id}:{object-type}:{uuid}."
-        pattern: "[\\w-\\.]+:[\\w-\\.]+:[\\w-\\.]+"
+        pattern: "^[\\w\\-\\.]+:[\\w-\\.\\/]+:.+$"
       kind:
         type: "string"
         example: "tenant1:public:well:1.0.2"
         description: "Kind of data it is being ingested. Must follow the naming convention:\
           \ {OSDU-Account-Id}:{dataset-name}:{record-type}:{version}."
+        pattern: "^[\\w\\-\\.]+:[\\w\\-\\.]+:[\\w\\-\\.\\/]+:[0-9]+.[0-9]+.[0-9]+$"
       acl:
         description: "Group of users who have access to the record."
         $ref: "#/definitions/StorageAcl"
