@@ -23,9 +23,9 @@ import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.storage.validation.KindValidator;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
@@ -99,13 +99,11 @@ public class IngestionServiceImpl implements IngestionService {
 	}
 
 	private void validateKindFormat(List<Record> inputRecords) {
-		String tenantName = tenant.getName();
-
 		for (Record record : inputRecords) {
-			if (!KindValidator.isKindFromTenantValid(record.getKind(), tenantName)) {
+			if (!record.getKind().matches(ValidationDoc.KIND_REGEX)) {
 				String msg = String.format(
-						"The kind '%s' does not follow the required naming convention: the first kind component must be '%s'",
-						record.getKind(), tenantName);
+						"Invalid kind: '%s', does not follow the required naming convention",
+						record.getKind());
 
 				throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid kind", msg);
 			}

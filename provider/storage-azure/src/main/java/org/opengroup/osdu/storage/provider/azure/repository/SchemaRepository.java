@@ -14,8 +14,6 @@
 
 package org.opengroup.osdu.storage.provider.azure.repository;
 
-import com.azure.cosmos.FeedOptions;
-import com.azure.cosmos.SqlQuerySpec;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Schema;
@@ -24,17 +22,12 @@ import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
-
-import java.util.List;
-
 
 @Repository
 public class SchemaRepository extends SimpleCosmosStoreRepository<SchemaDoc> implements ISchemaRepository {
@@ -75,7 +68,7 @@ public class SchemaRepository extends SimpleCosmosStoreRepository<SchemaDoc> imp
         sd.setExtension(schema.getExt());
         sd.setUser(user);
         sd.setSchemaItems(schema.getSchema());
-        this.upsertItem(headers.getPartitionId(), cosmosDBName, schemaCollection, sd);
+        this.upsertItem(headers.getPartitionId(), cosmosDBName, schemaCollection, sd.getId(), sd);
     }
 
     @Override

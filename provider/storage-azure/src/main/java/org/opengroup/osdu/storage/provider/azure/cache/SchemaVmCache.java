@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright © Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.gcp;
+package org.opengroup.osdu.storage.provider.azure.cache;
 
-import org.opengroup.osdu.storage.provider.interfaces.ISomeBasicInterface;
+import org.opengroup.osdu.core.common.model.storage.Schema;
+import org.opengroup.osdu.core.common.cache.VmCache;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SomeBasicInterfaceImpl implements ISomeBasicInterface {
-    @Override
-    public String hello() {
-        return "eeeee";
+@ConditionalOnProperty(value = "runtime.env.local", havingValue = "true")
+public class SchemaVmCache extends VmCache<String, Schema> {
+    public SchemaVmCache() {
+        super(5 * 60, 1000);
     }
-
-    private String thisIsGcpSubmodule = "gcp";
 }

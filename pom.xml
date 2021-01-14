@@ -29,12 +29,13 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<docker.image.prefix>opendes</docker.image.prefix>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<os-core-common.version>0.3.9</os-core-common.version>
+		<os-core-common.version>0.3.23</os-core-common.version>
 		<jackson.version>2.11.2</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
 		<snakeyaml.version>1.26</snakeyaml.version>
 		<commons-codec.version>1.14</commons-codec.version>
 		<nimbusds.version>7.9</nimbusds.version>
+		<woodstox-core.version>6.2.3</woodstox-core.version>
 	</properties>
 
 	<licenses>
@@ -59,7 +60,7 @@
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
-				<version>2.1.16.RELEASE</version>
+				<version>2.1.18.RELEASE</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -93,6 +94,11 @@
 				<artifactId>os-core-common</artifactId>
 				<version>${os-core-common.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.woodstox</groupId>
+				<artifactId>woodstox-core</artifactId>
+				<version>${woodstox-core.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -105,13 +111,6 @@
 		</dependency>
 	</dependencies>
 
-  <repositories>
-    <repository>
-      <id>${gitlab-server}</id>
-      <url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</url>
-    </repository>
-  </repositories>
-
   <modules>
 		<module>storage-core</module>
 		<module>provider/storage-gcp</module>
@@ -122,15 +121,42 @@
 	    <module>provider/storage-reference</module>
 	</modules>
 
-  <distributionManagement>
-    <repository>
-      <id>${gitlab-server}</id>
-      <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-    </repository>
-    <snapshotRepository>
-      <id>${gitlab-server}</id>
-      <url>https://community.opengroup.org/api/v4/projects/44/packages/maven</url>
-    </snapshotRepository>
-  </distributionManagement>
+	<repositories>
+		<repository>
+			<id>${repo.releases.id}</id>
+			<url>${repo.releases.url}</url>
+		</repository>
+	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>${publish.releases.id}</id>
+			<url>${publish.releases.url}</url>
+		</repository>
+		<snapshotRepository>
+			<id>${publish.snapshots.id}</id>
+			<url>${publish.snapshots.url}</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<profiles>
+		<profile>
+			<id>Default</id>
+			<activation>
+				<property>
+					<name>!repo.releases.id</name>
+				</property>
+			</activation>
+			<properties>
+				<repo.releases.id>community-maven-repo</repo.releases.id>
+				<publish.snapshots.id>community-maven-via-job-token</publish.snapshots.id>
+				<publish.releases.id>community-maven-via-job-token</publish.releases.id>
+				<repo.releases.url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</repo.releases.url>
+				<publish.snapshots.url>https://community.opengroup.org/api/v4/projects/44/packages/maven</publish.snapshots.url>
+				<publish.releases.url>https://community.opengroup.org/api/v4/projects/44/packages/maven</publish.releases.url>
+			</properties>
+		</profile>
+	</profiles>
+
 
 </project>

@@ -1,16 +1,19 @@
-// Copyright 2017-2019, Schlumberger
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+  Copyright 2020 Google LLC
+  Copyright 2020 EPAM Systems, Inc
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.gcp;
 
@@ -21,12 +24,14 @@ import com.google.cloud.storage.*;
 import com.google.cloud.storage.Acl.Group;
 import com.google.cloud.storage.Acl.Role;
 import com.google.cloud.storage.Acl.User;
+import com.google.cloud.storage.StorageException;
 import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.gcp.multitenancy.IStorageFactory;
 import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.storage.provider.gcp.config.StorageConfigProperties;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
@@ -52,15 +57,20 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64;
 public class GoogleCloudStorage implements ICloudStorage {
 
 	private static final String RECORD_WRITING_ERROR_REASON = "Error on writing record";
+	private static final String RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG = "Record %s does not have versions available";
+	private static final String ERROR_ON_WRITING_THE_RECORD_HAS_OCCURRED_MSG = "An unexpected error on writing the record has occurred";
 
 	@Value("${PUBSUB_SEARCH_TOPIC}")
-	public String PUBSUB_SEARCH_TOPIC;
+	public String pubsubSearchTopic;
 
 	@Value("${GOOGLE_AUDIENCES}")
-	public String GOOGLE_AUDIENCES;
+	public String googleAudiences;
 
 	@Value("${STORAGE_HOSTNAME}")
-	public String STORAGE_HOSTNAME;
+	public String storageHostname;
+
+	@Autowired
+	private StorageConfigProperties properties;
 
 	@Autowired
 	private DpsHeaders headers;
@@ -80,9 +90,14 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Autowired
 	private JaxRsDpsLog log;
 
+	@Autowired
+	public void setProperties(StorageConfigProperties properties){
+		this.properties = properties;
+	}
+
 	@Override
 	public void write(RecordProcessing... records) {
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -112,7 +127,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 				throw (AppException) e.getCause();
 			} else {
 				throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
-						"An unexpected error on writing the record has occurred", e);
+						ERROR_ON_WRITING_THE_RECORD_HAS_OCCURRED_MSG, e);
 			}
 		}
 	}
@@ -120,7 +135,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
 		String bucket = getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 		Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
 		Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
 
@@ -149,7 +164,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
 		String bucket = getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 
 		for (RecordMetadata recordMetadata : recordsMetadata) {
 			Blob blob = storage.get(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
@@ -165,20 +180,20 @@ public class GoogleCloudStorage implements ICloudStorage {
 			return true;
 		}
 
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 		for (RecordMetadata record : records) {
 			if (!record.getStatus().equals(RecordState.active)) {
 				continue;
 			}
 
 			if (!record.hasVersion()) {
-				this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+				this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
 				continue;
 			}
 
 			try {
 				String path = record.getVersionPath(record.getLatestVersion());
-				Blob blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).get(bucket, path);
+				Blob blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()).get(bucket, path);
 				if (blob == null) {
 					throw new StorageException(HttpStatus.SC_NOT_FOUND, String.format("'%s' not found", path));
 				}
@@ -187,7 +202,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 				// inconsistency then cleanup and check the access again
 				// This makes all the APIs robust to inconsistent data, but will add some
 				// latency
-				if (!this.hasAccessRobustToDataCorruption(bucket, record, this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()))) {
+				if (!this.hasAccessRobustToDataCorruption(bucket, record, this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()))) {
 					return false;
 				}
 			}
@@ -204,7 +219,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		// get meaning data has been corrupted
 		// (This is ok for DR, because DR service only revoke the data store written
 		// permission from datafier)
-		Storage storageClientDatafierCredential = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		Storage storageClientDatafierCredential = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 		if (storageClientDatafierCredential
 				.get(BlobId.of(bucket, record.getVersionPath(record.getLatestVersion()))) != null) {
 			return false;
@@ -224,7 +239,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		try {
 			String path = record.getVersionPath(version);
 
-			byte[] blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).readAllBytes(this.getBucketName(this.tenant), path);
+			byte[] blob = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()).readAllBytes(getBucketName(this.tenant), path);
 			return new String(blob, UTF_8);
 
 		} catch (StorageException e) {
@@ -244,7 +259,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public Map<String, String> read(Map<String, String> objects) {
 
-		String bucketName = this.getBucketName(this.tenant);
+		String bucketName = getBucketName(this.tenant);
 
 		Map<String, String> map = new HashMap<>();
 
@@ -272,14 +287,14 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public Map<String, String> getHash(Collection<RecordMetadata> records) {
 
-		String bucket = this.getBucketName(this.tenant);
+		String bucket = getBucketName(this.tenant);
 
 		BlobId[] blobIds = records
 				.stream()
 				.map(rm -> BlobId.of(bucket, rm.getVersionPath(rm.getLatestVersion())))
 				.toArray(BlobId[]::new);
 
-		List<Blob> blobs = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName()).get(blobIds);
+		List<Blob> blobs = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()).get(blobIds);
 
 		Map<String, String> hashes = new HashMap<>();
 
@@ -297,13 +312,13 @@ public class GoogleCloudStorage implements ICloudStorage {
 	@Override
 	public void delete(RecordMetadata record) {
 		if (!record.hasVersion()) {
-			this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+			this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
 			return;
 		}
 
 		boolean mustSubmit = false;
-		String bucket = this.getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName());
+		String bucket = getBucketName(this.tenant);
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 
 		StorageBatch batch = storage.batch();
 
@@ -335,14 +350,14 @@ public class GoogleCloudStorage implements ICloudStorage {
 	public void deleteVersion(RecordMetadata record, Long version) {
 
 		boolean mustSubmit = false;
-		String bucket = this.getBucketName(this.tenant);
-		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), this.tenant.getServiceAccount(), this.tenant.getProjectId(), this.tenant.getName());
+		String bucket = getBucketName(this.tenant);
+		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), this.tenant.getServiceAccount(), this.tenant.getProjectId(), this.tenant.getName(), properties.isEnableImpersonalization());
 
 		StorageBatch batch = storage.batch();
 
 		try {
 			if (!record.hasVersion()) {
-				this.log.warning(String.format("Record %s does not have versions available", record.getId()));
+				this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
 			}
 
 			Blob blob = storage.get(BlobId.of(bucket, record.getVersionPath(version)));
@@ -402,7 +417,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 
 		try {
 			String content = mapper.writeValueAsString(processing.getRecordData());
-			this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName).create(blobInfo, content.getBytes(UTF_8));
+			this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName, properties.isEnableImpersonalization()).create(blobInfo, content.getBytes(UTF_8));
 		} catch (StorageException e) {
 			if (e.getCode() == HttpStatus.SC_BAD_REQUEST) {
 				throw new AppException(HttpStatus.SC_BAD_REQUEST, RECORD_WRITING_ERROR_REASON, e.getMessage(), e);
@@ -428,7 +443,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 		String key = tokens[tokens.length - 2];
 
 		try {
-			String value = new String(this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName).readAllBytes(bucket, object), UTF_8);
+			String value = new String(this.storageFactory.getStorage(userId, serviceAccount, projectId, tenantName, properties.isEnableImpersonalization()).readAllBytes(bucket, object), UTF_8);
 			map.put(key, value);
 		} catch (StorageException e) {
 			map.put(key, null);

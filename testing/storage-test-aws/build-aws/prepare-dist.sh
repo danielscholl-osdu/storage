@@ -38,11 +38,13 @@ echo $INTEGRATION_TEST_OUTPUT_BIN_DIR
 rm -rf "$INTEGRATION_TEST_OUTPUT_DIR"
 mkdir -p "$INTEGRATION_TEST_OUTPUT_DIR" && mkdir -p "$INTEGRATION_TEST_OUTPUT_BIN_DIR"
 echo "Building integration testing assemblies and gathering artifacts..."
-mvn install -f "$INTEGRATION_TEST_SOURCE_DIR_CORE"/pom.xml
-mvn install dependency:copy-dependencies -DskipTests -f "$INTEGRATION_TEST_SOURCE_DIR_AWS"/pom.xml -DincludeGroupIds=org.opengroup.osdu -Dmdep.copyPom
+mvn -ntp install -f "$INTEGRATION_TEST_SOURCE_DIR_CORE"/pom.xml
+mvn -ntp install dependency:copy-dependencies -DskipTests -f "$INTEGRATION_TEST_SOURCE_DIR_AWS"/pom.xml -DincludeGroupIds=org.opengroup.osdu -Dmdep.copyPom
 cp "$INTEGRATION_TEST_SOURCE_DIR_AWS"/target/dependency/* "${INTEGRATION_TEST_OUTPUT_BIN_DIR}"
-(cd "${INTEGRATION_TEST_OUTPUT_BIN_DIR}" && ls *.jar | sed -e 's/\.jar$//' | xargs -I {} echo mvn install:install-file -Dfile={}.jar -DpomFile={}.pom >> install-deps.sh)
+(cd "${INTEGRATION_TEST_OUTPUT_BIN_DIR}" && ls *.jar | sed -e 's/\.jar$//' | xargs -I {} echo mvn -ntp install:install-file -Dfile={}.jar -DpomFile={}.pom >> install-deps.sh)
 chmod +x "${INTEGRATION_TEST_OUTPUT_BIN_DIR}"/install-deps.sh
 mvn clean -f "$INTEGRATION_TEST_SOURCE_DIR_AWS"/pom.xml
 cp -R "$INTEGRATION_TEST_SOURCE_DIR_AWS"/* "${INTEGRATION_TEST_OUTPUT_DIR}"/
 
+#copy testing parent pom to output
+cp "$INTEGRATION_TEST_SOURCE_DIR/pom.xml" "${OUTPUT_DIR}/testing"

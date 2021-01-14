@@ -23,6 +23,7 @@ import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.azure.blobstorage.IBlobContainerClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
@@ -44,6 +45,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import org.slf4j.MDC;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -92,11 +95,53 @@ public class CloudStorageImpl implements ICloudStorage {
             for (Future<Boolean> result : this.threadPool.invokeAll(tasks)) {
                 result.get();
             }
+            MDC.put("record-count",String.valueOf(tasks.size()));
         } catch (InterruptedException | ExecutionException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
                     "An unexpected error on writing the record has occurred", e);
         }
     }
+
+    @Override
+    public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+
+        Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
+        Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
+
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            String id = recordMetadata.getId();
+            String idWithVersion = recordsIdMap.get(id);
+            // validate that updated metadata has the same version
+            if (!id.equalsIgnoreCase(idWithVersion)) {
+                long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
+                long currentVersion = currentRecords.get(id).getLatestVersion();
+                // if version is different, do not update
+                if (previousVersion != currentVersion) {
+                    lockedRecords.add(idWithVersion);
+                    continue;
+                }
+            }
+            validMetadata.add(recordMetadata);
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
+        }
+        return originalAcls;
+    }
+
+    @Override
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
+        List<RecordMetadata> originalAclRecords = new ArrayList<>();
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            Acl acl = originalAcls.get(recordMetadata.getId());
+            recordMetadata.setAcl(acl);
+            originalAclRecords.add(recordMetadata);
+        }
+        try {
+            this.recordRepository.createOrUpdate(originalAclRecords);
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
+        }
+    }
+
 
     /**
      * Ensures that the ACLs of the record are a subset of the ACLs
