@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.reference.util;
+package org.opengroup.osdu.storage.provider.reference.config;
 
-import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.annotation.RequestScope;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Component
-@RequestScope
-public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
+@Configuration
+@ConfigurationProperties
+@Getter
+@Setter
+public class RedisConfigProperties {
 
-  @Override
-  public String getIdToken(String tenantName) {
-    return "dont-have-one";
-  }
+  private String gcpRedisPort;
+  private String gcpRedisHost;
+  private String gcpRedisExpTime;
 }

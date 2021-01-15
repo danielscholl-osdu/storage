@@ -1,3 +1,20 @@
+/*
+ * Copyright 2021 Google LLC
+ * Copyright 2021 EPAM Systems, Inc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opengroup.osdu.storage.provider.reference.repository;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -27,15 +44,18 @@ import org.springframework.stereotype.Repository;
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
 
   public static final String STORAGE_RECORD = "StorageRecord";
+  private final MongoDdmsClient mongoDdmsClient;
 
   @Autowired
-  private MongoDdmsClient mongoDdmsClient;
+  public RecordsMetadataRepositoryImpl(MongoDdmsClient mongoDdmsClient) {
+    this.mongoDdmsClient = mongoDdmsClient;
+  }
 
   @Override
   public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
     MongoCollection<Document> mongoCollection = mongoDdmsClient
         .getMongoCollection(SCHEMA_DATABASE, STORAGE_RECORD);
-    if (recordsMetadata != null) {
+    if (Objects.nonNull(recordsMetadata)) {
       for (RecordMetadata recordMetadata : recordsMetadata) {
         RecordMetadataDocument recordMetadataDocument = convertToRecordMetadataDocument(
             recordMetadata);
@@ -109,7 +129,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
   }
 
   @Override
-  public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+  public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName,
+      LegalCompliance status, int limit) {
     return null;
   }
 

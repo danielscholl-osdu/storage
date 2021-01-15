@@ -1,45 +1,61 @@
+/*
+ * Copyright 2021 Google LLC
+ * Copyright 2021 EPAM Systems, Inc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opengroup.osdu.storage.provider.reference.factory;
 
 import io.minio.MinioClient;
 import javax.annotation.PostConstruct;
+import org.opengroup.osdu.storage.provider.reference.config.MinIoConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Component
 @Lazy
 public class CloudObjectStorageFactory {
-  private static final Logger logger = LoggerFactory.getLogger(CloudObjectStorageFactory.class);
 
-  @Value("${minio.endpoint.url}")
-  private String endpointURL;
-  @Value("${minio.access.key}")
-  private String accessKey;
-  @Value("${minio.secret.key}")
-  private String secretKey;
-  @Value("${minio.region:us-east-1}")
-  private String region;
-  @Value("${minio.prefix:local-dev}")
-  private String bucketNamePrefix;
+  private static final Logger LOGGER = LoggerFactory.getLogger(CloudObjectStorageFactory.class);
+  private final MinIoConfigProperties minIoConfigProperties;
 
   private MinioClient minioClient;
 
-  private String bucketName;
-
-  public CloudObjectStorageFactory() { }
+  @Autowired
+  public CloudObjectStorageFactory(MinIoConfigProperties minIoConfigProperties) {
+    this.minIoConfigProperties = minIoConfigProperties;
+  }
 
   @PostConstruct
   public void init() {
     minioClient = MinioClient.builder()
-        .endpoint(endpointURL)
-        .credentials(accessKey, secretKey)
-        .region(region).build();
-    logger.info("Minio client initialized");
+        .endpoint(minIoConfigProperties.getMinIoEndpointUrl())
+        .credentials(minIoConfigProperties.getMinIoAccessKey(),
+            minIoConfigProperties.getMinIoSecretKey())
+        .region(minIoConfigProperties.getMinIoRegion())
+        .build();
+    LOGGER.info("Minio client initialized");
   }
 
   public MinioClient getClient() {
     return this.minioClient;
+  }
+
+  public void setMinioClient(MinioClient minioClient) {
+    this.minioClient = minioClient;
   }
 }
