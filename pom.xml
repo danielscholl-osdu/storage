@@ -118,6 +118,7 @@
 		<module>provider/storage-azure</module>
 		<module>provider/storage-aws</module>
 		<module>provider/storage-ibm</module>
+	    <module>provider/storage-reference</module>
 	</modules>
 
 	<repositories>
