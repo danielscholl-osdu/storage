@@ -107,25 +107,27 @@ public class MessageBusImplTest {
         sut.publishMessage(this.dpsHeaders, pubSubInfo);
 
         // Asset
-        verify(this.eventGridTopicStore, times(1)).publishToEventGridTopic(any(), any(), anyList());
+        verify(this.eventGridTopicStore, times(3)).publishToEventGridTopic(any(), any(), anyList());
 
         // The number of events that are being published is verified here.
-        assertEquals(3, listEventGridEventArgumentCaptor.getValue().size());
+        assertEquals(1, listEventGridEventArgumentCaptor.getValue().size());
         assertEquals(topicNameArgumentCaptor.getValue(), TopicName.RECORDS_CHANGED);
         assertEquals(partitionNameCaptor.getValue(), PARTITION_ID);
 
         // Validate all records are preserved.
-        List<String> observedIds = getListOfId(listEventGridEventArgumentCaptor.getValue());
+        List<String> observedIds = getListOfId(listEventGridEventArgumentCaptor.getAllValues());
         assertTrue(observedIds.containsAll(Arrays.asList(ids)) && Arrays.asList(ids).containsAll(observedIds));
     }
 
-    private List<String> getListOfId(List<EventGridEvent> value) {
+    private List<String> getListOfId(List<List<EventGridEvent>> value) {
         List<String> ids = new ArrayList<>();
-        for (EventGridEvent event: value) {
-            HashMap<String, Object > map = (HashMap<String, Object>) event.data();
-            PubSubInfo[] pubSubInfos = (PubSubInfo[]) map.get("data");
-            for (PubSubInfo p: pubSubInfos) {
-                ids.add(p.getId());
+        for (List<EventGridEvent> list: value) {
+            for (EventGridEvent event : list) {
+                HashMap<String, Object> map = (HashMap<String, Object>) event.data();
+                PubSubInfo[] pubSubInfos = (PubSubInfo[]) map.get("data");
+                for (PubSubInfo p : pubSubInfos) {
+                    ids.add(p.getId());
+                }
             }
         }
         return ids;
