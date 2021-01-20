@@ -59,6 +59,11 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 | `AZURE_TENANT_ID` | `********` | AD tenant to authenticate users from | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-tenant-id` |
 | `AZURE_CLIENT_SECRET` | `********` | Secret for `$AZURE_CLIENT_ID` | yes | keyvault secret: `$KEYVAULT_URI/secrets/app-dev-sp-password` |
 | `azure_istioauth_enabled` | `true` | Flag to Disable AAD auth | no | -- |
+| `MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD` | `50` | Minimum batch size to upload the records in bulk | no | Recommended to set to 50, but can be changed for specific use cases. NOTE: If not set, this will default to 50.|
+| `BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE` | `20` | Bulk uploader concurrency for each Cosmos data partition range | no | Recommended to set to 20, but can be changed for specific use cases. NOTE: If not set, this will default to 20.|
+| `BULK_EXECUTOR_MAX_RUS` | `4000` | Maximum RU Consumption for bulk uploads in each storage service pod. NOTE: This is an attempted maximum and it may exceed this number. | no | Recommended to set to 4000, but can be changed for specific use cases. NOTE: If not set, this will default to 4000.|
+| `DOCUMENT_CLIENT_MAX_POOL_SIZE` | See description | Connection pool size for bulk upload http client. Recommended to not set and allow for default value which is calculated based on the number of available processors. | no | Recommended to not set manually, but can be changed for specific use cases. NOTE: If not set, this will default to 100 * number of available processors.|
+
 
 **Required to run integration tests**
 

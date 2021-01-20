@@ -18,6 +18,7 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
+import com.microsoft.azure.documentdb.bulkexecutor.BulkImportResponse;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -59,6 +60,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Autowired
     private JaxRsDpsLog logger;
 
+    @Autowired
+    private int minBatchSizeToUseBulkUpload;
+
     public RecordMetadataRepository() {
         super(RecordMetadataDoc.class);
     }
@@ -66,15 +70,39 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
         Assert.notNull(recordsMetadata, "recordsMetadata must not be null");
-        if (recordsMetadata != null) {
-            for (RecordMetadata recordMetadata : recordsMetadata) {
-                RecordMetadataDoc doc = new RecordMetadataDoc();
-                doc.setId(recordMetadata.getId());
-                doc.setMetadata(recordMetadata);
-                this.save(doc);
-            }
-        }
+
+        if(recordsMetadata.size() >= minBatchSizeToUseBulkUpload) createOrUpdateParallel(recordsMetadata);
+        else createOrUpdateSerial(recordsMetadata);
+
         return recordsMetadata;
+    }
+
+    /**
+     * Implementation of createOrUpdate that writes the records in serial one at a time to Cosmos.
+     * @param recordsMetadata records to write to cosmos.
+     */
+    private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata){
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            RecordMetadataDoc doc = new RecordMetadataDoc();
+            doc.setId(recordMetadata.getId());
+            doc.setMetadata(recordMetadata);
+            this.save(doc);
+        }
+    }
+
+    /**
+     * Implementation of createOrUpdate that uses DocumentBulkExecutor to upload all records in parallel to Cosmos.
+     * @param recordsMetadata records to write to cosmos.
+     */
+    private void createOrUpdateParallel(List<RecordMetadata> recordsMetadata){
+        Collection<RecordMetadataDoc> docs = new ArrayList<>();
+        for (RecordMetadata recordMetadata : recordsMetadata){
+            RecordMetadataDoc doc = new RecordMetadataDoc();
+            doc.setId(recordMetadata.getId());
+            doc.setMetadata(recordMetadata);
+            docs.add(doc);
+        }
+        BulkImportResponse response = this.bulkInsert(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docs);
     }
 
     @Override
@@ -125,15 +153,18 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public Map<String, RecordMetadata> get(List<String> ids) {
-        Map<String, RecordMetadata> output = new HashMap<>();
-        for (String id : ids) {
-            RecordMetadataDoc doc = this.getOne(id);
-            if (doc == null) continue;
-            RecordMetadata rmd = doc.getMetadata();
-            if (rmd == null) continue;
-            output.put(id, rmd);
+        String sqlQueryString = createCosmosBatchGetQueryById(ids);
+        SqlQuerySpec query = new SqlQuerySpec(sqlQueryString);
+        CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
+
+        List<RecordMetadataDoc> queryResults = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
+
+        Map<String, RecordMetadata> results = new HashMap<>();
+        for(RecordMetadataDoc doc : queryResults){
+            if (doc.getMetadata() == null) continue;
+            results.put(doc.getId(), doc.getMetadata());
         }
-        return output;
+        return results;
     }
 
     private AppException getInvalidCursorException() {
@@ -177,5 +208,23 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Override
     public void delete(String id) {
         this.deleteById(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id);
+    }
+
+    /**
+     * Method to generate query string for searching Cosmos for a list of Ids.
+     * @param ids Ids to generate query for.
+     * @return String representing Cosmos query searching for all of the ids.
+     */
+    private String createCosmosBatchGetQueryById(List<String> ids){
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT * FROM c WHERE c.id IN (");
+        for(String id : ids){
+            sb.append("\"" + id + "\",");
+        }
+
+        // remove trailing comma, add closing parenthesis
+        sb.deleteCharAt(sb.lastIndexOf(","));
+        sb.append(")");
+        return sb.toString();
     }
 }
