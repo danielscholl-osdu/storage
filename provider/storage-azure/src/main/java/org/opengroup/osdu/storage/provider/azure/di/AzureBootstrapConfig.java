@@ -87,4 +87,22 @@ public class AzureBootstrapConfig {
     public String redisPassword(SecretClient kv) {
         return KeyVaultFacade.getSecretWithValidation(kv, "redis-password");
     }
+
+    /**
+     * @return How large the batch size has to be for the bulk executor to be used instead of uploading record in serial.
+     */
+    @Bean
+    public int minBatchSizeToUseBulkUpload() {
+        if(System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD") == null) return 50;
+        else return Integer.parseInt(System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD"));
+    }
+
+    /**
+     * @return The maximum degree of concurrency per partition key range. The default value in the SDK is 20.
+     */
+    @Bean
+    public int bulkImportMaxConcurrencyPePartitionRange(){
+        if(System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE") == null) return 20;
+        else return Integer.parseInt(System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE"));
+    }
 }
