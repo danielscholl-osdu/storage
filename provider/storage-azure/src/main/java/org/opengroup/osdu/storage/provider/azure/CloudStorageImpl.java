@@ -77,7 +77,6 @@ public class CloudStorageImpl implements ICloudStorage {
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
 
-
     @Override
     public void write(RecordProcessing... recordsProcessing) {
         validateRecordAcls(recordsProcessing);
