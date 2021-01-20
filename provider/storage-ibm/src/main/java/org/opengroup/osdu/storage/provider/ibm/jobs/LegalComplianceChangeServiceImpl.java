@@ -1,3 +1,6 @@
+/* Licensed Materials - Property of IBM              */
+/* (c) Copyright IBM Corp. 2020. All Rights Reserved.*/
+
 package org.opengroup.osdu.storage.provider.ibm.jobs;
 
 import static java.util.Collections.singletonList;
