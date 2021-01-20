@@ -17,8 +17,11 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
+import com.microsoft.azure.documentdb.bulkexecutor.BulkImportResponse;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStore;
+import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.azure.generator.FindQuerySpecGenerator;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.opengroup.osdu.storage.provider.azure.repository.interfaces.CosmosStoreRepository;
@@ -30,6 +33,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +49,12 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
 
     @Autowired
     private CosmosStore operation;
+
+    @Autowired
+    private CosmosStoreBulkOperations cosmosBulkStore;
+
+    @Autowired
+    private int bulkImportMaxConcurrencyPePartitionRange;
 
     public SimpleCosmosStoreRepository(Class<T> domainClass) {
         this.domainClass = domainClass;
@@ -274,5 +285,21 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         }
         int pageSize = pageable.getPageSize();
         return this.queryItemsPage(dataPartitionId, cosmosDBName, collectionName, query, domainClass, pageSize, continuationToken);
+    }
+
+    protected BulkImportResponse bulkInsert(String dataPartitionId, String cosmosDBName, String collectionName, Collection<T> docs){
+        Assert.notNull(docs, "docs should not be null");
+        Assert.notNull(dataPartitionId, "dataPartitionId should not be null");
+        Assert.notNull(cosmosDBName, "cosmosDBName should not be null");
+        Assert.notNull(collectionName, "collectionName should not be null");
+        BulkImportResponse response = cosmosBulkStore.bulkInsert(dataPartitionId, cosmosDBName, collectionName, docs, true, true, bulkImportMaxConcurrencyPePartitionRange);
+        if(!response.getErrors().isEmpty()){
+            List<String> exceptions = new ArrayList<>();
+            for(Exception e : response.getErrors()){
+                exceptions.add(e.toString());
+            }
+            throw new AppException(500, "Record creation has failed!", "Failed to import all documents to CosmosDB using bulk executor!", exceptions.toArray(new String[exceptions.size()]));
+        }
+        return response;
     }
 }
