@@ -14,8 +14,6 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
@@ -35,9 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.inject.Named;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Callable;
