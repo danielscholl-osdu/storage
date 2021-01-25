@@ -14,14 +14,12 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 
-import org.opengroup.osdu.azure.blobstorage.IBlobContainerClientFactory;
+import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -35,9 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.inject.Named;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -68,7 +63,7 @@ public class CloudStorageImpl implements ICloudStorage {
     private IRecordsMetadataRepository recordRepository;
 
     @Autowired
-    private IBlobContainerClientFactory blobContainerClientFactory;
+    private BlobStore blobStore;
 
     @Autowired
     private GroupsInfoRepository groupsInfoRepository;
@@ -82,12 +77,9 @@ public class CloudStorageImpl implements ICloudStorage {
         validateRecordAcls(recordsProcessing);
 
         List<Callable<Boolean>> tasks = new ArrayList<>();
-        String partitionId = headers.getPartitionId();
-        BlobContainerClient blobContainerClient = blobContainerClientFactory.getClient(partitionId, containerName);
+        String dataPartitionId = headers.getPartitionId();
         for (RecordProcessing rp : recordsProcessing) {
-            //have to pass partitionId separately because of multithreading scenario. 'headers' object is request scoped (autowired) and
-            //children threads lose their context down the stream, we get a bean creation exception
-            tasks.add(() -> this.writeBlobThread(rp, blobContainerClient));
+            tasks.add(() -> this.writeBlobThread(rp, dataPartitionId));
         }
 
         try {
@@ -168,21 +160,13 @@ public class CloudStorageImpl implements ICloudStorage {
         }
     }
 
-    private boolean writeBlobThread(RecordProcessing rp, BlobContainerClient blobContainerClient)
+    private boolean writeBlobThread(RecordProcessing rp, String dataPartitionId)
     {
         Gson gson = new GsonBuilder().serializeNulls().create();
         RecordMetadata rmd = rp.getRecordMetadata();
         String path = buildPath(rmd);
         String content = gson.toJson(rp.getRecordData());
-        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        int bytesSize = bytes.length;
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(path).getBlockBlobClient();
-        try (InputStream dataStream = new ByteArrayInputStream(bytes)) {
-            blockBlobClient.upload(dataStream, bytesSize);
-        } catch (Exception e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, e.getMessage(),
-                    "An unexpected error on writing the record has occurred", e);
-        }
+        blobStore.writeToStorageContainer(dataPartitionId, path, content, containerName);
         return true;
     }
 
@@ -236,18 +220,14 @@ public class CloudStorageImpl implements ICloudStorage {
 
         validateOwnerAccessToRecord(record);
         String path = this.buildPath(record);
-        //NOTE: pass partitionId separately if this function is multithreaded
-        BlockBlobClient blockBlobClient = blobContainerClientFactory.getClient(headers.getPartitionId(), containerName).getBlobClient(path).getBlockBlobClient();
-        blockBlobClient.delete();
+        blobStore.deleteFromStorageContainer(headers.getPartitionId(), path, containerName);
     }
 
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
         validateOwnerAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
-        //NOTE: pass partitionId separately if this function is multithreaded
-        BlockBlobClient blockBlobClient = blobContainerClientFactory.getClient(headers.getPartitionId(), containerName).getBlobClient(path).getBlockBlobClient();
-        blockBlobClient.delete();
+        blobStore.deleteFromStorageContainer(headers.getPartitionId(), path, containerName);
     }
 
     @Override
@@ -307,18 +287,9 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
-        String content = "";
         validateViewerAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
-        BlockBlobClient blockBlobClient = blobContainerClientFactory.getClient(headers.getPartitionId(), containerName).getBlobClient(path).getBlockBlobClient();
-        try (ByteArrayOutputStream downloadStream = new ByteArrayOutputStream()) {
-            blockBlobClient.download(downloadStream);
-            content = downloadStream.toString(StandardCharsets.UTF_8.name());
-        } catch (Exception e)
-        {
-            logger.error(String.format("read %s failed", path), e);
-        }
-        return content;
+        return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
     }
 
     @Override
@@ -329,8 +300,8 @@ public class CloudStorageImpl implements ICloudStorage {
         List<String> recordIds = new ArrayList<>(objects.keySet());
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
 
-        String partitionId = headers.getPartitionId();
-        BlobContainerClient blobContainerClient = blobContainerClientFactory.getClient(partitionId, containerName);
+        String dataPartitionId = headers.getPartitionId();
+
         for (String recordId : recordIds) {
             RecordMetadata recordMetadata = recordsMetadata.get(recordId);
             if (!hasViewerAccessToRecord(recordMetadata)) {
@@ -338,9 +309,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 continue;
             }
             String path = objects.get(recordId);
-            //have to pass partitionId separately because of multithreading scenario. 'headers' object is request scoped (autowired) and
-            //children threads lose their context down the stream, we get a bean creation exception
-            tasks.add(() -> this.readBlobThread(recordId, path, map, blobContainerClient));
+            tasks.add(() -> this.readBlobThread(recordId, path, map, dataPartitionId));
         }
 
         try {
@@ -356,16 +325,9 @@ public class CloudStorageImpl implements ICloudStorage {
         return map;
     }
 
-    private boolean readBlobThread(String key, String path, Map<String, String> map, BlobContainerClient blobContainerClient) {
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(path).getBlockBlobClient();
-        try (ByteArrayOutputStream downloadStream = new ByteArrayOutputStream()) {
-            blockBlobClient.download(downloadStream);
-            map.put(key, downloadStream.toString(StandardCharsets.UTF_8.name()));
-        } catch (Exception e) {
-            logger.error(String.format("read %s failed: %s", path, e.getMessage()));
-            map.put(key, null);
-        }
-
+    private boolean readBlobThread(String key, String path, Map<String, String> map, String dataPartitionId) {
+        String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
+        map.put(key, content);
         return true;
     }
 
