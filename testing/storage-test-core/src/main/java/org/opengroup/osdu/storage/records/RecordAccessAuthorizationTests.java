@@ -32,7 +32,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 	protected static long NOW = System.currentTimeMillis();
 	protected static String LEGAL_TAG = LegalTagUtils.createRandomName();
 	protected static String KIND = TenantUtils.getTenantName() + ":dataaccess:no:1.1." + NOW;
-	protected static String RECORD_ID = TenantUtils.getTenantName() + ":dataaccess:1.1." + NOW;
+	protected static String RECORD_ID = TenantUtils.getTenantName() + ":no:1.1." + NOW;
 
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG, token);
@@ -127,7 +127,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 			throws Exception {
 
 		// Creates a new record
-		String newRecordId = TenantUtils.getTenantName() + ":dataaccess:2.2." + NOW;
+		String newRecordId = TenantUtils.getTenantName() + ":no:2.2." + NOW;
 
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());

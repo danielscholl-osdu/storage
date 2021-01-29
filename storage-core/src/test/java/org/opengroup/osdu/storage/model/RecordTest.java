@@ -29,22 +29,24 @@ public class RecordTest {
     public void createNewRecordId() {
 
         final String TENANT = "myTenant";
+        final String KIND_SUBTYPE = "work-product-component--wellLog";
+        final String KIND = String.format("%s:wks:%s:1.0.0", TENANT, KIND_SUBTYPE);
 
         Record record = new Record();
-        record.createNewRecordId(TENANT);
+        record.createNewRecordId(TENANT, KIND);
 
         String idTokens[] = record.getId().split(":");
 
         assertEquals(3, idTokens.length);
         assertEquals(TENANT, idTokens[0]);
-        assertEquals("doc", idTokens[1]);
+        assertEquals(KIND_SUBTYPE, idTokens[1]);
         assertFalse(Strings.isNullOrEmpty(idTokens[2]));
     }
 
     @Test
     public void should_validateWhetherRecordMatchesTenantName() {
-        assertTrue(Record.isRecordIdValid("tenant1:well:123", "TENANT1"));
-        assertTrue(Record.isRecordIdValid("TENaNT1:doc:123", "TENaNT1"));
-        assertFalse(Record.isRecordIdValid("tenant1:well:123", "abc"));
+        assertTrue(Record.isRecordIdValidFormatAndTenant("tenant1:well:123", "TENANT1"));
+        assertTrue(Record.isRecordIdValidFormatAndTenant("TENaNT1:work-product-component--wellLog:123", "TENaNT1"));
+        assertFalse(Record.isRecordIdValidFormatAndTenant("tenant1:well:123", "abc"));
     }
 }

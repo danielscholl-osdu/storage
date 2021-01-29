@@ -202,7 +202,7 @@ public class RecordServiceImpl implements RecordService {
     private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest) {
 
         String tenantName = tenant.getName();
-        if (!Record.isRecordIdValid(recordId, tenantName)) {
+        if (!Record.isRecordIdValidFormatAndTenant(recordId, tenantName)) {
             String msg = String.format("The record '%s' does not belong to account '%s'", recordId, tenantName);
 
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record ID", msg);
@@ -289,7 +289,7 @@ public class RecordServiceImpl implements RecordService {
 
     private void validateRecordIds(List<String> recordIds) {
         for (String id : recordIds) {
-            if (!Record.isRecordIdValid(id, this.tenant.getName())) {
+            if (!Record.isRecordIdValidFormatAndTenant(id, this.tenant.getName())) {
                 String msg = String.format(
                         "The record '%s' does not follow the naming convention: the first id component must be '%s'",
                         id, this.tenant.getName());

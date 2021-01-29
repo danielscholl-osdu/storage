@@ -116,13 +116,19 @@ public class IngestionServiceImpl implements IngestionService {
 		Set<String> ids = new HashSet<>();
 		for (Record record : inputRecords) {
 			String id = record.getId();
+
+			if (Strings.isNullOrEmpty(record.getKind())) {
+				throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad request",
+							"Must have valid kind");
+			}
+
 			if (!Strings.isNullOrEmpty(id)) {
 				if (ids.contains(id)) {
 					throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad request",
 							"Cannot update the same record multiple times in the same request. Id: " + id);
 				}
 
-				if (!Record.isRecordIdValid(id, tenantName)) {
+				if (!Record.isRecordIdValid(id, tenantName, record.getKind())) {
 					String msg = String.format(
 							"The record '%s' does not follow the naming convention: the first id component must be '%s'",
 							id, tenantName);
@@ -131,7 +137,7 @@ public class IngestionServiceImpl implements IngestionService {
 
 				ids.add(id);
 			} else {
-				record.createNewRecordId(tenantName);
+				record.createNewRecordId(tenantName, record.getKind());
 			}
 		}
 	}
