@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     protected static final long NOW = System.currentTimeMillis();
 
-    protected static final String RECORD_ID_PREFIX = TenantUtils.getFirstTenantName() + ":id:";
+    protected static final String RECORD_ID_PREFIX = TenantUtils.getFirstTenantName() + ":query:";
     protected static final String KIND = TenantUtils.getTenantName() + ":ds:query:1.0." + NOW;
     protected static final String LEGAL_TAG = LegalTagUtils.createRandomName();
     protected static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();

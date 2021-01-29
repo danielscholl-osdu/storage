@@ -36,9 +36,9 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 	protected static final String RECORD = "records";
 	protected static final String KIND_ONE = TenantUtils.getTenantName() + ":test:endtoend:1.1."
 			+ System.currentTimeMillis();
-	protected static final String KIND_ID_ONE = TenantUtils.getTenantName() + ":testendtoend:1.1."
+	protected static final String KIND_ID_ONE = TenantUtils.getTenantName() + ":endtoend:1.1."
 			+ System.currentTimeMillis();
-	protected static final String KIND_VERSION_ID = TenantUtils.getTenantName() + ":testendtoend:1.2."
+	protected static final String KIND_VERSION_ID = TenantUtils.getTenantName() + ":endtoend:1.2."
 			+ System.currentTimeMillis();
 	protected static final String LEGAL_TAG_NAME = LegalTagUtils.createRandomName(); 
 
