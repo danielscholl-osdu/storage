@@ -4,6 +4,12 @@ variables:
   AWS_SERVICE: storage
   AWS_ENVIRONMENT: dev
 
+  AWS_MONGODB_BUILD_SUBDIR: provider/storage-aws-mongodb/build-aws
+  AWS_MONGODB_TEST_SUBDIR: testing/storage-test-aws-mongodb
+  AWS_MONGODB_SERVICE: storage
+  AWS_MONGODB_ENVIRONMENT: dev
+  AWS_MONGODB_SKIP_TESTS: 'true'
+
   GCP_BUILD_SUBDIR: provider/storage-gcp
   GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
   GCP_APPLICATION_NAME: os-storage
@@ -55,6 +61,9 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/azure.yml"
+
+  - project: 'osdu/platform/ci-cd-pipelines'
+    file: 'cloud-providers/aws-mongodb.yml'
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there

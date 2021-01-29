@@ -117,6 +117,7 @@
 		<module>provider/storage-byoc</module>
 		<module>provider/storage-azure</module>
 		<module>provider/storage-aws</module>
+		<module>provider/storage-aws-mongodb</module>
 		<module>provider/storage-ibm</module>
 	    <module>provider/storage-reference</module>
 	</modules>
