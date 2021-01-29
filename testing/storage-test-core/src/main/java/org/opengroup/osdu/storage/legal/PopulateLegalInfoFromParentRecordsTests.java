@@ -59,12 +59,12 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 		LEGAL_TAG_CHILD = createRandomName() + "child";
 		Thread.sleep(1);
 		LEGAL_TAG_CHILD_THAT_WILL_NOT_BE_CREATED = createRandomName() + "child";
-		PARENT_ID_ONE = TenantUtils.getTenantName() + ":parent:" + System.currentTimeMillis();
+		PARENT_ID_ONE = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis();
 		Thread.sleep(1);
-		PARENT_ID_TWO = TenantUtils.getTenantName() + ":parent:" + System.currentTimeMillis();
-		CHILD_ID = TenantUtils.getTenantName() + ":child:" + System.currentTimeMillis();
+		PARENT_ID_TWO = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis();
+		CHILD_ID = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis();
 		Thread.sleep(1);
-		CHILD_ID_THAT_IS_NOT_CREATED = TenantUtils.getTenantName() + ":child:" + System.currentTimeMillis();
+		CHILD_ID_THAT_IS_NOT_CREATED = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis();
 		LegalTagUtils.create(LEGAL_TAG_PARENT_ONE, token);
 		LegalTagUtils.create(LEGAL_TAG_PARENT_TWO, token);
 		LegalTagUtils.create(LEGAL_TAG_CHILD, token);

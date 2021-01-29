@@ -29,10 +29,10 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     private static long NOW = System.currentTimeMillis();
     private static String LEGAL_TAG = LegalTagUtils.createRandomName();
     private static String KIND = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.1." + NOW;
-    private static String RECORD_ID = TenantUtils.getFirstTenantName() + ":bulkupdate:1.1." + NOW;
-    private static String RECORD_ID_2 = TenantUtils.getFirstTenantName() + ":bulkupdate:1.2." + NOW;
-    private static String RECORD_ID_3 = TenantUtils.getFirstTenantName() + ":bulkupdate:1.3." + NOW;
-    private static String RECORD_ID_4 = TenantUtils.getFirstTenantName() + ":bulkupdate:1.4." + NOW;
+    private static String RECORD_ID = TenantUtils.getFirstTenantName() + ":test:1.1." + NOW;
+    private static String RECORD_ID_2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
+    private static String RECORD_ID_3 = TenantUtils.getFirstTenantName() + ":test:1.3." + NOW;
+    private static String RECORD_ID_4 = TenantUtils.getFirstTenantName() + ":test:1.4." + NOW;
     private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
 
 

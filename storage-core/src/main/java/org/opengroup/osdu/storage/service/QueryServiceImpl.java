@@ -130,7 +130,7 @@ public class QueryServiceImpl implements QueryService {
 	private RecordMetadata getRecordFromRepository(String recordId) {
 
 		String tenantName = tenant.getName();
-		if (!Record.isRecordIdValid(recordId, tenantName)) {
+		if (!Record.isRecordIdValidFormatAndTenant(recordId, tenantName)) {
 			String msg = String
 					.format("The record '%s' does not belong to account '%s'", recordId, tenantName)
 					.replace('\n', '_').replace('\r', '_');

@@ -36,7 +36,7 @@ public abstract class LogicalRecordDeleteTests extends TestBase {
 	protected static final long NOW = System.currentTimeMillis();
 	protected static final String KIND = TenantUtils.getTenantName() + ":delete:inttest:1.0." + NOW;
 	protected static final String LEGAL_TAG = LegalTagUtils.createRandomName();
-	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":delete:" + NOW;
+	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:" + NOW;
 
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG, token);

@@ -32,7 +32,7 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 
 	protected static final long NOW = System.currentTimeMillis();
 
-	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":id:" + NOW;
+	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":query:" + NOW;
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:query:1.0." + NOW;
 	protected static final String LEGAL_TAG = LegalTagUtils.createRandomName();
 	protected static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
