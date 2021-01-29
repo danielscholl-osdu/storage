@@ -30,7 +30,7 @@ public abstract class IngestRecordNotFoundTest extends TestBase {
 	protected static final String LEGAL_TAG = LegalTagUtils.createRandomName();
 
 	protected static final String KIND = TenantUtils.getTenantName() + ":test:endtoend:1.1." + NOW;
-	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":testendtoend:1.1." + NOW;
+	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":endtoend:1.1." + NOW;
 
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG, token);

@@ -53,7 +53,7 @@ import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 @RunWith(MockitoJUnitRunner.class)
 public class RecordServiceImplTest {
 
-    private static final String RECORD_ID = "tenant1:anyId";
+    private static final String RECORD_ID = "tenant1:record:anyId";
     private static final String TENANT_NAME = "TENANT1";
 
     @Mock
@@ -105,7 +105,7 @@ public class RecordServiceImplTest {
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
             assertEquals("Record not found", e.getError().getReason());
-            assertEquals("Record with id 'tenant1:anyId' does not exist", e.getError().getMessage());
+            assertEquals("Record with id 'tenant1:record:anyId' does not exist", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }
@@ -334,7 +334,7 @@ public class RecordServiceImplTest {
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
             assertEquals("Record not found", e.getError().getReason());
-            assertEquals("Record with id 'tenant1:anyId' does not exist", e.getError().getMessage());
+            assertEquals("Record with id 'tenant1:record:anyId' does not exist", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }

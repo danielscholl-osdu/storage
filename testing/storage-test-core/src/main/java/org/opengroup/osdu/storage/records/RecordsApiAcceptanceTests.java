@@ -35,8 +35,8 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public abstract class RecordsApiAcceptanceTests extends TestBase {
 
-	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":id:" + System.currentTimeMillis();
-	protected static final String RECORD_NEW_ID = TenantUtils.getTenantName() + ":newid:"
+	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis();
+	protected static final String RECORD_NEW_ID = TenantUtils.getTenantName() + ":inttest:"
 			+ System.currentTimeMillis();
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:inttest:1.0."
 			+ System.currentTimeMillis();
@@ -206,7 +206,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	@Test
 	public void should_returnWholeRecord_when_recordIsIngestedWithAllFields() throws Exception {
-		final String RECORD_ID = TenantUtils.getTenantName() + ":test:wholerecord-" + System.currentTimeMillis();
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 
 		String body = createJsonBody(RECORD_ID, "Foo");
 
@@ -233,7 +233,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	@Test
 	public void should_returnWholeRecord_when_recordIsIngestedWithOtherTenantInKind() throws Exception {
-		final String RECORD_ID = TenantUtils.getTenantName() + ":test:wholerecord-" + System.currentTimeMillis();
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo", KIND_WITH_OTHER_TENANT);
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
 		TestUtils.getResult(response, 201, String.class);
@@ -250,7 +250,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	@Test
 	public void should_insertNewRecord_when_skipDupesIsTrue() throws Exception {
-		final String RECORD_ID = TenantUtils.getTenantName() + ":test:wholerecord-" + System.currentTimeMillis();
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo");
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "?skipdupes=true");
 		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);

@@ -64,7 +64,7 @@ public abstract class StressTests extends TestBase {
 		String json = "";
 		List<String> ids = new ArrayList<>(capacity);
 		for (int i = 0; i < capacity; i++) {
-			String id1 = TenantUtils.getTenantName() + ":id:" + System.currentTimeMillis() + i;
+			String id1 = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis() + i;
 			json += RecordsApiAcceptanceTests.singleEntityBody(id1, "ash ketchum", KIND, LEGAL_TAG_NAME);
 			if (i != capacity - 1) {
 				json += ",";

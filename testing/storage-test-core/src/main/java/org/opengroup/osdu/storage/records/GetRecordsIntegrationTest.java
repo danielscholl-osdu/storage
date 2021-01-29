@@ -28,7 +28,7 @@ import org.opengroup.osdu.storage.util.*;
 import com.sun.jersey.api.client.ClientResponse;
 
 public abstract class GetRecordsIntegrationTest extends TestBase {
-	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":id:" + System.currentTimeMillis();
+	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":getrecord:" + System.currentTimeMillis();
 
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:getrecord:1.0."
 			+ System.currentTimeMillis();

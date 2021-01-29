@@ -34,8 +34,8 @@ public abstract class PubsubEndpointTest extends TestBase {
 	protected static final String LEGAL_TAG_2 = LEGAL_TAG_1 + "random2";
 
 	protected static final String KIND = TenantUtils.getTenantName() + ":test:endtoend:1.1." + NOW;
-	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":testendtoend:1.1." + NOW;
-	protected static final String RECORD_ID_2 = TenantUtils.getTenantName() + ":testendtoend:1.1."
+	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":endtoend:1.1." + NOW;
+	protected static final String RECORD_ID_2 = TenantUtils.getTenantName() + ":endtoend:1.1."
 			+ FIVE_SECOND_LATER;
 	protected static final String PUBSUB_TOKEN = TestUtils.getPubsubToken();
 
@@ -80,10 +80,10 @@ public abstract class PubsubEndpointTest extends TestBase {
 
 		long now = System.currentTimeMillis();
 		long later = now + 2000L;
-		String recordIdTemp1 = TenantUtils.getTenantName() + ":testendtoend:1.1." + now;
+		String recordIdTemp1 = TenantUtils.getTenantName() + ":endtoend:1.1." + now;
 		String kindTemp = TenantUtils.getTenantName() + ":test:endtoend:1.1." + now;
 		String recordTemp1 = RecordUtil.createDefaultJsonRecord(recordIdTemp1, kindTemp, LEGAL_TAG_1);
-		String recordIdTemp2 = TenantUtils.getTenantName() + ":testendtoend:1.1." + later;
+		String recordIdTemp2 = TenantUtils.getTenantName() + ":endtoend:1.1." + later;
 		String recordTemp2 = RecordUtil.createDefaultJsonRecord(recordIdTemp2, kindTemp, LEGAL_TAG_2);
 
 		ClientResponse responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
