@@ -34,6 +34,7 @@
 	<modules>
 		<module>storage-test-core</module>
 		<module>storage-test-aws</module>
+		<module>storage-test-aws-mongodb</module>
 		<module>storage-test-azure</module>
 		<module>storage-test-gcp</module>
 		<module>storage-test-ibm</module>
