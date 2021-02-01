@@ -24,11 +24,15 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.storage.model.policy.PolicyResponse;
+import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.service.IPolicyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -67,6 +71,12 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Autowired
     private GroupsInfoRepository groupsInfoRepository;
+
+    @Autowired
+    private IPolicyService policyService;
+
+    @Autowired
+    private StoragePolicy storagePolicy;
 
     @Autowired
     @Named("STORAGE_CONTAINER_NAME")
@@ -257,16 +267,28 @@ public class CloudStorageImpl implements ICloudStorage {
 
     private boolean hasViewerAccessToRecord(RecordMetadata record)
     {
-        boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
-                new HashSet<>(Arrays.asList(record.getAcl().getViewers())));
-        boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
-        return isEntitledForViewing || isRecordOwner;
+        OperationType operationType = OperationType.view;
+        if(storagePolicy.authWithEntitlements()) {
+            boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
+                    new HashSet<>(Arrays.asList(record.getAcl().getViewers())));
+            boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
+            return isEntitledForViewing || isRecordOwner;
+        } else {
+            // authorize with Policy service
+            PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(record, operationType));
+            return policyResponse.getResult().isAllow();
+        }
     }
 
-    private boolean hasOwnerAccessToRecord(RecordMetadata record)
-    {
-        return dataEntitlementsService.hasAccessToData(headers,
-                new HashSet<>(Arrays.asList(record.getAcl().getOwners())));
+    private boolean hasOwnerAccessToRecord(RecordMetadata record) {
+        OperationType operationType = OperationType.delete;
+        if(storagePolicy.authWithEntitlements()) {
+            return dataEntitlementsService.hasAccessToData(headers,
+                    new HashSet<>(Arrays.asList(record.getAcl().getOwners())));
+        } else {
+            PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(record, operationType));
+            return policyResponse.getResult().isAllow();
+        }
     }
 
     private void validateOwnerAccessToRecord(RecordMetadata record)

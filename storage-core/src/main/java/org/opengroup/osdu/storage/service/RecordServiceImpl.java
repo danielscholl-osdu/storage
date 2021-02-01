@@ -26,6 +26,8 @@ import java.util.List;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.model.policy.PolicyResponse;
+import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.apache.http.HttpStatus;
 
@@ -75,9 +77,14 @@ public class RecordServiceImpl implements RecordService {
     @Autowired
     private DpsHeaders headers;
 
-
     @Autowired
     private StorageAuditLogger auditLogger;
+
+    @Autowired
+    private IPolicyService policyService;
+
+    @Autowired
+    private StoragePolicy storagePolicy;
 
     private final Gson gson = new Gson();
 
@@ -85,7 +92,14 @@ public class RecordServiceImpl implements RecordService {
     public void purgeRecord(String recordId) {
 
         RecordMetadata recordMetadata = this.getRecordMetadata(recordId, true);
-        boolean hasOwnerAccess = this.entitlementsAndCacheService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
+        boolean hasOwnerAccess;
+        if(storagePolicy.authWithEntitlements()) {
+            hasOwnerAccess = this.entitlementsAndCacheService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
+        } else {
+            // authorize with Policy service
+            PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(recordMetadata, OperationType.purge));
+            hasOwnerAccess = policyResponse.getResult().isAllow();
+        }
 
         if (!hasOwnerAccess) {
             this.auditLogger.purgeRecordFail(singletonList(recordId));
@@ -166,7 +180,14 @@ public class RecordServiceImpl implements RecordService {
 
             if (metadata != null) {
                 // pre acl check, enforce application data restriction
-                boolean hasOwnerAccess = this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners());
+                boolean hasOwnerAccess;
+                if(storagePolicy.authWithEntitlements()) {
+                    hasOwnerAccess = this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners());
+                } else {
+                    // authorize with Policy service
+                    PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(metadata, OperationType.update));
+                    hasOwnerAccess = policyResponse.getResult().isAllow();
+                }
                 if (!hasOwnerAccess) {
                     unauthorizedRecordIds.add(idWithVersion);
                     ids.remove(idWithVersion);
@@ -260,10 +281,20 @@ public class RecordServiceImpl implements RecordService {
     }
 
     private void validateAccess(RecordMetadata recordMetadata) {
-        if (!this.cloudStorage.hasAccess(recordMetadata)) {
-            this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
-            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-                    "The user is not authorized to perform this action");
+        if(storagePolicy.authWithEntitlements()) {
+            if (!this.cloudStorage.hasAccess(recordMetadata)) {
+                this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
+                throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+                        "The user is not authorized to perform this action");
+            }
+        } else {
+            // authorize with Policy service
+            PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(recordMetadata, OperationType.view));
+            if(!policyResponse.getResult().isAllow()) {
+                this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
+                throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+                        "The user is not authorized to perform this action");
+            }
         }
     }
 

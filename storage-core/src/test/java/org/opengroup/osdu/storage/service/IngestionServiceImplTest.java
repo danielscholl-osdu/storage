@@ -25,23 +25,29 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
+import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
+import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.Legal;
+import org.opengroup.osdu.core.common.partition.PartitionException;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 
-import java.security.Timestamp;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -80,6 +86,21 @@ public class IngestionServiceImplTest {
     private IEntitlementsAndCacheService authService;
 
     @Mock
+    private IPolicyService policyService;
+
+    @Mock
+    private IPartitionService partitionService;
+
+    @Mock
+    private StoragePolicy storagePolicy;
+
+    @Mock
+    private IEntitlementsFactory entitlementsFactory;
+
+    @Mock
+    private IEntitlementsService entitlementsService;
+
+    @Mock
     private JaxRsDpsLog logger;
 
     @InjectMocks
@@ -102,7 +123,7 @@ public class IngestionServiceImplTest {
     private Acl acl;
 
     @Before
-    public void setup() {
+    public void setup() throws PartitionException, EntitlementsException {
 
         List<String> userHeaders = new ArrayList<>();
         userHeaders.add(USER);
@@ -111,6 +132,13 @@ public class IngestionServiceImplTest {
 
         Legal legal = new Legal();
         legal.setOtherRelevantDataCountries(Sets.newHashSet("FRA"));
+
+        Groups groups = new Groups();
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        GroupInfo groupInfo = new GroupInfo();
+        groupInfo.setEmail("test.group@mydomain.com");
+        groupsInfo.add(groupInfo);
+        groups.setGroups(groupsInfo);
 
         this.record1 = new Record();
         this.record1.setKind(KIND_1);
@@ -134,6 +162,8 @@ public class IngestionServiceImplTest {
         when(this.tenantFactory.exists(TENANT)).thenReturn(true);
         when(this.tenantFactory.getTenantInfo(TENANT)).thenReturn(this.tenant);
         when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
+        when(this.entitlementsFactory.create(headers)).thenReturn(entitlementsService);
+        when(this.entitlementsService.getGroups()).thenReturn(groups);
     }
 
     @Test
@@ -292,6 +322,7 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
 
         try {
             this.sut.createUpdateRecords(false, this.records, USER);
@@ -334,6 +365,8 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.hasAccess(output.values().toArray(new RecordMetadata[output.size()]))).thenReturn(true);
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -390,6 +423,8 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.getHash(any())).thenReturn(hashMap);
         when(this.cloudStorage.isDuplicateRecord(any(), eq(hashMap), any())).thenReturn(true);
 
+        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
+
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
@@ -441,6 +476,7 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
         when(this.cloudStorage.read(existingRecordMetadata, 123456L, false)).thenReturn(recordFromStorage);
+        doReturn(true).when(storagePolicy).authWithEntitlements();
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -498,6 +534,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(output);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
+        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
 
         this.sut.createUpdateRecords(false, this.records, USER);
 

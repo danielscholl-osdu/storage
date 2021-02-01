@@ -29,6 +29,8 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.model.policy.PolicyResponse;
+import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +68,12 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Autowired
 	private IEntitlementsAndCacheService entitlementsAndCacheService;
+
+	@Autowired
+	private IPolicyService policyService;
+
+	@Autowired
+	private StoragePolicy storagePolicy;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -173,8 +181,12 @@ public class IngestionServiceImpl implements IngestionService {
 			} else {
 				RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
 
-				if (!this.entitlementsAndCacheService.hasOwnerAccess(this.headers, existingRecordMetadata.getAcl().getOwners())) {
-					this.logger.warning(String.format("User does not have owner access to record %s", record.getId()));
+				if(storagePolicy.authWithEntitlements())
+					authorizeWithEntitlements(existingRecordMetadata, record);
+				else {
+					// authorize with Policy service
+					PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(existingRecordMetadata, OperationType.update));
+					if (!policyResponse.getResult().isAllow())
 					throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
 				}
 
@@ -330,5 +342,12 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 
 		return ordc;
+	}
+
+	private void authorizeWithEntitlements(RecordMetadata existingRecordMetadata, Record record) {
+		if (!this.entitlementsAndCacheService.hasOwnerAccess(this.headers, existingRecordMetadata.getAcl().getOwners())) {
+			this.logger.warning(String.format("User does not have owner access to record %s", record.getId()));
+			throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
+		}
 	}
 }
