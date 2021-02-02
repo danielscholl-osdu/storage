@@ -191,7 +191,7 @@ public class IngestionServiceImplTest {
             assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
             assertEquals("Invalid record id", e.getError().getReason());
             assertEquals(
-                    "The record 'gasguys:record:123' does not follow the naming convention: the first id component must be 'tenant1'",
+                "The record 'gasguys:record:123' does not follow the naming convention: The record id must be in the format of <tenantId>:<kindSubType>:<uniqueId>. Example: tenant1:kind:<uuid>",
                     e.getError().getMessage());
         }
     }
