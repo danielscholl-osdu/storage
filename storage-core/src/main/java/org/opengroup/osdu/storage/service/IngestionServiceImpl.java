@@ -129,9 +129,10 @@ public class IngestionServiceImpl implements IngestionService {
 				}
 
 				if (!Record.isRecordIdValid(id, tenantName, record.getKind())) {
+					String kindSubType = record.getKind().split(":")[2];
 					String msg = String.format(
-							"The record '%s' does not follow the naming convention: the first id component must be '%s'",
-							id, tenantName);
+							"The record '%s' does not follow the naming convention: The record id must be in the format of <tenantId>:<kindSubType>:<uniqueId>. Example: %s:%s:<uuid>",
+							id, tenantName, kindSubType);
 					throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", msg);
 				}
 
