@@ -16,27 +16,26 @@
   limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.0.5-SNAPSHOT</version>
+        <version>0.6.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
-    <version>6.0.0-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
     <properties>
-        <azure.appservice.resourcegroup></azure.appservice.resourcegroup>
-        <azure.appservice.plan></azure.appservice.plan>
-        <azure.appservice.appname></azure.appservice.appname>
-        <azure.appservice.subscription></azure.appservice.subscription>
+        <azure.appservice.resourcegroup />
+        <azure.appservice.plan />
+        <azure.appservice.appname />
+        <azure.appservice.subscription />
         <osdu.corelibazure.version>0.0.61</osdu.corelibazure.version>
         <osdu.oscorecommon.version>0.3.26</osdu.oscorecommon.version>
-        <osdu.storage-core.version>0.0.5-SNAPSHOT</osdu.storage-core.version>
+        <osdu.storage-core.version>0.6.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <powermock.version>2.0.2</powermock.version>
