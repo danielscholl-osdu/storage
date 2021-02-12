@@ -51,7 +51,7 @@ public abstract class StorageCorsTests extends TestBase {
         assertEquals("nosniff", headers.get("X-Content-Type-Options").get(0));
         assertEquals("no-cache, no-store, must-revalidate", headers.get("Cache-Control").get(0));
         assertEquals("default-src 'self'", headers.get("Content-Security-Policy").get(0));
-        assertEquals("max-age=31536000; includeSubDomains", headers.get("Strict-Transport-Security").get(0));
+        assertEquals("max-age=31536000[ ]; includeSubDomains", headers.get("Strict-Transport-Security").get(0));
         assertEquals("0", headers.get("Expires").get(0));
         assertNotNull(headers.get("correlation-id").get(0));
     }
