@@ -123,12 +123,6 @@
 							</properties>
 						</profile>
 					</profiles>
-					<mainClass>
-						org.opengroup.osdu.storage.StorageApplication
-					</mainClass>
-					<environmentVariables>
-						<GOOGLE_APPLICATION_CREDENTIALS>c:\Users\Artem_Dobrynin\GO3-NRG\OsduCreds\osdu-gcp-sa-epam.json</GOOGLE_APPLICATION_CREDENTIALS>
-					</environmentVariables>
 				</configuration>
 				<executions>
 					<execution>
