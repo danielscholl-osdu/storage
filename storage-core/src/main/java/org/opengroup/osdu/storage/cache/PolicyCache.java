@@ -1,12 +1,17 @@
-package org.opengroup.osdu.storage.provider.azure.cache;
+package org.opengroup.osdu.storage.cache;
 
 import org.opengroup.osdu.core.common.cache.VmCache;
+import org.opengroup.osdu.storage.model.policy.PolicyStatus;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PolicyCache extends VmCache<String, Boolean> {
+public class PolicyCache extends VmCache<String, PolicyStatus> {
 
     public PolicyCache() {
-        super(60*60, 1000);
+        super(30*60, 1000);
+    }
+
+    public boolean containsKey(final String key) {
+        return this.get(key) != null;
     }
 }

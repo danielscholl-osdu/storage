@@ -18,7 +18,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
-
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -27,12 +26,11 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
-import org.opengroup.osdu.storage.model.policy.PolicyResponse;
-import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.service.IPolicyService;
+import org.opengroup.osdu.storage.service.DataAuthorizationService;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -44,8 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import org.slf4j.MDC;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -73,10 +69,7 @@ public class CloudStorageImpl implements ICloudStorage {
     private GroupsInfoRepository groupsInfoRepository;
 
     @Autowired
-    private IPolicyService policyService;
-
-    @Autowired
-    private StoragePolicy storagePolicy;
+    private DataAuthorizationService dataAuthorizationService;
 
     @Autowired
     @Named("STORAGE_CONTAINER_NAME")
@@ -96,7 +89,7 @@ public class CloudStorageImpl implements ICloudStorage {
             for (Future<Boolean> result : this.threadPool.invokeAll(tasks)) {
                 result.get();
             }
-            MDC.put("record-count",String.valueOf(tasks.size()));
+            MDC.put("record-count", String.valueOf(tasks.size()));
         } catch (InterruptedException | ExecutionException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
                     "An unexpected error on writing the record has occurred", e);
@@ -139,13 +132,14 @@ public class CloudStorageImpl implements ICloudStorage {
         try {
             this.recordRepository.createOrUpdate(originalAclRecords);
         } catch (Exception e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.", "Internal server error.", e);
         }
     }
 
 
     /**
      * Ensures that the ACLs of the record are a subset of the ACLs
+     *
      * @param records the records to validate
      */
     private void validateRecordAcls(RecordProcessing... records) {
@@ -170,8 +164,7 @@ public class CloudStorageImpl implements ICloudStorage {
         }
     }
 
-    private boolean writeBlobThread(RecordProcessing rp, String dataPartitionId)
-    {
+    private boolean writeBlobThread(RecordProcessing rp, String dataPartitionId) {
         Gson gson = new GsonBuilder().serializeNulls().create();
         RecordMetadata rmd = rp.getRecordMetadata();
         String path = buildPath(rmd);
@@ -204,7 +197,7 @@ public class CloudStorageImpl implements ICloudStorage {
         if (newHash.equals(recordHash)) {
             transfer.getSkippedRecords().add(updatedRecordMetadata.getId());
             return true;
-        }else{
+        } else {
             return false;
         }
     }
@@ -265,45 +258,25 @@ public class CloudStorageImpl implements ICloudStorage {
         return !hasAtLeastOneActiveRecord;
     }
 
-    private boolean hasViewerAccessToRecord(RecordMetadata record)
-    {
-        OperationType operationType = OperationType.view;
-        if(storagePolicy.authWithEntitlements()) {
-            boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
-                    new HashSet<>(Arrays.asList(record.getAcl().getViewers())));
-            boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
-            return isEntitledForViewing || isRecordOwner;
-        } else {
-            // authorize with Policy service
-            PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(record, operationType));
-            return policyResponse.getResult().isAllow();
-        }
+    private boolean hasViewerAccessToRecord(RecordMetadata record) {
+        return this.dataAuthorizationService.hasViewerAccess(this.dataEntitlementsService::hasAccessToData, record, OperationType.view);
     }
 
     private boolean hasOwnerAccessToRecord(RecordMetadata record) {
-        OperationType operationType = OperationType.delete;
-        if(storagePolicy.authWithEntitlements()) {
-            return dataEntitlementsService.hasAccessToData(headers,
-                    new HashSet<>(Arrays.asList(record.getAcl().getOwners())));
-        } else {
-            PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(record, operationType));
-            return policyResponse.getResult().isAllow();
-        }
+        return this.dataAuthorizationService.hasOwnerAccess(this.dataEntitlementsService::hasAccessToData, record, OperationType.delete);
     }
 
-    private void validateOwnerAccessToRecord(RecordMetadata record)
-    {
+    private void validateOwnerAccessToRecord(RecordMetadata record) {
         if (!hasOwnerAccessToRecord(record)) {
             logger.warning(String.format("%s has no owner access to %s", headers.getUserEmail(), record.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
     }
 
-    private void validateViewerAccessToRecord(RecordMetadata record)
-    {
+    private void validateViewerAccessToRecord(RecordMetadata record) {
         if (!hasViewerAccessToRecord(record)) {
             logger.warning(String.format("%s has no viewer access to %s", headers.getUserEmail(), record.getId()));
-            throw new AppException(HttpStatus.SC_FORBIDDEN,  ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
     }
 
@@ -353,14 +326,12 @@ public class CloudStorageImpl implements ICloudStorage {
         return true;
     }
 
-    private String buildPath(RecordMetadata record)
-    {
+    private String buildPath(RecordMetadata record) {
         String path = record.getKind() + "/" + record.getId() + "/" + record.getLatestVersion();
         return path;
     }
 
-    private String buildPath(RecordMetadata record, String version)
-    {
+    private String buildPath(RecordMetadata record, String version) {
         String path = record.getKind() + "/" + record.getId() + "/" + version;
         return path;
     }

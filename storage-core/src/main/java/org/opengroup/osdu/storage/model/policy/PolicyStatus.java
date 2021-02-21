@@ -1,2 +1,11 @@
-package org.opengroup.osdu.storage.model.policy;public class PolicyStatus {
+package org.opengroup.osdu.storage.model.policy;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class PolicyStatus {
+
+    private boolean enabled;
 }

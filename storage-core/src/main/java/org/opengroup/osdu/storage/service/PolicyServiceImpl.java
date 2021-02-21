@@ -12,20 +12,22 @@ import org.apache.http.util.EntityUtils;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.di.PolicyServiceConfiguration;
 import org.opengroup.osdu.storage.model.policy.PolicyResponse;
 import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(value = "management.policy.enabled", havingValue = "true", matchIfMissing = false)
 public class PolicyServiceImpl implements IPolicyService {
 
     @Autowired
-    private DpsHeaders headers;
+    private PolicyServiceConfiguration policyServiceConfiguration;
 
-    @Value("${POLICY_API}")
-    private String policyApi;
+    @Autowired
+    private DpsHeaders headers;
 
     @Autowired
     private JaxRsDpsLog logger;
@@ -37,7 +39,7 @@ public class PolicyServiceImpl implements IPolicyService {
 
         try {
             HttpClient httpClient = HttpClients.createDefault();
-            HttpPost postRequest = new HttpPost(policyApi + "/evaluations/query");
+            HttpPost postRequest = new HttpPost(policyServiceConfiguration.getPolicyApiEndpoint() + "/evaluations/query");
 
             String jsonString = this.gson.toJson(policy);
             HttpEntity inputEntity = new StringEntity(jsonString);
@@ -45,6 +47,7 @@ public class PolicyServiceImpl implements IPolicyService {
             postRequest.setEntity(inputEntity);
             postRequest.addHeader("authorization", headers.getAuthorization());
             postRequest.addHeader("data-partition-id", headers.getPartitionIdWithFallbackToAccountId());
+            postRequest.addHeader("correlation-id", headers.getCorrelationId());
 
             this.logger.info("policy service called");
 

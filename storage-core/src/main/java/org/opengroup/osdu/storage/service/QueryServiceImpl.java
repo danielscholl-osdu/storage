@@ -24,8 +24,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.model.policy.PolicyResponse;
-import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -67,10 +65,7 @@ public class QueryServiceImpl implements QueryService {
 	private DpsHeaders dpsHeaders;
 
 	@Autowired
-	private IPolicyService policyService;
-
-	@Autowired
-	private StoragePolicy storagePolicy;
+	private DataAuthorizationService dataAuthorizationService;
 
 	@Override
 	public String getRecordInfo(String id, String[] attributes) {
@@ -101,21 +96,11 @@ public class QueryServiceImpl implements QueryService {
 		// all the version numbers
 		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId);
 
-		if(storagePolicy.authWithEntitlements()) {
-			if (!this.cloudStorage.hasAccess(recordMetadata)) {
-				this.auditLogger.readAllVersionsOfRecordFail(singletonList(recordId));
-				throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-						"The user is not authorized to perform this action");
-			}
-		} else {
-			// authorize with Policy service
-			PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(recordMetadata, OperationType.view));
-			if(!policyResponse.getResult().isAllow()) {
-				this.auditLogger.readAllVersionsOfRecordFail(singletonList(recordId));
-				throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-						"The user is not authorized to perform this action");
-			}
-		}
+		if(!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.view)) {
+            this.auditLogger.readAllVersionsOfRecordFail(singletonList(recordId));
+            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user is not authorized to perform this action");
+        }
 
 		List<Long> versions = new ArrayList<>();
 		recordMetadata.getGcsVersionPaths().forEach(version -> {
@@ -181,20 +166,10 @@ public class QueryServiceImpl implements QueryService {
 		// post acl check, enforce application data restriction
 		List<RecordMetadata> recordMetadataList = new ArrayList<>();
 		recordMetadataList.add(recordMetadata);
-		if(storagePolicy.authWithEntitlements()) {
-			List<RecordMetadata> postAclCheck = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.dpsHeaders);
-
-			if (postAclCheck == null || postAclCheck.isEmpty()) {
-				throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-						"The user does not have access to the record");
-			}
-		} else {
-			// authorize with Policy service
-			PolicyResponse policyResponse = policyService.evaluatePolicy(storagePolicy.getStoragePolicy(recordMetadata, OperationType.view));
-			if (!policyResponse.getResult().isAllow())
-				throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-						"The user does not have access to the record");
-		}
+		if(!this.dataAuthorizationService.hasValidAccess(recordMetadata, OperationType.view)) {
+            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user does not have access to the record");
+        }
 
 		// TODO REMOVE AFTER MIGRATION
 		if (Strings.isNullOrEmpty(blob)) {

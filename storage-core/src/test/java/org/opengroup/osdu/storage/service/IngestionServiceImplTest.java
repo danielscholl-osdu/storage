@@ -41,7 +41,6 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.model.policy.StoragePolicy;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
@@ -86,13 +85,7 @@ public class IngestionServiceImplTest {
     private IEntitlementsAndCacheService authService;
 
     @Mock
-    private IPolicyService policyService;
-
-    @Mock
-    private IPartitionService partitionService;
-
-    @Mock
-    private StoragePolicy storagePolicy;
+    private DataAuthorizationService dataAuthorizationService;
 
     @Mock
     private IEntitlementsFactory entitlementsFactory;
@@ -322,7 +315,7 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
-        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
+        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(false);
 
         try {
             this.sut.createUpdateRecords(false, this.records, USER);
@@ -366,7 +359,7 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
 
-        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
+        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -423,7 +416,7 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.getHash(any())).thenReturn(hashMap);
         when(this.cloudStorage.isDuplicateRecord(any(), eq(hashMap), any())).thenReturn(true);
 
-        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
+        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -476,7 +469,7 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
         when(this.cloudStorage.read(existingRecordMetadata, 123456L, false)).thenReturn(recordFromStorage);
-        doReturn(true).when(storagePolicy).authWithEntitlements();
+        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -534,7 +527,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(output);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
-        when(this.storagePolicy.authWithEntitlements()).thenReturn(true);
+        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.createUpdateRecords(false, this.records, USER);
 
