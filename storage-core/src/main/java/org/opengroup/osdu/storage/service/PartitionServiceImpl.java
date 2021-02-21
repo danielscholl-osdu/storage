@@ -31,6 +31,7 @@ public class PartitionServiceImpl implements IPartitionService {
     @Override
     public PartitionInfo getPartition(String partitionId) {
         Validators.checkNotNullAndNotEmpty(partitionId, "partitionId");
+
         try {
             IPartitionProvider serviceClient = getServiceClient();
             PartitionInfo partitionInfo = serviceClient.get(partitionId);
@@ -52,3 +53,4 @@ public class PartitionServiceImpl implements IPartitionService {
         return this.partitionFactory.create(dpsHeaders);
     }
 }
+
