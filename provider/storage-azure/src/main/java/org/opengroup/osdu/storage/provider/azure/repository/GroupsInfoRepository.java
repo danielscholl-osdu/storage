@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
 import org.opengroup.osdu.azure.multitenancy.TenantInfoDoc;
+import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -38,7 +39,19 @@ public class GroupsInfoRepository extends SimpleCosmosStoreRepository<TenantInfo
         super(TenantInfoDoc.class);
     }
 
+    @Autowired
+    ICache<String, TenantInfoDoc> tenantInfoDocICache;
+
     public Optional<TenantInfoDoc> findById(@NonNull String id) {
-        return this.findById(id, headers.getPartitionId(), cosmosDBName, tenantInfoCollection, id);
+        TenantInfoDoc tenantInfoDoc = this.tenantInfoDocICache.get(id);
+
+        if (tenantInfoDoc != null) {
+            return Optional.of(tenantInfoDoc);
+        }
+        else {
+            Optional<TenantInfoDoc> tenantInfoDocOptional = this.findById(id, headers.getPartitionId(), cosmosDBName, tenantInfoCollection, id);
+            this.tenantInfoDocICache.put(id, tenantInfoDocOptional.get());
+            return tenantInfoDocOptional;
+        }
     }
 }
