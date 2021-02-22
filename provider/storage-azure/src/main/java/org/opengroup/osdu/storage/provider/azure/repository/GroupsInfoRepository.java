@@ -40,17 +40,17 @@ public class GroupsInfoRepository extends SimpleCosmosStoreRepository<TenantInfo
     }
 
     @Autowired
-    ICache<String, TenantInfoDoc> tenantInfoDocICache;
+    ICache<String, TenantInfoDoc> tenantInfoDocCache;
 
     public Optional<TenantInfoDoc> findById(@NonNull String id) {
-        TenantInfoDoc tenantInfoDoc = this.tenantInfoDocICache.get(id);
+        TenantInfoDoc tenantInfoDoc = this.tenantInfoDocCache.get(id);
 
         if (tenantInfoDoc != null) {
             return Optional.of(tenantInfoDoc);
         }
         else {
             Optional<TenantInfoDoc> tenantInfoDocOptional = this.findById(id, headers.getPartitionId(), cosmosDBName, tenantInfoCollection, id);
-            this.tenantInfoDocICache.put(id, tenantInfoDocOptional.get());
+            tenantInfoDocOptional.ifPresent(infoDoc -> this.tenantInfoDocCache.put(id, infoDoc));
             return tenantInfoDocOptional;
         }
     }
