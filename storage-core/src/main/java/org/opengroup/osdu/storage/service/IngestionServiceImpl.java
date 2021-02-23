@@ -154,8 +154,8 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		this.validateUserHasAccessToAllRecords(existingRecords);
-		this.validateLegalConstraints(inputRecords, existingRecords, recordParentMap);
+		this.dataAuthorizationService.validateUserAccessAndComplianceConstraints(this::validateUserAccessAndComplianceConstraints, inputRecords, existingRecords);
+		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
 
 		Map<RecordMetadata, RecordData> recordUpdatesMap = new HashMap<>();
         Map<RecordMetadata, RecordData> recordUpdateWithoutVersions = new HashMap<>();
@@ -175,11 +175,6 @@ public class IngestionServiceImpl implements IngestionService {
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
 				RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
-
-				if(!this.dataAuthorizationService.hasOwnerAccess(existingRecordMetadata, OperationType.update)) {
-					this.logger.warning(String.format("User does not have owner access to record %s", record.getId()));
-					throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
-				}
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
 
 				List<String> versions = new ArrayList<>();
@@ -207,6 +202,25 @@ public class IngestionServiceImpl implements IngestionService {
 		return recordsToProcess;
 	}
 
+	private void validateUserAccessAndComplianceConstraints(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
+		this.validateUserHasAccessToAllRecords(existingRecords);
+		this.validateLegalConstraints(inputRecords);
+		this.validateOwnerAccessOnExistingRecords(inputRecords, existingRecords);
+	}
+
+	private void validateOwnerAccessOnExistingRecords(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
+		for (Record record: inputRecords) {
+			if (!existingRecords.containsKey(record.getId())) {
+				continue;
+			}
+			RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
+			if(!this.entitlementsAndCacheService.hasOwnerAccess(headers, existingRecordMetadata.getAcl().getOwners())) {
+				this.logger.warning(String.format("User does not have owner access to record %s", record.getId()));
+				throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
+			}
+		}
+	}
+
 	private void validateParentsExist(Map<String, RecordMetadata> existingRecords,
 			Map<String, List<String>> recordParentMap) {
 
@@ -221,15 +235,19 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 	}
 
-	private void validateLegalConstraints(List<Record> inputRecords,
-			Map<String, RecordMetadata> existingRecordsMetadata,
-			Map<String, List<String>> recordParentMap) {
+	private void validateLegalConstraints(List<Record> inputRecords) {
 
 		Set<String> legalTags = this.getLegalTags(inputRecords);
 		Set<String> ordc = this.getORDC(inputRecords);
 
 		this.legalService.validateLegalTags(legalTags);
 		this.legalService.validateOtherRelevantDataCountries(ordc);
+	}
+
+	private void populateLegalInfoFromParents(List<Record> inputRecords,
+										  Map<String, RecordMetadata> existingRecordsMetadata,
+										  Map<String, List<String>> recordParentMap) {
+
 		this.legalService.populateLegalInfoFromParents(inputRecords, existingRecordsMetadata, recordParentMap);
 
 		for (Record record : inputRecords) {

@@ -14,9 +14,11 @@
 
 package org.opengroup.osdu.storage.service;
 
-import org.opengroup.osdu.core.common.partition.PartitionInfo;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.model.entitlements.Groups;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
-public interface IPartitionService {
+public interface IEntitlementsExtensionService extends IEntitlementsAndCacheService {
 
-    PartitionInfo getPartition(String partitionId);
+    Groups getGroups(DpsHeaders headers);
 }

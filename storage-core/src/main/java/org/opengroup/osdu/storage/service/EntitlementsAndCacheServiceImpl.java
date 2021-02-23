@@ -15,20 +15,18 @@
 package org.opengroup.osdu.storage.service;
 
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
+import org.opengroup.osdu.core.common.http.HttpResponse;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.http.HttpResponse;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.util.Crc32c;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheService {
+public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionService {
 
     private static final String ERROR_REASON = "Access denied";
     private static final String ERROR_MSG = "The user is not authorized to perform this action";
@@ -135,7 +133,8 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheSer
         }
     }
 
-    protected Groups getGroups(DpsHeaders headers) {
+    @Override
+    public Groups getGroups(DpsHeaders headers) {
         String cacheKey = this.getGroupCacheKey(headers);
         Groups groups = this.cache.get(cacheKey);
 
@@ -151,8 +150,6 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheSer
                 throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, ERROR_MSG, e);
             }
         }
-        headers.put("groups", getGroupsHeader(groups));
-
         return groups;
     }
 
@@ -160,13 +157,5 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsAndCacheSer
         String key = String.format("entitlement-groups:%s:%s", headers.getPartitionIdWithFallbackToAccountId(),
                 headers.getAuthorization());
         return Crc32c.hashToBase64EncodedString(key);
-    }
-
-    private String getGroupsHeader(Groups groups) {
-        List<String> out = new ArrayList<>();
-        for (GroupInfo groupInfo : groups.getGroups()) {
-            out.add(groupInfo.getEmail());
-        }
-        return String.join(",", out);
     }
 }

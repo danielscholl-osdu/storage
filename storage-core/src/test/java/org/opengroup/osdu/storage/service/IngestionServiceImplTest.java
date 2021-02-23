@@ -279,6 +279,9 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(false);
 
+       doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform this action"))
+               .when(this.dataAuthorizationService).validateUserAccessAndComplianceConstraints(any(), any(), any());
+
         try {
             this.sut.createUpdateRecords(false, this.records, USER);
             fail("Should not succeed");
@@ -315,7 +318,8 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(false);
+        doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records."))
+                .when(this.dataAuthorizationService).validateUserAccessAndComplianceConstraints(any(), any(), any());
 
         try {
             this.sut.createUpdateRecords(false, this.records, USER);

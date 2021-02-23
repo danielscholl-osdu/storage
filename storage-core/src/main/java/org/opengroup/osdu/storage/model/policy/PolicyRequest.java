@@ -5,9 +5,9 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class StoragePolicy {
+public class PolicyRequest {
 
     private String policyId;
 
-    private PolicyInput input;
+    private StoragePolicy input;
 }

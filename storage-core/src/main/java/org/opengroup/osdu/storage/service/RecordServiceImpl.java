@@ -30,6 +30,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
+import org.opengroup.osdu.storage.util.PatchOperationApplicator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -81,7 +82,7 @@ public class RecordServiceImpl implements RecordService {
     @Autowired
     private DataAuthorizationService dataAuthorizationService;
 
-    private final Gson gson = new Gson();
+    private PatchOperationApplicator patchOperationApplicator = new PatchOperationApplicator();
 
     @Override
     public void purgeRecord(String recordId) {
@@ -140,9 +141,6 @@ public class RecordServiceImpl implements RecordService {
 
     @Override
     public BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user) {
-        List<String> notFoundRecordIds = new ArrayList<>();
-        List<String> unauthorizedRecordIds = new ArrayList<>();
-
         RecordQuery bulkUpdateQuery = recordBulkUpdateParam.getQuery();
         List<PatchOperation> bulkUpdateOps = recordBulkUpdateParam.getOps();
 
@@ -150,38 +148,37 @@ public class RecordServiceImpl implements RecordService {
 
         // validate record ids and properties
         this.validateRecordIds(ids);
-        this.validateOps(bulkUpdateOps);
-
-        // validate record access; 404 and 401
-        List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
-        List<String> validRecordsId = new ArrayList<>();
+        this.validateDuplicates(bulkUpdateOps);
+        this.validateAcls(bulkUpdateOps);
 
         //<idWithoutVersion, idWithVersion>
         Map<String, String> idMap = this.mapRecordsAndVersions(ids);
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
         Map<String, RecordMetadata> existingRecords = this.recordRepository.get(idsWithoutVersion);
 
+        List<String> notFoundRecordIds = new ArrayList<>();
+        List<String> unauthorizedRecordIds = this.dataAuthorizationService.validateUserAccessAndComplianceConstraints(
+                this::validateLegalTags, this::validateOwnerAccess, bulkUpdateOps, idMap, existingRecords);
+
+        // validate record access; 404 and 401
+        List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
+        List<String> validRecordsId = new ArrayList<>();
+
         final long currentTimestamp = System.currentTimeMillis();
         for (String id : idsWithoutVersion) {
             String idWithVersion = idMap.get(id);
             RecordMetadata metadata = existingRecords.get(id);
 
-            if (metadata != null) {
-                // pre acl check, enforce application data restriction
-                boolean hasOwnerAccess = this.dataAuthorizationService.hasOwnerAccess(metadata, OperationType.update);
-
-                if (!hasOwnerAccess) {
-                    unauthorizedRecordIds.add(idWithVersion);
-                    ids.remove(idWithVersion);
-                    this.auditLogger.createOrUpdateRecordsFail(singletonList(idWithVersion));
-                }
+            if (unauthorizedRecordIds.contains(idWithVersion)) {
+                ids.remove(idWithVersion);
+                this.auditLogger.createOrUpdateRecordsFail(singletonList(idWithVersion));
             }
 
             if (metadata == null) {
                 notFoundRecordIds.add(idWithVersion);
                 ids.remove(idWithVersion);
             } else {
-                metadata = this.updateMetadataWithOperations(metadata, bulkUpdateOps);
+                metadata = this.patchOperationApplicator.updateMetadataWithOperations(metadata, bulkUpdateOps);
                 metadata.setModifyUser(user);
                 metadata.setModifyTime(currentTimestamp);
                 validRecordsMetadata.add(metadata);
@@ -200,6 +197,24 @@ public class RecordServiceImpl implements RecordService {
                 .recordIds(ids)
                 .lockedRecordIds(lockedRecordsId)
                 .recordCount(ids.size()).build();
+    }
+
+    private List<String> validateOwnerAccess(Map<String, String> idMap, Map<String, RecordMetadata> existingRecords) {
+        List<String> unauthorizedRecordIds = new ArrayList<>();
+        for (String id : idMap.keySet()) {
+            String idWithVersion = idMap.get(id);
+            RecordMetadata metadata = existingRecords.get(id);
+
+            if (metadata == null) {
+                continue;
+            }
+
+            // pre acl check, enforce application data restriction
+            if (!this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners())) {
+                unauthorizedRecordIds.add(idWithVersion);
+            }
+        }
+        return unauthorizedRecordIds;
     }
 
     private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest) {
@@ -237,30 +252,6 @@ public class RecordServiceImpl implements RecordService {
         return idMap;
     }
 
-    private RecordMetadata updateMetadataWithOperations(RecordMetadata recordMetadata, List<PatchOperation> ops) {
-        JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
-
-        for (PatchOperation op : ops) {
-            String path = op.getPath();
-            String[] pathComponents = path.split("/");
-
-            JsonObject outter = metadata;
-            JsonObject inner = metadata;
-
-            for (int i = 1; i < pathComponents.length - 1; i++) {
-                inner = outter.getAsJsonObject(pathComponents[i]);
-                outter = inner;
-            }
-
-            JsonArray values = new JsonArray();
-            for (String value : op.getValue()) {
-                values.add(value);
-            }
-            inner.add(pathComponents[pathComponents.length - 1], values);
-        }
-
-        return gson.fromJson(metadata, RecordMetadata.class);
-    }
 
     private void validateAccess(RecordMetadata recordMetadata) {
         if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.view)) {
@@ -269,7 +260,7 @@ public class RecordServiceImpl implements RecordService {
         }
     }
 
-    private void validateOps(List<PatchOperation> ops) {
+    private void validateDuplicates(List<PatchOperation> ops) {
         Set<String> paths = new HashSet<>();
         for (PatchOperation op : ops) {
             String path = op.getPath();
@@ -277,17 +268,50 @@ public class RecordServiceImpl implements RecordService {
                 throw new AppException(HttpStatus.SC_BAD_REQUEST, "Duplicate paths", "Users can only update a path once per request.");
             }
             paths.add(path);
+        }
+    }
 
+    private void validateAcls(List<PatchOperation> ops) {
+        for (PatchOperation op : ops) {
             Set<String> valueSet = new HashSet<>(Arrays.asList(op.getValue()));
+            String path = op.getPath();
             if (path.startsWith("/acl")) {
                 if (!this.entitlementsAndCacheService.isValidAcl(this.headers, valueSet)) {
                     throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid ACLs", "Invalid ACLs provided in acl path.");
                 }
-            } else {
+            }
+        }
+    }
+
+    private void validateLegalTags(List<PatchOperation> ops) {
+        for (PatchOperation op : ops) {
+            String path = op.getPath();
+            Set<String> valueSet = new HashSet<>(Arrays.asList(op.getValue()));
+            if (path.startsWith("/legal")) {
                 this.legalService.validateLegalTags(valueSet);
             }
         }
     }
+
+//    private void validateOps(List<PatchOperation> ops) {
+//        Set<String> paths = new HashSet<>();
+//        for (PatchOperation op : ops) {
+//            String path = op.getPath();
+//            if (paths.contains(path)) {
+//                throw new AppException(HttpStatus.SC_BAD_REQUEST, "Duplicate paths", "Users can only update a path once per request.");
+//            }
+//            paths.add(path);
+//
+//            Set<String> valueSet = new HashSet<>(Arrays.asList(op.getValue()));
+//            if (path.startsWith("/acl")) {
+//                if (!this.entitlementsAndCacheService.isValidAcl(this.headers, valueSet)) {
+//                    throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid ACLs", "Invalid ACLs provided in acl path.");
+//                }
+//            } else {
+//                this.legalService.validateLegalTags(valueSet);
+//            }
+//        }
+//    }
 
     private void validateRecordIds(List<String> recordIds) {
         for (String id : recordIds) {
