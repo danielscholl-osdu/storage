@@ -106,7 +106,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public synchronized RecordMetadata get(String id) {
+    public RecordMetadata get(String id) {
         RecordMetadataDoc item = this.getOne(id);
         return (item == null) ? null : item.getMetadata();
     }
@@ -197,7 +197,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
 
-    public synchronized RecordMetadataDoc getOne(@NonNull String id) {
+    public RecordMetadataDoc getOne(@NonNull String id) {
         return this.getOne(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id);
     }
 
