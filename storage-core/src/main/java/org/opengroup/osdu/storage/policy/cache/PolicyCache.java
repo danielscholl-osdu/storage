@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.policy.cache;
 
-import org.opengroup.osdu.core.common.model.policy.PolicyRequest;
-import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
+import org.opengroup.osdu.core.common.cache.VmCache;
+import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
+import org.springframework.stereotype.Component;
 
-public interface IPolicyService {
+@Component
+public class PolicyCache extends VmCache<String, PolicyStatus> {
 
-    PolicyResponse evaluatePolicy(PolicyRequest policy);
+    public PolicyCache() {
+        super(30*60, 1000);
+    }
+
+    public boolean containsKey(final String key) {
+        return this.get(key) != null;
+    }
 }

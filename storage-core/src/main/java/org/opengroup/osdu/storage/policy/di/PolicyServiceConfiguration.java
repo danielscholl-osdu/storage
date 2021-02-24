@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.di;
+package org.opengroup.osdu.storage.policy.di;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;

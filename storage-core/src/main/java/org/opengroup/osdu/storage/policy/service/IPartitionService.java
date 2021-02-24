@@ -12,20 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.cache;
+package org.opengroup.osdu.storage.policy.service;
 
-import org.opengroup.osdu.core.common.cache.VmCache;
-import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
-import org.springframework.stereotype.Component;
+import org.opengroup.osdu.core.common.partition.PartitionInfo;
 
-@Component
-public class PolicyCache extends VmCache<String, PolicyStatus> {
+public interface IPartitionService {
 
-    public PolicyCache() {
-        super(30*60, 1000);
-    }
-
-    public boolean containsKey(final String key) {
-        return this.get(key) != null;
-    }
+    PartitionInfo getPartition(String partitionId);
 }

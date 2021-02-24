@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.di;
+package org.opengroup.osdu.storage.policy.di;
 
 import org.opengroup.osdu.core.common.partition.IPartitionFactory;
 import org.opengroup.osdu.core.common.partition.PartitionAPIConfig;
 import org.opengroup.osdu.core.common.partition.PartitionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
+@Lazy
+@Component
+@Primary
 public class PartitionClientFactory extends AbstractFactoryBean<IPartitionFactory>  {
 
     @Value("${PARTITION_API}")

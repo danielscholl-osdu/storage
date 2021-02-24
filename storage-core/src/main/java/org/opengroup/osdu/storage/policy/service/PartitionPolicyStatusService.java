@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.policy.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
 import org.opengroup.osdu.core.common.partition.PartitionInfo;
-import org.opengroup.osdu.storage.cache.PolicyCache;
+import org.opengroup.osdu.storage.policy.cache.PolicyCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;

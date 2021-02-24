@@ -26,9 +26,11 @@ import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.storage.di.PolicyServiceConfiguration;
-import org.opengroup.osdu.storage.model.policy.StoragePolicy;
+import org.opengroup.osdu.storage.policy.di.PolicyServiceConfiguration;
+import org.opengroup.osdu.storage.policy.model.StoragePolicy;
 
+import org.opengroup.osdu.storage.policy.service.IPolicyService;
+import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.util.PatchOperationApplicator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 @Service
 public class DataAuthorizationService {
 
+    @Lazy
     @Autowired
     private PolicyServiceConfiguration policyServiceConfiguration;
 
@@ -142,7 +145,7 @@ public class DataAuthorizationService {
             }
             if (!evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType)) {
                 throw new AppException(HttpStatus.SC_FORBIDDEN,
-                        "User Unauthorized", "User is not authorized to create/update records.", String.format("User does not have required access to record %s", record.getId()));
+                        "User Unauthorized", "User is not authorized to create or update records.", String.format("User does not have required access to record %s", record.getId()));
             }
         }
     }

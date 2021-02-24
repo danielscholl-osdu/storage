@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.policy.service;
 
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.policy.PolicyRequest;
@@ -36,14 +35,10 @@ public class PolicyServiceImpl implements IPolicyService {
     @Autowired
     private DpsHeaders headers;
 
-    @Autowired
-    private JaxRsDpsLog logger;
-
     @Override
     public PolicyResponse evaluatePolicy(PolicyRequest policy) {
 
         try {
-            this.logger.info("policy service called");
             IPolicyProvider serviceClient = this.policyFactory.create(this.headers);
             return serviceClient.evaluatePolicy(policy);
         } catch (Exception e) {
