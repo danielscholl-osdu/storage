@@ -16,10 +16,6 @@ package org.opengroup.osdu.storage.service;
 
 import java.util.*;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,7 +84,7 @@ public class RecordServiceImpl implements RecordService {
     public void purgeRecord(String recordId) {
 
         RecordMetadata recordMetadata = this.getRecordMetadata(recordId, true);
-        boolean hasOwnerAccess = this.dataAuthorizationService.hasOwnerAccess(recordMetadata, OperationType.purge);
+        boolean hasOwnerAccess = this.dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.purge);
 
         if (!hasOwnerAccess) {
             this.auditLogger.purgeRecordFail(singletonList(recordId));
@@ -123,7 +119,7 @@ public class RecordServiceImpl implements RecordService {
 
         RecordMetadata recordMetadata = this.getRecordMetadata(recordId, false);
 
-        this.validateAccess(recordMetadata);
+        this.validateDeleteAllowed(recordMetadata);
 
         recordMetadata.setStatus(RecordState.deleted);
         recordMetadata.setModifyTime(System.currentTimeMillis());
@@ -252,9 +248,8 @@ public class RecordServiceImpl implements RecordService {
         return idMap;
     }
 
-
-    private void validateAccess(RecordMetadata recordMetadata) {
-        if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.view)) {
+    private void validateDeleteAllowed(RecordMetadata recordMetadata) {
+        if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.delete)) {
             this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform this action");
         }

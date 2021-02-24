@@ -131,7 +131,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.purgeRecord(RECORD_ID);
         verify(this.auditLogger).purgeRecordSuccess(any());
@@ -163,7 +163,7 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
 
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(false);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
         try {
             this.sut.purgeRecord(RECORD_ID);
@@ -193,7 +193,7 @@ public class RecordServiceImplTest {
         AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(originalException).when(this.recordRepository).delete(RECORD_ID);
@@ -244,7 +244,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                 "The user is not authorized to perform this action")).when(this.cloudStorage).delete(record);
@@ -437,7 +437,7 @@ public class RecordServiceImplTest {
         record.setId("id:access");
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
-        RecordMetadata record2= new RecordMetadata();
+        RecordMetadata record2 = new RecordMetadata();
         record2.setAcl(acl2);
         record2.setKind("any kind");
         record2.setId("id:noAccess");
@@ -452,8 +452,7 @@ public class RecordServiceImplTest {
         when(this.cloudStorage.hasAccess(record)).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners)).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners2)).thenReturn(false);
-        when(this.dataAuthorizationService.hasOwnerAccess(record, OperationType.update)).thenReturn(true);
-        when(this.dataAuthorizationService.hasOwnerAccess(record2, OperationType.update)).thenReturn(false);
+        when(this.dataAuthorizationService.validateUserAccessAndComplianceConstraints(any(), any(), any(), any(), any())).thenReturn(Collections.singletonList("tenant1:test:id3"));
 
         List<String> lockedId = new ArrayList<>();
         lockedId.add("tenant1:test:id2");
@@ -461,7 +460,7 @@ public class RecordServiceImplTest {
 
         BulkUpdateRecordsResponse response = this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
 
-        assertEquals(1, (long)response.getRecordCount());
+        assertEquals(1, (long) response.getRecordCount());
         assertEquals("tenant1:test:id1", response.getRecordIds().get(0));
         assertEquals(1, response.getNotFoundRecordIds().size());
         assertEquals("tenant1:test:id4", response.getNotFoundRecordIds().get(0));

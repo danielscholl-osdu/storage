@@ -166,7 +166,7 @@ public class QueryServiceImpl implements QueryService {
 		// post acl check, enforce application data restriction
 		List<RecordMetadata> recordMetadataList = new ArrayList<>();
 		recordMetadataList.add(recordMetadata);
-		if(!this.dataAuthorizationService.hasValidAccess(recordMetadata, OperationType.view)) {
+		if(!this.dataAuthorizationService.validateViewerOrOwnerAccess(recordMetadata, OperationType.view)) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                     "The user does not have access to the record");
         }

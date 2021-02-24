@@ -62,7 +62,7 @@ public class DataAuthorizationService {
 
     private PatchOperationApplicator patchOperationApplicator = new PatchOperationApplicator();
 
-    public boolean hasOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
+    public boolean validateOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
         if (this.policyEnabled()) {
             return evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
         }
@@ -70,7 +70,7 @@ public class DataAuthorizationService {
         return this.entitlementsService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
     }
 
-    public boolean hasValidAccess(RecordMetadata recordMetadata, OperationType operationType) {
+    public boolean validateViewerOrOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
         if (this.policyEnabled()) {
             return evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
         }
@@ -87,7 +87,7 @@ public class DataAuthorizationService {
         return this.cloudStorage.hasAccess(recordMetadata);
     }
 
-    public boolean hasViewerAccess(
+    public boolean validateViewerAccess(
             BiFunction<DpsHeaders, Set<String>, Boolean> entitlementHasAccess, RecordMetadata recordMetadata, OperationType operationType) {
         if (this.policyEnabled()) {
             return evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
@@ -96,7 +96,7 @@ public class DataAuthorizationService {
         return entitlementHasAccess.apply(this.headers, new HashSet<>(Arrays.asList(recordMetadata.getAcl().getViewers())));
     }
 
-    public boolean hasOwnerAccess(
+    public boolean validateOwnerAccess(
             BiFunction<DpsHeaders, Set<String>, Boolean> entitlementHasAccess, RecordMetadata recordMetadata, OperationType operationType) {
         if (this.policyEnabled()) {
             return evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
@@ -180,8 +180,6 @@ public class DataAuthorizationService {
         StoragePolicy storagePolicy = new StoragePolicy();
         storagePolicy.setOperation(operation);
         storagePolicy.setGroups(this.getGroups());
-        storagePolicy.setLegalTags(recordMetadata.getLegal().getLegaltags());
-        storagePolicy.setOtherRelevantDataCountries(record.getLegal().getOtherRelevantDataCountries());
         storagePolicy.setRecord(record);
 
         PolicyRequest policy = new PolicyRequest();

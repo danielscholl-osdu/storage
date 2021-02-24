@@ -363,7 +363,7 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
 
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -420,7 +420,7 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.getHash(any())).thenReturn(hashMap);
         when(this.cloudStorage.isDuplicateRecord(any(), eq(hashMap), any())).thenReturn(true);
 
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -473,7 +473,7 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
         when(this.cloudStorage.read(existingRecordMetadata, 123456L, false)).thenReturn(recordFromStorage);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -531,7 +531,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(output);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
-        when(this.dataAuthorizationService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.createUpdateRecords(false, this.records, USER);
 
