@@ -14,18 +14,21 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.policy.PolicyRequest;
+import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.di.PolicyServiceConfiguration;
 import org.opengroup.osdu.storage.model.policy.StoragePolicy;
-import org.opengroup.osdu.storage.model.policy.PolicyResponse;
-import org.opengroup.osdu.storage.model.policy.PolicyRequest;
+
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.util.PatchOperationApplicator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,7 +187,7 @@ public class DataAuthorizationService {
 
         PolicyRequest policy = new PolicyRequest();
         policy.setPolicyId(policyServiceConfiguration.getPolicyId());
-        policy.setInput(storagePolicy);
+        policy.setInput(new JsonParser().parse(new Gson().toJson(storagePolicy)).getAsJsonObject());
 
         return policy;
     }

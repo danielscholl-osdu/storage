@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.cache;
 
 import org.opengroup.osdu.core.common.cache.VmCache;
-import org.opengroup.osdu.storage.model.policy.PolicyStatus;
+import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
 import org.springframework.stereotype.Component;
 
 @Component

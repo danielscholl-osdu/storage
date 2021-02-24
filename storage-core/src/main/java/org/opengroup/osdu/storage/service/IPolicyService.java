@@ -14,8 +14,8 @@
 
 package org.opengroup.osdu.storage.service;
 
-import org.opengroup.osdu.storage.model.policy.PolicyResponse;
-import org.opengroup.osdu.storage.model.policy.PolicyRequest;
+import org.opengroup.osdu.core.common.model.policy.PolicyRequest;
+import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
 
 public interface IPolicyService {
 
