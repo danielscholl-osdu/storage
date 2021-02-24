@@ -43,9 +43,11 @@ spec:
         - containerPort: 80
         resources:
           requests:
-            cpu: "100m"
+            cpu: "500m"
+            memory: "4Gi"
           limits:
-            cpu: "800m"
+            cpu: "1000m"
+            memory: "4Gi"
         readinessProbe:
           httpGet:
             path: /api/storage/v2/health
@@ -105,3 +107,9 @@ spec:
           value: "true"
         - name: azure_activedirectory_AppIdUri
           value: "api://$(aad_client_id)"
+        - name: JAVA_OPTS
+          value: "-XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=50.0"
+        - name: "SERVER_TOMCAT_MAXTHREADS"
+          value: "400"
+        - name: "SERVER_TOMCAT_MINSPARETHREADS"
+          value: "200"
