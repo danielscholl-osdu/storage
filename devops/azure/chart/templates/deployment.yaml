@@ -45,7 +45,7 @@ spec:
           requests:
             cpu: "100m"
           limits:
-            cpu: "800"
+            cpu: "800m"
         readinessProbe:
           httpGet:
             path: /api/storage/v2/health
