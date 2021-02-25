@@ -288,26 +288,6 @@ public class RecordServiceImpl implements RecordService {
         }
     }
 
-//    private void validateOps(List<PatchOperation> ops) {
-//        Set<String> paths = new HashSet<>();
-//        for (PatchOperation op : ops) {
-//            String path = op.getPath();
-//            if (paths.contains(path)) {
-//                throw new AppException(HttpStatus.SC_BAD_REQUEST, "Duplicate paths", "Users can only update a path once per request.");
-//            }
-//            paths.add(path);
-//
-//            Set<String> valueSet = new HashSet<>(Arrays.asList(op.getValue()));
-//            if (path.startsWith("/acl")) {
-//                if (!this.entitlementsAndCacheService.isValidAcl(this.headers, valueSet)) {
-//                    throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid ACLs", "Invalid ACLs provided in acl path.");
-//                }
-//            } else {
-//                this.legalService.validateLegalTags(valueSet);
-//            }
-//        }
-//    }
-
     private void validateRecordIds(List<String> recordIds) {
         for (String id : recordIds) {
             if (!Record.isRecordIdValidFormatAndTenant(id, this.tenant.getName())) {
