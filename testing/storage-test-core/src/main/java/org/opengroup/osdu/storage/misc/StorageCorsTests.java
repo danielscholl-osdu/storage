@@ -21,6 +21,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.apache.http.HttpStatus;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
