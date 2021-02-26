@@ -31,6 +31,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public abstract class StorageCorsTests extends TestBase {
 
     @Test
+    @Ignore
     public void should_returnProperStatusCodeAndResponseHeaders_when_sendingPreflightOptionsRequest() throws Exception {
         ClientResponse response = TestUtils.send("query/kinds", "OPTIONS", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1");
         assertEquals(HttpStatus.SC_OK, response.getStatus());
