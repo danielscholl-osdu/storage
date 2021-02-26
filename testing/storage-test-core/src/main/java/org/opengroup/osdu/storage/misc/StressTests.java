@@ -88,6 +88,7 @@ public abstract class StressTests extends TestBase {
 				DummyRecordsHelper.CreateRecordResponse.class);
 		assertEquals(capacity, result.recordCount);
 		assertEquals(capacity, result.recordIds.length);
+		assertEquals(capacity, result.recordIdVersions.length);
 
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "?skipdupes=false");

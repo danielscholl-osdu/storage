@@ -55,6 +55,7 @@ public abstract class LogicalRecordDeleteTests extends TestBase {
 
 		assertEquals(1, result.recordCount);
 		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(RECORD_ID, result.recordIds[0]);
 	}
 
