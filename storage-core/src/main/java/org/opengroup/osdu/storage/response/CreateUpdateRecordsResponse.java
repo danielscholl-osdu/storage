@@ -17,26 +17,35 @@ package org.opengroup.osdu.storage.response;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
-
 import lombok.Data;
 
 @Data
 public class CreateUpdateRecordsResponse {
 
-	private Integer recordCount;
+  private Integer recordCount;
 
-	private List<String> recordIds;
+  private List<String> recordIds;
 
-	private List<String> skippedRecordIds;
+  private List<String> skippedRecordIds;
 
-	public CreateUpdateRecordsResponse(TransferInfo transferInfo, List<Record> records) {
-		this.recordCount = transferInfo.getRecordCount();
-		this.skippedRecordIds = transferInfo.getSkippedRecords();
-		this.recordIds = new ArrayList<>();
+  private List<String> recordIdVersions;
 
-		records.forEach(r -> this.recordIds.add(r.getId()));
-		this.recordIds.removeAll(this.skippedRecordIds);
-	}
+  public void addRecord(String id, Long version) {
+    addRecordIds(id);
+    addRecordIdVersions(id, version);
+  }
+
+  private void addRecordIds(String recordId) {
+    if (this.recordIds == null) {
+      this.recordIds = new ArrayList<>();
+    }
+    this.recordIds.add(recordId);
+  }
+
+  private void addRecordIdVersions(String id, Long version) {
+    if (this.recordIdVersions == null) {
+      this.recordIdVersions = new ArrayList<>();
+    }
+    this.recordIdVersions.add(id + ':' + version);
+  }
 }
