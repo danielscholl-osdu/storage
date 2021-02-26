@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.util;
 
+import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
 import com.amazonaws.services.simplesystemsmanagement.model.GetParameterRequest;
 import com.amazonaws.services.simplesystemsmanagement.model.GetParameterResult;
@@ -23,7 +24,10 @@ import lombok.Setter;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
+import org.opengroup.osdu.core.aws.entitlements.ServicePrincipal;
+import org.opengroup.osdu.core.aws.iam.IAMConfig;
+import org.opengroup.osdu.core.aws.secrets.SecretsManager;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import javax.annotation.PostConstruct;
 
 
