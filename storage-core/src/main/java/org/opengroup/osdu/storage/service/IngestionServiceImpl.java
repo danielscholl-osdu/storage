@@ -136,10 +136,6 @@ public class IngestionServiceImpl implements IngestionService {
 					throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", msg);
 				}
 
-				if (id.contains("%20")) {
-					throw new AppException(HttpStatus.SC_BAD_REQUEST, "Validation error.",
-							"Not a valid record id. Found: " + id);
-				}
 				ids.add(id);
 			} else {
 				record.createNewRecordId(tenantName, record.getKind());
