@@ -21,6 +21,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.apache.http.HttpStatus;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
@@ -31,6 +32,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public abstract class StorageCorsTests extends TestBase {
 
     @Test
+    @Ignore
     public void should_returnProperStatusCodeAndResponseHeaders_when_sendingPreflightOptionsRequest() throws Exception {
         ClientResponse response = TestUtils.send("query/kinds", "OPTIONS", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1");
         assertEquals(HttpStatus.SC_OK, response.getStatus());

@@ -16,7 +16,15 @@
 FROM amazoncorretto:8
 
 ARG JAR_FILE=provider/storage-aws/target/*spring-boot.jar
+
+#Default to using self signed generated TLS cert
+ENV USE_SELF_SIGNED_SSL_CERT true
+
 WORKDIR /
 COPY ${JAR_FILE} app.jar
+COPY /provider/storage-aws/build-aws/ssl.sh /ssl.sh
+COPY /provider/storage-aws/build-aws/entrypoint.sh /entrypoint.sh
 EXPOSE 8080
-ENTRYPOINT java $JAVA_OPTS -jar /app.jar
+
+ENTRYPOINT ["/bin/sh", "-c", ". /entrypoint.sh"]
+
