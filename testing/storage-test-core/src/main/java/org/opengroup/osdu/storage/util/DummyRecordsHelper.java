@@ -110,5 +110,6 @@ public class DummyRecordsHelper {
 		public int recordCount;
 		public String[] recordIds;
 		public String[] skippedRecordIds;
+		public String[] recordIdVersions;
 	}
 }
