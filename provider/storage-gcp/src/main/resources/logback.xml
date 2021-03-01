@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <logger name="org.opengroup.osdu" level="DEBUG"/>
   <springProfile name="local">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <encoder>
@@ -8,7 +9,7 @@
         <charset>utf8</charset>
       </encoder>
     </appender>
-    <root level="DEBUG">
+    <root level="info">
       <appender-ref ref="CONSOLE"/>
     </root>
   </springProfile>
@@ -28,7 +29,7 @@
       </encoder>
     </appender>
 
-    <root level="debug">
+    <root level="info">
       <appender-ref ref="stdout"/>
     </root>
   </springProfile>

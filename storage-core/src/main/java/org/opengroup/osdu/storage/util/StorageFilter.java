@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import java.util.stream.Collectors;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -61,7 +62,6 @@ public class StorageFilter implements Filter {
 			this.dpsHeaders.put(FOR_HEADER_NAME, fetchConversionHeader);
 		}
 
-		chain.doFilter(request, response);
 
 		HttpServletResponse httpResponse = (HttpServletResponse) response;
 
@@ -69,7 +69,8 @@ public class StorageFilter implements Filter {
 
 		Map<String, List<Object>> standardHeaders = ResponseHeaders.STANDARD_RESPONSE_HEADERS;
 		for (Map.Entry<String, List<Object>> header : standardHeaders.entrySet()) {
-			httpResponse.addHeader(header.getKey(), header.getValue().toString());
+			httpResponse.addHeader(header.getKey(), header.getValue().stream().map(o -> o.toString()).collect(
+					Collectors.joining(" ")));
 		}
 		httpResponse.addHeader(DpsHeaders.CORRELATION_ID, this.dpsHeaders.getCorrelationId());
 
@@ -78,6 +79,9 @@ public class StorageFilter implements Filter {
 		if (httpRequest.getMethod().equalsIgnoreCase(OPTIONS_STRING)) {
 			httpResponse.setStatus(HttpStatus.SC_OK);
 		}
+
+		chain.doFilter(request, response);
+
 	}
 
 	@Override
