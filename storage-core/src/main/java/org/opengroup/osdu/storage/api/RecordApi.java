@@ -22,6 +22,16 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.storage.RecordVersions;
+import org.opengroup.osdu.core.common.model.storage.StorageRole;
+import org.opengroup.osdu.core.common.model.storage.TransferInfo;
+import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
+import org.opengroup.osdu.core.common.storage.IngestionService;
+import org.opengroup.osdu.storage.mapper.CreateUpdateRecordsResponseMapper;
+import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
+import org.opengroup.osdu.storage.service.QueryService;
+import org.opengroup.osdu.storage.service.RecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,17 +45,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.RecordVersions;
-import org.opengroup.osdu.core.common.model.storage.StorageRole;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
-import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
-import org.opengroup.osdu.core.common.storage.IngestionService;
-import org.opengroup.osdu.storage.service.QueryService;
-import org.opengroup.osdu.storage.service.RecordService;
-import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.springframework.web.context.annotation.RequestScope;
 
 @RestController
@@ -66,16 +67,17 @@ public class RecordApi {
 	@Autowired
 	private RecordService recordService;
 
-	@PutMapping()
+	@Autowired
+	private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
+
+	@PutMapping
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<CreateUpdateRecordsResponse> createOrUpdateRecords(
-			@RequestParam(required = false) boolean skipdupes,
+	@ResponseStatus(HttpStatus.CREATED)
+	public CreateUpdateRecordsResponse createOrUpdateRecords(@RequestParam(required = false) boolean skipdupes,
 			@RequestBody @Valid @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<Record> records) {
 
-		TransferInfo transfer = this.ingestionService.createUpdateRecords(skipdupes, records,
-				this.headers.getUserEmail());
-		CreateUpdateRecordsResponse transferResponse = new CreateUpdateRecordsResponse(transfer, records);
-		return new ResponseEntity<CreateUpdateRecordsResponse>(transferResponse, HttpStatus.CREATED);
+		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail());
+		return createUpdateRecordsResponseMapper.map(transfer, records);
 	}
 
 	@GetMapping("/versions/{id}")

@@ -40,13 +40,14 @@ public class MessageBusImpl implements IMessageBus {
 
     private String amazonSNSTopic;
 
-    @Value("${aws.region}")
-    private String amazonSNSRegion;
-
     @Value("${aws.sns.topic.arn}")
     private String parameter;
 
     private AmazonSNS snsClient;
+    @Value("${aws.primary.region}")
+    private String primaryRegionName;
+    @Value("${AWS.REGION}")
+    private String currentRegion;
 
     @Inject
     private JaxRsDpsLog logger;
@@ -55,11 +56,19 @@ public class MessageBusImpl implements IMessageBus {
 
     @PostConstruct
     public void init(){
-        AmazonSNSConfig config = new AmazonSNSConfig(amazonSNSRegion);
-        snsClient = config.AmazonSNS();
+        AmazonSNSConfig config;
         SSMConfig ssmConfig = new SSMConfig();
         ssm = ssmConfig.amazonSSM();
+        String amazonSNSRegion = ssm.getProperty(primaryRegionName).toString();
+        if (amazonSNSRegion!=null){
+            config = new AmazonSNSConfig(amazonSNSRegion);
+        }else{
+            config= new AmazonSNSConfig(currentRegion);
+        }
+
+        snsClient = config.AmazonSNS();
         amazonSNSTopic = ssm.getProperty(parameter).toString();
+
     }
 
     @Override

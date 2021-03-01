@@ -16,6 +16,8 @@ package org.opengroup.osdu.storage.records;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -75,6 +77,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 		assertEquals(1, result.recordCount);
 		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(RECORD_NEW_ID, result.recordIds[0]);
 
 		response = TestUtils.send("records/" + RECORD_NEW_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
@@ -95,8 +98,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=true");
 		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201,
 				DummyRecordsHelper.CreateRecordResponse.class);
+		assertNotNull(result);
 		assertEquals(1, result.recordCount);
 		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(0, result.skippedRecordIds.length);
 		assertEquals(RECORD_ID, result.recordIds[0]);
 
@@ -108,8 +113,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		// use skip dupes to skip update
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=true");
 		result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		assertNotNull(result);
 		assertEquals(1, result.recordCount);
-		assertEquals(0, result.recordIds.length);
+		assertNull(result.recordIds);
+		assertNull(result.recordIdVersions);
 		assertEquals("Expected to skip the update when the data was the same as previous update and skipdupes is true",
 				1, result.skippedRecordIds.length);
 		assertEquals(RECORD_ID, result.skippedRecordIds[0]);
@@ -122,8 +129,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		// set skip dupes to false to make the update with same data
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
 		result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		assertNotNull(result);
 		assertEquals(1, result.recordCount);
 		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
 		assertEquals("Expected to NOT skip the update when data is the same but skipdupes is false", 0,
 				result.skippedRecordIds.length);
 		assertEquals(RECORD_ID, result.recordIds[0]);
@@ -254,9 +263,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		String body = createJsonBody(RECORD_ID, "Foo");
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "?skipdupes=true");
 		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		assertNotNull(result);
 		assertEquals(1, result.recordCount);
-		assertEquals("Expected to insert the new record when skipdupes is true",
-				1, result.recordIds.length);
+		assertEquals("Expected to insert the new record when skipdupes is true", 1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(RECORD_ID, result.recordIds[0]);
 		response = TestUtils.send("records/" + RECORD_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());

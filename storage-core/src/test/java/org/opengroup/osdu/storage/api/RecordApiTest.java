@@ -16,14 +16,16 @@ package org.opengroup.osdu.storage.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
+import java.util.Random;
 
 import org.apache.http.HttpStatus;
 import org.junit.Before;
@@ -31,19 +33,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
+import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
-import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
+import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.IngestionService;
+import org.opengroup.osdu.storage.mapper.CreateUpdateRecordsResponseMapper;
+import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.springframework.http.ResponseEntity;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -64,6 +66,9 @@ public class RecordApiTest {
     @Mock
     private DpsHeaders httpHeaders;
 
+    @Mock
+    private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
+
     @InjectMocks
     private RecordApi sut;
 
@@ -73,15 +78,15 @@ public class RecordApiTest {
 
         when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
         when(this.httpHeaders.getPartitionIdWithFallbackToAccountId()).thenReturn(this.TENANT);
-
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
     }
 
     @Test
     public void should_returnsHttp201_when_creatingOrUpdatingRecordsSuccessfully() {
-
         TransferInfo transfer = new TransferInfo();
+        transfer.setSkippedRecords(Collections.singletonList("ID1"));
+        transfer.setVersion(System.currentTimeMillis() * 1000L + (new Random()).nextInt(1000) + 1);
 
         Record r1 = new Record();
         r1.setId("ID1");
@@ -93,19 +98,15 @@ public class RecordApiTest {
         records.add(r1);
         records.add(r2);
 
-        CreateUpdateRecordsResponse expectedResponse = new CreateUpdateRecordsResponse(transfer, records);
-
         when(this.ingestionService.createUpdateRecords(false, records, this.USER)).thenReturn(transfer);
+        when(createUpdateRecordsResponseMapper.map(transfer, records)).thenReturn(new CreateUpdateRecordsResponse());
 
-        ResponseEntity response = this.sut.createOrUpdateRecords(false, records);
-
-        assertEquals(HttpStatus.SC_CREATED, response.getStatusCodeValue());
-        assertEquals(expectedResponse, response.getBody());
+        CreateUpdateRecordsResponse response = this.sut.createOrUpdateRecords(false, records);
+        assertNotNull(response);
     }
 
     @Test
     public void should_returnRecordIds_when_recordsAreNotUpdatedBecauseOfSkipDupes() {
-
         TransferInfo transfer = new TransferInfo();
         transfer.getSkippedRecords().add("id5");
 
@@ -116,11 +117,10 @@ public class RecordApiTest {
         records.add(r1);
 
         when(this.ingestionService.createUpdateRecords(false, records, this.USER)).thenReturn(transfer);
+        when(createUpdateRecordsResponseMapper.map(transfer, records)).thenReturn(new CreateUpdateRecordsResponse());
 
-        ResponseEntity response = this.sut.createOrUpdateRecords(false, records);
-
-        assertEquals(HttpStatus.SC_CREATED, response.getStatusCodeValue());
-        assertEquals("id5", ((CreateUpdateRecordsResponse) response.getBody()).getSkippedRecordIds().get(0));
+        CreateUpdateRecordsResponse response = this.sut.createOrUpdateRecords(false, records);
+        assertNotNull(response);
     }
 
     @Test
