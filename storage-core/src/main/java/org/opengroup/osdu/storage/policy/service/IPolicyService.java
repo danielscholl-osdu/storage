@@ -14,10 +14,14 @@
 
 package org.opengroup.osdu.storage.policy.service;
 
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.policy.PolicyRequest;
 import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 public interface IPolicyService {
 
     PolicyResponse evaluatePolicy(PolicyRequest policy);
+
+    boolean evaluateStorageDataAuthorizationPolicy(RecordMetadata recordMetadata, OperationType operationType);
 }

@@ -15,6 +15,8 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.base.Strings;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -29,6 +31,7 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +72,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Autowired
 	private DataAuthorizationService dataAuthorizationService;
+
+	@Autowired(required = false)
+	private IPolicyService policyService;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -155,8 +161,10 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		this.dataAuthorizationService.validateUserAccessAndComplianceConstraints(this::validateUserAccessAndComplianceConstraints, inputRecords, existingRecords);
-		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
+		this.dataAuthorizationService.validateIngestionUserAccessAndComplianceConstraints(
+				this::validateUserAccessAndComplianceConstraints,
+				this::validateUserAccessAndCompliancePolicyConstraints,
+				new IngestionPayload(inputRecords, existingRecords, recordParentMap));
 
 		Map<RecordMetadata, RecordData> recordUpdatesMap = new HashMap<>();
         Map<RecordMetadata, RecordData> recordUpdateWithoutVersions = new HashMap<>();
@@ -203,10 +211,11 @@ public class IngestionServiceImpl implements IngestionService {
 		return recordsToProcess;
 	}
 
-	private void validateUserAccessAndComplianceConstraints(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
-		this.validateUserHasAccessToAllRecords(existingRecords);
-		this.validateLegalConstraints(inputRecords);
-		this.validateOwnerAccessOnExistingRecords(inputRecords, existingRecords);
+	private void validateUserAccessAndComplianceConstraints(IngestionPayload payload) {
+		this.validateUserHasAccessToAllRecords(payload.getExistingRecords());
+		this.validateLegalConstraints(payload.getInputRecords());
+		this.validateOwnerAccessOnExistingRecords(payload.getInputRecords(), payload.getExistingRecords());
+		this.populateLegalInfoFromParents(payload.getInputRecords(), payload.getExistingRecords(), payload.getRecordParentMap());
 	}
 
 	private void validateOwnerAccessOnExistingRecords(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
@@ -351,5 +360,32 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 
 		return ordc;
+	}
+
+	private void validateUserAccessAndCompliancePolicyConstraints(IngestionPayload payload) {
+		this.populateLegalInfoFromParents(payload.getInputRecords(), payload.getExistingRecords(), payload.getRecordParentMap());
+		for (Record record : payload.getInputRecords()) {
+			RecordMetadata recordMetadata;
+			OperationType operationType;
+			if (payload.getExistingRecords().containsKey(record.getId())) {
+				recordMetadata = payload.getExistingRecords().get(record.getId());
+				operationType = OperationType.update;
+			} else {
+				recordMetadata = new RecordMetadata(record);
+				operationType = OperationType.create;
+			}
+			if (!this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType)) {
+				throw new AppException(HttpStatus.SC_FORBIDDEN,
+						"User Unauthorized", "User is not authorized to create or update records.", String.format("User does not have required access to record %s", record.getId()));
+			}
+		}
+	}
+
+	@Data
+	@AllArgsConstructor
+	class IngestionPayload {
+		private List<Record> inputRecords;
+		private Map<String, RecordMetadata> existingRecords;
+		private Map<String, List<String>> recordParentMap;
 	}
 }

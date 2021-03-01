@@ -452,7 +452,7 @@ public class RecordServiceImplTest {
         when(this.cloudStorage.hasAccess(record)).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners)).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners2)).thenReturn(false);
-        when(this.dataAuthorizationService.validateUserAccessAndComplianceConstraints(any(), any(), any(), any(), any())).thenReturn(Collections.singletonList("tenant1:test:id3"));
+        when(this.dataAuthorizationService.validateBulkUpdateUserAccessAndComplianceConstraints(any(), any(), any())).thenReturn(Collections.singletonList("tenant1:test:id3"));
 
         List<String> lockedId = new ArrayList<>();
         lockedId.add("tenant1:test:id2");

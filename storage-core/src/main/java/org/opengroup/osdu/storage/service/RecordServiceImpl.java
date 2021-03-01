@@ -19,14 +19,19 @@ import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
-import org.opengroup.osdu.storage.util.PatchOperationApplicator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -75,10 +80,13 @@ public class RecordServiceImpl implements RecordService {
     @Autowired
     private StorageAuditLogger auditLogger;
 
+    @Autowired IEntitlementsAndCacheService entitlementsService;
+
     @Autowired
     private DataAuthorizationService dataAuthorizationService;
 
-    private PatchOperationApplicator patchOperationApplicator = new PatchOperationApplicator();
+    @Autowired(required = false)
+    private IPolicyService policyService;
 
     @Override
     public void purgeRecord(String recordId) {
@@ -153,8 +161,10 @@ public class RecordServiceImpl implements RecordService {
         Map<String, RecordMetadata> existingRecords = this.recordRepository.get(idsWithoutVersion);
 
         List<String> notFoundRecordIds = new ArrayList<>();
-        List<String> unauthorizedRecordIds = this.dataAuthorizationService.validateUserAccessAndComplianceConstraints(
-                this::validateLegalTags, this::validateOwnerAccess, bulkUpdateOps, idMap, existingRecords);
+        List<String> unauthorizedRecordIds = this.dataAuthorizationService.validateBulkUpdateUserAccessAndComplianceConstraints(
+                this::validateUserAccessAndComplianceConstraints,
+                this::validateUserAccessAndCompliancePolicyConstraints,
+                new BulkPayload(bulkUpdateOps, idMap, existingRecords));
 
         // validate record access; 404 and 401
         List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
@@ -174,7 +184,7 @@ public class RecordServiceImpl implements RecordService {
                 notFoundRecordIds.add(idWithVersion);
                 ids.remove(idWithVersion);
             } else {
-                metadata = this.patchOperationApplicator.updateMetadataWithOperations(metadata, bulkUpdateOps);
+                metadata = this.updateMetadataWithOperations(metadata, bulkUpdateOps);
                 metadata.setModifyUser(user);
                 metadata.setModifyTime(currentTimestamp);
                 validRecordsMetadata.add(metadata);
@@ -297,5 +307,62 @@ public class RecordServiceImpl implements RecordService {
                 throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", msg);
             }
         }
+    }
+
+    private final Gson gson = new Gson();
+
+    public RecordMetadata updateMetadataWithOperations(RecordMetadata recordMetadata, List<PatchOperation> ops) {
+        JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
+
+        for (PatchOperation op : ops) {
+            String path = op.getPath();
+            String[] pathComponents = path.split("/");
+
+            JsonObject outter = metadata;
+            JsonObject inner = metadata;
+
+            for (int i = 1; i < pathComponents.length - 1; i++) {
+                inner = outter.getAsJsonObject(pathComponents[i]);
+                outter = inner;
+            }
+
+            JsonArray values = new JsonArray();
+            for (String value : op.getValue()) {
+                values.add(value);
+            }
+            inner.add(pathComponents[pathComponents.length - 1], values);
+        }
+
+        return gson.fromJson(metadata, RecordMetadata.class);
+    }
+
+    private List<String> validateUserAccessAndComplianceConstraints(BulkPayload bulkPayload) {
+        this.validateLegalTags(bulkPayload.getBulkUpdateOps());
+        return this.validateOwnerAccess(bulkPayload.getIdMap(), bulkPayload.getExistingRecords());
+    }
+
+    private List<String> validateUserAccessAndCompliancePolicyConstraints(BulkPayload bulkPayload) {
+        List<String> unauthorizedRecordIds = new ArrayList<>();
+        for (String id : bulkPayload.getIdMap().keySet()) {
+            String idWithVersion = bulkPayload.getIdMap().get(id);
+            RecordMetadata metadata = bulkPayload.getExistingRecords().get(id);
+
+            if (metadata == null) continue;
+
+            metadata = this.updateMetadataWithOperations(metadata, bulkPayload.getBulkUpdateOps());
+
+            if (!this.policyService.evaluateStorageDataAuthorizationPolicy(metadata, OperationType.update)) {
+                unauthorizedRecordIds.add(idWithVersion);
+            }
+        }
+        return unauthorizedRecordIds;
+    }
+
+    @Data
+    @AllArgsConstructor
+    class BulkPayload {
+        private List<PatchOperation> bulkUpdateOps;
+        private Map<String, String> idMap;
+        private Map<String, RecordMetadata> existingRecords;
     }
 }
