@@ -69,8 +69,7 @@ public class StorageFilter implements Filter {
 
 		Map<String, List<Object>> standardHeaders = ResponseHeaders.STANDARD_RESPONSE_HEADERS;
 		for (Map.Entry<String, List<Object>> header : standardHeaders.entrySet()) {
-			httpResponse.addHeader(header.getKey(), header.getValue().stream().map(o -> o.toString()).collect(
-					Collectors.joining(" ")));
+			httpResponse.addHeader(header.getKey(), header.getValue().toString());
 		}
 		httpResponse.addHeader(DpsHeaders.CORRELATION_ID, this.dpsHeaders.getCorrelationId());
 
