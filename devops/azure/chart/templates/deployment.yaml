@@ -48,10 +48,18 @@ spec:
           limits:
             cpu: "1000m"
             memory: "4Gi"
+        # Upgrade to SpringBoot 2.3 for actuator k8s support with readiness and liveness endpoints
+        # More info https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#boot-features-application-availability
         readinessProbe:
           httpGet:
-            path: /api/storage/v2/health
-            port: 80
+            path: /actuator/health
+            port: 8081
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 250
+          periodSeconds: 10
         volumeMounts:
         - name: azure-keyvault
           mountPath: "/mnt/azure-keyvault"
