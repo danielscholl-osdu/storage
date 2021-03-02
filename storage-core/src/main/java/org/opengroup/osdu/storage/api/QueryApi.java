@@ -19,6 +19,7 @@ import javax.validation.Valid;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidKind;
 import org.opengroup.osdu.storage.service.BatchService;
+import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,9 @@ public class QueryApi {
 	@Autowired
 	private BatchService batchService;
 
+	@Autowired
+	private EncodeDecode encodeDecode;
+
 	@PostMapping("/records")
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<MultiRecordInfo> getRecords(@Valid @RequestBody MultiRecordIds ids) {
@@ -62,7 +66,9 @@ public class QueryApi {
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getKinds(@RequestParam(required = false) String cursor,
 			@RequestParam(required = false) Integer limit) {
-		return new ResponseEntity<DatastoreQueryResult>(this.batchService.getAllKinds(cursor, limit), HttpStatus.OK);
+		DatastoreQueryResult result = this.batchService.getAllKinds(encodeDecode.deserializeCursor(cursor), limit);
+		result.setCursor(encodeDecode.serializeCursor(result.getCursor()));
+		return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
 	}
 
 	@GetMapping("/records")
@@ -71,7 +77,8 @@ public class QueryApi {
 			@RequestParam(required = false) String cursor,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam @ValidKind String kind) {
-		return new ResponseEntity<DatastoreQueryResult>(this.batchService.getAllRecords(cursor, kind, limit),
-				HttpStatus.OK);
+		DatastoreQueryResult result = this.batchService.getAllRecords(encodeDecode.deserializeCursor(cursor), kind, limit);
+		result.setCursor(encodeDecode.serializeCursor(result.getCursor()));
+		return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
 	}
 }

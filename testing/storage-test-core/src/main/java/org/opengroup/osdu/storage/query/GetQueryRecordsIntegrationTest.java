@@ -14,23 +14,26 @@
 
 package org.opengroup.osdu.storage.query;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
+import org.opengroup.osdu.storage.util.DummyRecordsHelper;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.LegalTagUtils;
+import org.opengroup.osdu.storage.util.RecordUtil;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestBase;
+import org.opengroup.osdu.storage.util.TestUtils;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
-import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 
@@ -87,11 +90,10 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 		result.add(responseObject.results[1]);
 
 		String cursor = responseObject.cursor;
-		String cursorEncoded = URLEncoder.encode(cursor, StandardCharsets.UTF_8.toString());
 
 		// second call
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
-				"?limit=2&cursor=" + cursorEncoded + "&kind=" + KIND);
+				"?limit=2&cursor=" + cursor + "&kind=" + KIND);
 		if (response.getStatus() != 200) {
 			fail(formResponseCheckingMessage(response));
 		}
@@ -103,11 +105,10 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 		result.add(responseObject.results[1]);
 
 		cursor = responseObject.cursor;
-		cursorEncoded = URLEncoder.encode(cursor, StandardCharsets.UTF_8.toString());
 
 		// third call
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
-				"?limit=2&cursor=" + cursorEncoded + "&kind=" + KIND);
+				"?limit=2&cursor=" + cursor + "&kind=" + KIND);
 		if (response.getStatus() != 200) {
 			fail(formResponseCheckingMessage(response));
 		}

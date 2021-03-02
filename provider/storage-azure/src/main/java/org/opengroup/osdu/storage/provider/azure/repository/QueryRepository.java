@@ -112,7 +112,7 @@ public class QueryRepository implements IQueryRepository {
         String status = RecordState.active.toString();
         Sort sort = Sort.by(Sort.Direction.ASC, "id");
         DatastoreQueryResult dqr = new DatastoreQueryResult();
-        List<String> ids = new ArrayList();
+        List<String> ids = new ArrayList<>();
         Iterable<RecordMetadataDoc> docs;
 
         try {
