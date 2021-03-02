@@ -28,8 +28,6 @@ import org.opengroup.osdu.storage.model.GetCursorValue;
 import org.opengroup.osdu.storage.util.*;
 import com.sun.jersey.api.client.ClientResponse;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 public abstract class StorageQuerySuccessfulTest extends TestBase {
 
@@ -59,8 +57,7 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 		String cursorValue = getCursorValue.getCursor();
 		assertEquals(HttpStatus.SC_OK, recordResponse.getStatus());
 		assertEquals(cursorValue, getCursorValue.getCursor());
-		String cursorEncoded = URLEncoder.encode(cursorValue, StandardCharsets.UTF_8.toString());
-		ClientResponse recordResponseWithCursorValue = TestUtils.send("query/kinds?cursor=" + cursorEncoded + "&limit=10",
+		ClientResponse recordResponseWithCursorValue = TestUtils.send("query/kinds?cursor=" + cursorValue + "&limit=10",
 				HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		assertEquals(HttpStatus.SC_OK, recordResponseWithCursorValue.getStatus());
 	}
