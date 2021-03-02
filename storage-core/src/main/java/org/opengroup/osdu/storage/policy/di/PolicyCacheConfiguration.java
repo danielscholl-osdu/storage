@@ -12,22 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.policy.cache;
+package org.opengroup.osdu.storage.policy.di;
 
-import org.opengroup.osdu.core.common.cache.VmCache;
-import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
-import org.springframework.stereotype.Component;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import javax.inject.Named;
 
-@Component
-public class PolicyCache extends VmCache<String, PolicyStatus> {
+@Configuration
+@Getter
+@Lazy
+public class PolicyCacheConfiguration {
 
-    public PolicyCache(final @Named("POLICY_CACHE_TIMEOUT") int timeout) {
-        super(timeout * 60, 1000);
-    }
+    @Value("${policy.cache.timeout:5}")
+    private int cacheTimeOut;
 
-    public boolean containsKey(final String key) {
-        return this.get(key) != null;
+    @Bean
+    @Named("POLICY_CACHE_TIMEOUT")
+    public int getPolicyCacheTimeout() {
+        return cacheTimeOut;
     }
 }

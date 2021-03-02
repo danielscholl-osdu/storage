@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Lazy;
 @Lazy
 public class PolicyServiceConfiguration {
 
-    @Value("${POLICY_ID}")
+    @Value("${POLICY_ID:storage}")
     private String policyId;
 
     @Value("${POLICY_API}")
