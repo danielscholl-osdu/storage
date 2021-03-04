@@ -20,11 +20,11 @@ import org.opengroup.osdu.core.common.policy.PolicyAPIConfig;
 import org.opengroup.osdu.core.common.policy.PolicyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-@Lazy
 @Component
+@ConditionalOnProperty(value = "service.policy.enabled", havingValue = "true", matchIfMissing = false)
 public class PolicyClientFactory extends AbstractFactoryBean<IPolicyFactory> {
 
     @Autowired

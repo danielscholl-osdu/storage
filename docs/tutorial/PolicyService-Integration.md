@@ -23,7 +23,7 @@ Here are steps to enable Policy service for a provider:
 
 - Add and provide values for following runtime configuration in `application.properties`
   ```
-  management.policy.enabled=true
+  service.policy.enabled=true
   POLICY_API=${policy_service_endpoint}
   PARTITION_API=${partition_service_endpoint}
   ```

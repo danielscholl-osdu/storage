@@ -24,7 +24,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(value = "management.policy.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "service.policy.enabled", havingValue = "true", matchIfMissing = false)
 public class PartitionServiceImpl implements IPartitionService {
 
     @Autowired

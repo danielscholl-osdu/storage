@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@ConditionalOnProperty(value = "management.policy.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "service.policy.enabled", havingValue = "true", matchIfMissing = false)
 public class PolicyServiceImpl implements IPolicyService {
 
     @Autowired
@@ -60,7 +60,7 @@ public class PolicyServiceImpl implements IPolicyService {
             IPolicyProvider serviceClient = this.policyFactory.create(this.headers);
             return serviceClient.evaluatePolicy(policy);
         } catch (Exception e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Policy service unavailable", "Error making request to Policy service");
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Policy service unavailable", "Error making request to Policy service", e);
         }
     }
 

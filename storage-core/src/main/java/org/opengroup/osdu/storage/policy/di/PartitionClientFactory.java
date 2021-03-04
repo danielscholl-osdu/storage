@@ -19,14 +19,14 @@ import org.opengroup.osdu.core.common.partition.PartitionAPIConfig;
 import org.opengroup.osdu.core.common.partition.PartitionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-@Lazy
 @Component
 @Primary
-public class PartitionClientFactory extends AbstractFactoryBean<IPartitionFactory>  {
+@ConditionalOnProperty(value = "service.policy.enabled", havingValue = "true", matchIfMissing = false)
+public class PartitionClientFactory extends AbstractFactoryBean<IPartitionFactory> {
 
     @Value("${PARTITION_API}")
     private String partitionAPIEndpoint;
