@@ -55,13 +55,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "All kinds retrieved successfully."
@@ -113,13 +106,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "Record Ids retrieved successfully."
@@ -157,13 +143,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "Fetch multiple records successfully."
@@ -204,13 +183,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         204:
           description: "Record deleted successfully."
@@ -258,13 +230,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "Record retrieved successfully."
@@ -303,13 +268,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         204:
           description: "Record purged successfully."
@@ -363,13 +321,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "Record retrieved successfully."
@@ -409,13 +360,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "Record versions retrieved successfully."
@@ -466,13 +410,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         201:
           description: "Records created and/or updated successfully."
@@ -486,6 +423,51 @@ paths:
           description: "Invalid acl group."
           schema:
             $ref: "#/definitions/AppError"
+        403:
+          description: "User not authorized to perform the action."
+          schema:
+            $ref: "#/definitions/AppError"
+      security:
+      - datalake_auth:
+        - "email"
+      - Bearer: []
+    patch:
+      tags:
+      - "records"
+      summary: "Modify record metadata attributes using patch operations"
+      description: "The API represents the patch update mechanism for records. It allows\
+        \ updating multiple records in one request. It supports legal tags, ACLs or tags\
+        \ updates at the moment. For the legal tags and ACLs only replace operation supported.\
+        \ For tags update replace, add and remove operation allowed."
+      operationId: "Patch update records"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/RecordBulkUpdateParam"
+      - name: "OSDU-Account-Id"
+        in: "header"
+        description: "Account ID is the active OSDU account (OSDU account or customer's\
+          \ account) which the users choose to use with the Search API."
+        required: true
+        type: "string"
+        default: "tenant1"
+      responses:
+        200:
+          description: "Records updated successfully."
+          schema:
+            $ref: "#/definitions/BulkUpdateRecordsResponse"
+        206:
+          description: "Records updated successful partially."
+          schema:
+            $ref: "#/definitions/BulkUpdateRecordsResponse"
         403:
           description: "User not authorized to perform the action."
           schema:
@@ -521,13 +503,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         200:
           description: "Schema obtained successfully."
@@ -570,13 +545,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         204:
           description: "Schema deleted successfully."
@@ -617,13 +585,6 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
-      - name: "OSDU-On-Behalf-Of"
-        in: "header"
-        description: "On behalf email or token is the token/email of the original\
-          \ user making the call. For now, only email is supported but eventually,\
-          \ primary usage will be token."
-        required: false
-        type: "string"
       responses:
         201:
           description: "Schema created successfully."
@@ -913,3 +874,98 @@ definitions:
         - "link"
         - "datetime."
     description: "Schema item which describes schema properties and their data types."
+  RecordBulkUpdateParam:
+    type: "object"
+    required:
+    - "query"
+    - "ops"
+    properties:
+      query:
+        description: "Patch update query information"
+        allowEmptyValue: false
+        $ref: "#/definitions/RecordQuery"
+      ops:
+        type: "array"
+        description: "List of operations for records pathc update"
+        allowEmptyValue: false
+        items:
+          $ref: "#/definitions/PatchOperation"
+    description: "Patch update input information"
+    example:
+      query:
+      - ids:
+        - "recordId1"
+        - "recordId2"
+      ops:
+      - op: "replace"
+        path: "/path1"
+        value:
+        - "value1"
+        - "value2"
+        - "value3"
+      - op: "replace"
+        path: "/path2"
+        value:
+        - "value4"
+        - "value5"
+        - "value6"        
+  RecordQuery:
+    type: "object"
+    required:
+    - "ids"
+    properties:
+      ids:
+        type: "array"
+        description: "Records ids for whom patch operations going to be applied"
+    description: "Patch api query specific information"
+  PatchOperation:
+    type: "object"
+    required:
+      - "op"
+      - "path"
+      - "value"
+    properties:
+      op:
+        type: "string"
+        description: "Type of patch operation"
+        enum:
+        - "add"
+        - "replace"
+        - "remove"
+      path:
+        type: "string"
+        description: "Path for batch operation"
+      value:
+        type: "array"
+        description: "Path for batch operation"
+        items:
+          type: "string"
+    description: "Patch api operation specific information"
+  BulkUpdateRecordsResponse:
+    type: "object"
+    properties:
+      recordCount:
+        type: "integer"
+        format: "int32"
+        description: "Number of records which updated successfully."
+      recordIds:
+        type: "array"
+        description: "List of successfully updated record ids."
+        items:
+          type: "string"
+      notFoundRecordIds:
+        type: "array"
+        description: "List of record ids for whom RecordMetadata was not found"
+        items:
+          type: "string"
+      unAuthorizedRecordIds:
+        type: "array"
+        description: "List of record ids for whom user does not has owner permissions"
+        items:
+          type: "string"
+      lockedRecordIds:
+        type: "array"
+        description: "List of locked record ids"
+        items:
+          type: "string"
+    description: "Result of the record batch update request."

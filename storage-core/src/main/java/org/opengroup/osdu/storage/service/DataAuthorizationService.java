@@ -20,16 +20,12 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
-import org.opengroup.osdu.storage.service.IngestionServiceImpl.IngestionPayload;
-import org.opengroup.osdu.storage.service.RecordServiceImpl.BulkPayload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 @Service
 public class DataAuthorizationService {
@@ -73,27 +69,6 @@ public class DataAuthorizationService {
         }
 
         return this.cloudStorage.hasAccess(recordMetadata);
-    }
-
-    public void validateIngestionUserAccessAndComplianceConstraints(Consumer<IngestionPayload> storageValidator,
-                                                                    Consumer<IngestionPayload> policyValidator,
-                                                                    IngestionPayload payload) {
-        if (this.policyEnabled()) {
-            policyValidator.accept(payload);
-            return;
-        }
-
-        storageValidator.accept(payload);
-    }
-
-    public List<String> validateBulkUpdateUserAccessAndComplianceConstraints(Function<BulkPayload, List<String>> storageValidator,
-                                                                             Function<BulkPayload, List<String>> policyValidator,
-                                                                             BulkPayload bulkPayload) {
-        if (this.policyEnabled()) {
-            return policyValidator.apply(bulkPayload);
-        }
-
-        return storageValidator.apply(bulkPayload);
     }
 
     public boolean policyEnabled() {

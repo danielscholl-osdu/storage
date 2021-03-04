@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2021, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
 
 package org.opengroup.osdu.storage.service;
 
-public interface RecordService {
+import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
+import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 
-	void purgeRecord(String recordId);
+public interface BulkUpdateRecordService {
 
-	void deleteRecord(String recordId, String user);
+  BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user);
+
 }

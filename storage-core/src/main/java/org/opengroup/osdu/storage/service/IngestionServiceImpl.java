@@ -161,10 +161,11 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		this.dataAuthorizationService.validateIngestionUserAccessAndComplianceConstraints(
-				this::validateUserAccessAndComplianceConstraints,
-				this::validateUserAccessAndCompliancePolicyConstraints,
-				new IngestionPayload(inputRecords, existingRecords, recordParentMap));
+		if(this.dataAuthorizationService.policyEnabled()) {
+		    this.validateUserAccessAndCompliancePolicyConstraints(inputRecords, existingRecords, recordParentMap);
+		} else {
+			this.validateUserAccessAndComplianceConstraints(inputRecords, existingRecords, recordParentMap);
+		}
 
 		Map<RecordMetadata, RecordData> recordUpdatesMap = new HashMap<>();
         Map<RecordMetadata, RecordData> recordUpdateWithoutVersions = new HashMap<>();
@@ -211,11 +212,12 @@ public class IngestionServiceImpl implements IngestionService {
 		return recordsToProcess;
 	}
 
-	private void validateUserAccessAndComplianceConstraints(IngestionPayload payload) {
-		this.validateUserHasAccessToAllRecords(payload.getExistingRecords());
-		this.validateLegalConstraints(payload.getInputRecords());
-		this.validateOwnerAccessOnExistingRecords(payload.getInputRecords(), payload.getExistingRecords());
-		this.populateLegalInfoFromParents(payload.getInputRecords(), payload.getExistingRecords(), payload.getRecordParentMap());
+	private void validateUserAccessAndComplianceConstraints(
+			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<String>> recordParentMap) {
+		this.validateUserHasAccessToAllRecords(existingRecords);
+		this.validateLegalConstraints(inputRecords);
+		this.validateOwnerAccessOnExistingRecords(inputRecords, existingRecords);
+		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
 	}
 
 	private void validateOwnerAccessOnExistingRecords(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
@@ -362,13 +364,14 @@ public class IngestionServiceImpl implements IngestionService {
 		return ordc;
 	}
 
-	private void validateUserAccessAndCompliancePolicyConstraints(IngestionPayload payload) {
-		this.populateLegalInfoFromParents(payload.getInputRecords(), payload.getExistingRecords(), payload.getRecordParentMap());
-		for (Record record : payload.getInputRecords()) {
+	private void validateUserAccessAndCompliancePolicyConstraints(
+			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<String>> recordParentMap) {
+		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
+		for (Record record : inputRecords) {
 			RecordMetadata recordMetadata;
 			OperationType operationType;
-			if (payload.getExistingRecords().containsKey(record.getId())) {
-				recordMetadata = payload.getExistingRecords().get(record.getId());
+			if (existingRecords.containsKey(record.getId())) {
+				recordMetadata = existingRecords.get(record.getId());
 				operationType = OperationType.update;
 			} else {
 				recordMetadata = new RecordMetadata(record);
@@ -379,13 +382,5 @@ public class IngestionServiceImpl implements IngestionService {
 						"User Unauthorized", "User is not authorized to create or update records.", String.format("User does not have required access to record %s", record.getId()));
 			}
 		}
-	}
-
-	@Data
-	@AllArgsConstructor
-	class IngestionPayload {
-		private List<Record> inputRecords;
-		private Map<String, RecordMetadata> existingRecords;
-		private Map<String, List<String>> recordParentMap;
 	}
 }

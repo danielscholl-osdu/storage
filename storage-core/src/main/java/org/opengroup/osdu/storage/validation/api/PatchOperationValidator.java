@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2021, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.validation.api;
 
-public interface RecordService {
+import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 
-	void purgeRecord(String recordId);
+import java.util.List;
 
-	void deleteRecord(String recordId, String user);
+public interface PatchOperationValidator {
+
+    void validateDuplicates(List<PatchOperation> ops);
+
+    void validateAcls(List<PatchOperation> ops);
+
+    void validateLegalTags(List<PatchOperation> ops);
+
+    void validateTags(List<PatchOperation> ops);
 }

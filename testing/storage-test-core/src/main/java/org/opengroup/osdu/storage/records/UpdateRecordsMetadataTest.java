@@ -14,18 +14,29 @@
 
 package org.opengroup.osdu.storage.records;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.junit.*;
 import org.opengroup.osdu.storage.util.*;
+
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.http.HttpStatus;
 
 import java.util.Map;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public abstract class UpdateRecordsMetadataTest extends TestBase {
+    private static final String TAG_KEY = "tagkey1";
+    private static final String TAG_VALUE1 = "tagvalue1";
+    private static final String TAG_VALUE2 = "tagvalue2";
+
     private static long NOW = System.currentTimeMillis();
     private static String LEGAL_TAG = LegalTagUtils.createRandomName();
     private static String KIND = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.1." + NOW;
@@ -33,6 +44,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     private static String RECORD_ID_2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
     private static String RECORD_ID_3 = TenantUtils.getFirstTenantName() + ":test:1.3." + NOW;
     private static String RECORD_ID_4 = TenantUtils.getFirstTenantName() + ":test:1.4." + NOW;
+    private static String NOT_EXISTED_RECORD_ID = TenantUtils.getFirstTenantName() + ":bulkupdate:1.6." + NOW;
     private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
 
 
@@ -181,5 +193,89 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         assertEquals(2, queryResponseObject2.records.length);
         assertEquals(TestUtils.getIntegrationTesterAcl(), queryResponseObject2.records[0].acl.viewers[0]);
         assertEquals(TestUtils.getIntegrationTesterAcl(), queryResponseObject2.records[0].acl.owners[0]);
+    }
+
+    @Test
+    public void should_return200AndUpdateTagsMetadata_whenValidRecordsProvided() throws Exception {
+        //add operation
+        JsonObject updateBody = buildUpdateTagBody(RECORD_ID, "add", TAG_KEY + ":" + TAG_VALUE1);
+
+        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        assertEquals(SC_OK, updateResponse.getStatus());
+        assertEquals(SC_OK, recordResponse.getStatus());
+
+        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
+
+        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        assertEquals(TAG_VALUE1, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
+
+        //replace operation
+        updateBody = buildUpdateTagBody(RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE2);
+        sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        assertEquals(TAG_VALUE2, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
+
+        //remove operation
+        updateBody = buildUpdateTagBody(RECORD_ID,"remove", TAG_KEY);
+        sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
+        assertNull(resultObject.get("tags"));
+    }
+
+    @Test
+    public void should_return206andUpdateTagsMetadata_whenNotExistedRecordProvided() throws Exception {
+        JsonObject updateBody = buildUpdateTagBody(NOT_EXISTED_RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE1);
+
+        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+
+        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getStatus());
+        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+
+        System.out.println(resultObject.toString());
+        assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
+    }
+
+    private static ClientResponse sendRequest(String method, String path, String body, String token) throws Exception {
+        return TestUtils
+            .send(path, method, HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), body, "");
+    }
+
+    private String toJson(Object object) {
+        return new Gson().toJson(object);
+    }
+
+    private JsonObject bodyToJsonObject(String json) {
+        return new JsonParser().parse(json).getAsJsonObject();
+    }
+
+
+    private JsonObject buildUpdateTagBody(String id, String op, String val) {
+        JsonArray records = new JsonArray();
+        records.add(id);
+
+        JsonArray value = new JsonArray();
+        value.add(val);
+        JsonObject operation = new JsonObject();
+        operation.addProperty("op", op);
+        operation.addProperty("path", "/tags");
+        operation.add("value", value);
+        JsonArray ops = new JsonArray();
+        ops.add(operation);
+
+        JsonObject query = new JsonObject();
+        query.add("ids", records);
+
+        JsonObject updateBody = new JsonObject();
+        updateBody.add("query", query);
+        updateBody.add("ops", ops);
+
+        return updateBody;
     }
 }
