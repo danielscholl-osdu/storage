@@ -33,6 +33,8 @@
   - [Get record <a name="Retrieve-latest-record-version"></a>](#get-record)
     - [Parameters <a name="parameters"></a>](#parameters-2)
   - [Delete record <a name="Delete-record"></a>](#delete-record)
+- [Patch api <a name="patch"></a>](#patch)  
+  - [Update batch of records with patch api <a name="patch-api-update"></a>](#patch-update)
 - [Using service accounts to access Storage APIs <a name="Service-accounts"></a>](#using-service-accounts-to-access-storage-apis)
 - [Using skipdupes <a name="skipdupes"></a>](#using-skipdupes)
 
@@ -450,6 +452,82 @@ curl --request POST \
 ```
 </details>
 
+## Tags <a name="patch"></a>
+### Append or Update record tags <a name="patch-api-update"></a>
+The API patch records updates. It allows updating following attributes of the record metadata: 
+1. ACLs (only replace operation supported)
+1. Legal tags (only replace operation supported)
+1. Tags (add, replace, remove operation supported)
+If we need add or replace tags ops.value should be colon separated string value, e.g.:
+```
+"ops": [
+        {
+        "op":"replace",
+        "path":"/tags",
+        "value":[
+            "key1:value1",
+            "key2:value2",
+            "key3:value3"
+        ]
+        }
+```
+If we need remove tags ops.value should be array of the tags keys which we are going to remove, e.g.:
+```
+"ops": [
+        {
+        "op":"remove",
+        "path":"/tags",
+        "value":[
+            "key1",
+            "key2",
+            "key3"
+        ]
+        }
+```
+```
+PATCH /api/storage/records
+```
+
+<details><summary>curl</summary>
+
+```
+ curl --request PACTH \
+  --url '/api/storage/v2/records' \
+  --header 'accept: application/json' \
+  --header 'authorization: Bearer <JWT>' \
+  --header 'content-type: application/json' \
+  --header 'Data-Partition-Id: common' 
+  --data '{
+    "query": {
+        "ids": [
+            "common:well:123456789",
+            "common:wellTop:abc789456",
+            "common:wellLog:4531wega22"
+            ],
+    }
+    "ops": [
+        {
+        "op":"replace",
+        "path":"/path1",
+        "value":[
+            "value1",
+            "value2",
+            "value3"
+        ]
+        },
+        {
+        "op":"add",
+        "path":"/path2",
+        "value":[
+            "value4",
+            "value5",
+            "value6"
+        ]
+        }
+    ]
+}
+```
+</details>
 
 ## Using service accounts to access Storage APIs <a name="Service-accounts"></a>
 The Storage service relies on the Google native data access authorization mechanisms to provide access control on the records. 
