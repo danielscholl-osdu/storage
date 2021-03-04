@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2021, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.di;
 
-public interface RecordService {
+import static java.time.Clock.systemDefaultZone;
 
-	void purgeRecord(String recordId);
+import java.time.Clock;
 
-	void deleteRecord(String recordId, String user);
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.google.gson.Gson;
+
+@Configuration
+public class BeanConfig {
+
+  @Bean
+  public Clock clock() {
+    return systemDefaultZone();
+  }
+
+  @Bean
+  public Gson gson() {
+    return new Gson();
+  }
 }
