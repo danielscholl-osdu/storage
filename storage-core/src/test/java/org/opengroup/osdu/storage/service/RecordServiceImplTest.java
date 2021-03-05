@@ -85,6 +85,9 @@ public class RecordServiceImplTest {
     @Mock
     private StorageAuditLogger auditLogger;
 
+    @Mock
+    private DataAuthorizationService dataAuthorizationService;
+
     @Before
     public void setup() {
         mock(PersistenceHelper.class);
@@ -127,6 +130,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.purgeRecord(RECORD_ID);
         verify(this.auditLogger).purgeRecordSuccess(any());
@@ -158,6 +162,7 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
 
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
         try {
             this.sut.purgeRecord(RECORD_ID);
@@ -187,6 +192,7 @@ public class RecordServiceImplTest {
         AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(originalException).when(this.recordRepository).delete(RECORD_ID);
@@ -237,6 +243,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                 "The user is not authorized to perform this action")).when(this.cloudStorage).delete(record);
@@ -262,6 +269,7 @@ public class RecordServiceImplTest {
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(true);
 
         when(this.cloudStorage.hasAccess(record)).thenReturn(true);
 
@@ -303,6 +311,7 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
 
         when(this.cloudStorage.hasAccess(record)).thenReturn(false);
+        when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(false);
 
         try {
             this.sut.deleteRecord(RECORD_ID, "anyUser");

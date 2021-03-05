@@ -14,28 +14,26 @@
 
 package org.opengroup.osdu.storage.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
+import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
-
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.google.common.collect.Lists;
-
-import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-
-import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-
-import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
-import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.Collections.singletonList;
 
@@ -52,9 +50,6 @@ public class RecordServiceImpl implements RecordService {
     private IMessageBus pubSubClient;
 
     @Autowired
-    private IEntitlementsAndCacheService entitlementsAndCacheService;
-
-    @Autowired
     private TenantInfo tenant;
 
     @Autowired
@@ -63,11 +58,14 @@ public class RecordServiceImpl implements RecordService {
     @Autowired
     private StorageAuditLogger auditLogger;
 
+    @Autowired
+    private DataAuthorizationService dataAuthorizationService;
+
     @Override
     public void purgeRecord(String recordId) {
 
         RecordMetadata recordMetadata = this.getRecordMetadata(recordId, true);
-        boolean hasOwnerAccess = this.entitlementsAndCacheService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
+        boolean hasOwnerAccess = this.dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.purge);
 
         if (!hasOwnerAccess) {
             this.auditLogger.purgeRecordFail(singletonList(recordId));
@@ -102,7 +100,7 @@ public class RecordServiceImpl implements RecordService {
 
         RecordMetadata recordMetadata = this.getRecordMetadata(recordId, false);
 
-        this.validateAccess(recordMetadata);
+        this.validateDeleteAllowed(recordMetadata);
 
         recordMetadata.setStatus(RecordState.deleted);
         recordMetadata.setModifyTime(System.currentTimeMillis());
@@ -139,11 +137,10 @@ public class RecordServiceImpl implements RecordService {
         return record;
     }
 
-    private void validateAccess(RecordMetadata recordMetadata) {
-        if (!this.cloudStorage.hasAccess(recordMetadata)) {
+    private void validateDeleteAllowed(RecordMetadata recordMetadata) {
+        if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.delete)) {
             this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
-            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-                    "The user is not authorized to perform this action");
+            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform this action");
         }
     }
 }

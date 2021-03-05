@@ -41,93 +41,93 @@ import org.opengroup.osdu.storage.validation.impl.MetadataPatchValidator;
 @RunWith(MockitoJUnitRunner.class)
 public class MetadataPatchValidatorTest {
 
-  private static final String PATH = "/path";
-  private static final String PATH_ACL = "/acl";
-  private static final String PATH_LEGAL = "/legal";
-  private static final String PATH_TAGS = "/tags";
+    private static final String PATH = "/path";
+    private static final String PATH_ACL = "/acl";
+    private static final String PATH_LEGAL = "/legal";
+    private static final String PATH_TAGS = "/tags";
 
-  private static final String[] INVALID_TAGS = {"tagkeytagvalue"};
-  private static final String[] VALID_TAGS = {"tagkey:tagvalue"};
+    private static final String[] INVALID_TAGS = {"tagkeytagvalue"};
+    private static final String[] VALID_TAGS = {"tagkey:tagvalue"};
 
-  private static final String[] VALUES = {"value"};
+    private static final String[] VALUES = {"value"};
 
-  @Mock
-  private ILegalService legalService;
-  @Mock
-  private IEntitlementsAndCacheService entitlementsAndCacheService;
-  @Mock
-  private DpsHeaders headers;
+    @Mock
+    private ILegalService legalService;
+    @Mock
+    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    @Mock
+    private DpsHeaders headers;
 
-  @Rule
-  public ExpectedException exceptionRule = ExpectedException.none();
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none();
 
-  @InjectMocks
-  private MetadataPatchValidator validator;
+    @InjectMocks
+    private MetadataPatchValidator validator;
 
-  @Test
-  public void shouldFail_onDuplicatedPath() {
-    PatchOperation patchOperation = buildPatchOperation(PATH, VALUES);
-    PatchOperation duplicatedPatchOperation = buildPatchOperation(PATH, VALUES);
+    @Test
+    public void shouldFail_onDuplicatedPath() {
+        PatchOperation patchOperation = buildPatchOperation(PATH, VALUES);
+        PatchOperation duplicatedPatchOperation = buildPatchOperation(PATH, VALUES);
 
-    exceptionRule.expect(AppException.class);
-    exceptionRule.expect(buildAppExceptionMatcher("Users can only update a path once per request.", "Duplicate paths"));
+        exceptionRule.expect(AppException.class);
+        exceptionRule.expect(buildAppExceptionMatcher("Users can only update a path once per request.", "Duplicate paths"));
 
-    List<PatchOperation> operations = Arrays.asList(patchOperation, duplicatedPatchOperation);
+        List<PatchOperation> operations = Arrays.asList(patchOperation, duplicatedPatchOperation);
 
-    validator.validateOperations(operations);
-  }
+        validator.validateDuplicates(operations);
+    }
 
-  @Test
-  public void shouldFail_onInvalidAcl() {
-    PatchOperation patchOperation = buildPatchOperation(PATH_ACL, VALUES);
+    @Test
+    public void shouldFail_onInvalidAcl() {
+        PatchOperation patchOperation = buildPatchOperation(PATH_ACL, VALUES);
 
-    when(entitlementsAndCacheService.isValidAcl(headers, new HashSet<>(Arrays.asList(VALUES)))).thenReturn(false);
+        when(entitlementsAndCacheService.isValidAcl(headers, new HashSet<>(Arrays.asList(VALUES)))).thenReturn(false);
 
-    exceptionRule.expect(AppException.class);
-    exceptionRule.expect(buildAppExceptionMatcher("Invalid ACLs provided in acl path.", "Invalid ACLs"));
+        exceptionRule.expect(AppException.class);
+        exceptionRule.expect(buildAppExceptionMatcher("Invalid ACLs provided in acl path.", "Invalid ACLs"));
 
-    validator.validateOperations(singletonList(patchOperation));
-  }
+        validator.validateAcls(singletonList(patchOperation));
+    }
 
-  @Test(expected = RuntimeException.class)
-  public void shouldFail_onInvalidLegal() {
-    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, VALUES);
+    @Test(expected = RuntimeException.class)
+    public void shouldFail_onInvalidLegal() {
+        PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, VALUES);
 
-    doThrow(new RuntimeException()).when(legalService).validateLegalTags(new HashSet<>(Arrays.asList(VALUES)));
+        doThrow(new RuntimeException()).when(legalService).validateLegalTags(new HashSet<>(Arrays.asList(VALUES)));
 
-    validator.validateOperations(singletonList(patchOperation));
-  }
+        validator.validateLegalTags(singletonList(patchOperation));
+    }
 
-  @Test
-  public void shouldFail_onInvalidTagFormat() {
-    PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, INVALID_TAGS);
+    @Test
+    public void shouldFail_onInvalidTagFormat() {
+        PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, INVALID_TAGS);
 
-    exceptionRule.expect(AppException.class);
-    exceptionRule.expect(buildAppExceptionMatcher("Invalid tags values provided", "Invalid tags"));
+        exceptionRule.expect(AppException.class);
+        exceptionRule.expect(buildAppExceptionMatcher("Invalid tags values provided", "Invalid tags"));
 
-    validator.validateOperations(singletonList(patchOperation));
-  }
+        validator.validateTags(singletonList(patchOperation));
+    }
 
-  @Test
-  public void shouldPass_onValidTagFormat() {
-    PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, VALID_TAGS);
+    @Test
+    public void shouldPass_onValidTagFormat() {
+        PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, VALID_TAGS);
 
-    validator.validateOperations(singletonList(patchOperation));
+        validator.validateTags(singletonList(patchOperation));
 
-    verifyZeroInteractions(legalService, entitlementsAndCacheService, headers);
-  }
+        verifyZeroInteractions(legalService, entitlementsAndCacheService, headers);
+    }
 
-  @Test
-  public void shouldPassForTag_whenOperationIsRemove() {
-    PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, INVALID_TAGS);
-    patchOperation.setOp("remove");
+    @Test
+    public void shouldPassForTag_whenOperationIsRemove() {
+        PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, INVALID_TAGS);
+        patchOperation.setOp("remove");
 
-    validator.validateOperations(singletonList(patchOperation));
+        validator.validateTags(singletonList(patchOperation));
 
-    verifyZeroInteractions(legalService, entitlementsAndCacheService, headers);
-  }
+        verifyZeroInteractions(legalService, entitlementsAndCacheService, headers);
+    }
 
-  private PatchOperation buildPatchOperation(String path, String[] value) {
-    return PatchOperation.builder().path(path).value(value).build();
-  }
+    private PatchOperation buildPatchOperation(String path, String[] value) {
+        return PatchOperation.builder().path(path).value(value).build();
+    }
 }

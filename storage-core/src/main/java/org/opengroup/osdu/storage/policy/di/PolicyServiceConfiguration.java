@@ -1,4 +1,4 @@
-// Copyright 2017-2021, Schlumberger
+// Copyright © Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.util.api;
+package org.opengroup.osdu.storage.policy.di;
 
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
-import java.util.List;
-import java.util.Map;
+@Configuration
+@Getter
+@Lazy
+public class PolicyServiceConfiguration {
 
-public interface RecordUtil {
+    @Value("${POLICY_ID:storage}")
+    private String policyId;
 
-    void validateRecordIds(List<String> recordIds);
-
-    Map<String, String> mapRecordsAndVersions(List<String> recordIds);
-
-    RecordMetadata updateRecordMetaDataForPatchOperations(RecordMetadata recordMetadata, List<PatchOperation> ops, String user, long timestamp);
+    @Value("${POLICY_API}")
+    private String policyApiEndpoint;
 }

@@ -51,164 +51,169 @@ import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 @RunWith(MockitoJUnitRunner.class)
 public class BulkUpdateRecordServiceImplTest {
 
-  private static final String PATCH_OPERATION = "replace";
+    private static final String PATCH_OPERATION = "replace";
 
-  private static final String PATH = "/path";
+    private static final String PATH = "/path";
 
-  private static final String[] VALUES = {"value"};
+    private static final String[] VALUES = {"value"};
 
-  private final static Long CURRENT_MILLIS = System.currentTimeMillis();
+    private final static Long CURRENT_MILLIS = System.currentTimeMillis();
 
-  private static final String TEST_USER = "testUser";
+    private static final String TEST_USER = "testUser";
 
-  private static final String TEST_ID = "test_id";
-  private static final String ACL_OWNER = "test_acl";
-  private static final String TEST_KIND = "test_kind";
+    private static final String TEST_ID = "test_id";
+    private static final String ACL_OWNER = "test_acl";
+    private static final String TEST_KIND = "test_kind";
 
-  private static final String ID = "test_id";
+    private static final String ID = "test_id";
 
-  private final static List<String> TEST_IDS = singletonList(TEST_ID);
-  private final static Map<String, String> IDS_VERSION_MAP = new HashMap<String, String>() {{
-    put(TEST_ID, TEST_ID);
-  }};
-  private final static String[] OWNERS = new String[]{ACL_OWNER};
-
-  //External dependencies
-  @Mock
-  private RecordUtil recordUtil;
-  @Mock
-  private IRecordsMetadataRepository recordRepository;
-  @Mock
-  private PatchOperationValidator patchOperationValidator;
-  @Mock
-  private DpsHeaders headers;
-  @Mock
-  private IEntitlementsAndCacheService entitlementsAndCacheService;
-  @Mock
-  private StorageAuditLogger auditLogger;
-  @Mock
-  private IPersistenceService persistenceService;
-  @Mock
-  private Clock clock;
-
-  @InjectMocks
-  private BulkUpdateRecordServiceImpl service;
-
-  @Test
-  public void should_bulkUpdateRecords_successfully() {
-    RecordMetadata recordMetadata = buildRecordMetadata();
-    Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
-      put(TEST_ID, recordMetadata);
+    private final static List<String> TEST_IDS = singletonList(TEST_ID);
+    private final static Map<String, String> IDS_VERSION_MAP = new HashMap<String, String>() {{
+        put(TEST_ID, TEST_ID);
     }};
+    private final static String[] OWNERS = new String[]{ACL_OWNER};
 
-    RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-    commonSetup(recordMetadataMap, param.getOps(), true, false);
+    //External dependencies
+    @Mock
+    private RecordUtil recordUtil;
+    @Mock
+    private IRecordsMetadataRepository recordRepository;
+    @Mock
+    private PatchOperationValidator patchOperationValidator;
+    @Mock
+    private DpsHeaders headers;
+    @Mock
+    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    @Mock
+    private StorageAuditLogger auditLogger;
+    @Mock
+    private IPersistenceService persistenceService;
+    @Mock
+    private Clock clock;
+    @Mock
+    private DataAuthorizationService dataAuthorizationService;
+    @InjectMocks
+    private BulkUpdateRecordServiceImpl service;
 
-    BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+    @Test
+    public void should_bulkUpdateRecords_successfully() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
 
-    commonVerify(singletonList(TEST_ID), param.getOps());
-    verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
-    verifyZeroInteractions(auditLogger);
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        commonSetup(recordMetadataMap, param.getOps(), true, false);
 
-    assertEquals(TEST_ID, actualResponse.getRecordIds().get(0));
-    assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
-    assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
-    assertTrue(actualResponse.getLockedRecordIds().isEmpty());
-  }
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
 
-  @Test
-  public void should_bulkUpdateRecords_successfully_when_recordMetadataNotFound() {
-    RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        commonVerify(singletonList(TEST_ID), param.getOps());
+        verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
+        verifyZeroInteractions(auditLogger);
 
-    commonSetup(new HashMap<>(), param.getOps(), false, false);
+        assertEquals(TEST_ID, actualResponse.getRecordIds().get(0));
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+    }
 
-    BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+    @Test
+    public void should_bulkUpdateRecords_successfully_when_recordMetadataNotFound() {
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
 
-    verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
-    verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
+        commonSetup(new HashMap<>(), param.getOps(), false, false);
 
-    assertTrue(actualResponse.getRecordIds().isEmpty());
-    assertTrue(actualResponse.getLockedRecordIds().isEmpty());
-    assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
-    assertEquals(TEST_ID, actualResponse.getNotFoundRecordIds().get(0));
-  }
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
 
-  @Test
-  public void should_bulkUpdateRecords_successfully_when_recordUserDonHaveOwnerAccess() {
-    RecordMetadata recordMetadata = buildRecordMetadata();
-    Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
-      put(TEST_ID, recordMetadata);
-    }};
+        verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
+        verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
-    RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-    commonSetup(recordMetadataMap, param.getOps(), false, false);
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+        assertEquals(TEST_ID, actualResponse.getNotFoundRecordIds().get(0));
+    }
 
-    BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+    @Test
+    public void should_bulkUpdateRecords_successfully_when_recordUserDonHaveOwnerAccess() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
 
-    verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        commonSetup(recordMetadataMap, param.getOps(), false, false);
 
-    assertTrue(actualResponse.getRecordIds().isEmpty());
-    assertTrue(actualResponse.getLockedRecordIds().isEmpty());
-    assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
-    assertEquals(TEST_ID, actualResponse.getUnAuthorizedRecordIds().get(0));
-  }
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
 
-  @Test
-  public void should_bulkUpdateRecords_successfully_when_recordIsLocked() {
-    RecordMetadata recordMetadata = buildRecordMetadata();
-    Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
-      put(TEST_ID, recordMetadata);
-    }};
+        verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
-    RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-    commonSetup(recordMetadataMap, param.getOps(), true, true);
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertEquals(TEST_ID, actualResponse.getUnAuthorizedRecordIds().get(0));
+    }
 
-    BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+    @Test
+    public void should_bulkUpdateRecords_successfully_when_recordIsLocked() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
 
-    verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
-    verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        commonSetup(recordMetadataMap, param.getOps(), true, true);
 
-    assertEquals(TEST_ID, actualResponse.getLockedRecordIds().get(0));
-    assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
-    assertTrue(actualResponse.getRecordIds().isEmpty());
-    assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
-  }
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
 
-  private static RecordMetadata buildRecordMetadata() {
-    Acl acl = new Acl();
-    acl.setOwners(OWNERS);
-    RecordMetadata recordMetadata = new RecordMetadata();
-    recordMetadata.setId(TEST_ID);
-    recordMetadata.setKind(TEST_KIND);
-    recordMetadata.setAcl(acl);
-    return recordMetadata;
-  }
+        verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
+        verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
-  private RecordBulkUpdateParam buildRecordBulkUpdateParam() {
-    RecordQuery query = new RecordQuery();
-    query.setIds(new ArrayList<>(singletonList(ID)));
-    List<PatchOperation> ops = new ArrayList<>();
-    PatchOperation op = PatchOperation.builder().op(PATCH_OPERATION).path(PATH).value(VALUES).build();
-    ops.add(op);
-    return RecordBulkUpdateParam.builder().query(query).ops(ops).build();
-  }
+        assertEquals(TEST_ID, actualResponse.getLockedRecordIds().get(0));
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+    }
 
-  private void commonSetup(Map<String, RecordMetadata> recordMetadataMap,
-      List<PatchOperation> patchOperations,
-      boolean hasOwnerAccess,
-      boolean isLockedRecord) {
-    when(recordUtil.mapRecordsAndVersions(TEST_IDS)).thenReturn(IDS_VERSION_MAP);
-    when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
-    when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
-        .thenReturn(isLockedRecord ? new ArrayList<>(singletonList(TEST_ID)) : emptyList());
-    when(clock.millis()).thenReturn(CURRENT_MILLIS);
-    when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);
-    when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
-        CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
-  }
+    private static RecordMetadata buildRecordMetadata() {
+        Acl acl = new Acl();
+        acl.setOwners(OWNERS);
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setId(TEST_ID);
+        recordMetadata.setKind(TEST_KIND);
+        recordMetadata.setAcl(acl);
+        return recordMetadata;
+    }
 
-  private void commonVerify(List<String> ids, List<PatchOperation> ops) {
-    recordUtil.validateRecordIds(ids);
-    patchOperationValidator.validateOperations(ops);
-  }
+    private RecordBulkUpdateParam buildRecordBulkUpdateParam() {
+        RecordQuery query = new RecordQuery();
+        query.setIds(new ArrayList<>(singletonList(ID)));
+        List<PatchOperation> ops = new ArrayList<>();
+        PatchOperation op = PatchOperation.builder().op(PATCH_OPERATION).path(PATH).value(VALUES).build();
+        ops.add(op);
+        return RecordBulkUpdateParam.builder().query(query).ops(ops).build();
+    }
+
+    private void commonSetup(Map<String, RecordMetadata> recordMetadataMap,
+                             List<PatchOperation> patchOperations,
+                             boolean hasOwnerAccess,
+                             boolean isLockedRecord) {
+        when(recordUtil.mapRecordsAndVersions(TEST_IDS)).thenReturn(IDS_VERSION_MAP);
+        when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
+        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
+                .thenReturn(isLockedRecord ? new ArrayList<>(singletonList(TEST_ID)) : emptyList());
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
+                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+        when(dataAuthorizationService.policyEnabled()).thenReturn(false);
+    }
+
+    private void commonVerify(List<String> ids, List<PatchOperation> ops) {
+        recordUtil.validateRecordIds(ids);
+        this.patchOperationValidator.validateDuplicates(ops);
+        this.patchOperationValidator.validateAcls(ops);
+        this.patchOperationValidator.validateLegalTags(ops);
+        this.patchOperationValidator.validateTags(ops);
+    }
 }

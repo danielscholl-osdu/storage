@@ -1,4 +1,4 @@
-// Copyright 2017-2021, Schlumberger
+// Copyright © Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.util.api;
+package org.opengroup.osdu.storage.policy.service;
 
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.policy.PolicyRequest;
+import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
-import java.util.List;
-import java.util.Map;
+public interface IPolicyService {
 
-public interface RecordUtil {
+    PolicyResponse evaluatePolicy(PolicyRequest policy);
 
-    void validateRecordIds(List<String> recordIds);
-
-    Map<String, String> mapRecordsAndVersions(List<String> recordIds);
-
-    RecordMetadata updateRecordMetaDataForPatchOperations(RecordMetadata recordMetadata, List<PatchOperation> ops, String user, long timestamp);
+    boolean evaluateStorageDataAuthorizationPolicy(RecordMetadata recordMetadata, OperationType operationType);
 }
