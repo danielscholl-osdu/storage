@@ -30,6 +30,10 @@ import org.mockito.Mock;
 
 import com.google.common.collect.Lists;
 import org.mockito.Spy;
+import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
+import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
+import org.opengroup.osdu.core.common.model.storage.StorageRole;
+import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
@@ -72,6 +76,7 @@ public class QueryApiTest {
         ResponseEntity response = this.sut.getRecords(input);
 
         MultiRecordInfo records = (MultiRecordInfo) response.getBody();
+
         assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
         assertNull(records.getInvalidRecords());
         assertNull(records.getRetryRecords());

@@ -1,4 +1,4 @@
-// Copyright 2017-2021, Schlumberger
+// Copyright © Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.util.api;
+package org.opengroup.osdu.storage.policy.model;
 
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.opengroup.osdu.core.common.model.storage.Record;
 
 import java.util.List;
-import java.util.Map;
 
-public interface RecordUtil {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class StoragePolicy {
 
-    void validateRecordIds(List<String> recordIds);
+    private Enum operation;
 
-    Map<String, String> mapRecordsAndVersions(List<String> recordIds);
+    private List<String> groups;
 
-    RecordMetadata updateRecordMetaDataForPatchOperations(RecordMetadata recordMetadata, List<PatchOperation> ops, String user, long timestamp);
+    private Record record;
 }

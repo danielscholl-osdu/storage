@@ -21,7 +21,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.function.Consumer;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;

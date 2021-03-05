@@ -1,4 +1,4 @@
-// Copyright 2017-2021, Schlumberger
+// Copyright © Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.util.api;
+package org.opengroup.osdu.storage.policy.cache;
 
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.cache.VmCache;
+import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
+import javax.inject.Named;
 
-public interface RecordUtil {
+@Component
+public class PolicyCache extends VmCache<String, PolicyStatus> {
 
-    void validateRecordIds(List<String> recordIds);
+    public PolicyCache(final @Named("POLICY_CACHE_TIMEOUT") int timeout) {
+        super(timeout * 60, 1000);
+    }
 
-    Map<String, String> mapRecordsAndVersions(List<String> recordIds);
-
-    RecordMetadata updateRecordMetaDataForPatchOperations(RecordMetadata recordMetadata, List<PatchOperation> ops, String user, long timestamp);
+    public boolean containsKey(final String key) {
+        return this.get(key) != null;
+    }
 }

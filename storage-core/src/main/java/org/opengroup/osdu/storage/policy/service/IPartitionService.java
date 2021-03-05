@@ -1,4 +1,4 @@
-// Copyright 2017-2021, Schlumberger
+// Copyright © Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.validation.api;
+package org.opengroup.osdu.storage.policy.service;
 
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
+import org.opengroup.osdu.core.common.partition.PartitionInfo;
 
-import java.util.List;
+public interface IPartitionService {
 
-public interface PatchOperationValidator {
-
-    void validateDuplicates(List<PatchOperation> ops);
-
-    void validateAcls(List<PatchOperation> ops);
-
-    void validateLegalTags(List<PatchOperation> ops);
-
-    void validateTags(List<PatchOperation> ops);
+    PartitionInfo getPartition(String partitionId);
 }

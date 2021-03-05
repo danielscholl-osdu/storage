@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,9 @@ public class QueryServiceImpl implements QueryService {
 	@Autowired
 	private DpsHeaders dpsHeaders;
 
+	@Autowired
+	private DataAuthorizationService dataAuthorizationService;
+
 	@Override
 	public String getRecordInfo(String id, String[] attributes) {
 		try {
@@ -92,11 +96,11 @@ public class QueryServiceImpl implements QueryService {
 		// all the version numbers
 		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId);
 
-		if (!this.cloudStorage.hasAccess(recordMetadata)) {
-			this.auditLogger.readAllVersionsOfRecordFail(singletonList(recordId));
-			throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-					"The user is not authorized to perform this action");
-		}
+		if(!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.view)) {
+            this.auditLogger.readAllVersionsOfRecordFail(singletonList(recordId));
+            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user is not authorized to perform this action");
+        }
 
 		List<Long> versions = new ArrayList<>();
 		recordMetadata.getGcsVersionPaths().forEach(version -> {
@@ -162,12 +166,10 @@ public class QueryServiceImpl implements QueryService {
 		// post acl check, enforce application data restriction
 		List<RecordMetadata> recordMetadataList = new ArrayList<>();
 		recordMetadataList.add(recordMetadata);
-		List<RecordMetadata> postAclCheck = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.dpsHeaders);
-
-		if (postAclCheck == null || postAclCheck.isEmpty()) {
-			throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-					"The user does not have access to the record");
-		}
+		if(!this.dataAuthorizationService.validateViewerOrOwnerAccess(recordMetadata, OperationType.view)) {
+            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+                    "The user does not have access to the record");
+        }
 
 		// TODO REMOVE AFTER MIGRATION
 		if (Strings.isNullOrEmpty(blob)) {
