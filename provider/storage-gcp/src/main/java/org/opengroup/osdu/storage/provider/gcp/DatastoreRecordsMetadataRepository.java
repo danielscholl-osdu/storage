@@ -14,6 +14,9 @@
 
 package org.opengroup.osdu.storage.provider.gcp;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.cloud.Timestamp;
+import lombok.extern.java.Log;
 import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -52,6 +56,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import io.jsonwebtoken.lang.Collections;
 
 @Repository
+@Log
 public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepository<Cursor> {
 
 	public static final String RECORD_KIND = "StorageRecord";
@@ -75,6 +80,7 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 
 	public static final String ANCESTRY = "ancestry";
 	public static final String ANCESTRY_PARENTS = "parents";
+	public static final String TAGS = "tags";
 
 	@Autowired
 	private IDatastoreFactory datastoreFactory;
@@ -185,6 +191,15 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 				recordMetadata.setModifyUser(entity.getString(MODIFY_USER));
 			}
 
+			log.info("Entity = "+ entity.toString());
+			if (entity.contains(TAGS)) {
+				String tags = entity.getString(TAGS);
+				if (!tags.isEmpty()) {
+					Map tagsMap = new Gson().fromJson(tags, Map.class);
+					recordMetadata.setTags(tagsMap);
+				}
+			}
+
 			if (entity.contains(MODIFY_TIME)) {
 				recordMetadata.setModifyTime(TimeUnit.SECONDS.toMillis(entity.getTimestamp(MODIFY_TIME).getSeconds())
 						+ TimeUnit.NANOSECONDS.toMillis(entity.getTimestamp(MODIFY_TIME).getNanos()));
@@ -220,6 +235,15 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 		if (record.getAncestry() != null && !Collections.isEmpty(record.getAncestry().getParents())) {
 			entityBuilder.set(ANCESTRY, FullEntity.newBuilder()
 					.set(ANCESTRY_PARENTS, this.buildEntityArray(record.getAncestry().getParents())).build());
+		}
+
+		log.warning("TAGS = "+record.getTags());
+		if (record.getTags() != null && !record.getTags().isEmpty()) {
+			try {
+				entityBuilder.set("tags", new ObjectMapper().writeValueAsString(record.getTags()));
+			} catch (JsonProcessingException e) {
+				log.warning(e.getMessage());
+			}
 		}
 
 		if (record.getModifyTime() > 0) {
