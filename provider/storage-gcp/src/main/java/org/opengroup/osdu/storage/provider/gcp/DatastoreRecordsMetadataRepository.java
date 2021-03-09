@@ -1,34 +1,25 @@
-// Copyright 2017-2019, Schlumberger
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright 2021 Google LLC
+ * Copyright 2021 EPAM Systems, Inc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.gcp;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.Timestamp;
-import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
-
 import com.google.cloud.datastore.Cursor;
 import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.FullEntity;
@@ -41,17 +32,31 @@ import com.google.cloud.datastore.StringValue;
 import com.google.cloud.datastore.StructuredQuery;
 import com.google.cloud.datastore.Value;
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import io.jsonwebtoken.lang.Collections;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import lombok.extern.java.Log;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordAncestry;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-
-import io.jsonwebtoken.lang.Collections;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 @Repository
+@Log
 public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepository<Cursor> {
 
 	public static final String RECORD_KIND = "StorageRecord";
@@ -75,6 +80,7 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 
 	public static final String ANCESTRY = "ancestry";
 	public static final String ANCESTRY_PARENTS = "parents";
+	public static final String TAGS = "tags";
 
 	@Autowired
 	private IDatastoreFactory datastoreFactory;
@@ -185,6 +191,14 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 				recordMetadata.setModifyUser(entity.getString(MODIFY_USER));
 			}
 
+			if (entity.contains(TAGS)) {
+				String tags = entity.getString(TAGS);
+				if (!tags.isEmpty()) {
+					Map tagsMap = new Gson().fromJson(tags, Map.class);
+					recordMetadata.setTags(tagsMap);
+				}
+			}
+
 			if (entity.contains(MODIFY_TIME)) {
 				recordMetadata.setModifyTime(TimeUnit.SECONDS.toMillis(entity.getTimestamp(MODIFY_TIME).getSeconds())
 						+ TimeUnit.NANOSECONDS.toMillis(entity.getTimestamp(MODIFY_TIME).getNanos()));
@@ -220,6 +234,15 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 		if (record.getAncestry() != null && !Collections.isEmpty(record.getAncestry().getParents())) {
 			entityBuilder.set(ANCESTRY, FullEntity.newBuilder()
 					.set(ANCESTRY_PARENTS, this.buildEntityArray(record.getAncestry().getParents())).build());
+		}
+
+		log.info(String.format("Record Tags = %s", record.getTags()));
+		if (record.getTags() != null && !record.getTags().isEmpty()) {
+			try {
+				entityBuilder.set(TAGS, new ObjectMapper().writeValueAsString(record.getTags()));
+			} catch (JsonProcessingException e) {
+				log.warning(e.getMessage());
+			}
 		}
 
 		if (record.getModifyTime() > 0) {
