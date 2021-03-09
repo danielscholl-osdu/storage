@@ -41,3 +41,5 @@ build/
 ### Environment Configuration ###
 *.env
 .envrc
+/DocumentDB.Spatial.Sql.dll
+/Microsoft.Azure.Documents.ServiceInterop.dll

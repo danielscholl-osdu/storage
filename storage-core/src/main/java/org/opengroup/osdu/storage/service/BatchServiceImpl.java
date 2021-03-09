@@ -21,30 +21,24 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.function.Consumer;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
+import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
 
 import com.google.common.base.Strings;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.opengroup.osdu.storage.conversion.DpsConversionService;
-import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
-import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
-import org.opengroup.osdu.core.common.model.storage.MultiRecordRequest;
-import org.opengroup.osdu.core.common.model.storage.MultiRecordResponse;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,10 +96,11 @@ public abstract class BatchServiceImpl implements BatchService {
         }
 
         List<String> validRecordObjects = new ArrayList<>(validRecords.values());
+        List<Record> recordObjects = new ArrayList<>();
         if (validRecordObjects.isEmpty()) {
             MultiRecordInfo response = new MultiRecordInfo();
             response.setInvalidRecords(recordsNotFound);
-            response.setRecords(validRecordObjects);
+            response.setRecords(recordObjects);
             response.setRetryRecords(retryRecords);
             return response;
         }
@@ -136,16 +131,18 @@ public abstract class BatchServiceImpl implements BatchService {
                 }
 
                 RecordMetadata recordMetadata = recordsMetadata.get(recordId);
-                String record = PersistenceHelper.combineRecordMetaDataAndRecordData(jsonRecord, recordMetadata,
-                        recordMetadata.getLatestVersion());
+                JsonObject recordObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
 
-                validRecordObjects.add(record);
+                Gson gson = new Gson();
+                Record record = gson.fromJson(recordObject, Record.class);
+
+                recordObjects.add(record);
             }
         });
 
         MultiRecordInfo response = new MultiRecordInfo();
         response.setInvalidRecords(recordsNotFound);
-        response.setRecords(validRecordObjects);
+        response.setRecords(recordObjects);
         response.setRetryRecords(retryRecords);
 
         return response;

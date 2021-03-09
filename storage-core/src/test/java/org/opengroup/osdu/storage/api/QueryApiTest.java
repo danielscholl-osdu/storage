@@ -34,6 +34,7 @@ import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.http.ResponseEntity;
@@ -58,9 +59,16 @@ public class QueryApiTest {
         input.setRecords(Lists.newArrayList("id1", "id2"));
 
         MultiRecordInfo output = new MultiRecordInfo();
-        List<String> validRecords = new ArrayList<String>();
-        validRecords.add("id1");
-        validRecords.add("id2");
+        List<Record> validRecords = new ArrayList<>();
+
+        Record record1 = new Record();
+        record1.setId("id1");
+
+        Record record2 = new Record();
+        record2.setId("id2");
+
+        validRecords.add(record1);
+        validRecords.add(record2);
         output.setRecords(validRecords);
 
         when(this.batchService.getMultipleRecords(input)).thenReturn(output);
@@ -69,15 +77,12 @@ public class QueryApiTest {
 
         MultiRecordInfo records = (MultiRecordInfo) response.getBody();
 
-        List<String> returnedIds = new ArrayList<String>();
-        records.getRecords().forEach(r -> returnedIds.add(r));
-
         assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
         assertNull(records.getInvalidRecords());
         assertNull(records.getRetryRecords());
         assertEquals(2, records.getRecords().size());
-        assertTrue(returnedIds.contains("id1"));
-        assertTrue(returnedIds.contains("id2"));
+        assertTrue(records.getRecords().get(0).toString().contains("id1"));
+        assertTrue(records.getRecords().get(1).toString().contains("id2"));
     }
 
     @Test

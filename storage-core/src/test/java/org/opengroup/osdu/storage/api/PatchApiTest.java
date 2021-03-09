@@ -13,7 +13,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
-import org.opengroup.osdu.storage.service.RecordService;
+import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -32,13 +32,13 @@ public class PatchApiTest {
     private final String TENANT = "tenant1";
 
     @Mock
-    private Provider<RecordService> recordServiceProvider;
+    private Provider<BulkUpdateRecordService> bulkUpdateRecordServiceProvider;
 
     @Mock
     private Provider<DpsHeaders> headersProvider;
 
     @Mock
-    private RecordService recordService;
+    private BulkUpdateRecordService bulkUpdateRecordService;
 
     @Mock
     private DpsHeaders httpHeaders;
@@ -54,7 +54,7 @@ public class PatchApiTest {
         when(this.httpHeaders.getPartitionIdWithFallbackToAccountId()).thenReturn(this.TENANT);
 
         when(this.headersProvider.get()).thenReturn(this.httpHeaders);
-        when(this.recordServiceProvider.get()).thenReturn(this.recordService);
+        when(this.bulkUpdateRecordServiceProvider.get()).thenReturn(this.bulkUpdateRecordService);
 
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
@@ -93,7 +93,7 @@ public class PatchApiTest {
                 .lockedRecordIds(lockedRecordIds)
                 .build();
 
-        when(this.recordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER)).thenReturn(expectedResponse);
+        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER)).thenReturn(expectedResponse);
 
         ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(recordBulkUpdateParam);
 
@@ -127,7 +127,7 @@ public class PatchApiTest {
                 .lockedRecordIds(lockedRecordIds)
                 .build();
 
-        when(this.recordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER)).thenReturn(expectedResponse);
+        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER)).thenReturn(expectedResponse);
 
         ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(recordBulkUpdateParam);
 

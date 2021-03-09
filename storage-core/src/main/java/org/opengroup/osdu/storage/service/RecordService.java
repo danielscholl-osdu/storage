@@ -14,14 +14,9 @@
 
 package org.opengroup.osdu.storage.service;
 
-import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
-import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
-
 public interface RecordService {
 
 	void purgeRecord(String recordId);
 
 	void deleteRecord(String recordId, String user);
-
-	BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user);
 }

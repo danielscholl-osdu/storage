@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.api;
 
 import javax.validation.Valid;
 
+import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
-import org.opengroup.osdu.storage.service.RecordService;
 
 @RestController
 @RequestMapping("records")
@@ -40,12 +40,12 @@ public class PatchApi {
 	private DpsHeaders headers;
 
 	@Autowired
-	private RecordService recordService;
+	private BulkUpdateRecordService bulkUpdateRecordService;
 
 	@PatchMapping()
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
-		BulkUpdateRecordsResponse response = this.recordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail());
+		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail());
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {

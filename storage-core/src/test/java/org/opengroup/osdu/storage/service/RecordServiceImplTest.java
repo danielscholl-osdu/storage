@@ -48,7 +48,6 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
-import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RecordServiceImplTest {
@@ -86,6 +85,9 @@ public class RecordServiceImplTest {
     @Mock
     private StorageAuditLogger auditLogger;
 
+    @Mock
+    private DataAuthorizationService dataAuthorizationService;
+
     @Before
     public void setup() {
         mock(PersistenceHelper.class);
@@ -105,7 +107,7 @@ public class RecordServiceImplTest {
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
             assertEquals("Record not found", e.getError().getReason());
-            assertEquals("Record with id 'tenant1:record:anyId' does not exist", e.getError().getMessage());
+            assertEquals("Record with id '" + RECORD_ID + "' does not exist", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }
@@ -128,6 +130,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.purgeRecord(RECORD_ID);
         verify(this.auditLogger).purgeRecordSuccess(any());
@@ -159,6 +162,7 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
 
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
         try {
             this.sut.purgeRecord(RECORD_ID);
@@ -188,6 +192,7 @@ public class RecordServiceImplTest {
         AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(originalException).when(this.recordRepository).delete(RECORD_ID);
@@ -238,6 +243,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                 "The user is not authorized to perform this action")).when(this.cloudStorage).delete(record);
@@ -263,6 +269,7 @@ public class RecordServiceImplTest {
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(true);
 
         when(this.cloudStorage.hasAccess(record)).thenReturn(true);
 
@@ -304,6 +311,7 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
 
         when(this.cloudStorage.hasAccess(record)).thenReturn(false);
+        when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(false);
 
         try {
             this.sut.deleteRecord(RECORD_ID, "anyUser");
@@ -334,129 +342,9 @@ public class RecordServiceImplTest {
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
             assertEquals("Record not found", e.getError().getReason());
-            assertEquals("Record with id 'tenant1:record:anyId' does not exist", e.getError().getMessage());
+            assertEquals("Record with id '" + RECORD_ID + "' does not exist", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }
-    }
-
-    @Test
-    public void should_throw400_whenRecordIdsInvalid() {
-        List<String> ids = new ArrayList<>();
-        ids.add("invalidId");
-
-        RecordQuery query = new RecordQuery();
-        query.setIds(ids);
-        List<PatchOperation> ops = new ArrayList<>();
-        PatchOperation op = new PatchOperation();
-        ops.add(op);
-
-        RecordBulkUpdateParam param = new RecordBulkUpdateParam();
-        param.setOps(ops);
-        param.setQuery(query);
-
-        try {
-            this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals(String.format("The record 'invalidId' does not follow the naming convention: the first id component must be '%s'", TENANT_NAME), e.getError().getMessage());
-        }
-    }
-
-    @Test
-    public void should_return400_whenAclInvalid() {
-        List<String> ids = new ArrayList<>();
-        ids.add("tenant1:test:id1");
-        ids.add("tenant1:test:id2");
-
-        String[] viewers = new String[]{"viewer1@tenant1.gmail.com", "viewer2@tenant1.gmail.com"};
-
-        RecordQuery query = new RecordQuery();
-        query.setIds(ids);
-        List<PatchOperation> ops = new ArrayList<>();
-        PatchOperation op = PatchOperation.builder().op("replace").path("/acl/viewers").value(viewers).build();
-        ops.add(op);
-
-        RecordBulkUpdateParam param = new RecordBulkUpdateParam();
-        param.setOps(ops);
-        param.setQuery(query);
-
-        when(this.entitlementsAndCacheService.isValidAcl(any(), any())).thenReturn(false);
-
-        try {
-            this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals("Invalid ACLs provided in acl path.", e.getError().getMessage());
-        }
-    }
-
-    @Test
-    public void should_returnValidResponse_whenBulkUpdateParamValid_UserNotHaveOwnerAccess() {
-        List<String> ids = new ArrayList<>();
-        ids.add("tenant1:test:id1");
-        ids.add("tenant1:test:id2");
-        ids.add("tenant1:test:id3");
-        ids.add("tenant1:test:id4");
-
-        Acl acl = new Acl();
-        Acl acl2 = new Acl();
-        String[] viewers = new String[]{"viewer1@tenant1.gmail.com", "viewer2@tenant1.gmail.com"};
-        String[] owners = new String[]{"owner1@tenant1.gmail.com", "owner2@tenant1.gmail.com"};
-        String[] owners2 = new String[]{"owner1@tenant1.gmail.com"};
-        acl.setViewers(viewers);
-        acl.setOwners(owners);
-        acl2.setViewers(viewers);
-        acl2.setOwners(owners2);
-
-        List<PatchOperation> ops = new ArrayList<>();
-        PatchOperation op = PatchOperation.builder().op("replace").path("/acl/viewers").value(viewers).build();
-        ops.add(op);
-
-        RecordQuery query = new RecordQuery();
-        query.setIds(ids);
-
-        RecordBulkUpdateParam param = new RecordBulkUpdateParam();
-        param.setOps(ops);
-        param.setQuery(query);
-
-        when(this.entitlementsAndCacheService.isValidAcl(any(), any())).thenReturn(true);
-
-        RecordMetadata record = new RecordMetadata();
-        record.setAcl(acl);
-        record.setKind("any kind");
-        record.setId("id:access");
-        record.setStatus(RecordState.active);
-        record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
-        RecordMetadata record2= new RecordMetadata();
-        record2.setAcl(acl2);
-        record2.setKind("any kind");
-        record2.setId("id:noAccess");
-        record2.setStatus(RecordState.active);
-        record2.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
-        Map<String, RecordMetadata> existingRecords = new HashMap<>();
-        existingRecords.put("tenant1:test:id1", record);
-        existingRecords.put("tenant1:test:id2", record);
-        existingRecords.put("tenant1:test:id3", record2);
-        when(this.recordRepository.get(anyList())).thenReturn(existingRecords);
-
-        when(this.cloudStorage.hasAccess(record)).thenReturn(true);
-        when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners)).thenReturn(true);
-        when(this.entitlementsAndCacheService.hasOwnerAccess(this.headers, owners2)).thenReturn(false);
-
-        List<String> lockedId = new ArrayList<>();
-        lockedId.add("tenant1:test:id2");
-        when(this.persistenceService.updateMetadata(any(), any(), any())).thenReturn(lockedId);
-
-        BulkUpdateRecordsResponse response = this.sut.bulkUpdateRecords(param, "test@tenant1.gmail.com");
-
-        assertEquals(1, (long)response.getRecordCount());
-        assertEquals("tenant1:test:id1", response.getRecordIds().get(0));
-        assertEquals(1, response.getNotFoundRecordIds().size());
-        assertEquals("tenant1:test:id4", response.getNotFoundRecordIds().get(0));
-        assertEquals(1, response.getUnAuthorizedRecordIds().size());
-        assertEquals("tenant1:test:id3", response.getUnAuthorizedRecordIds().get(0));
-        assertEquals(1, response.getLockedRecordIds().size());
-        assertEquals("tenant1:test:id2", response.getLockedRecordIds().get(0));
     }
 }
