@@ -1,38 +1,25 @@
-// Copyright 2017-2019, Schlumberger
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright 2021 Google LLC
+ * Copyright 2021 EPAM Systems, Inc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.gcp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import com.google.cloud.Timestamp;
-import lombok.extern.java.Log;
-import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
-
 import com.google.cloud.datastore.Cursor;
 import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.FullEntity;
@@ -45,15 +32,28 @@ import com.google.cloud.datastore.StringValue;
 import com.google.cloud.datastore.StructuredQuery;
 import com.google.cloud.datastore.Value;
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import io.jsonwebtoken.lang.Collections;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import lombok.extern.java.Log;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordAncestry;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-
-import io.jsonwebtoken.lang.Collections;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 @Repository
 @Log
@@ -191,7 +191,6 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 				recordMetadata.setModifyUser(entity.getString(MODIFY_USER));
 			}
 
-			log.info("Entity = "+ entity.toString());
 			if (entity.contains(TAGS)) {
 				String tags = entity.getString(TAGS);
 				if (!tags.isEmpty()) {
@@ -237,10 +236,10 @@ public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepos
 					.set(ANCESTRY_PARENTS, this.buildEntityArray(record.getAncestry().getParents())).build());
 		}
 
-		log.warning("TAGS = "+record.getTags());
+		log.info(String.format("Record Tags = %s", record.getTags()));
 		if (record.getTags() != null && !record.getTags().isEmpty()) {
 			try {
-				entityBuilder.set("tags", new ObjectMapper().writeValueAsString(record.getTags()));
+				entityBuilder.set(TAGS, new ObjectMapper().writeValueAsString(record.getTags()));
 			} catch (JsonProcessingException e) {
 				log.warning(e.getMessage());
 			}
