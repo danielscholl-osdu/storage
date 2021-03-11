@@ -53,6 +53,7 @@ public class RecordApiTest {
 
     private final String USER = "user";
     private final String TENANT = "tenant1";
+    private final String RECORD_ID = "osdu:anyID:any";
 
     @Mock
     private IngestionService ingestionService;
@@ -125,8 +126,6 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp200_when_gettingRecordVersionsSuccessfully() {
-        final String RECORD_ID = "anyID";
-
         List<Long> versions = new ArrayList<Long>();
         versions.add(1L);
         versions.add(2L);
@@ -149,8 +148,6 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp204_when_purgingRecordSuccessfully() {
-        final String RECORD_ID = "anyID";
-
         ResponseEntity response = this.sut.purgeRecord(RECORD_ID);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
@@ -158,8 +155,6 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp200_when_gettingTheLatestVersionOfARecordSuccessfully() {
-        final String RECORD_ID = "anyID";
-
         when(this.queryService.getRecordInfo(RECORD_ID, new String[] {})).thenReturn(RECORD_ID);
 
         ResponseEntity response = this.sut.getLatestRecordVersion(RECORD_ID, new String[] {});
@@ -172,10 +167,9 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp200_when_gettingSpecificVersionOfARecordSuccessfully() {
-        final String RECORD_ID = "anyID";
         final long VERSION = 1L;
 
-        String expectedRecord = "{\"id\": \"anyID\",\r\n\"version\": 1}";
+        String expectedRecord = "{\"id\": \"osdu:anyID:any\",\r\n\"version\": 1}";
 
         when(this.queryService.getRecordInfo(RECORD_ID, VERSION, new String[] {})).thenReturn(expectedRecord);
 
@@ -190,8 +184,6 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp204_when_deletingRecordSuccessfully() {
-        final String RECORD_ID = "anyID";
-
         ResponseEntity response = this.sut.deleteRecord(RECORD_ID);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
