@@ -20,7 +20,6 @@ import com.microsoft.azure.eventgrid.models.EventGridEvent;
 import com.microsoft.azure.servicebus.Message;
 import org.joda.time.DateTime;
 import org.opengroup.osdu.azure.eventgrid.EventGridTopicStore;
-import org.opengroup.osdu.azure.eventgrid.TopicName;
 import org.opengroup.osdu.azure.servicebus.ITopicClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -36,25 +35,20 @@ import java.util.*;
 
 @Component
 public class MessageBusImpl implements IMessageBus {
+    private final static String RECORDS_CHANGED_EVENT_SUBJECT = "RecordsChanged";
+    private final static String RECORDS_CHANGED_EVENT_TYPE = "RecordsChanged";
+    private final static String RECORDS_CHANGED_EVENT_DATA_VERSION = "1.0";
+    @Autowired
+    EventGridConfig eventGridConfig;
     @Autowired
     private ITopicClientFactory topicClientFactory;
-
     @Autowired
     private EventGridTopicStore eventGridTopicStore;
-
     @Autowired
     private JaxRsDpsLog logger;
-
     @Autowired
     @Named("SERVICE_BUS_TOPIC")
     private String serviceBusTopic;
-
-    @Autowired
-    EventGridConfig eventGridConfig;
-
-    private final static String EVENT_SUBJECT = "RecordsChanged";
-    private final static String EVENT_TYPE = "RecordsChanged";
-    private final static String EVENT_DATA_VERSION = "1.0";
 
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
@@ -79,11 +73,11 @@ public class MessageBusImpl implements IMessageBus {
             String messageId = UUID.randomUUID().toString();
             eventsList.add(new EventGridEvent(
                     messageId,
-                    EVENT_SUBJECT,
+                    RECORDS_CHANGED_EVENT_SUBJECT,
                     data,
-                    EVENT_TYPE,
+                    RECORDS_CHANGED_EVENT_TYPE,
                     DateTime.now(),
-                    EVENT_DATA_VERSION
+                    RECORDS_CHANGED_EVENT_DATA_VERSION
             ));
             logger.info("Event generated: " + messageId);
 
@@ -93,7 +87,7 @@ public class MessageBusImpl implements IMessageBus {
             // Event Grid has a capability to publish multiple events in an array. This will have perf implications,
             // hence publishing one event at a time. If we are confident about the perf capabilities of consumer services,
             // we can publish more more than one event in an array.
-            eventGridTopicStore.publishToEventGridTopic(headers.getPartitionId(), TopicName.RECORDS_CHANGED, eventsList);
+            eventGridTopicStore.publishToEventGridTopic(headers.getPartitionId(), eventGridConfig.getTopicName(), eventsList);
         }
     }
 
