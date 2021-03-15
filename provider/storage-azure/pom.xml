@@ -33,7 +33,7 @@
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.0.63</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.6.1</osdu.corelibazure.version>
         <osdu.oscorecommon.version>0.6.9</osdu.oscorecommon.version>
         <osdu.storage-core.version>0.8.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
@@ -95,7 +95,6 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>${osdu.oscorecommon.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>elasticsearch</artifactId>

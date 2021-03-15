@@ -26,7 +26,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.eventgrid.EventGridTopicStore;
-import org.opengroup.osdu.azure.eventgrid.TopicName;
 import org.opengroup.osdu.azure.servicebus.ITopicClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -95,13 +94,14 @@ public class MessageBusImplTest {
         }
 
         ArgumentCaptor<String> partitionNameCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<TopicName> topicNameArgumentCaptor = ArgumentCaptor.forClass(TopicName.class);
+        ArgumentCaptor<String> topicNameArgumentCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<List<EventGridEvent>> listEventGridEventArgumentCaptor = ArgumentCaptor.forClass(List.class);
         doNothing().when(this.eventGridTopicStore).publishToEventGridTopic(
                 partitionNameCaptor.capture(), topicNameArgumentCaptor.capture(), listEventGridEventArgumentCaptor.capture()
         );
         when(this.eventGridConfig.isPublishingToEventGridEnabled()).thenReturn(true);
         when(this.eventGridConfig.getEventGridBatchSize()).thenReturn(5);
+        when(this.eventGridConfig.getTopicName()).thenReturn("recordstopic");
 
         // Act
         sut.publishMessage(this.dpsHeaders, pubSubInfo);
@@ -111,7 +111,7 @@ public class MessageBusImplTest {
 
         // The number of events that are being published is verified here.
         assertEquals(1, listEventGridEventArgumentCaptor.getValue().size());
-        assertEquals(topicNameArgumentCaptor.getValue(), TopicName.RECORDS_CHANGED);
+        assertEquals(topicNameArgumentCaptor.getValue(), "recordstopic");
         assertEquals(partitionNameCaptor.getValue(), PARTITION_ID);
 
         // Validate all records are preserved.
