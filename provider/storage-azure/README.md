@@ -64,6 +64,10 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 | `BULK_EXECUTOR_MAX_RUS` | `4000` | Maximum RU Consumption for bulk uploads in each storage service pod. NOTE: This is an attempted maximum and it may exceed this number. | no | Recommended to set to 4000, but can be changed for specific use cases. NOTE: If not set, this will default to 4000.|
 | `DOCUMENT_CLIENT_MAX_POOL_SIZE` | See description | Connection pool size for bulk upload http client. Recommended to not set and allow for default value which is calculated based on the number of available processors. | no | Recommended to not set manually, but can be changed for specific use cases. NOTE: If not set, this will default to 100 * number of available processors.|
 
+**Run the service in intellij**
+
+Add VM option `-Dspring.profiles.active=local` in the Edit Configurations Section to activate `application-local.properties` that will avoid unnecessary changes to 
+`application.properties`. 
 
 **Required to run integration tests**
 
