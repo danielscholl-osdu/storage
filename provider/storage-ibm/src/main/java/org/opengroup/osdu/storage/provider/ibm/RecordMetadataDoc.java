@@ -24,6 +24,7 @@ public class RecordMetadataDoc extends RecordMetadata {
     	super.setAcl(recordMetadata.getAcl());
     	super.setLegal(recordMetadata.getLegal());
     	super.setAncestry(recordMetadata.getAncestry());
+		super.setTags(recordMetadata.getTags());
     	
     	super.setModifyUser(recordMetadata.getModifyUser());
     	super.setModifyTime(recordMetadata.getModifyTime());
@@ -46,6 +47,7 @@ public class RecordMetadataDoc extends RecordMetadata {
     	rm.setCreateTime(this.getCreateTime());
     	rm.setModifyUser(this.getModifyUser());
     	rm.setModifyTime(this.getModifyTime());
+		rm.setTags(this.getTags());
     	return rm;
     }
 	
