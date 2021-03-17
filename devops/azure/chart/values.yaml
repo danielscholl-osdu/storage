@@ -19,3 +19,6 @@ image:
   repository: community.opengroup.org:5555/osdu/platform/system/storage
   branch: master
   tag: latest
+
+policy:
+  enabled: false

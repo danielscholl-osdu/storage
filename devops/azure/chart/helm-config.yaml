@@ -12,3 +12,6 @@ image:
   repository: #{container-registry}#.azurecr.io
   branch: #{ENVIRONMENT_NAME}#
   tag: #{Build.SourceVersion}#
+
+policy:
+  enabled: #{IS_POLICY_ENABLED}#
