@@ -100,7 +100,7 @@ spec:
         - name: servicebus_topic_name
           value: recordstopic
         - name: entitlements_service_endpoint
-          value: http://entitlements-azure/entitlements/v1
+          value: http://entitlements/api/entitlements/v2
         - name: entitlements_service_api_key
           value: "OBSOLETE"
         - name: legal_service_endpoint
