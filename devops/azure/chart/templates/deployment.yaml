@@ -111,7 +111,7 @@ spec:
           value: http://legal/api/legal/v1
         - name: partition_service_endpoint
           value: http://partition/api/partition/v1
-        - name: is_policy_enabled
+        - name: policy_enabled
           value: "{{ .Values.policy.enabled }}"
         - name: policy_service_endpoint
           value: http://policy-service/api/policy/v1

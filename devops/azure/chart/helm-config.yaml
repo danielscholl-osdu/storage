@@ -14,4 +14,4 @@ image:
   tag: #{Build.SourceVersion}#
 
 policy:
-  enabled: #{IS_POLICY_ENABLED}#
+  enabled: #{POLICY_ENABLED}#
