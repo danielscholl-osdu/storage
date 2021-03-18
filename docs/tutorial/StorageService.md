@@ -550,7 +550,7 @@ In PUT response, there will be no more replication in the record IDs, they will 
 
 [Back to table of contents](#TOC)
 
-## Support for GeoJSON types <a name="support-for-geojson"></a>
+## Support for GeopJSON types <a name="support-for-geojson"></a> 
 Storage service can now ingest records of type [GeoJson](https://geojson.org/). Following are some examples of the `data` block which can be used to ingest records of type GeoJSON using the PUT api.
 ```
 "data": {
