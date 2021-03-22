@@ -17,12 +17,10 @@ package org.opengroup.osdu.storage.util;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
+import com.google.gson.JsonParser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -43,6 +41,8 @@ public class RecordUtilImpl implements RecordUtil {
   private static final String PATCH_OPERATION_ADD = "add";
   private static final String PATCH_OPERATION_REPLACE = "replace";
   private static final String PATCH_OPERATION_REMOVE = "remove";
+  private static final String LEGAL = "legal";
+  private static final String LEGAL_TAGS = "legaltags";
 
   private final TenantInfo tenant;
   private final Gson gson;
@@ -87,41 +87,81 @@ public class RecordUtilImpl implements RecordUtil {
         .collect(toList());
     updateRecordMetaDataForTags(recordMetadata, tagOperation);
 
-    List<PatchOperation> nonTagsOperation = new ArrayList<>(ops);
-    nonTagsOperation.removeAll(tagOperation);
+    List<PatchOperation> legalOperation = new ArrayList<>(ops);
+    legalOperation.removeAll(tagOperation);
 
-    if (!nonTagsOperation.isEmpty()) {
-      recordMetadata = updateMetadataForNonTags(recordMetadata, nonTagsOperation);
-    }
+    legalOperation = ops.stream()
+            .filter(operation -> operation.getPath().startsWith("/legal"))
+            .collect(toList());
+    recordMetadata = updateMetadataForLegalAndAcl(recordMetadata, legalOperation);
 
     recordMetadata.setModifyUser(user);
     recordMetadata.setModifyTime(timestamp);
     return recordMetadata;
   }
 
-  private RecordMetadata updateMetadataForNonTags(RecordMetadata recordMetadata, List<PatchOperation> ops) {
+  private RecordMetadata updateMetadataForLegalAndAcl(RecordMetadata recordMetadata, List<PatchOperation> ops) {
     JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
 
     for (PatchOperation op : ops) {
       String path = op.getPath();
       String[] pathComponents = path.split("/");
 
-      JsonObject outer = metadata;
+      JsonObject outter = metadata;
       JsonObject inner = metadata;
 
       for (int i = 1; i < pathComponents.length - 1; i++) {
-        inner = outer.getAsJsonObject(pathComponents[i]);
-        outer = inner;
+        inner = outter.getAsJsonObject(pathComponents[i]);
+        outter = inner;
       }
 
       JsonArray values = new JsonArray();
+
       for (String value : op.getValue()) {
         values.add(value);
       }
-      inner.add(pathComponents[pathComponents.length - 1], values);
-    }
 
+      if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_ADD)) {
+        setOriginalAclAndLegal(pathComponents, outter, values);
+        values = removeDuplicates(values);
+        inner.add(pathComponents[pathComponents.length - 1], values);
+      }
+      else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REPLACE)){
+        inner.add(pathComponents[pathComponents.length - 1], values);
+      }
+      else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REMOVE)){
+        values = removeDuplicates(values);
+        if(inner.has(pathComponents[pathComponents.length - 1])){
+          JsonArray originalValues = inner.getAsJsonArray(pathComponents[pathComponents.length - 1]);
+          int totalCountToDelete = values.size();
+          int soFarDeleted = 0;
+          if (originalValues != null){
+            for (int i = 0; i < originalValues.size(); i++){
+              if (values.contains(originalValues.get(i))){
+                originalValues.remove(i);
+                i--;
+                soFarDeleted++;
+              }
+              if (soFarDeleted==totalCountToDelete) break;
+            }
+          }
+        }
+      }
+    }
     return gson.fromJson(metadata, RecordMetadata.class);
+  }
+
+  private JsonArray removeDuplicates(JsonArray values) {
+    Set<String> items = new LinkedHashSet<>();
+    values.forEach(element -> items.add(element.getAsString()));
+    values = new JsonParser().parse(new Gson().toJson(items)).getAsJsonArray();
+    return values;
+  }
+
+  private void setOriginalAclAndLegal(String[] pathComponents, JsonObject outer, JsonArray values) {
+    if (pathComponents[1].equalsIgnoreCase(LEGAL))  {
+      values.addAll(gson.fromJson(outer.get(LEGAL_TAGS), JsonArray.class));
+    }
   }
 
   private void updateRecordMetaDataForTags(RecordMetadata recordMetadata, List<PatchOperation> ops) {

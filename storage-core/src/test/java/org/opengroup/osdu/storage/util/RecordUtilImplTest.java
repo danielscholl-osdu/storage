@@ -20,7 +20,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -45,6 +49,11 @@ public class RecordUtilImplTest {
 
   private static final String PATH_TAGS = "/tags";
   private static final String PATH_ACL_VIEWERS = "/acl/viewers";
+
+  private static final String PATH_LEGAL = "/legal/legaltags";
+  private static final String LEGAL_LEGALTAG_NEW = "legalTag3";
+  private static final String LEGAL_LEGALTAG_EXISTED1 = "legalTag1";
+  private static final String LEGAL_LEGALTAG_EXISTED2 = "legalTag2";
 
   private static final long TIMESTAMP = 42L;
   private static final String TEST_USER = "testuser";
@@ -150,17 +159,54 @@ public class RecordUtilImplTest {
   }
 
   @Test
-  public void updateRecordMetaDataForPatchOperations_shouldUpdateForNonTags_withReplaceOperation() {
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withReplaceOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
-    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REPLACE,
-        ACL_VIEWER_NEW);
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REPLACE,
+            LEGAL_LEGALTAG_NEW);
 
     RecordMetadata updatedMetadata = recordUtil
-        .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
-            TIMESTAMP);
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
 
-    assertEquals(ACL_VIEWER_NEW, updatedMetadata.getAcl().getViewers()[0]);
+    Set<String> new_legaltags = new LinkedHashSet<>();
+    new_legaltags.add(LEGAL_LEGALTAG_NEW);
+
+    assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
   }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withAddOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_ADD,
+            LEGAL_LEGALTAG_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    Set<String> new_legaltags = new LinkedHashSet<>();
+    new_legaltags.add(LEGAL_LEGALTAG_NEW);
+    new_legaltags.add(LEGAL_LEGALTAG_EXISTED1);
+    new_legaltags.add(LEGAL_LEGALTAG_EXISTED2);
+
+    assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
+  }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REMOVE,LEGAL_LEGALTAG_EXISTED2);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    Set<String> new_legaltags = new LinkedHashSet<>();
+    new_legaltags.add(LEGAL_LEGALTAG_EXISTED1);
+
+    assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
+  }
+
 
   private PatchOperation buildPatchOperation(String path, String operation, String... value) {
     return PatchOperation.builder().path(path).op(operation).value(value).build();
@@ -171,8 +217,15 @@ public class RecordUtilImplTest {
     String[] viewers = new String[]{ACL_VIEWER};
     acl.setViewers(viewers);
 
+    Legal legal = new Legal();
+    Set<String> legalTags = new HashSet<>();
+    legalTags.add(LEGAL_LEGALTAG_EXISTED1);
+    legalTags.add(LEGAL_LEGALTAG_EXISTED2);
+    legal.setLegaltags(legalTags);
+
     RecordMetadata recordMetadata = new RecordMetadata();
     recordMetadata.setAcl(acl);
+    recordMetadata.setLegal(legal);
     recordMetadata.getTags().put(TAG_KEY, TAG_VALUE);
     return recordMetadata;
   }
