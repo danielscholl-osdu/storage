@@ -44,11 +44,18 @@ import com.google.gson.Gson;
 @RunWith(MockitoJUnitRunner.class)
 public class RecordUtilImplTest {
 
-  private static final String ACL_VIEWER = "viewer1@tenant1.gmail.com";
-  private static final String ACL_VIEWER_NEW = "newviewer1@tenant1.gmail.com";
+  private static final String ACL_VIEWER_EXISTING1 = "viewer1@tenant1.gmail.com";
+  private static final String ACL_VIEWER_EXISTING2 = "viewer2@tenant1.gmail.com";
+  private static final String ACL_VIEWER_NEW = "newviewer@tenant1.gmail.com";
+  private static final String PATH_ACL_VIEWERS = "/acl/viewers";
+
+  private static final String ACL_OWNER_EXISTING1 = "owner1@tenant1.gmail.com";
+  private static final String ACL_OWNER_EXISTING2 = "owner2@tenant1.gmail.com";
+  private static final String ACL_OWNER_NEW = "newowner@tenant1.gmail.com";
+  private static final String PATH_ACL_OWNERS = "/acl/owners";
+
 
   private static final String PATH_TAGS = "/tags";
-  private static final String PATH_ACL_VIEWERS = "/acl/viewers";
 
   private static final String PATH_LEGAL = "/legal/legaltags";
   private static final String LEGAL_LEGALTAG_NEW = "legalTag3";
@@ -161,8 +168,7 @@ public class RecordUtilImplTest {
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withReplaceOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
-    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REPLACE,
-            LEGAL_LEGALTAG_NEW);
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REPLACE, LEGAL_LEGALTAG_NEW);
 
     RecordMetadata updatedMetadata = recordUtil
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
@@ -177,8 +183,7 @@ public class RecordUtilImplTest {
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withAddOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
-    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_ADD,
-            LEGAL_LEGALTAG_NEW);
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_ADD, LEGAL_LEGALTAG_NEW);
 
     RecordMetadata updatedMetadata = recordUtil
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
@@ -206,7 +211,74 @@ public class RecordUtilImplTest {
 
     assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
   }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withAddOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_ADD,
+            ACL_VIEWER_NEW);
 
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_VIEWER_NEW,ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2}, updatedMetadata.getAcl().getViewers());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withReplaceOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REPLACE,ACL_VIEWER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_VIEWER_NEW}, updatedMetadata.getAcl().getViewers());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, ACL_VIEWER_EXISTING2);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_VIEWER_EXISTING1}, updatedMetadata.getAcl().getViewers());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withAddOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_ADD,
+            ACL_OWNER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_OWNER_NEW,ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2}, updatedMetadata.getAcl().getOwners());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withReplaceOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REPLACE, ACL_OWNER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_OWNER_NEW}, updatedMetadata.getAcl().getOwners());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REMOVE, ACL_OWNER_EXISTING2);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_OWNER_EXISTING1}, updatedMetadata.getAcl().getOwners());
+  }
 
   private PatchOperation buildPatchOperation(String path, String operation, String... value) {
     return PatchOperation.builder().path(path).op(operation).value(value).build();
@@ -214,8 +286,10 @@ public class RecordUtilImplTest {
 
   private RecordMetadata buildRecordMetadata() {
     Acl acl = new Acl();
-    String[] viewers = new String[]{ACL_VIEWER};
+    String[] viewers = new String[]{ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2};
     acl.setViewers(viewers);
+    String[] owners = new String[]{ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2};
+    acl.setOwners(owners);
 
     Legal legal = new Legal();
     Set<String> legalTags = new HashSet<>();

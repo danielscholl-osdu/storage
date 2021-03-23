@@ -37,6 +37,8 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     private static final String TAG_VALUE2 = "tagvalue2";
 
     private static long NOW = System.currentTimeMillis();
+    private static String ACL = TestUtils.getIntegrationTesterAcl();
+    private static String ACL_2 = TestUtils.getAcl();
     private static String LEGAL_TAG = LegalTagUtils.createRandomName();
     private static String LEGAL_TAG_2 = LegalTagUtils.createRandomName() + "2";
     private static String LEGAL_TAG_3 = LegalTagUtils.createRandomName() + "3";
@@ -320,6 +322,40 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
         assertTrue(resultObject.get("legal").getAsJsonObject().get("legaltags").getAsJsonArray().size() == 0);
     }
+    @Test
+    public void should_return200AndUpdateAclMetadata_whenValidRecordsProvided() throws Exception {
+        //add operation
+        JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/viewers", ACL);
+
+        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        assertEquals(SC_OK, updateResponse.getStatus());
+        assertEquals(SC_OK, recordResponse.getStatus());
+
+        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
+
+        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("viewers").getAsJsonArray().get(0).getAsString());
+
+        //replace operation
+        updateBody = buildUpdateAclBody(RECORD_ID, "replace","/acl/viewers", ACL_2);
+        sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        assertEquals(ACL_2, resultObject.get("acl").getAsJsonObject().get("viewers").getAsJsonArray().get(0).getAsString());
+
+        //remove operation
+        updateBody = buildUpdateAclBody(RECORD_ID,"remove","/acl/viewers", ACL_2);
+        sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
+        assertTrue(resultObject.get("acl").getAsJsonObject().get("viewers").getAsJsonArray().size() == 0);
+
+    }
 
     @Test
     public void should_return206andUpdateLegalMetadata_whenNotExistedRecordProvided() throws Exception {
@@ -333,7 +369,18 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         System.out.println(resultObject.toString());
         assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
     }
+    @Test
+    public void should_return206andUpdateAclMetadata_whenNotExistedRecordProvided() throws Exception {
+        JsonObject updateBody = buildUpdateAclBody(NOT_EXISTED_RECORD_ID, "replace","/acl/viewers", ACL);
 
+        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+
+        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getStatus());
+        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+
+        System.out.println(resultObject.toString());
+        assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
+    }
     private JsonObject buildUpdateLegalBody(String id, String op, String val) {
         JsonArray records = new JsonArray();
         records.add(id);
@@ -343,6 +390,28 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         JsonObject operation = new JsonObject();
         operation.addProperty("op", op);
         operation.addProperty("path", "/legal/legaltags");
+        operation.add("value", value);
+        JsonArray ops = new JsonArray();
+        ops.add(operation);
+
+        JsonObject query = new JsonObject();
+        query.add("ids", records);
+
+        JsonObject updateBody = new JsonObject();
+        updateBody.add("query", query);
+        updateBody.add("ops", ops);
+
+        return updateBody;
+    }
+    private JsonObject buildUpdateAclBody(String id, String op, String path, String val) {
+        JsonArray records = new JsonArray();
+        records.add(id);
+
+        JsonArray value = new JsonArray();
+        value.add(val);
+        JsonObject operation = new JsonObject();
+        operation.addProperty("op", op);
+        operation.addProperty("path", path);
         operation.add("value", value);
         JsonArray ops = new JsonArray();
         ops.add(operation);

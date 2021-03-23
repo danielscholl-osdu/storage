@@ -43,6 +43,9 @@ public class RecordUtilImpl implements RecordUtil {
   private static final String PATCH_OPERATION_REMOVE = "remove";
   private static final String LEGAL = "legal";
   private static final String LEGAL_TAGS = "legaltags";
+  private static final String ACL = "acl";
+  private static final String VIEWERS = "viewers";
+  private static final String OWNERS = "owners";
 
   private final TenantInfo tenant;
   private final Gson gson;
@@ -90,29 +93,37 @@ public class RecordUtilImpl implements RecordUtil {
     List<PatchOperation> legalOperation = new ArrayList<>(ops);
     legalOperation.removeAll(tagOperation);
 
+    List<PatchOperation> aclOperation = new ArrayList<>(ops);
+    aclOperation.removeAll(tagOperation);
+
     legalOperation = ops.stream()
             .filter(operation -> operation.getPath().startsWith("/legal"))
             .collect(toList());
-    recordMetadata = updateMetadataForLegalAndAcl(recordMetadata, legalOperation);
+    recordMetadata = updateMetadataForAclAndLegal(recordMetadata, legalOperation);
+
+    aclOperation = ops.stream()
+            .filter(operation -> operation.getPath().startsWith("/acl"))
+            .collect(toList());
+    recordMetadata = updateMetadataForAclAndLegal(recordMetadata, aclOperation);
 
     recordMetadata.setModifyUser(user);
     recordMetadata.setModifyTime(timestamp);
     return recordMetadata;
   }
 
-  private RecordMetadata updateMetadataForLegalAndAcl(RecordMetadata recordMetadata, List<PatchOperation> ops) {
+  private RecordMetadata updateMetadataForAclAndLegal(RecordMetadata recordMetadata, List<PatchOperation> ops) {
     JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
 
     for (PatchOperation op : ops) {
       String path = op.getPath();
       String[] pathComponents = path.split("/");
 
-      JsonObject outter = metadata;
+      JsonObject outer = metadata;
       JsonObject inner = metadata;
 
       for (int i = 1; i < pathComponents.length - 1; i++) {
-        inner = outter.getAsJsonObject(pathComponents[i]);
-        outter = inner;
+        inner = outer.getAsJsonObject(pathComponents[i]);
+        outer = inner;
       }
 
       JsonArray values = new JsonArray();
@@ -122,7 +133,7 @@ public class RecordUtilImpl implements RecordUtil {
       }
 
       if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_ADD)) {
-        setOriginalAclAndLegal(pathComponents, outter, values);
+        setOriginalAclAndLegal(pathComponents, outer, values);
         values = removeDuplicates(values);
         inner.add(pathComponents[pathComponents.length - 1], values);
       }
@@ -159,7 +170,15 @@ public class RecordUtilImpl implements RecordUtil {
   }
 
   private void setOriginalAclAndLegal(String[] pathComponents, JsonObject outer, JsonArray values) {
-    if (pathComponents[1].equalsIgnoreCase(LEGAL))  {
+    if (pathComponents[1].equalsIgnoreCase(ACL)) {
+      if (pathComponents[2].equalsIgnoreCase(VIEWERS)) {
+        values.addAll(gson.fromJson(outer.get(VIEWERS), JsonArray.class));
+      }
+      else if (pathComponents[2].equalsIgnoreCase(OWNERS)) {
+        values.addAll(gson.fromJson(outer.get(OWNERS), JsonArray.class));
+      }
+    }
+    else if (pathComponents[1].equalsIgnoreCase(LEGAL))  {
       values.addAll(gson.fromJson(outer.get(LEGAL_TAGS), JsonArray.class));
     }
   }
