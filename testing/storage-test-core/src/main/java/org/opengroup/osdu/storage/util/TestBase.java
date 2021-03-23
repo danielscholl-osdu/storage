@@ -19,6 +19,7 @@ import com.google.gson.Gson;
 public abstract class TestBase {
 
 	protected TestUtils	testUtils = null;
+	protected ConfigUtils configUtils = null;
 
 	public static final Gson GSON = new Gson();
 

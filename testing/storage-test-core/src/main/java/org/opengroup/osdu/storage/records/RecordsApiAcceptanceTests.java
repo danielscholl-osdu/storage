@@ -272,6 +272,39 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
 	}
 
+	@Test
+	public void should_createNewRecord_withSpecialCharacter_ifEnabled() throws Exception {
+		String recordId = "TestPercent%20foobar";
+		String encodedRecordId = "TestPercent%2520foobar";
+
+		String jsonInput = createJsonBody(recordId, "TestPercent%");
+
+		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		String json = response.getEntity(String.class);
+		assertEquals(201, response.getStatus());
+		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+
+		Gson gson = new Gson();
+		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
+				DummyRecordsHelper.CreateRecordResponse.class);
+
+		assertEquals(1, result.recordCount);
+		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
+		assertEquals(RECORD_NEW_ID, result.recordIds[0]);
+
+		response = TestUtils.send("records/" + encodedRecordId, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+
+		// If encoded percent is true, the request should go through and should be able to get a successful response.
+		if (configUtils != null && configUtils.getBooleanProperty("config.enableEncodedPercent", "false")) {
+			GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+			assertEquals("TestPercent%", recordResult.data.get("name"));
+		} else {
+			// Service does not allow URLs with suspicious characters. Default setting
+			assertEquals(403, response.getStatus());
+		}
+	}
+
 	protected static String createJsonBody(String id, String name) {
 		return "[" + singleEntityBody(id, name, KIND, LEGAL_TAG) + "]";
 	}
