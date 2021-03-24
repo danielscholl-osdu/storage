@@ -443,6 +443,7 @@ The following software have components provided under the terms of this license:
 - Asynchronous Http Client Netty Utils (from )
 - Azure AD Spring Security Integration Spring Boot Starter (from https://github.com/Microsoft/azure-spring-boot)
 - Azure Metrics Spring Boot Starter (from https://github.com/Microsoft/azure-spring-boot)
+- BSON (from http://bsonspec.org)
 - Bean Validation API (from http://beanvalidation.org)
 - Byte Buddy (without dependencies) (from )
 - Byte Buddy Java agent (from )
@@ -585,9 +586,12 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure Netty HTTP Client Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
 - Mockito (from http://www.mockito.org)
+- Mockito (from http://mockito.org)
+- Mockito (from http://mockito.org)
 - Mockito (from http://www.mockito.org)
-- Mockito (from http://mockito.org)
-- Mockito (from http://mockito.org)
+- MongoDB Driver (from http://www.mongodb.org)
+- MongoDB Java Driver (from http://www.mongodb.org)
+- MongoDB Java Driver Core (from http://www.mongodb.org)
 - Netty Reactive Streams HTTP support (from )
 - Netty Reactive Streams Implementation (from )
 - Netty/Buffer (from http://netty.io/)
@@ -619,9 +623,11 @@ The following software have components provided under the terms of this license:
 - Objenesis (from http://objenesis.org)
 - OkHttp (from )
 - OkHttp (from )
+- OkHttp (from )
 - OkHttp Logging Interceptor (from )
 - OkHttp URLConnection (from )
 - OkHttp URLConnection (from )
+- Okio (from )
 - Okio (from )
 - Okio (from )
 - OpenCensus (from https://github.com/census-instrumentation/opencensus-java)
@@ -631,9 +637,11 @@ The following software have components provided under the terms of this license:
 - PowerMock (from http://www.powermock.org)
 - Protocol Buffer extensions to the Google HTTP Client Library for Java. (from )
 - QpidJMS Client (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - Reactive Streams Netty driver (from https://github.com/reactor/reactor-netty)
 - Retrofit (from )
 - Simple XML (from http://simple.sourceforge.net)
+- Simple XML (safe) (from https://github.com/dweiss/simplexml)
 - SnakeYAML (from http://www.snakeyaml.org)
 - SnakeYAML (from http://www.snakeyaml.org)
 - Spring AOP (from https://github.com/spring-projects/spring-framework)
@@ -646,6 +654,7 @@ The following software have components provided under the terms of this license:
 - Spring Boot Actuator AutoConfigure (from https://projects.spring.io/spring-boot/#/spring-boot-parent/spring-boot-actuator-autoconfigure)
 - Spring Boot AutoConfigure (from http://projects.spring.io/spring-boot/)
 - Spring Boot AutoConfigure (from http://projects.spring.io/spring-boot/)
+- Spring Boot Data MongoDB Starter (from http://projects.spring.io/spring-boot/)
 - Spring Boot Dependencies (from http://projects.spring.io/spring-boot/)
 - Spring Boot Json Starter (from https://projects.spring.io/spring-boot/#/spring-boot-parent/spring-boot-starters/spring-boot-starter-json)
 - Spring Boot Json Starter (from https://projects.spring.io/spring-boot/#/spring-boot-parent/spring-boot-starters/spring-boot-starter-json)
@@ -672,6 +681,7 @@ The following software have components provided under the terms of this license:
 - Spring Core (from https://github.com/spring-projects/spring-framework)
 - Spring Data Core (from )
 - Spring Data Core (from )
+- Spring Data MongoDB - Core (from )
 - Spring Expression Language (SpEL) (from https://github.com/spring-projects/spring-framework)
 - Spring Expression Language (SpEL) (from https://github.com/spring-projects/spring-framework)
 - Spring JMS (from https://github.com/spring-projects/spring-framework)
@@ -732,6 +742,7 @@ The following software have components provided under the terms of this license:
 - lettuce (from http://github.com/mp911de/lettuce/wiki)
 - micrometer-core (from https://github.com/micrometer-metrics/micrometer)
 - micrometer-registry-azure-monitor (from https://github.com/micrometer-metrics/micrometer)
+- minio (from https://github.com/minio/minio-java)
 - org.apiguardian:apiguardian-api (from https://github.com/apiguardian-team/apiguardian)
 - org.opentest4j:opentest4j (from https://github.com/ota4j-team/opentest4j)
 - org.xmlunit:xmlunit-core (from http://www.xmlunit.org/)
@@ -850,8 +861,11 @@ CC-BY-2.5
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- "Java Concurrency in Practice" book annotations (from http://jcip.net/)
 - Checker Qual (from https://checkerframework.org)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
+- MongoDB Java Driver (from http://www.mongodb.org)
+- MongoDB Java Driver Core (from http://www.mongodb.org)
 
 ========================================================================
 CC-BY-4.0
@@ -952,6 +966,7 @@ The following software have components provided under the terms of this license:
 - JavaBeans Activation Framework (from )
 - JavaMail API (from )
 - OSGi resource locator (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - ServiceLocator Default Implementation (from git://java.net/hk2~git/hk2-locator)
 - aopalliance-repackaged (from )
 - javax.annotation-api (from http://jcp.org/en/jsr/detail?id=250)
@@ -981,6 +996,7 @@ The following software have components provided under the terms of this license:
 - JavaBeans Activation Framework (from )
 - JavaMail API (from )
 - OSGi resource locator (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - javax.annotation-api (from http://jcp.org/en/jsr/detail?id=250)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
@@ -1026,6 +1042,7 @@ The following software have components provided under the terms of this license:
 - Microsoft Application Insights Java SDK Spring Boot starter (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Java SDK Web Module (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Log4j 2 Appender (from https://github.com/Microsoft/ApplicationInsights-Java)
+- SpotBugs Annotations (from https://spotbugs.github.io/)
 
 ========================================================================
 LGPL-2.1-or-later
@@ -1036,6 +1053,7 @@ The following software have components provided under the terms of this license:
 - Javassist (from http://www.javassist.org/)
 - SnakeYAML (from http://www.snakeyaml.org)
 - SnakeYAML (from http://www.snakeyaml.org)
+- SpotBugs Annotations (from https://spotbugs.github.io/)
 
 ========================================================================
 LGPL-3.0-only
@@ -1045,6 +1063,7 @@ The following software have components provided under the terms of this license:
 - Apache Log4j API (from )
 - Apache Log4j API (from )
 - Apache Log4j Core (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 ========================================================================
 MIT
@@ -1125,6 +1144,7 @@ The following software have components provided under the terms of this license:
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 ========================================================================
 MPL-2.0
@@ -1134,6 +1154,8 @@ The following software have components provided under the terms of this license:
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
 - Javassist (from http://www.javassist.org/)
+- OkHttp (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 
 ========================================================================
 PHP-3.01
@@ -1190,6 +1212,7 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure client library for Blob Storage (from https://github.com/Azure/azure-sdk-for-java)
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
 - Spring Web (from https://github.com/spring-projects/spring-framework)
 - StAX API (from http://stax.codehaus.org/)
@@ -1202,10 +1225,12 @@ unknown
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- "Java Concurrency in Practice" book annotations (from http://jcip.net/)
 - Byte Buddy (without dependencies) (from )
 - JUnit (from http://junit.org)
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
 - JavaBeans Activation Framework API jar (from )
+- RabbitMQ Java Client (from http://www.rabbitmq.com)
 - Spongy Castle (from http://rtyley.github.io/spongycastle/)
 - jakarta.xml.bind-api (from )
 - org.junit.jupiter:junit-jupiter-api (from http://junit.org/junit5/)
