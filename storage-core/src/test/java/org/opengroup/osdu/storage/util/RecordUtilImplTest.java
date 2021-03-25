@@ -25,6 +25,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.http.HttpStatus;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -180,6 +182,7 @@ public class RecordUtilImplTest {
     assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
   }
 
+
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withAddOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
@@ -211,6 +214,25 @@ public class RecordUtilImplTest {
 
     assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
   }
+
+  @Test
+  public void should_throwAppExceptionWithBadRequestCode_whenAllLegaltagsAreRemoved_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REMOVE, LEGAL_LEGALTAG_EXISTED1, LEGAL_LEGALTAG_EXISTED2);
+    try {
+      RecordMetadata updatedMetadata = recordUtil
+              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                      TIMESTAMP);
+    }catch(AppException e){
+      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+      assertEquals("The user cannot remove all legaltags or acl viewers or acl owners.", e.getError().getReason());
+      assertEquals("Unable to delete", e.getError().getMessage());
+    }catch (Exception e){
+      Assert.fail("Should not get different exception");
+    }
+  }
+
+
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withAddOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
@@ -223,6 +245,7 @@ public class RecordUtilImplTest {
 
     assertEquals(new String[]{ACL_VIEWER_NEW,ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2}, updatedMetadata.getAcl().getViewers());
   }
+
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withReplaceOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
@@ -234,8 +257,28 @@ public class RecordUtilImplTest {
 
     assertEquals(new String[]{ACL_VIEWER_NEW}, updatedMetadata.getAcl().getViewers());
   }
+
   @Test
-  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withRemoveOperation() {
+  public void should_throwAppExceptionWithBadRequestCode_whenAllAclViewersAreRemoved_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, ACL_VIEWER_EXISTING2);
+
+    try {
+      RecordMetadata updatedMetadata = recordUtil
+              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                      TIMESTAMP);
+      //Assert.("Should not suceed");
+    }catch(AppException e){
+      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+      assertEquals("The user cannot remove all legaltags or acl viewers or acl owners.", e.getError().getReason());
+      assertEquals("Unable to delete", e.getError().getMessage());
+    }catch (Exception e){
+      Assert.fail("Should not get different exception");
+    }
+
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withRemoveOperation()  {
     RecordMetadata recordMetadata = buildRecordMetadata();
     PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, ACL_VIEWER_EXISTING2);
 
@@ -245,6 +288,7 @@ public class RecordUtilImplTest {
 
     assertEquals(new String[]{ACL_VIEWER_EXISTING1}, updatedMetadata.getAcl().getViewers());
   }
+
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withAddOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
@@ -278,6 +322,27 @@ public class RecordUtilImplTest {
                     TIMESTAMP);
 
     assertEquals(new String[]{ACL_OWNER_EXISTING1}, updatedMetadata.getAcl().getOwners());
+  }
+
+  @Test
+  public void should_throwAppExceptionWithBadRequestCode_whenAllAclOwnersAreRemoved_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REMOVE, ACL_OWNER_EXISTING1, ACL_OWNER_EXISTING2);
+
+    try {
+      RecordMetadata updatedMetadata = recordUtil
+              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                      TIMESTAMP);
+    }catch(AppException e){
+      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+      assertEquals("The user cannot remove all legaltags or acl viewers or acl owners.", e.getError().getReason());
+      assertEquals("Unable to delete", e.getError().getMessage());
+    }catch (Exception e){
+      Assert.fail("Should not get different exception");
+    }
+
+
+
   }
 
   private PatchOperation buildPatchOperation(String path, String operation, String... value) {

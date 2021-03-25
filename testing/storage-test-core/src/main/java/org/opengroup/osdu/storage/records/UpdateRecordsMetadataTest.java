@@ -27,8 +27,7 @@ import org.apache.http.HttpStatus;
 import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.apache.http.HttpStatus.SC_OK;
-import static org.apache.http.HttpStatus.SC_PARTIAL_CONTENT;
+import static org.apache.http.HttpStatus.*;
 import static org.junit.Assert.*;
 
 public abstract class UpdateRecordsMetadataTest extends TestBase {
@@ -316,14 +315,12 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         //remove operation
         updateBody = buildUpdateLegalBody(RECORD_ID,"remove", LEGAL_TAG_2);
-        sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
-        recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+        updateResponse= sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
-        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
-        assertTrue(resultObject.get("legal").getAsJsonObject().get("legaltags").getAsJsonArray().size() == 0);
+        assertEquals(SC_BAD_REQUEST,updateResponse.getStatus());
     }
     @Test
-    public void should_return200AndUpdateAclMetadata_whenValidRecordsProvided() throws Exception {
+    public void should_return200AndUpdateAclViewersMetadata_whenValidRecordsProvided() throws Exception {
         //add operation
         JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/viewers", ACL);
 
@@ -349,11 +346,47 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         //remove operation
         updateBody = buildUpdateAclBody(RECORD_ID,"remove","/acl/viewers", ACL_2);
+        updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+
+        assertEquals(SC_BAD_REQUEST,updateResponse.getStatus());
+
+    }
+    @Test
+    public void should_return200AndUpdateAclOwnersMetadata_whenValidRecordsProvided() throws Exception {
+        //add operation
+        JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/owners", ACL);
+
+        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+
+        assertEquals(SC_OK, updateResponse.getStatus());
+        assertEquals(SC_OK, recordResponse.getStatus());
+
+        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
+
+        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
+
+
+        //remove operation
+        updateBody = buildUpdateAclBody(RECORD_ID,"remove","/acl/owners", ACL_2);
+        sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+
+        recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
+
+        assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
+
+
+        //replace operation
+        updateBody = buildUpdateAclBody(RECORD_ID, "replace","/acl/owners ", ACL);
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
-        assertTrue(resultObject.get("acl").getAsJsonObject().get("viewers").getAsJsonArray().size() == 0);
+        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
+
 
     }
 
