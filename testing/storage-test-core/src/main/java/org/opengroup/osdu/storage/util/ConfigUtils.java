@@ -14,7 +14,6 @@
 
 package org.opengroup.osdu.storage.util;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -24,7 +23,8 @@ public class ConfigUtils {
     private final Properties properties;
 
     public ConfigUtils(String propertiesFileName) throws IOException {
-        try (InputStream input = new FileInputStream(propertiesFileName)) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        try (InputStream input = loader.getResourceAsStream(propertiesFileName)) {
             properties = new Properties();
 
             // load a properties file

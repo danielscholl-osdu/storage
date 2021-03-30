@@ -274,10 +274,11 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	@Test
 	public void should_createNewRecord_withSpecialCharacter_ifEnabled() throws Exception {
-		String recordId = "TestPercent%20foobar";
-		String encodedRecordId = "TestPercent%2520foobar";
+		final long currentTimeMillis = System.currentTimeMillis();
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%20foobar-" + currentTimeMillis;
+		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%2520foobar-" + currentTimeMillis;
 
-		String jsonInput = createJsonBody(recordId, "TestPercent%");
+		String jsonInput = createJsonBody(RECORD_ID, "TestPercent%");
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		String json = response.getEntity(String.class);
@@ -291,9 +292,9 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(1, result.recordCount);
 		assertEquals(1, result.recordIds.length);
 		assertEquals(1, result.recordIdVersions.length);
-		assertEquals(RECORD_NEW_ID, result.recordIds[0]);
+		assertEquals(RECORD_ID, result.recordIds[0]);
 
-		response = TestUtils.send("records/" + encodedRecordId, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		response = TestUtils.send("records/" + ENCODED_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 
 		// If encoded percent is true, the request should go through and should be able to get a successful response.
 		if (configUtils != null && configUtils.getBooleanProperty("config.enableEncodedPercent", "false")) {
