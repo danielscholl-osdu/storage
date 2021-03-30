@@ -93,20 +93,22 @@ public class RecordUtilImpl implements RecordUtil {
         updateRecordMetaDataForTags(recordMetadata, tagOperation);
 
         List<PatchOperation> legalOperation = new ArrayList<>(ops);
-        legalOperation.removeAll(tagOperation);
+
+        if (legalOperation.size() > 0) {
+            legalOperation = ops.stream()
+                    .filter(operation -> operation.getPath().startsWith("/legal"))
+                    .collect(toList());
+            recordMetadata = updateMetadataForAclAndLegal(recordMetadata, legalOperation);
+        }
 
         List<PatchOperation> aclOperation = new ArrayList<>(ops);
-        aclOperation.removeAll(tagOperation);
 
-        legalOperation = ops.stream()
-                .filter(operation -> operation.getPath().startsWith("/legal"))
-                .collect(toList());
-        recordMetadata = updateMetadataForAclAndLegal(recordMetadata, legalOperation);
-
-        aclOperation = ops.stream()
-                .filter(operation -> operation.getPath().startsWith("/acl"))
-                .collect(toList());
-        recordMetadata = updateMetadataForAclAndLegal(recordMetadata, aclOperation);
+        if (aclOperation.size() > 0) {
+            aclOperation = ops.stream()
+                    .filter(operation -> operation.getPath().startsWith("/acl"))
+                    .collect(toList());
+            recordMetadata = updateMetadataForAclAndLegal(recordMetadata, aclOperation);
+        }
 
         recordMetadata.setModifyUser(user);
         recordMetadata.setModifyTime(timestamp);
@@ -123,60 +125,57 @@ public class RecordUtilImpl implements RecordUtil {
             JsonObject outer = metadata;
             JsonObject inner = metadata;
 
+            Set<String> old_values = new HashSet<String>();
+
             for (int i = 1; i < pathComponents.length - 1; i++) {
                 inner = outer.getAsJsonObject(pathComponents[i]);
                 outer = inner;
+                if (pathComponents[i].equalsIgnoreCase("legal")) {
+                    old_values.addAll(recordMetadata.getLegal().getLegaltags());
+                }else if (pathComponents[i].equalsIgnoreCase("acl")) {
+                    if(pathComponents[pathComponents.length - 1].equalsIgnoreCase("viewers")){
+                        old_values.addAll(Arrays.asList(recordMetadata.getAcl().getViewers()));
+                    }else if(pathComponents[ pathComponents.length - 1].equalsIgnoreCase("owners")){
+                        old_values.addAll(Arrays.asList(recordMetadata.getAcl().getOwners()));
+                    }
+                }
             }
-
             JsonArray values = new JsonArray();
+
+            Set<String> new_values = new HashSet<String>();
+            new_values.addAll(Arrays.asList(op.getValue()));
 
             for (String value : op.getValue()) {
                 values.add(value);
             }
 
+            values = removeDuplicates(values);
+
             if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_ADD)) {
                 setOriginalAclAndLegal(pathComponents, outer, values);
-                values = removeDuplicates(values);
                 inner.add(pathComponents[pathComponents.length - 1], values);
             } else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REPLACE)) {
                 inner.add(pathComponents[pathComponents.length - 1], values);
             } else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REMOVE)) {
-
-                values = removeDuplicates(values);
-
-                if (inner.has(pathComponents[pathComponents.length - 1])) {
-                    JsonArray originalValues = inner.getAsJsonArray(pathComponents[pathComponents.length - 1]);
-                    int countMatches = 0;
-
-                    //prevent from removing all acl viewers, acl owners or legaltags
-                    if (values.size() >= originalValues.size()) {
-                        for (int i = 0; i < originalValues.size(); i++) {
-                            if (values.contains(originalValues.get(i))) {
-                                countMatches++;
-                                if (countMatches == originalValues.size()) {
-                                    throw new AppException(HttpStatus.SC_BAD_REQUEST, ERROR_REASON, ERROR_MSG);
-                                }
-                            }
-
-                        }
-                    }
-                    if (countMatches != originalValues.size()) {
-                        int totalCountToDelete = values.size();
-                        int soFarDeleted = 0;
-                        for (int i = 0; i < originalValues.size(); i++) {
-                            if (values.contains(originalValues.get(i))) {
-                                originalValues.remove(i);
-                                i--;
-                                soFarDeleted++;
-                            }
-
-                            if (soFarDeleted == totalCountToDelete) break;
-                        }
-                    }
+                patchRemoveForAclAndLegal(old_values, new_values);
+                //set the recordmatadata [legaltag] = old_values;
+                JsonArray jsonArray = new JsonArray();
+                for (String stringValue : old_values) {
+                    jsonArray.add(stringValue);
                 }
+                inner.add(pathComponents[pathComponents.length - 1], jsonArray);
+
             }
         }
         return gson.fromJson(metadata, RecordMetadata.class);
+    }
+
+    private void patchRemoveForAclAndLegal(Set<String> old_values, Set<String> new_values) {
+        //prevent from removing all acl viewers, acl owners or legaltags
+        old_values.removeAll(new_values);
+        if (old_values.isEmpty()) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, ERROR_REASON, ERROR_MSG);
+        }
     }
 
     private JsonArray removeDuplicates(JsonArray values) {
