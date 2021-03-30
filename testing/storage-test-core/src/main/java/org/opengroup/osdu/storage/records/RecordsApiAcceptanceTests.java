@@ -297,7 +297,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		response = TestUtils.send("records/" + ENCODED_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 
 		// If encoded percent is true, the request should go through and should be able to get a successful response.
-		if (configUtils != null && configUtils.getBooleanProperty("config.enableEncodedPercent", "false")) {
+		if (configUtils != null && configUtils.getBooleanProperty("enableEncodedPercentInURL", "false")) {
 			GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
 			assertEquals("TestPercent%", recordResult.data.get("name"));
 		} else {

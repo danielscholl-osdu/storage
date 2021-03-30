@@ -16,20 +16,21 @@
 
 package org.opengroup.osdu.storage.di;
 
-import org.springframework.beans.factory.annotation.Value;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 @Configuration
+@ConfigurationProperties(prefix = "osdu.spring.config")
+@Getter
+@Setter
 public class SpringConfig {
 
     private boolean enableEncodedPercent;
-
-    public SpringConfig(@Value("#{new Boolean('${config.enableEncodedPercent:false}')}") boolean enableEncodedPercent) {
-        this.enableEncodedPercent = enableEncodedPercent;
-    }
 
     @Bean
     public HttpFirewall httpFirewall() {
