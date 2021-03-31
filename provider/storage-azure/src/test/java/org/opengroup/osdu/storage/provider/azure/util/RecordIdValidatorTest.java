@@ -1,4 +1,4 @@
-package org.opengroup.osdu.storage.provider.azure;
+package org.opengroup.osdu.storage.provider.azure.util;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -9,15 +9,12 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.storage.provider.azure.service.IngestionServiceAzureImpl;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
-public class IngestionServiceAzureImplTest {
+public class RecordIdValidatorTest {
     private static final String RECORD_ID_WITH_101_SYMBOLS = "onetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothre1";
     private static final String ERROR_REASON = "Invalid id";
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
@@ -25,24 +22,18 @@ public class IngestionServiceAzureImplTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    private IngestionServiceAzureImpl ingestionServiceAzure = new IngestionServiceAzureImpl();
+    private RecordIdValidator recordIdValidator = new RecordIdValidator();
 
     @Test
     public void shouldFail_CreateUpdateRecords_ifTooLOngRecordIdPresented() {
-        Record record = buildRecord();
-        assertEquals(101, record.getId().length());
+        assertEquals(101, RECORD_ID_WITH_101_SYMBOLS.length());
 
         exceptionRule.expect(AppException.class);
         exceptionRule.expect(buildAppExceptionMatcher(ERROR_MESSAGE, ERROR_REASON));
 
-        ingestionServiceAzure.createUpdateRecords(false, singletonList(record), EMPTY);
+        recordIdValidator.validateIds(singletonList(RECORD_ID_WITH_101_SYMBOLS));
     }
 
-    private Record buildRecord() {
-        Record record = new Record();
-        record.setId(RECORD_ID_WITH_101_SYMBOLS);
-        return record;
-    }
 
     private Matcher<AppException> buildAppExceptionMatcher(String message, String reason) {
         return new Matcher<AppException>() {
