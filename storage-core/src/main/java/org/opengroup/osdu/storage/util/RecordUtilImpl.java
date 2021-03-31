@@ -46,8 +46,8 @@ public class RecordUtilImpl implements RecordUtil {
     private static final String ACL = "acl";
     private static final String VIEWERS = "viewers";
     private static final String OWNERS = "owners";
-    private static final String ERROR_MSG = "Unable to delete";
-    private static final String ERROR_REASON = "The user cannot remove all legaltags or acl viewers or acl owners.";
+    private static final String ERROR_MSG = "Cannot delete";
+    private static final String ERROR_REASON = "Cannot remove all ";
 
     private final TenantInfo tenant;
     private final Gson gson;
@@ -117,6 +117,7 @@ public class RecordUtilImpl implements RecordUtil {
 
     private RecordMetadata updateMetadataForAclAndLegal(RecordMetadata recordMetadata, List<PatchOperation> ops) {
         JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
+        String error_path = "";
 
         for (PatchOperation op : ops) {
             String path = op.getPath();
@@ -132,11 +133,14 @@ public class RecordUtilImpl implements RecordUtil {
                 outer = inner;
                 if (pathComponents[i].equalsIgnoreCase("legal")) {
                     old_values.addAll(recordMetadata.getLegal().getLegaltags());
+                    error_path = "legaltags";
                 }else if (pathComponents[i].equalsIgnoreCase("acl")) {
                     if(pathComponents[pathComponents.length - 1].equalsIgnoreCase("viewers")){
+                        error_path = "acl viewers";
                         old_values.addAll(Arrays.asList(recordMetadata.getAcl().getViewers()));
                     }else if(pathComponents[ pathComponents.length - 1].equalsIgnoreCase("owners")){
                         old_values.addAll(Arrays.asList(recordMetadata.getAcl().getOwners()));
+                        error_path = "acl owners";
                     }
                 }
             }
@@ -157,8 +161,7 @@ public class RecordUtilImpl implements RecordUtil {
             } else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REPLACE)) {
                 inner.add(pathComponents[pathComponents.length - 1], values);
             } else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REMOVE)) {
-                patchRemoveForAclAndLegal(old_values, new_values);
-                //set the recordmatadata [legaltag] = old_values;
+                patchRemoveForAclAndLegal(old_values, new_values, error_path);
                 JsonArray jsonArray = new JsonArray();
                 for (String stringValue : old_values) {
                     jsonArray.add(stringValue);
@@ -170,11 +173,11 @@ public class RecordUtilImpl implements RecordUtil {
         return gson.fromJson(metadata, RecordMetadata.class);
     }
 
-    private void patchRemoveForAclAndLegal(Set<String> old_values, Set<String> new_values) {
+    private void patchRemoveForAclAndLegal(Set<String> old_values, Set<String> new_values, String error_path) {
         //prevent from removing all acl viewers, acl owners or legaltags
         old_values.removeAll(new_values);
         if (old_values.isEmpty()) {
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, ERROR_REASON, ERROR_MSG);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, ERROR_REASON + error_path , ERROR_MSG );
         }
     }
 

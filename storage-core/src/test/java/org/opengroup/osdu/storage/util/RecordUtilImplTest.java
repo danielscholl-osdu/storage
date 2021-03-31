@@ -225,8 +225,8 @@ public class RecordUtilImplTest {
                       TIMESTAMP);
     }catch(AppException e){
       assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-      assertEquals("The user cannot remove all legaltags or acl viewers or acl owners.", e.getError().getReason());
-      assertEquals("Unable to delete", e.getError().getMessage());
+      assertEquals("Cannot remove all legaltags", e.getError().getReason());
+      assertEquals("Cannot delete", e.getError().getMessage());
     }catch (Exception e){
       Assert.fail("Should not get different exception");
     }
@@ -270,8 +270,8 @@ public class RecordUtilImplTest {
       //Assert.("Should not suceed");
     }catch(AppException e){
       assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-      assertEquals("The user cannot remove all legaltags or acl viewers or acl owners.", e.getError().getReason());
-      assertEquals("Unable to delete", e.getError().getMessage());
+      assertEquals("Cannot remove all acl viewers", e.getError().getReason());
+      assertEquals("Cannot delete", e.getError().getMessage());
     }catch (Exception e){
       Assert.fail("Should not get different exception");
     }
@@ -335,8 +335,8 @@ public class RecordUtilImplTest {
                       TIMESTAMP);
     }catch(AppException e){
       assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-      assertEquals("The user cannot remove all legaltags or acl viewers or acl owners.", e.getError().getReason());
-      assertEquals("Unable to delete", e.getError().getMessage());
+      assertEquals("Cannot remove all acl owners", e.getError().getReason());
+      assertEquals("Cannot delete", e.getError().getMessage());
     }catch (Exception e){
       Assert.fail("Should not get different exception");
     }
