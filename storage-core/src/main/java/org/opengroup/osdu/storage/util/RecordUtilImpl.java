@@ -17,7 +17,14 @@ package org.opengroup.osdu.storage.util;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.stream.Stream;
 
 import com.google.gson.JsonParser;
@@ -131,17 +138,25 @@ public class RecordUtilImpl implements RecordUtil {
             for (int i = 1; i < pathComponents.length - 1; i++) {
                 inner = outer.getAsJsonObject(pathComponents[i]);
                 outer = inner;
-                if (pathComponents[i].equalsIgnoreCase("legal")) {
-                    old_values.addAll(recordMetadata.getLegal().getLegaltags());
-                    error_path = "legaltags";
-                }else if (pathComponents[i].equalsIgnoreCase("acl")) {
-                    if(pathComponents[pathComponents.length - 1].equalsIgnoreCase("viewers")){
-                        error_path = "acl viewers";
-                        old_values.addAll(Arrays.asList(recordMetadata.getAcl().getViewers()));
-                    }else if(pathComponents[ pathComponents.length - 1].equalsIgnoreCase("owners")){
-                        old_values.addAll(Arrays.asList(recordMetadata.getAcl().getOwners()));
-                        error_path = "acl owners";
-                    }
+
+                switch (pathComponents[i].toLowerCase()){
+                    case LEGAL:
+                        if(LEGAL_TAGS.equalsIgnoreCase(pathComponents[pathComponents.length - 1])){
+                            old_values.addAll(recordMetadata.getLegal().getLegaltags());
+                            error_path = LEGAL_TAGS;
+                        }
+                        break;
+                    case ACL:
+                        switch (pathComponents[pathComponents.length - 1].toLowerCase()){
+                            case VIEWERS:
+                                old_values.addAll(Arrays.asList(recordMetadata.getAcl().getViewers()));
+                                error_path = ACL +" " + VIEWERS;
+                                break;
+                            case OWNERS:
+                                old_values.addAll(Arrays.asList(recordMetadata.getAcl().getOwners()));
+                                error_path = ACL +" " + OWNERS;
+                                break;
+                        }
                 }
             }
             JsonArray values = new JsonArray();
@@ -155,19 +170,22 @@ public class RecordUtilImpl implements RecordUtil {
 
             values = removeDuplicates(values);
 
-            if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_ADD)) {
-                setOriginalAclAndLegal(pathComponents, outer, values);
-                inner.add(pathComponents[pathComponents.length - 1], values);
-            } else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REPLACE)) {
-                inner.add(pathComponents[pathComponents.length - 1], values);
-            } else if (op.getOp().equalsIgnoreCase(PATCH_OPERATION_REMOVE)) {
-                patchRemoveForAclAndLegal(old_values, new_values, error_path);
-                JsonArray jsonArray = new JsonArray();
-                for (String stringValue : old_values) {
-                    jsonArray.add(stringValue);
-                }
-                inner.add(pathComponents[pathComponents.length - 1], jsonArray);
-
+            switch (op.getOp().toLowerCase()){
+                case PATCH_OPERATION_ADD:
+                    setOriginalAclAndLegal(pathComponents, outer, values);
+                    inner.add(pathComponents[pathComponents.length - 1], values);
+                    break;
+                case PATCH_OPERATION_REPLACE:
+                    inner.add(pathComponents[pathComponents.length - 1], values);
+                    break;
+                case PATCH_OPERATION_REMOVE:
+                    patchRemoveForAclAndLegal(old_values, new_values, error_path);
+                    JsonArray jsonArray = new JsonArray();
+                    for (String stringValue : old_values) {
+                        jsonArray.add(stringValue);
+                    }
+                    inner.add(pathComponents[pathComponents.length - 1], jsonArray);
+                    break;
             }
         }
         return gson.fromJson(metadata, RecordMetadata.class);
