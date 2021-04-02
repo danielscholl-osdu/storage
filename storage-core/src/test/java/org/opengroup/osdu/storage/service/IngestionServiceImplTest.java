@@ -137,6 +137,9 @@ public class IngestionServiceImplTest {
         this.record1.setKind(KIND_1);
         this.record1.setId(RECORD_ID1);
         this.record1.setLegal(legal);
+        // set up empty ancestry for record1
+        RecordAncestry  ancestry = new RecordAncestry();
+        this.record1.setAncestry(ancestry);
 
         this.record2 = new Record();
         this.record2.setKind(KIND_2);
