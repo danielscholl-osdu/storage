@@ -97,23 +97,21 @@ public class RecordUtilImpl implements RecordUtil {
         List<PatchOperation> tagOperation = ops.stream()
                 .filter(operation -> operation.getPath().startsWith("/tags"))
                 .collect(toList());
-        updateRecordMetaDataForTags(recordMetadata, tagOperation);
+        if (tagOperation.size() > 0) {
+            updateRecordMetaDataForTags(recordMetadata, tagOperation);
+        }
 
-        List<PatchOperation> legalOperation = new ArrayList<>(ops);
-
+        List<PatchOperation> legalOperation = ops.stream()
+                .filter(operation -> operation.getPath().startsWith("/legal"))
+                .collect(toList());
         if (legalOperation.size() > 0) {
-            legalOperation = ops.stream()
-                    .filter(operation -> operation.getPath().startsWith("/legal"))
-                    .collect(toList());
             recordMetadata = updateMetadataForAclAndLegal(recordMetadata, legalOperation);
         }
 
-        List<PatchOperation> aclOperation = new ArrayList<>(ops);
-
+        List<PatchOperation> aclOperation = ops.stream()
+                .filter(operation -> operation.getPath().startsWith("/acl"))
+                .collect(toList());
         if (aclOperation.size() > 0) {
-            aclOperation = ops.stream()
-                    .filter(operation -> operation.getPath().startsWith("/acl"))
-                    .collect(toList());
             recordMetadata = updateMetadataForAclAndLegal(recordMetadata, aclOperation);
         }
 
@@ -124,7 +122,7 @@ public class RecordUtilImpl implements RecordUtil {
 
     private RecordMetadata updateMetadataForAclAndLegal(RecordMetadata recordMetadata, List<PatchOperation> ops) {
         JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
-        String error_path = "";
+        String errorPath = "";
 
         for (PatchOperation op : ops) {
             String path = op.getPath();
@@ -133,69 +131,79 @@ public class RecordUtilImpl implements RecordUtil {
             JsonObject outer = metadata;
             JsonObject inner = metadata;
 
-            Set<String> old_values = new HashSet<String>();
+            Set<String> oldValues = new HashSet<String>();
 
             for (int i = 1; i < pathComponents.length - 1; i++) {
                 inner = outer.getAsJsonObject(pathComponents[i]);
                 outer = inner;
+                errorPath = getExistingValuesAndErrorPath(pathComponents, i, oldValues, recordMetadata);
 
-                switch (pathComponents[i].toLowerCase()){
-                    case LEGAL:
-                        if(LEGAL_TAGS.equalsIgnoreCase(pathComponents[pathComponents.length - 1])){
-                            old_values.addAll(recordMetadata.getLegal().getLegaltags());
-                            error_path = LEGAL_TAGS;
-                        }
-                        break;
-                    case ACL:
-                        switch (pathComponents[pathComponents.length - 1].toLowerCase()){
-                            case VIEWERS:
-                                old_values.addAll(Arrays.asList(recordMetadata.getAcl().getViewers()));
-                                error_path = ACL +" " + VIEWERS;
-                                break;
-                            case OWNERS:
-                                old_values.addAll(Arrays.asList(recordMetadata.getAcl().getOwners()));
-                                error_path = ACL +" " + OWNERS;
-                                break;
-                        }
-                }
             }
             JsonArray values = new JsonArray();
 
-            Set<String> new_values = new HashSet<String>();
-            new_values.addAll(Arrays.asList(op.getValue()));
+            Set<String> newValues = new HashSet<>();
+            newValues.addAll(Arrays.asList(op.getValue()));
 
             for (String value : op.getValue()) {
                 values.add(value);
             }
-
             values = removeDuplicates(values);
-
-            switch (op.getOp().toLowerCase()){
-                case PATCH_OPERATION_ADD:
-                    setOriginalAclAndLegal(pathComponents, outer, values);
-                    inner.add(pathComponents[pathComponents.length - 1], values);
-                    break;
-                case PATCH_OPERATION_REPLACE:
-                    inner.add(pathComponents[pathComponents.length - 1], values);
-                    break;
-                case PATCH_OPERATION_REMOVE:
-                    patchRemoveForAclAndLegal(old_values, new_values, error_path);
-                    JsonArray jsonArray = new JsonArray();
-                    for (String stringValue : old_values) {
-                        jsonArray.add(stringValue);
-                    }
-                    inner.add(pathComponents[pathComponents.length - 1], jsonArray);
-                    break;
-            }
+            executeCorrespondingOperation(op, pathComponents, outer, inner, values, oldValues, newValues, errorPath);
         }
         return gson.fromJson(metadata, RecordMetadata.class);
     }
 
-    private void patchRemoveForAclAndLegal(Set<String> old_values, Set<String> new_values, String error_path) {
+    private String getExistingValuesAndErrorPath(String[] pathComponents, int i, Set<String> oldValues, RecordMetadata recordMetadata) {
+        switch (pathComponents[i].toLowerCase()) {
+            case LEGAL:
+                if (LEGAL_TAGS.equalsIgnoreCase(pathComponents[pathComponents.length - 1])) {
+                    oldValues.addAll(recordMetadata.getLegal().getLegaltags());
+                    return LEGAL_TAGS;
+                }
+                break;
+            case ACL:
+                switch (pathComponents[pathComponents.length - 1].toLowerCase()) {
+                    case VIEWERS:
+                        oldValues.addAll(Arrays.asList(recordMetadata.getAcl().getViewers()));
+                        return ACL + " " + VIEWERS;
+                    case OWNERS:
+                        oldValues.addAll(Arrays.asList(recordMetadata.getAcl().getOwners()));
+                        return ACL + " " + OWNERS;
+                }
+        }
+        return "";
+    }
+
+    private void executeCorrespondingOperation(PatchOperation op, String[] pathComponents, JsonObject outer,
+                                               JsonObject inner, JsonArray values, Set<String> oldValues,
+                                               Set<String> newValues, String errorPath) {
+        switch (op.getOp().toLowerCase()) {
+            case PATCH_OPERATION_ADD:
+                setOriginalAclAndLegal(pathComponents, outer, values);
+                values = removeDuplicates(values);
+                inner.add(pathComponents[pathComponents.length - 1], values);
+                break;
+            case PATCH_OPERATION_REPLACE:
+                inner.add(pathComponents[pathComponents.length - 1], values);
+                break;
+            case PATCH_OPERATION_REMOVE:
+                patchRemoveForAclAndLegal(oldValues, newValues, errorPath);
+                JsonArray jsonArray = new JsonArray();
+                for (String stringValue : oldValues) {
+                    jsonArray.add(stringValue);
+                }
+                inner.add(pathComponents[pathComponents.length - 1], jsonArray);
+                break;
+        }
+
+    }
+
+
+    private void patchRemoveForAclAndLegal(Set<String> oldValues, Set<String> newValues, String errorPath) {
         //prevent from removing all acl viewers, acl owners or legaltags
-        old_values.removeAll(new_values);
-        if (old_values.isEmpty()) {
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, ERROR_REASON + error_path , ERROR_MSG );
+        oldValues.removeAll(newValues);
+        if (oldValues.isEmpty()) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, ERROR_REASON + errorPath, ERROR_MSG);
         }
     }
 
