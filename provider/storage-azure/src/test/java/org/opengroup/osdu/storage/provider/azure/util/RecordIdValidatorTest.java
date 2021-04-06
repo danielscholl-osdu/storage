@@ -15,23 +15,30 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RecordIdValidatorTest {
-    private static final String RECORD_ID_WITH_101_SYMBOLS = "onetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothreonetwothre1";
+    private static final String RECORD_ID_WITH_101_SYMBOLS = "onetwothree";
     private static final String ERROR_REASON = "Invalid id";
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
+
+    private static final int RECORD_ID_MAX_LENGTH = 10;
 
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    private RecordIdValidator recordIdValidator = new RecordIdValidator();
+    private RecordIdValidator recordIdValidator = new RecordIdValidator(RECORD_ID_MAX_LENGTH);
 
     @Test
     public void shouldFail_CreateUpdateRecords_ifTooLOngRecordIdPresented() {
-        assertEquals(101, RECORD_ID_WITH_101_SYMBOLS.length());
+        assertEquals(11, RECORD_ID_WITH_101_SYMBOLS.length());
 
         exceptionRule.expect(AppException.class);
         exceptionRule.expect(buildAppExceptionMatcher(ERROR_MESSAGE, ERROR_REASON));
 
         recordIdValidator.validateIds(singletonList(RECORD_ID_WITH_101_SYMBOLS));
+    }
+
+    @Test
+    public void shouldDoNothing_ifNullRecordId_passed() {
+        recordIdValidator.validateIds(singletonList(null));
     }
 
 
