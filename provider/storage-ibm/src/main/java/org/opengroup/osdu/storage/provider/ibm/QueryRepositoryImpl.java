@@ -17,6 +17,7 @@ import javax.inject.Inject;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.ibm.auth.ServiceCredentials;
 import org.opengroup.osdu.core.ibm.cloudant.IBMCloudantClientFactory;
@@ -118,7 +119,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
         }
                 
         QueryResult<RecordMetadataDoc> results = dbRecords.query(new QueryBuilder(
-        			and(eq("kind", kind), gte("_id", initialId))).
+        			and(eq("kind", kind), gte("_id", initialId), eq("status",RecordState.active.toString()))).
 				    sort(Sort.asc("_id")).
 				    fields("_id").
 				    limit(numRecords+1).
