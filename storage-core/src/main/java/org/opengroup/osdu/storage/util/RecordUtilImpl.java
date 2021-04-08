@@ -147,7 +147,6 @@ public class RecordUtilImpl implements RecordUtil {
             for (String value : op.getValue()) {
                 values.add(value);
             }
-            values = removeDuplicates(values);
             executeCorrespondingOperation(op, pathComponents, outer, inner, values, oldValues, newValues, errorPath);
         }
         return gson.fromJson(metadata, RecordMetadata.class);
