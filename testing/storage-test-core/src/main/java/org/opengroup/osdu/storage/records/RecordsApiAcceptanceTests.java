@@ -301,8 +301,11 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 			GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
 			assertEquals("TestPercent%", recordResult.data.get("name"));
 		} else {
-			// Service does not allow URLs with suspicious characters. Default setting
-			assertEquals(403, response.getStatus());
+			// Service does not allow URLs with suspicious characters, Which is the default setting.
+			// Different CSPs are responding with different status code for this error when a special character like %25 is present in the URL.
+			// Hence the Assert Statement is marked not to be 200.
+			// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
+			assertNotEquals(200, response.getStatus());
 		}
 	}
 
