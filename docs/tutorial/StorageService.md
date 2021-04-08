@@ -530,6 +530,8 @@ PATCH /api/storage/records
 ```
 </details>
 
+> You can use Search service's query or query_with_cursor [apis](https://community.opengroup.org/osdu/platform/system/search-service/-/blob/master/docs/tutorial/SearchService.md) to search for records based on tags. Since tags is part of metadata, it is automatically indexed. This may not work if the kind is old (older than when the tags feature was introduced ~02/25/2021). You may need to re-index the kind with the [reindex](https://community.opengroup.org/osdu/platform/system/indexer-service/-/blob/master/docs/tutorial/IndexerService.md#reindex) api (with `force_clean=true`) from indexer service.
+
 ## Using service accounts to access Storage APIs <a name="Service-accounts"></a>
 The Storage service relies on the Google native data access authorization mechanisms to provide access control on the records. 
 Based on design decisions, when the Storage service caller is a federated user, no additional configuration is necessary, however if the API caller is a service account, a mandatory configuration is necessary as follows:
