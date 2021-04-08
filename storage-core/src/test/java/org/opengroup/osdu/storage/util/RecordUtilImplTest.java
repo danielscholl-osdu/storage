@@ -182,7 +182,6 @@ public class RecordUtilImplTest {
     assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
   }
 
-
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withAddOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
@@ -231,7 +230,6 @@ public class RecordUtilImplTest {
       Assert.fail("Should not get different exception");
     }
   }
-
 
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withAddOperation() {

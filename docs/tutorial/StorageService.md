@@ -34,9 +34,9 @@
     - [Parameters <a name="parameters"></a>](#parameters-2)
   - [Delete record <a name="Delete-record"></a>](#delete-record)
 - [Patch api <a name="patch-api"></a>](#patch-api)
-  - [Replace batch of records with patch api <a name="patch-api-metadata-bulk-replace"></a>](#patch-api-metadata-bulk-replace)
-  - [Add batch of records with patch api <a name="patch-api-metadata-bulk-add"></a>](#patch-api-metadata-bulk-add)
-  - [Remove batch of records with patch api <a name="patch-api-metadata-bulk-remove"></a>](#patch-api-metadata-bulk-remove)
+  - [Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>](#patch-api-metadata-bulk-replace)
+  - [Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>](#patch-api-metadata-bulk-add)
+  - [Remove Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-remove"></a>](#patch-api-metadata-bulk-remove)
 - [Using service accounts to access Storage APIs <a name="Service-accounts"></a>](#using-service-accounts-to-access-storage-apis)
 - [Using skipdupes <a name="skipdupes"></a>](#using-skipdupes)
 - [Support for GeoJSON types <a name="geojson-support"></a>](#support-for-geojson-types)
@@ -481,11 +481,10 @@ Bulk Update API has the following response codes:
 PATCH /api/storage/v2/records
 ```
 
-### Replace batch of records with patch api <a name="patch-api-metadata-bulk-replace"></a>
+### Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>
 
 In the "replace" operation, property value in "path" would be fully replaced by values provided in the "value" field. If
 we need to replace tags ops.value should be colon separated string value.
-
 <details><summary>curl</summary>
 
 ```
@@ -497,22 +496,35 @@ curl --request PATCH \
    --header 'Data-Partition-Id: common'
     --data-raw ‘{ 
       "query": { 
-        "ids": ["tenant:type:unique-identifier:version"] 
+        "ids": [
+          "tenant1:type:unique-identifier:version",
+          "tenant2:type:unique-identifier:version",
+          "tenant3:type:unique-identifier:version"
+        ]
       }, 
       "ops": [ { 
         "op": "replace", 
         "path": "/legal/legaltags", 
-        "value": ["opendes-sample-legaltag"] 
+        "value": [
+          "opendes-sample-legaltag1",
+          "opendes-sample-legaltag2"
+        ]
         }, 
         { 
 	    "op": "replace", 
 	    "path": "/acl/owners", 
-	    "value": ["data.default.owners@opendes.enterprisedata.cloud.slb-ds.com"] 
+	    "value": [
+	      "data.default.owner1@opendes.enterprisedata.cloud.slb-ds.com",
+	      "data.default.owner2@opendes.enterprisedata.cloud.slb-ds.com"
+	    ]
         }, 
         { 
         "op": "replace", 
         "path": "/acl/viewers", 
-        "value": ["data.default.viewers@opendes.enterprisedata.cloud.slb-ds.com"] 
+        "value": [
+          "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com",
+          "data.default.viewer2@opendes.enterprisedata.cloud.slb-ds.com"
+        ] 
         },
         {
         "op":"replace",
@@ -529,7 +541,7 @@ curl --request PATCH \
 
 </details>
 
-### Add batch of records with patch api <a name="patch-api-metadata-bulk-add"></a>
+### Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>
 
 In the "add" operation, the valid Tags, Legal Tags, and ACLs (Acl Viewers, Acl Owners) provided in the "value" field
 will be added to the property value in the "path" field. If we need to add tags ops.value should be colon separated
@@ -547,22 +559,35 @@ curl --request PATCH \
    --header 'Data-Partition-Id: common'
     --data-raw ‘{ 
       "query": { 
-        "ids": ["tenant:type:unique-identifier:version"] 
+        "ids": [
+          "tenant1:type:unique-identifier:version",
+          "tenant2:type:unique-identifier:version",
+          "tenant3:type:unique-identifier:version"
+        ]
       }, 
       "ops": [ { 
         "op": "add", 
         "path": "/legal/legaltags", 
-        "value": ["opendes-sample-legaltag"] 
+        "value": [
+          "opendes-sample-legaltag1",
+          "opendes-sample-legaltag2"
+        ]
         }, 
         { 
 	    "op": "add", 
 	    "path": "/acl/owners", 
-	    "value": ["data.default.owners@opendes.enterprisedata.cloud.slb-ds.com"] 
+	    "value": [
+	      "data.default.owner1@opendes.enterprisedata.cloud.slb-ds.com",
+	      "data.default.owner2@opendes.enterprisedata.cloud.slb-ds.com"
+	    ]
         }, 
         { 
         "op": "add", 
         "path": "/acl/viewers", 
-        "value": ["data.default.viewers@opendes.enterprisedata.cloud.slb-ds.com"] 
+        "value": [
+          "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com",
+          "data.default.viewer2@opendes.enterprisedata.cloud.slb-ds.com"
+        ]
         },
         {
         "op":"add",
@@ -571,15 +596,15 @@ curl --request PATCH \
           "key1:value1",
           "key2:value2",
           "key3:value3"
-          ]
+        ]
         }
-      ] 
+      ]
     }
 ```
 
 </details>
 
-### Remove batch of records with patch api <a name="patch-api-metadata-bulk-remove"></a>
+### Remove Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-remove"></a>
 
 In the "remove" operation, the valid Tags, Legal Tags, and ACLs (Acl Viewers, Acl Owners) provided in the "value" field
 will be removed from the property value in the "path" field. When the given Tags, Legal Tags, or ACLs (Acl Viewers, Acl
@@ -599,22 +624,35 @@ curl --request PATCH \
    --header 'Data-Partition-Id: common'
     --data-raw ‘{ 
       "query": { 
-        "ids": ["tenant:type:unique-identifier:version"] 
+        "ids": [
+          "tenant1:type:unique-identifier:version",
+          "tenant2:type:unique-identifier:version",
+          "tenant3:type:unique-identifier:version"
+        ]
       }, 
       "ops": [ { 
         "op": "remove", 
         "path": "/legal/legaltags", 
-        "value": ["opendes-sample-legaltag"] 
+        "value": [
+          "opendes-sample-legaltag1",
+          "opendes-sample-legaltag2"
+        ]
         }, 
         { 
 	    "op": "remove", 
 	    "path": "/acl/owners", 
-	    "value": ["data.default.owners@opendes.enterprisedata.cloud.slb-ds.com"] 
+	    "value": [
+	      "data.default.owner1@opendes.enterprisedata.cloud.slb-ds.com",
+	      "data.default.owner2@opendes.enterprisedata.cloud.slb-ds.com"
+	    ]
         }, 
         { 
         "op": "remove", 
         "path": "/acl/viewers", 
-        "value": ["data.default.viewers@opendes.enterprisedata.cloud.slb-ds.com"] 
+        "value": [
+          "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com",
+          "data.default.viewer2@opendes.enterprisedata.cloud.slb-ds.com"
+        ]
         },
         {
         "op":"remove",
@@ -623,7 +661,7 @@ curl --request PATCH \
           "key1",
           "key2",
           "key3"
-          ]
+        ]
         }
       ] 
     }

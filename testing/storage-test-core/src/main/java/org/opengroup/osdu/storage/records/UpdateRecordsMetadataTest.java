@@ -319,6 +319,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         assertEquals(SC_BAD_REQUEST,updateResponse.getStatus());
     }
+
     @Test
     public void should_return200AndUpdateAclViewersMetadata_whenValidRecordsProvided() throws Exception {
         //add operation
@@ -349,8 +350,8 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
         assertEquals(SC_BAD_REQUEST,updateResponse.getStatus());
-
     }
+
     @Test
     public void should_return200AndUpdateAclOwnersMetadata_whenValidRecordsProvided() throws Exception {
         //add operation
@@ -368,7 +369,6 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
 
-
         //remove operation
         updateBody = buildUpdateAclBody(RECORD_ID,"remove","/acl/owners", ACL_2);
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
@@ -378,7 +378,6 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
 
-
         //replace operation
         updateBody = buildUpdateAclBody(RECORD_ID, "replace","/acl/owners ", ACL);
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
@@ -386,8 +385,6 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
-
-
     }
 
     @Test
@@ -402,6 +399,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         System.out.println(resultObject.toString());
         assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
     }
+
     @Test
     public void should_return206andUpdateAclMetadata_whenNotExistedRecordProvided() throws Exception {
         JsonObject updateBody = buildUpdateAclBody(NOT_EXISTED_RECORD_ID, "replace","/acl/viewers", ACL);
@@ -414,6 +412,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         System.out.println(resultObject.toString());
         assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
     }
+
     private JsonObject buildUpdateLegalBody(String id, String op, String val) {
         JsonArray records = new JsonArray();
         records.add(id);
@@ -436,6 +435,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         return updateBody;
     }
+
     private JsonObject buildUpdateAclBody(String id, String op, String path, String val) {
         JsonArray records = new JsonArray();
         records.add(id);
