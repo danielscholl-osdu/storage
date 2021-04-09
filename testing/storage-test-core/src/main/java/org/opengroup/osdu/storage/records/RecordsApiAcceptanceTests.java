@@ -272,6 +272,43 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
 	}
 
+	@Test
+	public void should_createNewRecord_withSpecialCharacter_ifEnabled() throws Exception {
+		final long currentTimeMillis = System.currentTimeMillis();
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%20foobar-" + currentTimeMillis;
+		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%2520foobar-" + currentTimeMillis;
+
+		String jsonInput = createJsonBody(RECORD_ID, "TestPercent%");
+
+		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		String json = response.getEntity(String.class);
+		assertEquals(201, response.getStatus());
+		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+
+		Gson gson = new Gson();
+		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
+				DummyRecordsHelper.CreateRecordResponse.class);
+
+		assertEquals(1, result.recordCount);
+		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
+		assertEquals(RECORD_ID, result.recordIds[0]);
+
+		response = TestUtils.send("records/" + ENCODED_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+
+		// If encoded percent is true, the request should go through and should be able to get a successful response.
+		if (configUtils != null && configUtils.getBooleanProperty("enableEncodedPercentInURL", "false")) {
+			GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+			assertEquals("TestPercent%", recordResult.data.get("name"));
+		} else {
+			// Service does not allow URLs with suspicious characters, Which is the default setting.
+			// Different CSPs are responding with different status code for this error when a special character like %25 is present in the URL.
+			// Hence the Assert Statement is marked not to be 200.
+			// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
+			assertNotEquals(200, response.getStatus());
+		}
+	}
+
 	protected static String createJsonBody(String id, String name) {
 		return "[" + singleEntityBody(id, name, KIND, LEGAL_TAG) + "]";
 	}
