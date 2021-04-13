@@ -30,7 +30,7 @@ public class SchemaRedisCache extends RedisCache<String, Schema> {
             final @Named("REDIS_HOST") String host,
             final @Named("REDIS_PORT") int port,
             final @Named("REDIS_PASSWORD") String password,
-            final @Named("REDIS_TIMEOUT") int timeout,
+            final @Named("SCHEMA_REDIS_TIMEOUT") int timeout,
             @Value("${redis.database}") final int database)
     {
         super(host, port, password, timeout, database, String.class, Schema.class);

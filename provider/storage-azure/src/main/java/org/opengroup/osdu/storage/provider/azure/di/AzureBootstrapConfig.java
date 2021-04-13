@@ -67,13 +67,22 @@ public class AzureBootstrapConfig {
         return redisPort;
     }
 
-    @Value("${redis.timeout:3600}")
-    public int redisTimeout;
+    @Value("${schema.redis.timeout:3600}")
+    public int schemaRedisTimeout;
+
+    @Value("${group.redis.timeout:30}")
+    public int groupRedisTimeout;
 
     @Bean
-    @Named("REDIS_TIMEOUT")
-    public int getRedisTimeout() {
-        return redisTimeout;
+    @Named("SCHEMA_REDIS_TIMEOUT")
+    public int getSchemaRedisTimeout() {
+        return schemaRedisTimeout;
+    }
+
+    @Bean
+    @Named("GROUP_REDIS_TIMEOUT")
+    public int getGroupRedisTimeout() {
+        return groupRedisTimeout;
     }
 
     @Bean
