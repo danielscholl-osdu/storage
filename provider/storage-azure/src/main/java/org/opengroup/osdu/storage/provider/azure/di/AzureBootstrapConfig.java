@@ -14,8 +14,6 @@
 
 package org.opengroup.osdu.storage.provider.azure.di;
 
-import com.azure.security.keyvault.secrets.SecretClient;
-import org.opengroup.osdu.azure.KeyVaultFacade;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -56,45 +54,6 @@ public class AzureBootstrapConfig {
     @Bean
     public String cosmosDBName() {
         return cosmosDBName;
-    }
-
-    @Value("${redis.port:6380}")
-    public int redisPort;
-
-    @Bean
-    @Named("REDIS_PORT")
-    public int getRedisPort() {
-        return redisPort;
-    }
-
-    @Value("${schema.redis.timeout:3600}")
-    public int schemaRedisTimeout;
-
-    @Value("${group.redis.timeout:30}")
-    public int groupRedisTimeout;
-
-    @Bean
-    @Named("SCHEMA_REDIS_TIMEOUT")
-    public int getSchemaRedisTimeout() {
-        return schemaRedisTimeout;
-    }
-
-    @Bean
-    @Named("GROUP_REDIS_TIMEOUT")
-    public int getGroupRedisTimeout() {
-        return groupRedisTimeout;
-    }
-
-    @Bean
-    @Named("REDIS_HOST")
-    public String redisHost(SecretClient kv) {
-        return KeyVaultFacade.getSecretWithValidation(kv, "redis-hostname");
-    }
-
-    @Bean
-    @Named("REDIS_PASSWORD")
-    public String redisPassword(SecretClient kv) {
-        return KeyVaultFacade.getSecretWithValidation(kv, "redis-password");
     }
 
     /**
