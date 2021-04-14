@@ -289,7 +289,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     }
 
     @Test
-    public void should_return200AndUpdateLegalMetadata_whenValidRecordsProvided() throws Exception {
+    public void should_return200AndUpdateLegalMetadataOr400ForRemoveRestriction_whenValidRecordsProvided() throws Exception {
         //add operation
         JsonObject updateBody = buildUpdateLegalBody(RECORD_ID, "add", LEGAL_TAG);
 
@@ -321,7 +321,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     }
 
     @Test
-    public void should_return200AndUpdateAclViewersMetadata_whenValidRecordsProvided() throws Exception {
+    public void should_return200AndUpdateAclViewersMetadataOr400ForRemoveRestriction_whenValidRecordsProvided() throws Exception {
         //add operation
         JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/viewers", ACL);
 
@@ -353,7 +353,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     }
 
     @Test
-    public void should_return200AndUpdateAclOwnersMetadata_whenValidRecordsProvided() throws Exception {
+    public void should_return200AndUpdateAclOwnersMetadataOr400ForRemoveRestriction_whenValidRecordsProvided() throws Exception {
         //add operation
         JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/owners", ACL);
 
