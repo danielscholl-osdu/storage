@@ -96,10 +96,22 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
 
         if (e.getError().getCode() > 499) {
             this.logger.error(exceptionMsg, e);
+            this.logInnerException(e);
         } else {
             this.logger.warning(exceptionMsg, e);
         }
 
         return new ResponseEntity<Object>(e.getError(), HttpStatus.resolve(e.getError().getCode()));
+    }
+
+    private void logInnerException(AppException e) {
+        Exception cause = e.getOriginalException();
+        while (cause != null) {
+            this.logger.error(cause.getMessage(), cause);
+            if(e.getCause() instanceof Exception)
+                cause = (Exception) cause.getCause();
+            else
+                cause = null;
+        }
     }
 }
