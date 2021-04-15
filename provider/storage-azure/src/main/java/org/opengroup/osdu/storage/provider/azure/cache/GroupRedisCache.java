@@ -30,7 +30,7 @@ public class GroupRedisCache extends RedisCache<String, Groups> {
             final @Named("REDIS_HOST") String host,
             final @Named("REDIS_PORT") int port,
             final @Named("REDIS_PASSWORD") String password,
-            final @Named("GROUP_REDIS_TIMEOUT") int timeout,
+            final @Named("GROUP_REDIS_TTL") int timeout,
             @Value("${redis.database}") final int database)
     {
         super(host, port, password, timeout, database, String.class, Groups.class);

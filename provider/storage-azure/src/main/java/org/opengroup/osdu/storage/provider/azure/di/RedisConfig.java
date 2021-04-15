@@ -14,11 +14,11 @@ public class RedisConfig {
     @Value("${redis.port:6380}")
     public int redisPort;
 
-    @Value("${redis.schema.timeout:3600}")
-    public int schemaRedisTimeout;
+    @Value("${redis.schema.ttl:3600}")
+    public int schemaRedisTtl;
 
-    @Value("${redis.group.timeout:30}")
-    public int groupRedisTimeout;
+    @Value("${redis.group.ttl:30}")
+    public int groupRedisTtl;
 
     @Bean
     @Named("REDIS_PORT")
@@ -27,14 +27,14 @@ public class RedisConfig {
     }
 
     @Bean
-    @Named("SCHEMA_REDIS_TIMEOUT")
-    public int getSchemaRedisTimeout() {
-        return schemaRedisTimeout;
+    @Named("SCHEMA_REDIS_TTL")
+    public int getSchemaRedisTtl() {
+        return schemaRedisTtl;
     }
 
     @Bean
-    @Named("GROUP_REDIS_TIMEOUT")
-    public int getGroupRedisTimeout() { return groupRedisTimeout; }
+    @Named("GROUP_REDIS_TTL")
+    public int getGroupRedisTtl() { return groupRedisTtl; }
 
     @Bean
     @Named("REDIS_HOST")
