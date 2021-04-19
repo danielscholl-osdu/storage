@@ -20,8 +20,13 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.http.HttpStatus;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,6 +36,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -40,11 +46,23 @@ import com.google.gson.Gson;
 @RunWith(MockitoJUnitRunner.class)
 public class RecordUtilImplTest {
 
-  private static final String ACL_VIEWER = "viewer1@tenant1.gmail.com";
-  private static final String ACL_VIEWER_NEW = "newviewer1@tenant1.gmail.com";
+  private static final String ACL_VIEWER_EXISTING1 = "viewer1@tenant1.gmail.com";
+  private static final String ACL_VIEWER_EXISTING2 = "viewer2@tenant1.gmail.com";
+  private static final String ACL_VIEWER_NEW = "newviewer@tenant1.gmail.com";
+  private static final String PATH_ACL_VIEWERS = "/acl/viewers";
+
+  private static final String ACL_OWNER_EXISTING1 = "owner1@tenant1.gmail.com";
+  private static final String ACL_OWNER_EXISTING2 = "owner2@tenant1.gmail.com";
+  private static final String ACL_OWNER_NEW = "newowner@tenant1.gmail.com";
+  private static final String PATH_ACL_OWNERS = "/acl/owners";
+
 
   private static final String PATH_TAGS = "/tags";
-  private static final String PATH_ACL_VIEWERS = "/acl/viewers";
+
+  private static final String PATH_LEGAL = "/legal/legaltags";
+  private static final String LEGAL_LEGALTAG_NEW = "legalTag3";
+  private static final String LEGAL_LEGALTAG_EXISTED1 = "legalTag1";
+  private static final String LEGAL_LEGALTAG_EXISTED2 = "legalTag2";
 
   private static final long TIMESTAMP = 42L;
   private static final String TEST_USER = "testuser";
@@ -150,16 +168,179 @@ public class RecordUtilImplTest {
   }
 
   @Test
-  public void updateRecordMetaDataForPatchOperations_shouldUpdateForNonTags_withReplaceOperation() {
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withReplaceOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
-    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REPLACE,
-        ACL_VIEWER_NEW);
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REPLACE, LEGAL_LEGALTAG_NEW);
 
     RecordMetadata updatedMetadata = recordUtil
-        .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
-            TIMESTAMP);
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
 
-    assertEquals(ACL_VIEWER_NEW, updatedMetadata.getAcl().getViewers()[0]);
+    Set<String> new_legaltags = new LinkedHashSet<>();
+    new_legaltags.add(LEGAL_LEGALTAG_NEW);
+
+    assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
+  }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withAddOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_ADD, LEGAL_LEGALTAG_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    Set<String> new_legaltags = new LinkedHashSet<>();
+    new_legaltags.add(LEGAL_LEGALTAG_NEW);
+    new_legaltags.add(LEGAL_LEGALTAG_EXISTED1);
+    new_legaltags.add(LEGAL_LEGALTAG_EXISTED2);
+
+    assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
+  }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForLegal_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REMOVE,LEGAL_LEGALTAG_EXISTED2);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    Set<String> new_legaltags = new LinkedHashSet<>();
+    new_legaltags.add(LEGAL_LEGALTAG_EXISTED1);
+
+    assertEquals(new_legaltags, updatedMetadata.getLegal().getLegaltags());
+  }
+
+  @Test
+  public void should_throwAppExceptionWithBadRequestCode_whenAllLegaltagsAreRemoved_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REMOVE, LEGAL_LEGALTAG_EXISTED1, LEGAL_LEGALTAG_EXISTED2);
+    try {
+      RecordMetadata updatedMetadata = recordUtil
+              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                      TIMESTAMP);
+    }catch(AppException e){
+      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+      assertEquals("Cannot remove all legaltags", e.getError().getReason());
+      assertEquals("Cannot delete", e.getError().getMessage());
+    }catch (Exception e){
+      Assert.fail("Should not get different exception");
+    }
+  }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withAddOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_ADD,
+            ACL_VIEWER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_VIEWER_NEW,ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2}, updatedMetadata.getAcl().getViewers());
+  }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withReplaceOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REPLACE,ACL_VIEWER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_VIEWER_NEW}, updatedMetadata.getAcl().getViewers());
+  }
+
+  @Test
+  public void should_throwAppExceptionWithBadRequestCode_whenAllAclViewersAreRemoved_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, ACL_VIEWER_EXISTING2);
+
+    try {
+      RecordMetadata updatedMetadata = recordUtil
+              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                      TIMESTAMP);
+      //Assert.("Should not suceed");
+    }catch(AppException e){
+      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+      assertEquals("Cannot remove all acl viewers", e.getError().getReason());
+      assertEquals("Cannot delete", e.getError().getMessage());
+    }catch (Exception e){
+      Assert.fail("Should not get different exception");
+    }
+
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withRemoveOperation()  {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, ACL_VIEWER_EXISTING2);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_VIEWER_EXISTING1}, updatedMetadata.getAcl().getViewers());
+  }
+
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withAddOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_ADD,
+            ACL_OWNER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_OWNER_NEW,ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2}, updatedMetadata.getAcl().getOwners());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withReplaceOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REPLACE, ACL_OWNER_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_OWNER_NEW}, updatedMetadata.getAcl().getOwners());
+  }
+  @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REMOVE, ACL_OWNER_EXISTING2);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(new String[]{ACL_OWNER_EXISTING1}, updatedMetadata.getAcl().getOwners());
+  }
+
+  @Test
+  public void should_throwAppExceptionWithBadRequestCode_whenAllAclOwnersAreRemoved_withRemoveOperation() {
+    RecordMetadata recordMetadata = buildRecordMetadata();
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REMOVE, ACL_OWNER_EXISTING1, ACL_OWNER_EXISTING2);
+
+    try {
+      RecordMetadata updatedMetadata = recordUtil
+              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                      TIMESTAMP);
+    }catch(AppException e){
+      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+      assertEquals("Cannot remove all acl owners", e.getError().getReason());
+      assertEquals("Cannot delete", e.getError().getMessage());
+    }catch (Exception e){
+      Assert.fail("Should not get different exception");
+    }
+
+
+
   }
 
   private PatchOperation buildPatchOperation(String path, String operation, String... value) {
@@ -168,11 +349,20 @@ public class RecordUtilImplTest {
 
   private RecordMetadata buildRecordMetadata() {
     Acl acl = new Acl();
-    String[] viewers = new String[]{ACL_VIEWER};
+    String[] viewers = new String[]{ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2};
     acl.setViewers(viewers);
+    String[] owners = new String[]{ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2};
+    acl.setOwners(owners);
+
+    Legal legal = new Legal();
+    Set<String> legalTags = new HashSet<>();
+    legalTags.add(LEGAL_LEGALTAG_EXISTED1);
+    legalTags.add(LEGAL_LEGALTAG_EXISTED2);
+    legal.setLegaltags(legalTags);
 
     RecordMetadata recordMetadata = new RecordMetadata();
     recordMetadata.setAcl(acl);
+    recordMetadata.setLegal(legal);
     recordMetadata.getTags().put(TAG_KEY, TAG_VALUE);
     return recordMetadata;
   }
