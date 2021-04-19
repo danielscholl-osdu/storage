@@ -33,8 +33,10 @@
   - [Get record <a name="Retrieve-latest-record-version"></a>](#get-record)
     - [Parameters <a name="parameters"></a>](#parameters-2)
   - [Delete record <a name="Delete-record"></a>](#delete-record)
-- [Patch api <a name="patch"></a>](#patch)  
-  - [Update batch of records with patch api <a name="patch-api-update"></a>](#patch-update)
+- [Patch api <a name="patch-api"></a>](#patch-api)
+  - [Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>](#patch-api-metadata-bulk-replace)
+  - [Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>](#patch-api-metadata-bulk-add)
+  - [Remove Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-remove"></a>](#patch-api-metadata-bulk-remove)
 - [Using service accounts to access Storage APIs <a name="Service-accounts"></a>](#using-service-accounts-to-access-storage-apis)
 - [Using skipdupes <a name="skipdupes"></a>](#using-skipdupes)
 - [Support for GeoJSON types <a name="geojson-support"></a>](#support-for-geojson-types)
@@ -453,81 +455,218 @@ curl --request POST \
 ```
 </details>
 
-## Tags <a name="patch"></a>
-### Append or Update record tags <a name="patch-api-update"></a>
-The API patch records updates. It allows updating following attributes of the record metadata: 
-1. ACLs (only replace operation supported)
-1. Legal tags (only replace operation supported)
-1. Tags (add, replace, remove operation supported)
-If we need add or replace tags ops.value should be colon separated string value, e.g.:
+## Patch api <a name="patch-api"></a>
+
+Bulk Update API allows the update of records metadata in batch. It takes an array of record ids with/without version
+numbers with a maximum number of 500, and updates properties specified in the operation path with value and operation type
+provided. If a version number is provided, updates will be applied to the specific version of the record. If not, the
+latest version of the record will be updated. Users need to specify the corresponding data partition id in the header as
+well.
+
+Users need to provide op(operation type), path, and value in the field 'ops'. The currently supported operations are "
+replace", "add", and "remove". The user should be part of the groups that are being replaced/added/removed as ACL. Users
+specify the property they want to update in the "path" field, and new values should be provided in the "value" field.
+
+Bulk Update API has the following response codes:
+
+
+| Code | Description |
+| :--- | :--- |
+| 200 | The update operation succeeds fully, all records’ metadata get updated.|
+| 206 | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or does not have permission to edit the records. For records whose version number was also provided in the request, they may be locked during metadata update, due to optimistic lock. In this case, the version users provided is not the latest one, the record may be updated by others. If the record version is locked, 'lockedRecordIds' field will be returned. They can retry later with the records’ latest version number, once the record is no longer locked.|
+| 400 | The update operation fails when the remove operation makes Legal Tags or ACLs empty.|
+
+
 ```
-"ops": [
+PATCH /api/storage/v2/records
+```
+
+### Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>
+
+In the "replace" operation, property value in "path" would be fully replaced by values provided in the "value" field. If
+we need to replace tags ops.value should be colon separated string value.
+<details><summary>curl</summary>
+
+```
+curl --request PATCH \
+   --url '/api/storage/v2/records' \
+   --header 'accept: application/json' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'content-type: application/json'\
+   --header 'Data-Partition-Id: common'
+    --data-raw ‘{ 
+      "query": { 
+        "ids": [
+          "tenant1:type:unique-identifier:version",
+          "tenant2:type:unique-identifier:version",
+          "tenant3:type:unique-identifier:version"
+        ]
+      }, 
+      "ops": [ { 
+        "op": "replace", 
+        "path": "/legal/legaltags", 
+        "value": [
+          "opendes-sample-legaltag1",
+          "opendes-sample-legaltag2"
+        ]
+        }, 
+        { 
+	    "op": "replace", 
+	    "path": "/acl/owners", 
+	    "value": [
+	      "data.default.owner1@opendes.enterprisedata.cloud.slb-ds.com",
+	      "data.default.owner2@opendes.enterprisedata.cloud.slb-ds.com"
+	    ]
+        }, 
+        { 
+        "op": "replace", 
+        "path": "/acl/viewers", 
+        "value": [
+          "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com",
+          "data.default.viewer2@opendes.enterprisedata.cloud.slb-ds.com"
+        ] 
+        },
         {
         "op":"replace",
         "path":"/tags",
         "value":[
-            "key1:value1",
-            "key2:value2",
-            "key3:value3"
-        ]
+          "key1:value1",
+          "key2:value2",
+          "key3:value3"
+          ]
         }
+      ] 
+    }
 ```
-If we need remove tags ops.value should be array of the tags keys which we are going to remove, e.g.:
-```
-"ops": [
-        {
-        "op":"remove",
-        "path":"/tags",
-        "value":[
-            "key1",
-            "key2",
-            "key3"
-        ]
-        }
-```
-```
-PATCH /api/storage/records
-```
+
+</details>
+
+### Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>
+
+In the "add" operation, the valid Tags, Legal Tags, and ACLs (Acl Viewers, Acl Owners) provided in the "value" field
+will be added to the property value in the "path" field. If we need to add tags ops.value should be colon separated
+string value.
+
 
 <details><summary>curl</summary>
 
 ```
- curl --request PACTH \
-  --url '/api/storage/v2/records' \
-  --header 'accept: application/json' \
-  --header 'authorization: Bearer <JWT>' \
-  --header 'content-type: application/json' \
-  --header 'Data-Partition-Id: common' 
-  --data '{
-    "query": {
+curl --request PATCH \
+   --url '/api/storage/v2/records' \
+   --header 'accept: application/json' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'content-type: application/json'\
+   --header 'Data-Partition-Id: common'
+    --data-raw ‘{ 
+      "query": { 
         "ids": [
-            "common:well:123456789",
-            "common:wellTop:abc789456",
-            "common:wellLog:4531wega22"
-            ],
-    }
-    "ops": [
-        {
-        "op":"replace",
-        "path":"/path1",
-        "value":[
-            "value1",
-            "value2",
-            "value3"
+          "tenant1:type:unique-identifier:version",
+          "tenant2:type:unique-identifier:version",
+          "tenant3:type:unique-identifier:version"
+        ]
+      }, 
+      "ops": [ { 
+        "op": "add", 
+        "path": "/legal/legaltags", 
+        "value": [
+          "opendes-sample-legaltag1",
+          "opendes-sample-legaltag2"
+        ]
+        }, 
+        { 
+	    "op": "add", 
+	    "path": "/acl/owners", 
+	    "value": [
+	      "data.default.owner1@opendes.enterprisedata.cloud.slb-ds.com",
+	      "data.default.owner2@opendes.enterprisedata.cloud.slb-ds.com"
+	    ]
+        }, 
+        { 
+        "op": "add", 
+        "path": "/acl/viewers", 
+        "value": [
+          "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com",
+          "data.default.viewer2@opendes.enterprisedata.cloud.slb-ds.com"
         ]
         },
         {
         "op":"add",
-        "path":"/path2",
+        "path":"/tags",
         "value":[
-            "value4",
-            "value5",
-            "value6"
+          "key1:value1",
+          "key2:value2",
+          "key3:value3"
         ]
         }
-    ]
-}
+      ]
+    }
 ```
+
+</details>
+
+### Remove Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-remove"></a>
+
+In the "remove" operation, the valid Tags, Legal Tags, and ACLs (Acl Viewers, Acl Owners) provided in the "value" field
+will be removed from the property value in the "path" field. When the given Tags, Legal Tags, or ACLs (Acl Viewers, Acl
+Owners) do not exist in corresponding records, the remove succeeds without errors. The Legal Tags and ACLs (Acl Viewers,
+Acl Owners) cannot be empty i.e. the user cannot remove all the Legal Tags or ACLs. If we need to remove tags ops.value
+should be array of the tags keys which we are going to remove.
+
+
+<details><summary>curl</summary>
+
+```
+curl --request PATCH \
+   --url '/api/storage/v2/records' \
+   --header 'accept: application/json' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'content-type: application/json'\
+   --header 'Data-Partition-Id: common'
+    --data-raw ‘{ 
+      "query": { 
+        "ids": [
+          "tenant1:type:unique-identifier:version",
+          "tenant2:type:unique-identifier:version",
+          "tenant3:type:unique-identifier:version"
+        ]
+      }, 
+      "ops": [ { 
+        "op": "remove", 
+        "path": "/legal/legaltags", 
+        "value": [
+          "opendes-sample-legaltag1",
+          "opendes-sample-legaltag2"
+        ]
+        }, 
+        { 
+	    "op": "remove", 
+	    "path": "/acl/owners", 
+	    "value": [
+	      "data.default.owner1@opendes.enterprisedata.cloud.slb-ds.com",
+	      "data.default.owner2@opendes.enterprisedata.cloud.slb-ds.com"
+	    ]
+        }, 
+        { 
+        "op": "remove", 
+        "path": "/acl/viewers", 
+        "value": [
+          "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com",
+          "data.default.viewer2@opendes.enterprisedata.cloud.slb-ds.com"
+        ]
+        },
+        {
+        "op":"remove",
+        "path":"/tags",
+        "value":[
+          "key1",
+          "key2",
+          "key3"
+        ]
+        }
+      ] 
+    }
+```
+
 </details>
 
 > You can use Search service's query or query_with_cursor [apis](https://community.opengroup.org/osdu/platform/system/search-service/-/blob/master/docs/tutorial/SearchService.md) to search for records based on tags. Since tags is part of metadata, it is automatically indexed. This may not work if the kind is old (older than when the tags feature was introduced ~02/25/2021). You may need to re-index the kind with the [reindex](https://community.opengroup.org/osdu/platform/system/indexer-service/-/blob/master/docs/tutorial/IndexerService.md#reindex) api (with `force_clean=true`) from indexer service.
