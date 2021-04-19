@@ -436,9 +436,9 @@ paths:
       - "records"
       summary: "Modify record metadata attributes using patch operations"
       description: "The API represents the patch update mechanism for records. It allows\
-        \ updating multiple records in one request. It supports legal tags, ACLs or tags\
-        \ updates at the moment. For the legal tags and ACLs only replace operation supported.\
-        \ For tags update replace, add and remove operation allowed."
+        \ updating multiple records in one request. The currently supported operations are replace,\
+        \ add, and remove for Legal Tags, ACLs, and Tags. \
+        \ Required roles: 'users.datalake.editors' or 'users.datalake.admins'."
       operationId: "Patch update records"
       consumes:
       - "application/json"
@@ -468,6 +468,10 @@ paths:
           description: "Records updated successful partially."
           schema:
             $ref: "#/definitions/BulkUpdateRecordsResponse"
+        400:
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/AppError"
         403:
           description: "User not authorized to perform the action."
           schema:
@@ -894,21 +898,26 @@ definitions:
     example:
       query:
       - ids:
-        - "recordId1"
-        - "recordId2"
+          - "tenant:type:unique-identifier:version"
       ops:
-      - op: "replace"
-        path: "/path1"
+      - op: "replace or add or remove"
+        path: "/acl/viewers or /acl/owners or /legal/legaltags"
         value:
         - "value1"
         - "value2"
         - "value3"
-      - op: "replace"
-        path: "/path2"
+      - op: "replace or add"
+        path: "/tags"
         value:
-        - "value4"
-        - "value5"
-        - "value6"        
+          - "key1:value1"
+          - "key2:value2"
+          - "key3:value3"
+      - op: "remove"
+        path: "/tags"
+        value:
+          - "key1"
+          - "key2"
+          - "key3"
   RecordQuery:
     type: "object"
     required:
