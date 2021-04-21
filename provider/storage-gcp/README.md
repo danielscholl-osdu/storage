@@ -28,6 +28,19 @@ In order to run the service locally or remotely, you will need to have the follo
 | `GOOGLE_AUDIENCES` | ex `*****.apps.googleusercontent.com` | Client ID for getting access to cloud resources | yes | https://console.cloud.google.com/apis/credentials |
 | `GOOGLE_APPLICATION_CREDENTIALS` | ex `/path/to/directory/service-key.json` | Service account credentials, you only need this if running locally | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
 
+###Requirements for requests.
+Record identifiers cannot contain a space character. 
+At the same time, they may contain a % character, which, when combined with subsequent numeric characters, 
+may cause the application to misinterpret that combination.
+For example, the "%20" combination will be interpreted as a space " " character. 
+To correctly transfer such an identifier, you should additionally perform the url-encode operation on it. 
+This functionality can be built into the front-end application, or you can use an online url-encoder 
+tool ( eg.: https://www.urlencoder.org/).
+Thus, having ID "osdu:work-product-component--WellboreMarkerSet:3D%20Kirchhoff%20DepthMigration" (with %20 combination) 
+you should url-encode it and request 
+"osdu%3Awork-product-component--WellboreMarkerSet%3A3D%2520Kirchhoff%2520DepthMigration" instead.
+
+
 ### Run Locally
 Check that maven is installed:
 
