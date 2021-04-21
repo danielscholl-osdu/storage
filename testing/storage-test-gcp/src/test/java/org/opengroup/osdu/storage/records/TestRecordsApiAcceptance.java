@@ -18,6 +18,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.GCPTestUtils;
 
 public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
@@ -38,6 +39,7 @@ public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
     @Override
     public void setup() throws Exception {
         this.testUtils = new GCPTestUtils();
+        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
