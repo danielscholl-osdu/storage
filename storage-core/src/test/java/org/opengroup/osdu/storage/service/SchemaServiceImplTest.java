@@ -89,7 +89,7 @@ public class SchemaServiceImplTest {
 
         Schema schema = new Schema();
         schema.setKind(KIND);
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "invalidKind", new HashMap<>()) });
+        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "invalidKind", new HashMap<>(), null) });
 
         try {
             this.sut.createSchema(schema);
@@ -109,7 +109,7 @@ public class SchemaServiceImplTest {
 
         Schema schema = new Schema();
         schema.setKind(KIND);
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "[]" + KIND, new HashMap<>()) });
+        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "[]" + KIND, new HashMap<>(), null) });
 
         try {
             this.sut.createSchema(schema);
@@ -130,7 +130,7 @@ public class SchemaServiceImplTest {
 
         Schema schema = new Schema();
         schema.setKind(KIND);
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>()) });
+        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>(), null) });
 
         this.sut.createSchema(schema);
 
@@ -147,7 +147,7 @@ public class SchemaServiceImplTest {
 
         Schema schema = new Schema();
         schema.setKind(KIND);
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>()) });
+        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>(), null) });
 
         doThrow(new IllegalArgumentException()).when(this.schemaRepository).add(schema, USER);
 
@@ -169,7 +169,7 @@ public class SchemaServiceImplTest {
 
         Schema schema = new Schema();
         schema.setKind(KIND);
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>()) });
+        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>(), null) });
 
         doThrow(new ConcurrentModificationException()).when(this.schemaRepository).add(schema, USER);
 
@@ -191,7 +191,7 @@ public class SchemaServiceImplTest {
 
         Schema schema = new Schema();
         schema.setKind(KIND);
-        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>()) });
+        schema.setSchema(new SchemaItem[] { new SchemaItem("anyPath", "integer", new HashMap<>(), null) });
 
         doThrow(new NullPointerException()).when(this.schemaRepository).add(schema, USER);
 
@@ -287,30 +287,30 @@ public class SchemaServiceImplTest {
     @Test
     public void should_succeedSchemaValidation_when_validDataTypesAreProvided() {
 
-        SchemaItem item1 = new SchemaItem("age", "integer", new HashMap<>());
-        SchemaItem item2 = new SchemaItem("year", "int", new HashMap<>());
-        SchemaItem item3 = new SchemaItem("senior", "bool", new HashMap<>());
-        SchemaItem item4 = new SchemaItem("junior", "boolean", new HashMap<>());
-        SchemaItem item5 = new SchemaItem("depth", "float", new HashMap<>());
-        SchemaItem item6 = new SchemaItem("height", "double", new HashMap<>());
-        SchemaItem item7 = new SchemaItem("width", "long", new HashMap<>());
-        SchemaItem item8 = new SchemaItem("name", "string", new HashMap<>());
-        SchemaItem item9 = new SchemaItem("reference", "link", new HashMap<>());
-        SchemaItem item10 = new SchemaItem("dob", "datetime", new HashMap<>());
-        SchemaItem item11 = new SchemaItem("location", "core:dl:geopoint:1.0.0", new HashMap<>());
-        SchemaItem item12 = new SchemaItem("shape", "core:dl:geoshape:1.0.0", new HashMap<>());
-        SchemaItem item13 = new SchemaItem("age-array", "[]integer", new HashMap<>());
-        SchemaItem item14 = new SchemaItem("year-array", "[]int", new HashMap<>());
-        SchemaItem item15 = new SchemaItem("senior-array", "[]bool", new HashMap<>());
-        SchemaItem item16 = new SchemaItem("junior-array", "[]boolean", new HashMap<>());
-        SchemaItem item17 = new SchemaItem("depth-array", "[]float", new HashMap<>());
-        SchemaItem item18 = new SchemaItem("height-array", "[]double", new HashMap<>());
-        SchemaItem item19 = new SchemaItem("width-array", "[]long", new HashMap<>());
-        SchemaItem item20 = new SchemaItem("name-array", "[]string", new HashMap<>());
-        SchemaItem item21 = new SchemaItem("reference-array", "[]link", new HashMap<>());
-        SchemaItem item22 = new SchemaItem("dob-array", "[]datetime", new HashMap<>());
-        SchemaItem item23 = new SchemaItem("location-array", "[]core:dl:geopoint:1.0.0", new HashMap<>());
-        SchemaItem item24 = new SchemaItem("shape-array", "[]core:dl:geoshape:1.0.0", new HashMap<>());
+        SchemaItem item1 = new SchemaItem("age", "integer", new HashMap<>(), null);
+        SchemaItem item2 = new SchemaItem("year", "int", new HashMap<>(), null);
+        SchemaItem item3 = new SchemaItem("senior", "bool", new HashMap<>(), null);
+        SchemaItem item4 = new SchemaItem("junior", "boolean", new HashMap<>(), null);
+        SchemaItem item5 = new SchemaItem("depth", "float", new HashMap<>(), null);
+        SchemaItem item6 = new SchemaItem("height", "double", new HashMap<>(), null);
+        SchemaItem item7 = new SchemaItem("width", "long", new HashMap<>(), null);
+        SchemaItem item8 = new SchemaItem("name", "string", new HashMap<>(), null);
+        SchemaItem item9 = new SchemaItem("reference", "link", new HashMap<>(), null);
+        SchemaItem item10 = new SchemaItem("dob", "datetime", new HashMap<>(), null);
+        SchemaItem item11 = new SchemaItem("location", "core:dl:geopoint:1.0.0", new HashMap<>(), null);
+        SchemaItem item12 = new SchemaItem("shape", "core:dl:geoshape:1.0.0", new HashMap<>(), null);
+        SchemaItem item13 = new SchemaItem("age-array", "[]integer", new HashMap<>(), null);
+        SchemaItem item14 = new SchemaItem("year-array", "[]int", new HashMap<>(), null);
+        SchemaItem item15 = new SchemaItem("senior-array", "[]bool", new HashMap<>(), null);
+        SchemaItem item16 = new SchemaItem("junior-array", "[]boolean", new HashMap<>(), null);
+        SchemaItem item17 = new SchemaItem("depth-array", "[]float", new HashMap<>(), null);
+        SchemaItem item18 = new SchemaItem("height-array", "[]double", new HashMap<>(), null);
+        SchemaItem item19 = new SchemaItem("width-array", "[]long", new HashMap<>(), null);
+        SchemaItem item20 = new SchemaItem("name-array", "[]string", new HashMap<>(), null);
+        SchemaItem item21 = new SchemaItem("reference-array", "[]link", new HashMap<>(), null);
+        SchemaItem item22 = new SchemaItem("dob-array", "[]datetime", new HashMap<>(), null);
+        SchemaItem item23 = new SchemaItem("location-array", "[]core:dl:geopoint:1.0.0", new HashMap<>(), null);
+        SchemaItem item24 = new SchemaItem("shape-array", "[]core:dl:geoshape:1.0.0", new HashMap<>(), null);
 
         Schema schema = new Schema();
         schema.setKind("test:kind:1.0.0");
@@ -373,7 +373,7 @@ public class SchemaServiceImplTest {
     @Test
     public void should_throwExceptionAndReturnHttp400_when_validatingASchemaWithInvalidDataType() {
 
-        SchemaItem item = new SchemaItem("whatever", "weird", new HashMap<>());
+        SchemaItem item = new SchemaItem("whatever", "weird", new HashMap<>(), null);
 
         Schema schema = new Schema();
         schema.setKind("test:kind:1.0.0");
@@ -394,7 +394,7 @@ public class SchemaServiceImplTest {
     @Test
     public void should_throwExceptionAndReturnHttp400_when_validatingASchemaWithInvalidArrayNotationInDataType() {
 
-        SchemaItem item = new SchemaItem("whatever", "int[]", new HashMap<>());
+        SchemaItem item = new SchemaItem("whatever", "int[]", new HashMap<>(), null);
 
         Schema schema = new Schema();
         schema.setKind("test:kind:1.0.0");
@@ -415,14 +415,14 @@ public class SchemaServiceImplTest {
 
     @Test
     public void should_throwExceptionAndReturnHttp400_when_validatingASchemaWhereAnotherDataLakeKindIsUsedAsDataTypeButInAnInvalidFormat() {
-        SchemaItem item1 = new SchemaItem("LatLong", "dl:geopoint:version", new HashMap<>());
-        SchemaItem item2 = new SchemaItem("MapSymbol", "int", new HashMap<>());
-        SchemaItem item3 = new SchemaItem("ProjDepth", "float", new HashMap<>());
-        SchemaItem item4 = new SchemaItem("SpudDate", "datetime", new HashMap<>());
-        SchemaItem item5 = new SchemaItem("FirstSpudDate", "datetime", new HashMap<>());
-        SchemaItem item6 = new SchemaItem("CompDate", "datetime", new HashMap<>());
-        SchemaItem item7 = new SchemaItem("PermitLicenseDate", "datetime", new HashMap<>());
-        SchemaItem item8 = new SchemaItem("LastActivityDate", "datetime", new HashMap<>());
+        SchemaItem item1 = new SchemaItem("LatLong", "dl:geopoint:version", new HashMap<>(), null);
+        SchemaItem item2 = new SchemaItem("MapSymbol", "int", new HashMap<>(), null);
+        SchemaItem item3 = new SchemaItem("ProjDepth", "float", new HashMap<>(), null);
+        SchemaItem item4 = new SchemaItem("SpudDate", "datetime", new HashMap<>(), null);
+        SchemaItem item5 = new SchemaItem("FirstSpudDate", "datetime", new HashMap<>(), null);
+        SchemaItem item6 = new SchemaItem("CompDate", "datetime", new HashMap<>(), null);
+        SchemaItem item7 = new SchemaItem("PermitLicenseDate", "datetime", new HashMap<>(), null);
+        SchemaItem item8 = new SchemaItem("LastActivityDate", "datetime", new HashMap<>(), null);
 
         Schema schema = new Schema();
         schema.setKind("ihs:well:1.0.0");
