@@ -15,6 +15,8 @@
 package org.opengroup.osdu.storage.provider.aws.api;
 
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.storage.Schema;
@@ -46,14 +48,22 @@ public class SchemaRepositoryTest {
     private SchemaRepositoryImpl repo = new SchemaRepositoryImpl();
 
     @Mock
-    private DynamoDBQueryHelper queryHelper;
+    private DynamoDBQueryHelperV2 queryHelper;
 
+    @Mock
+    private DynamoDBQueryHelperFactory queryHelperFactory;
+    
     @Mock
     private DpsHeaders headers;
 
     @Before
     public void setUp() {
         initMocks(this);
+
+        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
+        .thenReturn(queryHelper);
+        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(String.class), Mockito.any()))
+        .thenReturn(queryHelper);
     }
 
     @Test

@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.apache.http.HttpStatus;
 
@@ -36,18 +37,25 @@ public class RecordsUtil {
     private S3RecordClient s3RecordClient;
     private ExecutorService threadPool;
 
+    @Inject
+    private DpsHeaders headers;
+
     public RecordsUtil(S3RecordClient s3RecordClient, ExecutorService threadPool){
         this.s3RecordClient = s3RecordClient;
-        this.threadPool = threadPool;
+        this.threadPool = threadPool;        
     }
 
     public Map<String, String> getRecordsValuesById(Map<String, String> objects) {
+
+        String dataPartition = headers.getPartitionIdWithFallbackToAccountId();
+
+
         Map<String, String> map = new HashMap<>();
         List<CompletableFuture<GetRecordFromVersionTask>> futures = new ArrayList<>();
 
         try {
             for (Map.Entry<String, String> object : objects.entrySet()) {
-                GetRecordFromVersionTask task = new GetRecordFromVersionTask(s3RecordClient, object.getKey(), object.getValue());
+                GetRecordFromVersionTask task = new GetRecordFromVersionTask(s3RecordClient, object.getKey(), object.getValue(), dataPartition);
                 CompletableFuture<GetRecordFromVersionTask> future = CompletableFuture.supplyAsync(task::call);
                 futures.add(future);
             }
@@ -84,13 +92,16 @@ public class RecordsUtil {
     }
 
     public Map<String, String> getRecordsValuesById(Collection<RecordMetadata> recordMetadatas) {
+        
+        String dataPartition = headers.getPartitionIdWithFallbackToAccountId();
+
         AtomicReference<Map<String, String>> map = new AtomicReference<>();
         map.set(new HashMap<>());
         List<CompletableFuture<GetRecordTask>> futures = new ArrayList<>();
 
         try {
             for (RecordMetadata recordMetadata: recordMetadatas) {
-                GetRecordTask task = new GetRecordTask(s3RecordClient, map, recordMetadata);
+                GetRecordTask task = new GetRecordTask(s3RecordClient, map, recordMetadata, dataPartition);
                 CompletableFuture<GetRecordTask> future = CompletableFuture.supplyAsync(task::call);
                 futures.add(future);
             }

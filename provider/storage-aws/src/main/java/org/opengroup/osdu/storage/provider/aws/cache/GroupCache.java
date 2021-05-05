@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GroupCache extends RedisCache<String, Groups> {
     public GroupCache(@Value("${aws.elasticache.cluster.endpoint}") final String REDIS_GROUP_HOST, @Value("${aws.elasticache.cluster.port}") final String REDIS_GROUP_PORT) {
-        super(REDIS_GROUP_HOST, Integer.parseInt(REDIS_GROUP_PORT), 30, String.class, Groups.class);
+        super(REDIS_GROUP_HOST, Integer.parseInt(REDIS_GROUP_PORT), 60, String.class, Groups.class);
     }
 
     public static String getGroupCacheKey(DpsHeaders headers) {

@@ -16,8 +16,10 @@ package org.opengroup.osdu.storage.provider.aws.api;
 
 import com.google.gson.Gson;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.aws.s3.S3ClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -58,6 +60,9 @@ public class CloudStorageTest {
     private S3RecordClient s3RecordClient;
 
     @Mock
+    private S3ClientFactory s3ClientFactory;
+
+    @Mock
     private RecordsUtil recordsUtil;
 
     @Mock
@@ -72,6 +77,12 @@ public class CloudStorageTest {
     @Inject
     private JaxRsDpsLog logger;
 
+    @Mock 
+    private DpsHeaders headers;
+
+    private String dataPartition = "dummyPartitionName";
+    
+
     String userId = "test-user-id";
     RecordMetadata record = new RecordMetadata();
     Collection<RecordMetadata> records = new ArrayList<RecordMetadata>();
@@ -82,6 +93,8 @@ public class CloudStorageTest {
         record.setId("test-record-id");
         record.addGcsPath(1);
         records.add(record);
+        
+        Mockito.when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);        
     }
 
 
@@ -115,7 +128,7 @@ public class CloudStorageTest {
     @Test
     public void delete(){
         // arrange
-        Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(record));
+        Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(record), Mockito.eq(dataPartition));
         Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
                 .thenReturn(true);
 
@@ -123,14 +136,14 @@ public class CloudStorageTest {
         repo.delete(record);
 
         // assert
-        Mockito.verify(s3RecordClient, Mockito.times(1)).deleteRecord(record);
+        Mockito.verify(s3RecordClient, Mockito.times(1)).deleteRecord(record, dataPartition);
     }
 
     @Test
     public void read(){
         // arrange
         Long version = 1L;
-        Mockito.when(s3RecordClient.getRecord(Mockito.eq(record), Mockito.eq(version)))
+        Mockito.when(s3RecordClient.getRecord(Mockito.eq(record), Mockito.eq(version), Mockito.eq(dataPartition)))
                 .thenReturn("test-response");
         Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
                 .thenReturn(true);

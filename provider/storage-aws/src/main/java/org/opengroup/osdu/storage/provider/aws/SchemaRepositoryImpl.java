@@ -14,7 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
@@ -24,7 +25,6 @@ import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
@@ -32,32 +32,31 @@ import java.util.List;
 @Repository
 public class SchemaRepositoryImpl implements ISchemaRepository {
 
-    @Value("${aws.dynamodb.table.prefix}")
-    String tablePrefix;
-
-    @Value("${aws.region}")
-    String dynamoDbRegion;
-
-    @Value("${aws.dynamodb.endpoint}")
-    String dynamoDbEndpoint;
-
+    
     @Inject
     private DpsHeaders headers;
 
-    private DynamoDBQueryHelper queryHelper;
+    @Inject
+    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
-    @PostConstruct
-    public void init(){
-        queryHelper = new DynamoDBQueryHelper(dynamoDbEndpoint, dynamoDbRegion, tablePrefix);
+    @Value("${aws.dynamodb.schemaRepositoryTable.ssm.relativePath}")
+    String schemaRepositoryTableParameterRelativePath;    
+
+
+    private DynamoDBQueryHelperV2 getSchemaTableQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, schemaRepositoryTableParameterRelativePath);
     }
 
     @Override
     public void add(Schema schema, String user) {
+
+        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+
         SchemaDoc sd = new SchemaDoc();
         sd.setKind(schema.getKind());
 
         // Check if a schema with this kind already exists
-        if (queryHelper.keyExistsInTable(SchemaDoc.class, sd)) {
+        if (schemaTableQueryHelper.keyExistsInTable(SchemaDoc.class, sd)) {
             throw new IllegalArgumentException("Schema " + sd.getKind() + " already exists. Can't create again.");
         }
 
@@ -66,12 +65,15 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
         sd.setUser(user);
         sd.setSchemaItems(Arrays.asList(schema.getSchema()));
         sd.setDataPartitionId(headers.getPartitionId());
-        queryHelper.save(sd);
+        schemaTableQueryHelper.save(sd);
     }
 
     @Override
     public Schema get(String kind) {
-        SchemaDoc sd = queryHelper.loadByPrimaryKey(SchemaDoc.class, kind);
+        
+        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+
+        SchemaDoc sd = schemaTableQueryHelper.loadByPrimaryKey(SchemaDoc.class, kind);
         if (sd == null) {
             return null;
         }
@@ -88,6 +90,8 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
 
     @Override
     public void delete(String kind) {
-        queryHelper.deleteByPrimaryKey(SchemaDoc.class, kind);
+        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+        
+        schemaTableQueryHelper.deleteByPrimaryKey(SchemaDoc.class, kind);
     }
 }

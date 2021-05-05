@@ -51,6 +51,7 @@ export LEGAL_URL=$LEGAL_URL
 #### RUN INTEGRATION TEST #########################################################################
 
 mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
+#mvn -Dmaven.surefire.debug test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
 TEST_EXIT_CODE=$?
 
 #### COPY TEST REPORTS #########################################################################
