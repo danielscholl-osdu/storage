@@ -275,10 +275,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	@Test
 	public void should_createNewRecord_withSpecialCharacter_ifEnabled() throws Exception {
 		final long currentTimeMillis = System.currentTimeMillis();
-		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%20foobar-" + currentTimeMillis;
-		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%2520foobar-" + currentTimeMillis;
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%2F20foobar-" + currentTimeMillis;
+		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%252F20foobar-" + currentTimeMillis;
 
-		String jsonInput = createJsonBody(RECORD_ID, "TestPercent%");
+		String jsonInput = createJsonBody(RECORD_ID, "TestSpecialCharacters");
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		String json = response.getEntity(String.class);
@@ -297,9 +297,9 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		response = TestUtils.send("records/" + ENCODED_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 
 		// If encoded percent is true, the request should go through and should be able to get a successful response.
-		if (configUtils != null && configUtils.getBooleanProperty("enableEncodedPercentInURL", "false")) {
+		if (configUtils != null && configUtils.getBooleanProperty("enableEncodedSpecialCharactersInURL", "false")) {
 			GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
-			assertEquals("TestPercent%", recordResult.data.get("name"));
+			assertEquals("TestSpecialCharacters", recordResult.data.get("name"));
 		} else {
 			// Service does not allow URLs with suspicious characters, Which is the default setting.
 			// Different CSPs are responding with different status code for this error when a special character like %25 is present in the URL.
@@ -307,6 +307,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 			// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
 			assertNotEquals(200, response.getStatus());
 		}
+
 	}
 
 	protected static String createJsonBody(String id, String name) {
