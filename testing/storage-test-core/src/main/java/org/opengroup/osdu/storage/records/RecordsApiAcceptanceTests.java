@@ -275,8 +275,8 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	@Test
 	public void should_createNewRecord_withSpecialCharacter_ifEnabled() throws Exception {
 		final long currentTimeMillis = System.currentTimeMillis();
-		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%2F20foobar-" + currentTimeMillis;
-		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testpercent%252F20foobar-" + currentTimeMillis;
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testSpecialChars%abc%2Ffoobar-" + currentTimeMillis;
+		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testSpecialChars%25abc%252Ffoobar-" + currentTimeMillis;
 
 		String jsonInput = createJsonBody(RECORD_ID, "TestSpecialCharacters");
 
