@@ -15,7 +15,9 @@
 package org.opengroup.osdu.storage.provider.azure.cache;
 
 import org.opengroup.osdu.core.common.cache.RedisCache;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -26,6 +28,9 @@ import javax.inject.Named;
 @ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
 public class GroupRedisCache extends RedisCache<String, Groups> {
 
+    @Autowired
+    private JaxRsDpsLog logger;
+
     public GroupRedisCache(
             final @Named("REDIS_HOST") String host,
             final @Named("REDIS_PORT") int port,
@@ -34,5 +39,16 @@ public class GroupRedisCache extends RedisCache<String, Groups> {
             @Value("${redis.database}") final int database)
     {
         super(host, port, password, timeout, database, String.class, Groups.class);
+    }
+
+    @Override
+    public Groups get(String key) {
+        try {
+            return super.get(key);
+        } catch (Exception ex) {
+            this.logger.error(String.format("Error getting key %s from redis: %s",
+                    key, ex));
+            return null;
+        }
     }
 }
