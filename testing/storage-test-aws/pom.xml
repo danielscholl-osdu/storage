@@ -52,7 +52,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-cognitoidp</artifactId>
-            <version>1.11.676</version>
+            <version>1.11.1018</version>
         </dependency>        
 
         <!-- third party Apache 2.0 license packages -->
