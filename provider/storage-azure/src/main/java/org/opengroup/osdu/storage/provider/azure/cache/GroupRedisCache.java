@@ -28,7 +28,6 @@ import javax.inject.Named;
 @ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
 public class GroupRedisCache extends RedisCache<String, Groups> {
 
-    @Autowired
     private JaxRsDpsLog logger;
 
     public GroupRedisCache(
@@ -36,9 +35,11 @@ public class GroupRedisCache extends RedisCache<String, Groups> {
             final @Named("REDIS_PORT") int port,
             final @Named("REDIS_PASSWORD") String password,
             final @Named("GROUP_REDIS_TTL") int timeout,
-            @Value("${redis.database}") final int database)
+            @Value("${redis.database}") final int database,
+            final @Autowired JaxRsDpsLog logger)
     {
         super(host, port, password, timeout, database, String.class, Groups.class);
+        this.logger = logger;
     }
 
     @Override
