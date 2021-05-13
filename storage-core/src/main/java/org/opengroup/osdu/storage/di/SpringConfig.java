@@ -30,12 +30,14 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 @Setter
 public class SpringConfig {
 
-    private boolean enableEncodedPercent;
+    private boolean enableEncodedSpecialCharacters;
+
 
     @Bean
     public HttpFirewall httpFirewall() {
         final StrictHttpFirewall firewall = new StrictHttpFirewall();
-        firewall.setAllowUrlEncodedPercent(enableEncodedPercent);
+        firewall.setAllowUrlEncodedPercent(enableEncodedSpecialCharacters);
+        firewall.setAllowUrlEncodedSlash(enableEncodedSpecialCharacters);
         return firewall;
     }
 }
