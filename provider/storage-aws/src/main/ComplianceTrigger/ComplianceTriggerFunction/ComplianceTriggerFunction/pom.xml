@@ -60,7 +60,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.3.7</version>
+            <version>0.9.1-SNAPSHOT</version>
         </dependency>
 
         <!-- Testing packages -->

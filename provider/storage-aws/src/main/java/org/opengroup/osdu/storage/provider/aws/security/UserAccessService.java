@@ -29,12 +29,14 @@ import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserAccessService {
+
 
     private CacheHelper cacheHelper;
     @Inject
@@ -45,6 +47,9 @@ public class UserAccessService {
     private DpsHeaders dpsHeaders;
     @Inject
     private IEntitlementsExtensionService entitlementsExtensions;
+
+    @Inject
+    IServiceAccountJwtClient serviceAccountClient;
 
     private static final String ACCESS_DENIED_REASON = "Access denied";
     private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
@@ -87,7 +92,9 @@ public class UserAccessService {
     }
 
     public void validateRecordAcl (RecordProcessing... records){
-        List<String> groupNames = getPartitionGroupNames();
+        //Records can be written by a user using ANY existing valid ACL
+        List<String> groupNames = this.getPartitionGroupsforServicePrincipal(dpsHeaders);
+
         for (RecordProcessing record : records) {
             for (String acl : Acl.flattenAcl(record.getRecordMetadata().getAcl())) {
                 String groupName = acl.split("@")[0].toLowerCase();
@@ -101,9 +108,14 @@ public class UserAccessService {
         }
     }
 
-    private List<String> getPartitionGroupNames() {
-        Groups groups = this.entitlementsExtensions.getGroups(dpsHeaders);
-        
+    private List<String> getPartitionGroupsforServicePrincipal(DpsHeaders headers)
+    {
+        DpsHeaders newHeaders = DpsHeaders.createFromMap(headers.getHeaders());
+        newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
+        Groups groups = this.entitlementsExtensions.getGroups(newHeaders);
         return groups.getGroupNames();
-    }   
+    }
+
+
+
 }
