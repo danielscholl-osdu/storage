@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -136,7 +137,7 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
     @Override
     public Groups getGroups(DpsHeaders headers) {
         String cacheKey = this.getGroupCacheKey(headers);
-        Groups groups = this.cache.get(cacheKey);
+        Groups groups = this.cache.getSuppressException(cacheKey, Optional.of(logger));
 
         if (groups == null) {
             IEntitlementsService service = this.factory.create(headers);

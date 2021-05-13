@@ -195,12 +195,12 @@ public class EntitlementsAndCacheServiceImplTest {
         // First call, getting groups from entitlements
         assertEquals(MEMBER_EMAIL, this.sut.authorize(this.headers, "role2"));
 
-        when(this.cache.get("NLdxKQ==")).thenReturn(groups);
+        when(this.cache.getSuppressException("NLdxKQ==", Optional.of(logger))).thenReturn(groups);
 
         // Second call, getting groups from cache
         assertEquals(MEMBER_EMAIL, this.sut.authorize(this.headers, "role2"));
         verify(this.entitlementService, times(1)).getGroups();
-        verify(this.cache, times(2)).get("NLdxKQ==");
+        verify(this.cache, times(2)).getSuppressException("NLdxKQ==", Optional.of(logger));
         verify(this.cache, times(1)).put("NLdxKQ==", groups);
     }
 

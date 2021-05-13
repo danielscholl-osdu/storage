@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.legal.*;
@@ -35,6 +36,7 @@ import org.opengroup.osdu.core.common.legal.ILegalProvider;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -56,6 +58,9 @@ public class LegalServiceImplTest {
     @Mock
     private ILegalProvider legalService;
 
+    @Mock
+    private JaxRsDpsLog log;
+
     @InjectMocks
     private LegalServiceImpl sut;
 
@@ -68,8 +73,8 @@ public class LegalServiceImplTest {
     public void should_notCallLegalService_when_validatingLegalTagsIsResolvedInCache() {
         Set<String> legaltags = Sets.newHashSet("tag1", "tag2");
 
-        when(this.cache.get("tag1")).thenReturn("cache hit");
-        when(this.cache.get("tag2")).thenReturn("cache hit");
+        when(this.cache.getSuppressException("tag1", Optional.of(log))).thenReturn("cache hit");
+        when(this.cache.getSuppressException("tag2", Optional.of(log))).thenReturn("cache hit");
 
         this.sut.validateLegalTags(legaltags);
         verify(this.factory, never()).create(any());
@@ -107,7 +112,7 @@ public class LegalServiceImplTest {
         InvalidTagsWithReason invalidTags = new InvalidTagsWithReason();
         invalidTags.setInvalidLegalTags(new InvalidTagWithReason[] { invalidTag });
 
-        when(this.cache.get("yxJYdg==")).thenReturn(null);
+        when(this.cache.getSuppressException("yxJYdg==", Optional.of(log))).thenReturn(null);
         when(this.legalService.validate("tag3")).thenReturn(invalidTags);
 
         try {
@@ -133,7 +138,7 @@ public class LegalServiceImplTest {
 
         LegalException legalException = new LegalException("service crashed", response);
 
-        when(this.cache.get("yxJYdg==")).thenReturn(null);
+        when(this.cache.getSuppressException("yxJYdg==", Optional.of(log))).thenReturn(null);
         when(this.legalService.validate("tag3")).thenThrow(legalException);
 
         try {

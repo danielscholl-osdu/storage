@@ -14,24 +14,30 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
-import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
-import org.opengroup.osdu.core.common.model.storage.validation.KindValidator;
+import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
+import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
-import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.cache.ICache;
-import org.opengroup.osdu.core.common.util.Crc32c;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.opengroup.osdu.core.common.model.http.AppException;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 import static java.util.Collections.singletonList;
 
@@ -60,6 +66,9 @@ public class SchemaServiceImpl implements SchemaService {
 
 	@Autowired
 	private ISchemaRepository schemaRepository;
+
+	@Autowired
+	private JaxRsDpsLog log;
 
 	@Autowired
 	private ICache<String, Schema> cache;
@@ -189,7 +198,7 @@ public class SchemaServiceImpl implements SchemaService {
 	private Schema fetchSchema(String kind) {
 
 		String key = this.getSchemaCacheKey(kind);
-		Schema cachedSchema = this.cache.get(key);
+		Schema cachedSchema = this.cache.getSuppressException(key, Optional.of(this.log));
 
 		if (cachedSchema == null) {
 			Schema schema = this.schemaRepository.get(kind);

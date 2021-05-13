@@ -15,23 +15,25 @@
 package org.opengroup.osdu.storage.service;
 
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.legal.ILegalFactory;
+import org.opengroup.osdu.core.common.legal.ILegalProvider;
+import org.opengroup.osdu.core.common.legal.ILegalService;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagWithReason;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagsWithReason;
 import org.opengroup.osdu.core.common.model.legal.LegalException;
 import org.opengroup.osdu.core.common.model.legal.LegalTagProperties;
-import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.legal.ILegalFactory;
-import org.opengroup.osdu.core.common.legal.ILegalProvider;
-import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -46,6 +48,8 @@ public class LegalServiceImpl implements ILegalService {
 	private ICache<String, String> cache;
 	@Autowired
 	private ILegalFactory factory;
+	@Autowired
+	private JaxRsDpsLog log;
 
 	@Override
 	public void validateLegalTags(Set<String> legaltags) {
@@ -138,7 +142,7 @@ public class LegalServiceImpl implements ILegalService {
 
 	private boolean isInCache(Set<String> legalTagNames) {
 		for (String legalTagName : legalTagNames) {
-			if (this.cache.get(legalTagName) == null) {
+			if (this.cache.getSuppressException(legalTagName, Optional.of(this.log)) == null) {
 				return false;
 			}
 		}
