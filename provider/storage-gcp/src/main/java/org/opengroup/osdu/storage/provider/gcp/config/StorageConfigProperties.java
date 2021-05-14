@@ -29,4 +29,6 @@ import org.springframework.context.annotation.Configuration;
 public class StorageConfigProperties {
 
 	private boolean enableImpersonalization;
+
+	private String googleAudiences;
 }
