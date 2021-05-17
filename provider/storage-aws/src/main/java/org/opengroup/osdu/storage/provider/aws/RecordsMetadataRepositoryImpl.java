@@ -14,9 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -27,22 +29,12 @@ import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 @Repository
-public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
-
-    @Value("${aws.dynamodb.table.prefix}")
-    String tablePrefix;
-
-    @Value("${aws.region}")
-    String dynamoDbRegion;
-
-    @Value("${aws.dynamodb.endpoint}")
-    String dynamoDbEndpoint;
+public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {  
 
     @Inject
     private JaxRsDpsLog logger;
@@ -50,16 +42,32 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Inject
     private UserAccessService userAccessService;
 
-    private DynamoDBQueryHelper queryHelper;
+    @Inject
+    private DpsHeaders headers;
 
-    @PostConstruct
-    public void init() {
-        queryHelper = new DynamoDBQueryHelper(dynamoDbEndpoint, dynamoDbRegion, tablePrefix);
+    @Inject
+    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+
+    @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
+    String recordMetadataTableParameterRelativePath;
+
+    @Value("${aws.dynamodb.legalTagTable.ssm.relativePath}")
+    String legalTagTableParameterRelativePath;
+
+    private DynamoDBQueryHelperV2 getRecordMetadataQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath);
+    }
+
+    private DynamoDBQueryHelperV2 getLegalTagQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath);
     }
 
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
         if (recordsMetadata != null) {
+
+            DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+
             for (RecordMetadata recordMetadata : recordsMetadata) {
                 // user should be part of the acl of the record being saved
                 RecordMetadataDoc doc = new RecordMetadataDoc();
@@ -75,7 +83,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                 doc.setUser(recordMetadata.getUser());
 
                 // Store the record to the database
-                queryHelper.save(doc);
+                recordMetadataQueryHelper.save(doc);
                 saveLegalTagAssociation(recordMetadata.getId(), recordMetadata.getLegal().getLegaltags());
             }
         }
@@ -86,7 +94,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     public void delete(String id) {
         RecordMetadata rmd = get(id); // needed for authorization check
         if(userAccessService.userHasAccessToRecord(rmd.getAcl())) {
-            queryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
+            DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+            recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
             for (String legalTag : rmd.getLegal().getLegaltags()) {
                 deleteLegalTagAssociation(id, legalTag);
             }
@@ -95,7 +104,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     @Override
     public RecordMetadata get(String id) {
-        RecordMetadataDoc doc = queryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        RecordMetadataDoc doc = recordMetadataQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
         if (doc == null) {
             return null;
         } else {
@@ -105,10 +115,13 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     @Override
     public Map<String, RecordMetadata> get(List<String> ids) {
+        
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        
         Map<String, RecordMetadata> output = new HashMap<>();
 
-        for (String id: ids) {
-            RecordMetadataDoc doc = queryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
+        for (String id: ids) {            
+            RecordMetadataDoc doc = recordMetadataQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
             if (doc == null) continue;
             RecordMetadata rmd = doc.getMetadata();
             if (rmd == null) continue;
@@ -127,11 +140,14 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor) {
+
+        DynamoDBQueryHelperV2 legalTagQueryHelper = getLegalTagQueryHelper();
+        
         LegalTagAssociationDoc legalTagAssociationDoc = new LegalTagAssociationDoc();
         legalTagAssociationDoc.setLegalTag(legalTagName);
         QueryPageResult<LegalTagAssociationDoc> result = null;
         try {
-            result = queryHelper.queryPage(LegalTagAssociationDoc.class,
+            result = legalTagQueryHelper.queryPage(LegalTagAssociationDoc.class,
                     legalTagAssociationDoc, 500, cursor);
         } catch (UnsupportedEncodingException e) {
             throw new AppException(org.apache.http.HttpStatus.SC_BAD_REQUEST, "Problem querying for legal tag", e.getMessage());
@@ -149,18 +165,24 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     private void saveLegalTagAssociation(String recordId, Set<String> legalTags){
+
+        DynamoDBQueryHelperV2 legalTagQueryHelper = getLegalTagQueryHelper();
+
         for(String legalTag : legalTags){
             LegalTagAssociationDoc doc = new LegalTagAssociationDoc();
             doc.setLegalTag(legalTag);
             doc.setRecordId(recordId);
             doc.setRecordIdLegalTag(String.format("%s:%s", recordId, legalTag));
-            queryHelper.save(doc);
+            legalTagQueryHelper.save(doc);
         }
     }
 
     private void deleteLegalTagAssociation(String recordId, String legalTag){
+
+        DynamoDBQueryHelperV2 legalTagQueryHelper = getLegalTagQueryHelper();
+
         LegalTagAssociationDoc doc = new LegalTagAssociationDoc();
         doc.setRecordIdLegalTag(String.format("%s:%s", recordId, legalTag));
-        queryHelper.deleteByObject(doc);
+        legalTagQueryHelper.deleteByObject(doc);
     }
 }

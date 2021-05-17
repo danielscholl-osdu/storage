@@ -32,7 +32,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <aws.version>1.11.637</aws.version>
+        <aws.version>1.11.1018</aws.version>
         <deployment.environment>dev</deployment.environment>
         <version.number>0.9.0-SNAPSHOT</version.number>
     </properties>
@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.3.17</version>
+            <version>0.9.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
