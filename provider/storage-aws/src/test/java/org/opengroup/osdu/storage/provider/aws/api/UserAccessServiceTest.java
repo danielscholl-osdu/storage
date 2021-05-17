@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -34,6 +35,8 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
+import org.opengroup.osdu.storage.service.EntitlementsAndCacheServiceImpl;
+import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.ArrayList;
@@ -52,9 +55,12 @@ public class UserAccessServiceTest {
 
     RecordMetadata record;
 
+    @Mock
+    EntitlementsAndCacheServiceImpl entitlementsExtension;
+
     @Before
     public void setUp() {
-        initMocks(this);
+        initMocks(this);        
 
         record = new RecordMetadata();
         record.setUser("not a user");
@@ -82,6 +88,8 @@ public class UserAccessServiceTest {
         } catch (EntitlementsException e){
             throw new RuntimeException(e);
         }
+
+        Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
 
         IEntitlementsFactory factory = Mockito.mock(IEntitlementsFactory.class);
         Mockito.when(factory.create(Mockito.anyObject())).thenReturn(entitlementsService);
