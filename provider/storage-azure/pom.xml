@@ -38,7 +38,7 @@
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <powermock.version>2.0.2</powermock.version>
-        <json-smart.version>2.4.6</json-smart.version>
+        <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
     </properties>
 
     <dependencyManagement>
@@ -55,10 +55,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.nimbusds/nimbus-jose-jwt -->
         <dependency>
-            <groupId>net.minidev</groupId>
-            <artifactId>json-smart</artifactId>
-            <version>${json-smart.version}</version>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>${nimbus-jose-jwt-azure.version}</version>
         </dependency>
         <dependency>
             <groupId>com.azure.spring</groupId>
