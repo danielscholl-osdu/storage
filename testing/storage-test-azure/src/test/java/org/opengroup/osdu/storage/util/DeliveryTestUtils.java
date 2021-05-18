@@ -30,6 +30,7 @@ import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class DeliveryTestUtils {
@@ -134,7 +135,7 @@ public class DeliveryTestUtils {
 
     public static void assertEqualsResponse(ClientResponse response, int expectedProcessed, int expectedUnprocessed) {
         assertEquals(200, response.getStatus());
-        assertEquals("application/json; charset=UTF-8", response.getType().toString());
+        assertTrue(response.getType().toString().contains("application/json"));
 
         JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
         JsonObject processedJson = json.get("processed").getAsJsonObject();
@@ -146,7 +147,7 @@ public class DeliveryTestUtils {
 
     public static boolean IndexedDocumentsExist(ClientResponse response, Integer expectedProcessed) {
         assertEquals(200, response.getStatus());
-        assertEquals("application/json; charset=UTF-8", response.getType().toString());
+        assertTrue(response.getType().toString().contains("application/json"));
 
         JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
         JsonObject processedJson = json.get("processed").getAsJsonObject();

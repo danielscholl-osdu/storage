@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -129,7 +130,7 @@ public abstract class TestUtils {
             return null;
         }
 
-        assertEquals("application/json; charset=UTF-8", response.getType().toString());
+        assertTrue(response.getType().toString().contains("application/json"));
         String json = response.getEntity(String.class);
         if (classOfT == String.class) {
             return (T) json;
