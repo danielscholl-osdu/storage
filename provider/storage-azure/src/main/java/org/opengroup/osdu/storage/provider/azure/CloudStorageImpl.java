@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
@@ -172,11 +174,15 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
-        Gson gson = new Gson();
         Map<String, String> hashes = new HashMap<>();
+        RecordData data;
         for (RecordMetadata rm : records) {
             String jsonData = this.read(rm, rm.getLatestVersion(), false);
-            RecordData data = gson.fromJson(jsonData, RecordData.class);
+            try {
+                data = new ObjectMapper().readValue(jsonData, RecordData.class);
+            } catch (JsonProcessingException e){
+                throw new AppException(HttpStatus.SC_PARTIAL_CONTENT, "Error while converting metadata", "Partial Content", e);
+            }
             String hash = getHash(data);
             hashes.put(rm.getId(), hash);
         }
