@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.api;
 
-import com.microsoft.azure.spring.autoconfigure.aad.UserPrincipal;
+import com.azure.spring.autoconfigure.aad.UserPrincipal;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
@@ -97,7 +97,7 @@ public class SchemaEndToEndTest {
                 .build();
         final JWSObject jwsObject = new JWSObject(new Builder(JWSAlgorithm.RS256).build(),
                 new Payload(jwtClaimsSet.toString()));
-        return  new UserPrincipal(jwsObject, jwtClaimsSet);
+        return  new UserPrincipal(upn, jwsObject, jwtClaimsSet);
     }
 
     private void setupUser(String upn, String appRole, String serviceRole) {

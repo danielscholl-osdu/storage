@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.records;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.apache.http.HttpStatus;
 import org.junit.*;
@@ -36,7 +37,7 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 	}
 
 	public static void classTearDown(String token) throws Exception {
