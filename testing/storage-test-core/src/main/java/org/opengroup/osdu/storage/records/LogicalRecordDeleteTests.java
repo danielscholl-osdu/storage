@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.records;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -48,7 +49,7 @@ public abstract class LogicalRecordDeleteTests extends TestBase {
 
 		String responseBody = response.getEntity(String.class);
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 
 		Gson gson = new Gson();
 		CreateRecordResponse result = gson.fromJson(responseBody, CreateRecordResponse.class);
