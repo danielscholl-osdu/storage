@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.misc;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +83,7 @@ public abstract class StressTests extends TestBase {
 		String responseJson = response.getEntity(String.class);
 		System.out.println(responseJson);
 		assertEquals(201, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(responseJson,
 				DummyRecordsHelper.CreateRecordResponse.class);
