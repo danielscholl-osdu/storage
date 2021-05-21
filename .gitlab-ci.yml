@@ -34,6 +34,7 @@ variables:
 
   IBM_BUILD_SUBDIR: provider/storage-ibm
   IBM_INT_TEST_SUBDIR: testing/storage-test-ibm
+  IBM_TENANT_NAME: tenant1
 
 include:
   - project: "osdu/platform/ci-cd-pipelines"
