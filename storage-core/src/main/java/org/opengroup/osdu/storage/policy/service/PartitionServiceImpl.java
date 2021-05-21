@@ -14,10 +14,16 @@
 
 package org.opengroup.osdu.storage.policy.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.partition.*;
+import org.opengroup.osdu.core.common.partition.IPartitionFactory;
+import org.opengroup.osdu.core.common.partition.IPartitionProvider;
+import org.opengroup.osdu.core.common.partition.PartitionException;
+import org.opengroup.osdu.core.common.partition.PartitionInfo;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,9 +45,14 @@ public class PartitionServiceImpl implements IPartitionService {
     @Override
     public PartitionInfo getPartition(String partitionId) {
         try {
-            this.headers.put(DpsHeaders.AUTHORIZATION, this.tokenService.getIdToken(this.headers.getPartitionId()));
-
-            IPartitionProvider serviceClient = this.factory.create(this.headers);
+//            this.headers.put(DpsHeaders.AUTHORIZATION, this.tokenService.getIdToken(this.headers.getPartitionId()));
+        	Map<String,String> partitionHeadersMap = new HashMap<>();
+        	partitionHeadersMap.put(DpsHeaders.CONTENT_TYPE,headers.getContentType());
+        	partitionHeadersMap.put(DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
+        	partitionHeadersMap.put(DpsHeaders.AUTHORIZATION, this.tokenService.getIdToken(this.headers.getPartitionId()));
+    		DpsHeaders partitionHeaders = DpsHeaders.createFromMap(partitionHeadersMap);
+    		
+            IPartitionProvider serviceClient = this.factory.create(partitionHeaders);
             PartitionInfo partitionInfo = serviceClient.get(partitionId);
             return partitionInfo;
         } catch (PartitionException e) {
