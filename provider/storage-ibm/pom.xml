@@ -26,7 +26,7 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<os-core-lib-ibm.version>0.7.1</os-core-lib-ibm.version>
+		<os-core-lib-ibm.version>0.9.0-SNAPSHOT</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 	</properties>
 
