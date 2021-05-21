@@ -309,7 +309,6 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		}
 
 	}
-
 	protected static String createJsonBody(String id, String name) {
 		return "[" + singleEntityBody(id, name, KIND, LEGAL_TAG) + "]";
 	}
