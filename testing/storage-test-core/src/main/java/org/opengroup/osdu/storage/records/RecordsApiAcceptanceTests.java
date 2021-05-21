@@ -310,6 +310,25 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	}
 
+	@Test
+	public void should_createNewRecords_whenTheyHaveSameFirst100Characters() throws Exception
+	{
+		final String RECORDID_1 = TenantUtils.getTenantName() + ":marker:hij-osdu-dev-sis-internal-hq-techlog--A52C-4031-99D1---124CBB92-8C80-4668-BB48-1329C5FE241C--1";
+		final String RECORDID_2 = TenantUtils.getTenantName() + ":marker:hij-osdu-dev-sis-internal-hq-techlog--A52C-4031-99D1---124CBB92-8C80-4668-BB48-1329C5FE241C--9";
+
+		String jsonInput = "["+ singleEntityBody(RECORDID_1,"TestCreation",KIND,LEGAL_TAG) + "," + singleEntityBody(RECORDID_2,"TestCreation",KIND,LEGAL_TAG);
+		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+
+		assertEquals(201, response.getStatus());
+
+		response = TestUtils.send("records/" + RECORDID_1, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(200, response.getStatus());
+
+		response = TestUtils.send("records/" + RECORDID_2, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(200, response.getStatus());
+
+	}
+
 	protected static String createJsonBody(String id, String name) {
 		return "[" + singleEntityBody(id, name, KIND, LEGAL_TAG) + "]";
 	}
