@@ -322,10 +322,19 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(201, response.getStatus());
 
 		response = TestUtils.send("records/" + RECORDID_1, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		String responseString = TestUtils.getResult(response, 200, String.class);
+		JsonObject responseJson = new JsonParser().parse(responseString).getAsJsonObject();
+
 		assertEquals(200, response.getStatus());
+		assertEquals(RECORDID_1, responseJson.get("id").getAsString());
 
 		response = TestUtils.send("records/" + RECORDID_2, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		responseString = TestUtils.getResult(response, 200, String.class);
+		responseJson = new JsonParser().parse(responseString).getAsJsonObject();
 		assertEquals(200, response.getStatus());
+		assertEquals(RECORDID_2, responseJson.get("id").getAsString());
+
+
 
 	}
 
