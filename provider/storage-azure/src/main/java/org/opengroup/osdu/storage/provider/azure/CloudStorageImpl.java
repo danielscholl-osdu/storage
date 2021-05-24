@@ -74,8 +74,6 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
-        validateRecordAcls(recordsProcessing);
-
         List<Callable<Boolean>> tasks = new ArrayList<>();
         String dataPartitionId = headers.getPartitionId();
         for (RecordProcessing rp : recordsProcessing) {
