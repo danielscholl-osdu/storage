@@ -36,6 +36,8 @@ import javax.ws.rs.core.MediaType;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -106,7 +108,9 @@ public abstract class TestUtils {
         WebResource.Builder builder = webResource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON);
         headers.forEach(builder::header);
 
-        return builder.method(httpMethod, ClientResponse.class, requestBody);
+        ClientResponse response = builder.method(httpMethod, ClientResponse.class, requestBody);
+        logResponse(httpMethod, TestUtils.getApiPath(path + query), response);
+        return response;
     }
 
     public static ClientResponse send(String url, String path, String httpMethod, Map<String, String> headers,
@@ -119,12 +123,32 @@ public abstract class TestUtils {
         WebResource.Builder builder = webResource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON);
         headers.forEach(builder::header);
 
-        return builder.method(httpMethod, ClientResponse.class, requestBody);
+        ClientResponse response = builder.method(httpMethod, ClientResponse.class, requestBody);
+        logResponse(httpMethod, url + path, response);
+        return response;
     }
 
     private static void log(String method, String url, Map<String, String> headers, String body) {
         System.out.println(String.format("%s: %s", method, url));
         System.out.println(body);
+    }
+
+    private static void logResponse(String method, String url, ClientResponse response) {
+        System.out.println(String.format("%s: %s | correlation-id: %s | response: %s", method, url, response.getHeaders().get("correlation-id"), response.getStatus()));
+        if(response.getStatus() >= 400) {
+            System.out.println(formResponseCheckingMessage(response));
+        }
+    }
+
+    private static String formResponseCheckingMessage(ClientResponse response) {
+        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        StringBuilder output = new StringBuilder();
+        output.append("API is not acting properly, resonse code is: ")
+                .append(String.valueOf(response.getStatus()))
+                .append(". And the reason is: ")
+                .append(json.get("reason").getAsString())
+                .append(response.getHeaders().get("correlation-id"));
+        return  output.toString();
     }
 
     @SuppressWarnings("unchecked")
