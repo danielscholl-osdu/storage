@@ -198,7 +198,12 @@ public class SchemaServiceImpl implements SchemaService {
 	private Schema fetchSchema(String kind) {
 
 		String key = this.getSchemaCacheKey(kind);
-		Schema cachedSchema = this.cache.getSuppressException(key, Optional.of(this.log));
+		Schema cachedSchema = null;
+		try {
+			cachedSchema = this.cache.get(key);
+		} catch (Exception ex) {
+			this.log.error(String.format("Error getting key %s from redis: %s", key, ex));
+		}
 
 		if (cachedSchema == null) {
 			Schema schema = this.schemaRepository.get(kind);

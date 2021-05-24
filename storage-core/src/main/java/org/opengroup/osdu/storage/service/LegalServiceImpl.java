@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -142,7 +141,13 @@ public class LegalServiceImpl implements ILegalService {
 
 	private boolean isInCache(Set<String> legalTagNames) {
 		for (String legalTagName : legalTagNames) {
-			if (this.cache.getSuppressException(legalTagName, Optional.of(this.log)) == null) {
+			String legalTag = null;
+			try {
+				legalTag = this.cache.get(legalTagName);
+			} catch (Exception ex) {
+				this.log.error(String.format("Error getting key %s from redis: %s", legalTagName, ex));
+			}
+			if (legalTag == null) {
 				return false;
 			}
 		}

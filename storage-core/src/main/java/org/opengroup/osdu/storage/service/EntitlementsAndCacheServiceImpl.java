@@ -15,25 +15,24 @@
 package org.opengroup.osdu.storage.service;
 
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
+import org.opengroup.osdu.core.common.http.HttpResponse;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.http.HttpResponse;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.util.Crc32c;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -137,7 +136,13 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
     @Override
     public Groups getGroups(DpsHeaders headers) {
         String cacheKey = this.getGroupCacheKey(headers);
-        Groups groups = this.cache.getSuppressException(cacheKey, Optional.of(logger));
+
+        Groups groups = null;
+        try {
+            groups = this.cache.get(cacheKey);
+        } catch (Exception ex) {
+            this.logger.error(String.format("Error getting key %s from redis: %s", cacheKey, ex));
+        }
 
         if (groups == null) {
             IEntitlementsService service = this.factory.create(headers);
