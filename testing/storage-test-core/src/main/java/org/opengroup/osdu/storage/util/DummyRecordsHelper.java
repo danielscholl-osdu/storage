@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -39,21 +40,21 @@ public class DummyRecordsHelper {
 			+ NOW;
 
 	public QueryResultMock getQueryResultMockFromResponse(ClientResponse response) {
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 		String json = response.getEntity(String.class);
 		Gson gson = new Gson();
 		return gson.fromJson(json, QueryResultMock.class);
 	}
 
 	public RecordsMock getRecordsMockFromResponse(ClientResponse response) {
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 		String json = response.getEntity(String.class);
 		Gson gson = new Gson();
 		return gson.fromJson(json, RecordsMock.class);
 	}
 
 	public ConvertedRecordsMock getConvertedRecordsMockFromResponse(ClientResponse response) {
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 		String json = response.getEntity(String.class);
 		Gson gson = new Gson();
 		return gson.fromJson(json, ConvertedRecordsMock.class);

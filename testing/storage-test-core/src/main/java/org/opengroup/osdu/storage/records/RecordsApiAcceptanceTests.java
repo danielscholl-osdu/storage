@@ -69,7 +69,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		String json = response.getEntity(String.class);
 		assertEquals(201, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
@@ -283,7 +283,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		String json = response.getEntity(String.class);
 		assertEquals(201, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
@@ -309,7 +309,6 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		}
 
 	}
-
 	protected static String createJsonBody(String id, String name) {
 		return "[" + singleEntityBody(id, name, KIND, LEGAL_TAG) + "]";
 	}

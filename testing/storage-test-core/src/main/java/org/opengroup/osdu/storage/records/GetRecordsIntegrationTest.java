@@ -14,10 +14,6 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
 import com.google.gson.JsonArray;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
@@ -26,6 +22,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.opengroup.osdu.storage.util.*;
 import com.sun.jersey.api.client.ClientResponse;
+
+import static org.junit.Assert.*;
 
 public abstract class GetRecordsIntegrationTest extends TestBase {
 	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":getrecord:" + System.currentTimeMillis();
@@ -49,7 +47,7 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 
         ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 	}
 
 	public static void classTearDown(String token) throws Exception {
