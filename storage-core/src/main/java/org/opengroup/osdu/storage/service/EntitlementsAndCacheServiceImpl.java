@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.lambdaworks.redis.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
@@ -140,8 +141,8 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
         Groups groups = null;
         try {
             groups = this.cache.get(cacheKey);
-        } catch (Exception ex) {
-            this.logger.error(String.format("Error getting key %s from redis: %s", cacheKey, ex));
+        } catch (RedisException ex) {
+            this.logger.error(String.format("Error getting key %s from redis: %s", cacheKey, ex.getMessage()));
         }
 
         if (groups == null) {
