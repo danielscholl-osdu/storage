@@ -181,7 +181,8 @@ public class CloudStorageImpl implements ICloudStorage {
             try {
                 data = new ObjectMapper().readValue(jsonData, RecordData.class);
             } catch (JsonProcessingException e){
-                throw new AppException(HttpStatus.SC_PARTIAL_CONTENT, "Error while converting metadata", "Partial Content", e);
+                logger.error(String.format("Error while converting metadata for record %s", rm.getId()), e);
+                continue;
             }
             String hash = getHash(data);
             hashes.put(rm.getId(), hash);
