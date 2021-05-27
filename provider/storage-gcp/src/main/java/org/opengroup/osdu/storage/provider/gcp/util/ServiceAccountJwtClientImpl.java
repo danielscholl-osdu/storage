@@ -38,6 +38,7 @@ import org.apache.http.util.EntityUtils;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import com.google.auth.http.HttpCredentialsAdapter;
@@ -58,6 +59,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.springframework.web.context.annotation.RequestScope;
 
+@Primary
 @Component
 @RequestScope
 public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
