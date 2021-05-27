@@ -21,4 +21,4 @@ image:
   tag: latest
 
 policy:
-  enabled: false
+  enabled: true
