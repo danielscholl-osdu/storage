@@ -142,7 +142,7 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
         try {
             groups = this.cache.get(cacheKey);
         } catch (RedisException ex) {
-            this.logger.error(String.format("Error getting key %s from redis: %s", cacheKey, ex.getMessage()));
+            this.logger.error(String.format("Error getting key %s from redis: %s", cacheKey, ex.getMessage()), ex);
         }
 
         if (groups == null) {

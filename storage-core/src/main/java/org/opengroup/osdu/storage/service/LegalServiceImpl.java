@@ -146,7 +146,7 @@ public class LegalServiceImpl implements ILegalService {
             try {
                 legalTag = this.cache.get(legalTagName);
             } catch (RedisException ex) {
-                this.log.error(String.format("Error getting key %s from redis: %s", legalTagName, ex.getMessage()));
+                this.log.error(String.format("Error getting key %s from redis: %s", legalTagName, ex.getMessage()), ex);
             }
             if (legalTag == null) {
                 return false;

@@ -202,7 +202,7 @@ public class SchemaServiceImpl implements SchemaService {
         try {
             cachedSchema = this.cache.get(key);
         } catch (RedisException ex) {
-            this.log.error(String.format("Error getting key %s from redis: %s", key, ex.getMessage()));
+            this.log.error(String.format("Error getting key %s from redis: %s", key, ex.getMessage()), ex);
         }
 
         if (cachedSchema == null) {
