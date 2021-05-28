@@ -62,6 +62,8 @@ public class QueryApi {
 		return new ResponseEntity<MultiRecordResponse>(this.batchService.fetchMultipleRecords(ids), HttpStatus.OK);
 	}
 
+	// This endpoint is deprecated as of M6, replaced by schema service. In M7 this endpoint will be deleted
+	@Deprecated
 	@GetMapping("/kinds")
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getKinds(@RequestParam(required = false) String cursor,
