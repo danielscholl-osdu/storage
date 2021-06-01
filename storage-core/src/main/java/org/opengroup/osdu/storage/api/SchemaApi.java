@@ -44,6 +44,8 @@ public class SchemaApi {
 		this.schemaService = schemaService;
 	}
 
+	// This endpoint is deprecated as of M6, replaced by schema service.  In M7 this endpoint will be deleted
+	@Deprecated
 	@PostMapping
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Void> createSchema(@Valid @NotNull @RequestBody Schema schema)
@@ -52,12 +54,16 @@ public class SchemaApi {
 		return new ResponseEntity<Void>(HttpStatus.CREATED);
 	}
 
+	// This endpoint is deprecated as of M6, replaced by schema service.  In M7 this endpoint will be deleted
+	@Deprecated
 	@GetMapping("/{kind}")
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Schema> getSchema(@PathVariable("kind") @ValidKind String kind) {
 		return new ResponseEntity<Schema>(this.schemaService.getSchema(kind), HttpStatus.OK);
 	}
 
+	// This endpoint is deprecated as of M6. In M7 this endpoint will be deleted
+	@Deprecated
 	@DeleteMapping("/{kind}")
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Void> deleteSchema(@PathVariable("kind") @ValidKind String kind) {
