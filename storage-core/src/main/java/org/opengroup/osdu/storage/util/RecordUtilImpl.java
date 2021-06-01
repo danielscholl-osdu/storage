@@ -120,6 +120,10 @@ public class RecordUtilImpl implements RecordUtil {
         return recordMetadata;
     }
 
+    public boolean hasVersionPath(List<String> gcsVersionPaths, Long version) {
+        return gcsVersionPaths.stream().anyMatch(path -> path.endsWith("/" + version));
+    }
+
     private RecordMetadata updateMetadataForAclAndLegal(RecordMetadata recordMetadata, List<PatchOperation> ops) {
         JsonObject metadata = this.gson.toJsonTree(recordMetadata).getAsJsonObject();
         String errorPath = "";

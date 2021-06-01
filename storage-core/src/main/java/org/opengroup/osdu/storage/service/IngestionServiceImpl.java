@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -77,6 +78,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Autowired(required = false)
 	private IPolicyService policyService;
+
+	@Autowired
+	private RecordUtil recordUtil;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -240,10 +244,21 @@ public class IngestionServiceImpl implements IngestionService {
 
 		for (Entry<String, List<RecordIdWithVersion>> entry : recordParentMap.entrySet()) {
 			List<RecordIdWithVersion> parents = entry.getValue();
-			for (RecordIdWithVersion parent : parents) {
-				if (!existingRecords.containsKey(parent.getRecordId())) {
+			for (RecordIdWithVersion parentPair : parents) {
+				String parentId = parentPair.getRecordId();
+				if (!existingRecords.containsKey(parentId)) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found",
-							String.format("The record '%s' was not found", parent));
+							String.format("The record '%s' was not found", parentPair));
+				}
+				RecordMetadata recordMetadata = existingRecords.get(parentId);
+				if (recordMetadata == null) {
+					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata not found",
+							String.format("RecordMetadata for record '%s' was not found", parentPair));
+				}
+				long version = parentPair.getRecordVersion();
+				if (!recordUtil.hasVersionPath(recordMetadata.getGcsVersionPaths(), version)) {
+					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata version not found",
+							String.format("The RecordMetadata version %d for record '%s' was not found", version, parentId));
 				}
 			}
 		}
