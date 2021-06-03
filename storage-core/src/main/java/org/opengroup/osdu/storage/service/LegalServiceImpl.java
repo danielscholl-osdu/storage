@@ -28,6 +28,7 @@ import org.opengroup.osdu.core.common.model.legal.InvalidTagsWithReason;
 import org.opengroup.osdu.core.common.model.legal.LegalException;
 import org.opengroup.osdu.core.common.model.legal.LegalTagProperties;
 import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -86,13 +87,13 @@ public class LegalServiceImpl implements ILegalService {
     @Override
     public void populateLegalInfoFromParents(List<Record> inputRecords,
                                              Map<String, RecordMetadata> existingRecordsMetadata,
-                                             Map<String, List<String>> recordParentMap) {
+                                             Map<String, List<RecordIdWithVersion>> recordParentMap) {
 
         for (Record record : inputRecords) {
             // is there parent?
             if (recordParentMap.containsKey(record.getId())) {
-                for (String parentRecordId : recordParentMap.get(record.getId())) {
-                    RecordMetadata parentRecord = existingRecordsMetadata.get(parentRecordId);
+                for (RecordIdWithVersion parentRecordId : recordParentMap.get(record.getId())) {
+                    RecordMetadata parentRecord = existingRecordsMetadata.get(parentRecordId.getRecordId());
 
                     if (!record.getLegal().hasLegaltags()) {
                         record.getLegal().setLegaltags(parentRecord.getLegal().getLegaltags());

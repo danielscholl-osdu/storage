@@ -257,8 +257,10 @@ public class LegalServiceImplTest {
         existingRecordsMetadata.put(PARENT_RECORD_ID_1, parentRecordMetadata1);
         existingRecordsMetadata.put(PARENT_RECORD_ID_2, parentRecordMetadata2);
 
-        Map<String, List<String>> recordParentMap = new HashMap<>();
-        recordParentMap.put(CURRENT_RECORD_ID, Lists.newArrayList(PARENT_RECORD_ID_1, PARENT_RECORD_ID_2));
+        Map<String, List<RecordIdWithVersion>> recordParentMap = new HashMap<>();
+        recordParentMap.put(CURRENT_RECORD_ID, Lists.newArrayList(
+                RecordIdWithVersion.builder().recordId(PARENT_RECORD_ID_1).build(),
+                RecordIdWithVersion.builder().recordId(PARENT_RECORD_ID_2).build()));
 
         this.sut.populateLegalInfoFromParents(Lists.newArrayList(currentRecord), existingRecordsMetadata,
                 recordParentMap);
@@ -328,8 +330,10 @@ public class LegalServiceImplTest {
         existingRecordsMetadata.put(PARENT_RECORD_ID_1, parentRecordMetadata1);
         existingRecordsMetadata.put(PARENT_RECORD_ID_2, parentRecordMetadata2);
 
-        Map<String, List<String>> recordParentMap = new HashMap<>();
-        recordParentMap.put(CURRENT_RECORD_ID, Lists.newArrayList(PARENT_RECORD_ID_1, PARENT_RECORD_ID_2));
+        Map<String, List<RecordIdWithVersion>> recordParentMap = new HashMap<>();
+        recordParentMap.put(CURRENT_RECORD_ID, Lists.newArrayList(
+                RecordIdWithVersion.builder().recordId(PARENT_RECORD_ID_1).build(),
+                RecordIdWithVersion.builder().recordId(PARENT_RECORD_ID_2).build()));
 
         this.sut.populateLegalInfoFromParents(Lists.newArrayList(currentRecord), existingRecordsMetadata,
                 recordParentMap);
