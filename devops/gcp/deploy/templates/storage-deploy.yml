@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: "{{ .Values.conf.app_name }}"
+  name: "{{ .Values.conf.app_name }}"
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: "{{ .Values.conf.app_name }}"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: "{{ .Values.conf.app_name }}"
+    spec:
+      containers:
+      - name: "{{ .Values.conf.app_name }}"
+        image: "{{ .Values.storage.image }}"
+        env:
+        - name: "AUTHORIZE_API"
+          valueFrom:
+            configMapKeyRef:
+              key: AUTHORIZE_API
+              name: "{{ .Values.conf.configmap }}"
+        - name: "LOG_LEVEL"
+          valueFrom:
+            configMapKeyRef:
+              key: LOG_LEVEL
+              name: "{{ .Values.conf.configmap }}"
+        - name: "STORAGE_HOSTNAME"
+          valueFrom:
+            configMapKeyRef:
+              key: STORAGE_HOSTNAME
+              name: "{{ .Values.conf.configmap }}"
+        - name: "LEGALTAG_API"
+          valueFrom:
+            configMapKeyRef:
+              key: LEGALTAG_API
+              name: "{{ .Values.conf.configmap }}"
+        - name: "GOOGLE_AUDIENCES"
+          valueFrom:
+            configMapKeyRef:
+              key: GOOGLE_AUDIENCES
+              name: "{{ .Values.conf.configmap }}"
+        - name: "REDIS_GROUP_HOST"
+          valueFrom:
+            configMapKeyRef:
+              key: REDIS_GROUP_HOST
+              name: "{{ .Values.conf.configmap }}"
+        - name: "REDIS_STORAGE_HOST"
+          valueFrom:
+            configMapKeyRef:
+              key: REDIS_STORAGE_HOST
+              name: "{{ .Values.conf.configmap }}"
+        - name: "CRS_API"
+          valueFrom:
+            configMapKeyRef:
+              key: CRS_API
+              name: "{{ .Values.conf.configmap }}"
+        - name: "DEFAULT_DATA_COUNTRY"
+          valueFrom:
+            configMapKeyRef:
+              key: DEFAULT_DATA_COUNTRY
+              name: "{{ .Values.conf.configmap }}"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsUser: 0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "{{ .Values.storage.requests_cpu }}"
+            memory: "{{ .Values.storage.requests_memory }}"
+          limits:
+            cpu: "{{ .Values.storage.limits_cpu }}"
+            memory: "{{ .Values.storage.limits_memory }}"
+      serviceAccountName: "{{ .Values.storage.serviceAccountName }}"
+
