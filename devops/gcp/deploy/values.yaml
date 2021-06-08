@@ -1,0 +1,17 @@
+# Default values for legal-deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+storage:
+  requests_cpu: "0.25"
+  requests_memory: "128M"
+  limits_cpu: "0.5"
+  limits_memory: "256M"
+  serviceAccountName: ""
+  image: ""
+
+conf:
+  configmap: "storage-config"
+  app_name: "storage"
+
+
