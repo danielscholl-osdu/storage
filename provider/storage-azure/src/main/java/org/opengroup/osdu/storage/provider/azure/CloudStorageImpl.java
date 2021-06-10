@@ -74,6 +74,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public void write(RecordProcessing... recordsProcessing) {
         validateRecordAcls(recordsProcessing);
@@ -179,7 +181,7 @@ public class CloudStorageImpl implements ICloudStorage {
         for (RecordMetadata rm : records) {
             String jsonData = this.read(rm, rm.getLatestVersion(), false);
             try {
-                data = new ObjectMapper().readValue(jsonData, RecordData.class);
+                data = objectMapper.readValue(jsonData, RecordData.class);
             } catch (JsonProcessingException e){
                 logger.error(String.format("Error while converting metadata for record %s", rm.getId()), e);
                 continue;
@@ -209,7 +211,6 @@ public class CloudStorageImpl implements ICloudStorage {
     private String getHash(RecordData data) {
         Gson gson = new Gson();
         Crc32c checksumGenerator = new Crc32c();
-
         String newRecordStr = gson.toJson(data);
         byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
         checksumGenerator.update(bytes, 0, bytes.length);
