@@ -1354,7 +1354,6 @@ The following software have components provided under the terms of this license:
 - OSGi resource locator (from )
 - Project Lombok (from https://projectlombok.org)
 - Project Lombok (from https://projectlombok.org)
-- SnakeYAML (from http://www.snakeyaml.org)
 - jakarta.annotation-api (from https://projects.eclipse.org/projects/ee4j.ca)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
@@ -1594,3 +1593,5 @@ The following software have components provided under the terms of this license:
 - org.junit.jupiter:junit-jupiter-params (from http://junit.org/junit5/)
 - org.junit.platform:junit-platform-commons (from http://junit.org/junit5/)
 - org.junit.platform:junit-platform-engine (from http://junit.org/junit5/)
+
+
