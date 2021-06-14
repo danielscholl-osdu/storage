@@ -411,8 +411,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
-        //assertEquals(2, responseObject.records[0].data.size());
-        //List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
+        assertEquals(2, responseObject.records[0].data.size());
+        List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
+        assertEquals("SUCCESS", conversionStatuses.get(0).status);
 
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
