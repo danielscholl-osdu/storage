@@ -418,4 +418,37 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
     }
+
+    @Test
+    public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
+        String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
+        String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getStatus());
+
+        JsonArray records = new JsonArray();
+        records.add(recordId + 12);
+
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(1, responseObject.records.length);
+        assertEquals(0, responseObject.notFound.length);
+        assertEquals(1, responseObject.conversionStatuses.size());
+        assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
+        assertEquals(KIND, responseObject.records[0].kind);
+        assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
+        assertEquals(2, responseObject.records[0].data.size());
+        List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
+        assertEquals("SUCCESS", conversionStatuses.get(0).status);
+
+        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getStatus());
+    }
 }

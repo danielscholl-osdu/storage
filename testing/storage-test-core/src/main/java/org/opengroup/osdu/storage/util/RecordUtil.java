@@ -242,6 +242,45 @@ public class RecordUtil {
 		return records.toString();
 	}
 
+	public static String createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType) {
+		JsonArray records = new JsonArray();
+
+		for (int i = 12; i < 12 + recordsNumber; i++) {
+
+			JsonArray nestedArray = new JsonArray();
+			JsonObject item1 = new JsonObject();
+			item1.addProperty("measuredDepth", 10.0);
+			item1.addProperty("otherField", "testValue1");
+			JsonObject item2 = new JsonObject();
+			item2.addProperty("measuredDepth", 20);
+			item2.addProperty("otherField", "testValue2");
+			nestedArray.add(item1);
+			nestedArray.add(item2);
+
+			JsonObject data = new JsonObject();
+			data.addProperty("message", "integration-test-record");
+			data.add("markers", nestedArray);
+
+			JsonArray propertyNames = new JsonArray();
+			propertyNames.add("markers[].measuredDepth");
+
+			JsonObject meta = new JsonObject();
+			meta.addProperty("kind", conversionType);
+			meta.addProperty("persistableReference", fromRef);
+			meta.add("propertyNames", propertyNames);
+
+			JsonArray metaBlocks = new JsonArray();
+			metaBlocks.add(meta);
+
+			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
+			record.add("meta", metaBlocks);
+
+			records.add(record);
+		}
+
+		return records.toString();
+	}
+
 	public static String createJsonRecordWithMultiplePairOfCoordinates(int recordsNumber, String id, String kind, String legalTag, String fromCrs, String conversionType) {
 
 		JsonArray records = new JsonArray();
