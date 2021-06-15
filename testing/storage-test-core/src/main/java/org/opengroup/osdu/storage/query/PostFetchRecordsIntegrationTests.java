@@ -446,7 +446,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(2, responseObject.records[0].data.size());
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
-        assertEquals("SUCCESS", conversionStatuses.get(0).status);
+        assertEquals("ERROR", conversionStatuses.get(0).status);
+        assertEquals("Unit conversion: illegal value for property markers[].measuredDepth", conversionStatuses.get(0).errors.get(0));
 
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
