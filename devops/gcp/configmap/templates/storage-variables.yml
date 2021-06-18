@@ -2,9 +2,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    app: {{ .Values.conf.app_name }}
-  name: {{ .Values.conf.configmap }}
-  namespace: {{ .Release.Namespace }}
+    app: "{{ .Values.conf.app_name }}"
+  name: "{{ .Values.conf.configmap }}"
+  namespace: "{{ .Release.Namespace }}"
 data:
   AUTHORIZE_API: "http://{{ .Values.conf.ent_name }}.{{ .Release.Namespace }}{{ .Values.data.authorize_api }}"
   LOG_LEVEL: "{{ .Values.data.log_level }}"
@@ -15,5 +15,3 @@ data:
   REDIS_STORAGE_HOST: "{{ .Values.data.redis_storage_host }}"
   CRS_API: "{{ .Values.data.crs_api }}"
   DEFAULT_DATA_COUNTRY: "{{ .Values.data.default_data_country }}"
----
-
