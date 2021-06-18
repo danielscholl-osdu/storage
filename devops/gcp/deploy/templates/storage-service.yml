@@ -4,7 +4,7 @@ metadata:
   name: "{{ .Values.conf.app_name }}"
   annotations:
     cloud.google.com/neg: '{"ingress": true}'
-  namespace: {{ .Release.Namespace }}
+  namespace: "{{ .Release.Namespace }}"
   labels:
     app: "{{ .Values.conf.app_name }}"
     service: "{{ .Values.conf.app_name }}"
@@ -16,4 +16,3 @@ spec:
       name: http
   selector:
     app: "{{ .Values.conf.app_name }}"
-
