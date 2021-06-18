@@ -47,7 +47,9 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
     public static void classTearDown(String token) throws Exception {
         TestUtils.send(RECORD + "/" + KIND_ID_ONE, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
         TestUtils.send(RECORD + "/" + KIND_VERSION_ID, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
-	}
+
+    	LegalTagUtils.delete(LEGAL_TAG_NAME, token);
+    }
 	
 	@Test
 	public void should_retrieveAllKinds_when_toCursorIdIsGiven() throws Exception {
