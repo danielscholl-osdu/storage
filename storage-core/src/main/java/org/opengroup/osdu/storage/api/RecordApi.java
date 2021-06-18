@@ -14,14 +14,11 @@
 
 package org.opengroup.osdu.storage.api;
 
-import java.nio.charset.Charset;
 import java.util.List;
-
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-
-import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
@@ -49,7 +46,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
-import org.springframework.web.util.UriUtils;
 
 @RestController
 @RequestMapping("records")
@@ -57,75 +53,85 @@ import org.springframework.web.util.UriUtils;
 @Validated
 public class RecordApi {
 
-	@Autowired
-	private DpsHeaders headers;
+  @Autowired
+  private DpsHeaders headers;
 
-	@Autowired
-	private IngestionService ingestionService;
+  @Autowired
+  private IngestionService ingestionService;
 
-	@Autowired
-	private QueryService queryService;
+  @Autowired
+  private QueryService queryService;
 
-	@Autowired
-	private RecordService recordService;
+  @Autowired
+  private RecordService recordService;
 
-	@Autowired
-	private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
+  @Autowired
+  private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
 
-	@PutMapping
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	@ResponseStatus(HttpStatus.CREATED)
-	public CreateUpdateRecordsResponse createOrUpdateRecords(@RequestParam(required = false) boolean skipdupes,
-			@RequestBody @Valid @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<Record> records) {
+  @PutMapping
+  @PreAuthorize(
+      "@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+  @ResponseStatus(HttpStatus.CREATED)
+  public CreateUpdateRecordsResponse createOrUpdateRecords(
+      @RequestParam(required = false) boolean skipdupes,
+      @RequestBody @Valid @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<Record> records) {
 
-		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail());
-		return createUpdateRecordsResponseMapper.map(transfer, records);
-	}
+    TransferInfo transfer = ingestionService
+        .createUpdateRecords(skipdupes, records, headers.getUserEmail());
+    return createUpdateRecordsResponseMapper.map(transfer, records);
+  }
 
-	@GetMapping("/versions/{id}")
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<RecordVersions> getRecordVersions(
-			@PathVariable("id") String id) {
-		return new ResponseEntity<RecordVersions>(this.queryService.listVersions(getValidId(id)), HttpStatus.OK);
-	}
+  @GetMapping("/versions/{id}")
+  @PreAuthorize(
+      "@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '"
+          + StorageRole.ADMIN + "')")
+  public ResponseEntity<RecordVersions> getRecordVersions(
+      @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+          message = ValidationDoc.INVALID_RECORD_ID) String id) {
+    return new ResponseEntity<RecordVersions>(this.queryService.listVersions(id), HttpStatus.OK);
+  }
 
-	@DeleteMapping("/{id}")
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
-	public ResponseEntity<Void> purgeRecord(@PathVariable("id") String id) {
-		this.recordService.purgeRecord(getValidId(id));
-		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
-	}
+  @DeleteMapping("/{id}")
+  @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
+  public ResponseEntity<Void> purgeRecord(
+      @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+          message = ValidationDoc.INVALID_RECORD_ID) String id) {
+    this.recordService.purgeRecord(id);
+    return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+  }
 
-	@PostMapping("/{id}:delete")
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<Void> deleteRecord(@PathVariable("id") String id) {
-		this.recordService.deleteRecord(getValidId(id), this.headers.getUserEmail());
-		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
-	}
+  @PostMapping("/{id}:delete")
+  @PreAuthorize(
+      "@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+  public ResponseEntity<Void> deleteRecord(
+      @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+          message = ValidationDoc.INVALID_RECORD_ID) String id) {
+    this.recordService.deleteRecord(id, this.headers.getUserEmail());
+    return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+  }
 
-	@GetMapping("/{id}")
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<String> getLatestRecordVersion(
-			@PathVariable("id") String id,
-			@RequestParam(name = "attribute", required = false) String[] attributes) {
-		return new ResponseEntity<String>(this.queryService.getRecordInfo(getValidId(id), attributes), HttpStatus.OK);
-	}
+  @GetMapping("/{id}")
+  @PreAuthorize(
+      "@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '"
+          + StorageRole.ADMIN + "')")
+  public ResponseEntity<String> getLatestRecordVersion(
+      @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+          message = ValidationDoc.INVALID_RECORD_ID) String id,
+      @RequestParam(name = "attribute", required = false) String[] attributes) {
+    return new ResponseEntity<String>(this.queryService.getRecordInfo(id, attributes),
+        HttpStatus.OK);
+  }
 
-	@GetMapping("/{id}/{version}")
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<String> getSpecificRecordVersion(
-			@PathVariable("id") String id,
-			@PathVariable("version") long version,
-			@RequestParam(name = "attribute", required = false) String[] attributes) {
-		return new ResponseEntity<String>(this.queryService.getRecordInfo(getValidId(id), version, attributes), HttpStatus.OK);
-	}
-
-	private String getValidId(String id) {
-		String encodedId = UriUtils.encode(id, Charset.defaultCharset()).replace("%3A", ":");
-		if (!encodedId.matches(ValidationDoc.RECORD_ID_REGEX)) {
-			throw new AppException(org.apache.http.HttpStatus.SC_BAD_REQUEST, "Validation error.",
-					"Not a valid record id. Found: " + encodedId);
-		}
-		return encodedId;
-	}
+  @GetMapping("/{id}/{version}")
+  @PreAuthorize(
+      "@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '"
+          + StorageRole.ADMIN + "')")
+  public ResponseEntity<String> getSpecificRecordVersion(
+      @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+          message = ValidationDoc.INVALID_RECORD_ID) String id,
+      @PathVariable("version") long version,
+      @RequestParam(name = "attribute", required = false) String[] attributes) {
+    return new ResponseEntity<String>(this.queryService.getRecordInfo(id, version, attributes),
+        HttpStatus.OK);
+  }
 }
