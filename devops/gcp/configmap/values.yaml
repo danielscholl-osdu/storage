@@ -1,12 +1,12 @@
-# Default values for legal-configmap.
+# Default values for storage-configmap.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 data:
   authorize_api: ".svc.cluster.local/entitlements/v1/"
-  log_level: "INFO"
+  log_level: ""
   legaltag_api: ".svc.cluster.local/api/legal/v1"
-  google_audiences: "519000754840-r12fqsd3e12aqep8c5f3j3t3emv8jeg1.apps.googleusercontent.com"
+  google_audiences: ""
   redis_group_host: ""
   redis_storage_host: ""
   default_data_country: "US"
@@ -17,4 +17,3 @@ conf:
   legal_name: ""
   configmap: "storage-config"
   app_name: "storage"
-
