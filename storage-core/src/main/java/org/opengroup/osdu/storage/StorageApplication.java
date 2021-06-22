@@ -14,22 +14,27 @@
 
 package org.opengroup.osdu.storage;
 
+import org.opengroup.osdu.storage.provider.interfaces.LegalTagSubscriptionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
-
-import javax.annotation.PostConstruct;
 
 
 @SpringBootApplication
 @ComponentScan({"org.opengroup.osdu"})
 public class StorageApplication {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StorageApplication.class);
 
-	@PostConstruct
-	void f() {
-
-	}
-	public static void main(String[] args) {
-		SpringApplication.run(StorageApplication.class, args);
-	}
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(StorageApplication.class, args);
+        try {
+            LegalTagSubscriptionManager legalTagSubscriptionManager = context.getBean(LegalTagSubscriptionManager.class);
+            legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
 }

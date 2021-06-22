@@ -16,7 +16,8 @@
   limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
@@ -29,10 +30,10 @@
     <packaging>jar</packaging>
     <version>0.9.0-SNAPSHOT</version>
     <properties>
-        <azure.appservice.resourcegroup />
-        <azure.appservice.plan />
-        <azure.appservice.appname />
-        <azure.appservice.subscription />
+        <azure.appservice.resourcegroup/>
+        <azure.appservice.plan/>
+        <azure.appservice.appname/>
+        <azure.appservice.subscription/>
         <osdu.corelibazure.version>0.6.1</osdu.corelibazure.version>
         <osdu.oscorecommon.version>0.8.0-rc1</osdu.oscorecommon.version>
         <osdu.storage-core.version>0.9.0-SNAPSHOT</osdu.storage-core.version>
@@ -72,10 +73,6 @@
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-classic</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-to-slf4j</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

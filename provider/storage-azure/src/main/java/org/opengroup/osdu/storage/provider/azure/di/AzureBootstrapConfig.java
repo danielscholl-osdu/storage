@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.di;
 
+import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -24,8 +25,50 @@ import javax.inject.Named;
 @Component
 public class AzureBootstrapConfig {
 
+    @Value("${azure.legal.servicebus.topic-name}")
+    private String legalServiceBusTopic;
+
+    @Value("${azure.legal.servicebus.topic-subscription}")
+    private String legalServiceBusTopicSubscription;
+
     @Value("${azure.servicebus.topic-name}")
     private String serviceBusTopic;
+
+    @Value("${executor-n-threads}")
+    private String nThreads;
+
+    @Value("${max-concurrent-calls}")
+    private String maxConcurrentCalls;
+
+    @Value("${max-lock-renew}")
+    private String maxLockRenewDurationInSeconds;
+
+    @Value("${azure.keyvault.url}")
+    private String keyVaultURL;
+
+    @Value("${azure.cosmosdb.database}")
+    private String cosmosDBName;
+
+    @Bean
+    @Named("EXECUTOR-N-THREADS")
+    public String nThreads() {
+        if (nThreads == null) return "32";
+        else return nThreads;
+    }
+
+    @Bean
+    @Named("MAX_CONCURRENT_CALLS")
+    public String maxConcurrentCalls() {
+        if (maxConcurrentCalls == null) return "32";
+        else return maxConcurrentCalls;
+    }
+
+    @Bean
+    @Named("MAX_LOCK_RENEW")
+    public String maxLockRenew() {
+        if (maxLockRenewDurationInSeconds == null) return "5000";
+        else return maxLockRenewDurationInSeconds;
+    }
 
     @Bean
     @Named("STORAGE_CONTAINER_NAME")
@@ -39,16 +82,27 @@ public class AzureBootstrapConfig {
         return serviceBusTopic;
     }
 
-    @Value("${azure.keyvault.url}")
-    private String keyVaultURL;
+    @Bean
+    @Named("LEGAL_SERVICE_BUS_TOPIC")
+    public String legalServiceBusTopic() {
+        return legalServiceBusTopic;
+    }
 
-    @Value("${azure.cosmosdb.database}")
-    private String cosmosDBName;
+    @Bean
+    @Named("LEGAL_SERVICE_BUS_TOPIC_SUBSCRIPTION")
+    public String legalServiceBusTopicSubscription() {
+        return legalServiceBusTopicSubscription;
+    }
 
     @Bean
     @Named("KEY_VAULT_URL")
     public String keyVaultURL() {
         return keyVaultURL;
+    }
+
+    @Bean
+    public MDCContextMap mdcContextMap() {
+        return new MDCContextMap();
     }
 
     @Bean
@@ -61,7 +115,7 @@ public class AzureBootstrapConfig {
      */
     @Bean
     public int minBatchSizeToUseBulkUpload() {
-        if(System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD") == null) return 50;
+        if (System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD") == null) return 50;
         else return Integer.parseInt(System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD"));
     }
 
@@ -69,8 +123,8 @@ public class AzureBootstrapConfig {
      * @return The maximum degree of concurrency per partition key range. The default value in the SDK is 20.
      */
     @Bean
-    public int bulkImportMaxConcurrencyPePartitionRange(){
-        if(System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE") == null) return 20;
+    public int bulkImportMaxConcurrencyPePartitionRange() {
+        if (System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE") == null) return 20;
         else return Integer.parseInt(System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE"));
     }
 }
