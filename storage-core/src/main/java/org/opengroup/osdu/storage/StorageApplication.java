@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage;
 
-import org.opengroup.osdu.storage.provider.interfaces.LegalTagSubscriptionManager;
+import org.opengroup.osdu.storage.provider.interfaces.ILegalTagSubscriptionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -31,7 +31,7 @@ public class StorageApplication {
     public static void main(String[] args) {
         ApplicationContext context = SpringApplication.run(StorageApplication.class, args);
         try {
-            LegalTagSubscriptionManager legalTagSubscriptionManager = context.getBean(LegalTagSubscriptionManager.class);
+            ILegalTagSubscriptionManager legalTagSubscriptionManager = context.getBean(ILegalTagSubscriptionManager.class);
             legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);

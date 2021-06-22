@@ -25,14 +25,6 @@ import javax.inject.Named;
 @Component
 public class AzureBootstrapConfig {
 
-    @Value("${azure.legal.servicebus.topic-name}")
-    private String legalServiceBusTopic;
-
-    @Value("${azure.legal.servicebus.topic-subscription}")
-    private String legalServiceBusTopicSubscription;
-
-    @Value("${azure.servicebus.topic-name}")
-    private String serviceBusTopic;
 
     @Value("${executor-n-threads}")
     private String nThreads;
@@ -76,23 +68,6 @@ public class AzureBootstrapConfig {
         return "opendes";
     }
 
-    @Bean
-    @Named("SERVICE_BUS_TOPIC")
-    public String serviceBusTopic() {
-        return serviceBusTopic;
-    }
-
-    @Bean
-    @Named("LEGAL_SERVICE_BUS_TOPIC")
-    public String legalServiceBusTopic() {
-        return legalServiceBusTopic;
-    }
-
-    @Bean
-    @Named("LEGAL_SERVICE_BUS_TOPIC_SUBSCRIPTION")
-    public String legalServiceBusTopicSubscription() {
-        return legalServiceBusTopicSubscription;
-    }
 
     @Bean
     @Named("KEY_VAULT_URL")

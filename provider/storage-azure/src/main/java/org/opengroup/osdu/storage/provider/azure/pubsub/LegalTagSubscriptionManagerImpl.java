@@ -5,7 +5,7 @@ import com.microsoft.azure.servicebus.SubscriptionClient;
 import com.microsoft.azure.servicebus.primitives.ServiceBusException;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
-import org.opengroup.osdu.storage.provider.interfaces.LegalTagSubscriptionManager;
+import org.opengroup.osdu.storage.provider.interfaces.ILegalTagSubscriptionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +13,13 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Named;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Component
-public class LegalTagSubscriptionManagerImpl implements LegalTagSubscriptionManager {
+public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionManager {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagSubscriptionManagerImpl.class);
     @Autowired
