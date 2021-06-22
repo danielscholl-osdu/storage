@@ -12,19 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.azure.util;
+package org.opengroup.osdu.storage.provider.interfaces;
 
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+public interface ILegalTagSubscriptionManager {
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class MDCContextMap {
-
-    public Map<String, String> getContextMap(String correlationId, String dataPartitionId) {
-        final Map<String, String> contextMap = new HashMap<>();
-        contextMap.put(DpsHeaders.CORRELATION_ID, correlationId);
-        contextMap.put(DpsHeaders.DATA_PARTITION_ID, dataPartitionId);
-        return contextMap;
-    }
+    void subscribeLegalTagsChangeEvent();
 }
