@@ -25,6 +25,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
+import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -47,8 +48,7 @@ public class MessageBusImpl implements IMessageBus {
     @Autowired
     private JaxRsDpsLog logger;
     @Autowired
-    @Named("SERVICE_BUS_TOPIC")
-    private String serviceBusTopic;
+    private PubSubConfig pubSubConfig;
 
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
@@ -124,7 +124,7 @@ public class MessageBusImpl implements IMessageBus {
 
             try {
                 logger.info("Storage publishes message to Service Bus " + headers.getCorrelationId());
-                topicClientFactory.getClient(headers.getPartitionId(), serviceBusTopic).send(message);
+                topicClientFactory.getClient(headers.getPartitionId(), pubSubConfig.getServiceBusTopic()).send(message);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }

@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.di;
 
+import lombok.Getter;
 import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +24,8 @@ import javax.inject.Named;
 
 
 @Component
+@Getter
 public class AzureBootstrapConfig {
-
 
     @Value("${executor-n-threads}")
     private String nThreads;
@@ -40,27 +41,6 @@ public class AzureBootstrapConfig {
 
     @Value("${azure.cosmosdb.database}")
     private String cosmosDBName;
-
-    @Bean
-    @Named("EXECUTOR-N-THREADS")
-    public String nThreads() {
-        if (nThreads == null) return "32";
-        else return nThreads;
-    }
-
-    @Bean
-    @Named("MAX_CONCURRENT_CALLS")
-    public String maxConcurrentCalls() {
-        if (maxConcurrentCalls == null) return "32";
-        else return maxConcurrentCalls;
-    }
-
-    @Bean
-    @Named("MAX_LOCK_RENEW")
-    public String maxLockRenew() {
-        if (maxLockRenewDurationInSeconds == null) return "5000";
-        else return maxLockRenewDurationInSeconds;
-    }
 
     @Bean
     @Named("STORAGE_CONTAINER_NAME")
