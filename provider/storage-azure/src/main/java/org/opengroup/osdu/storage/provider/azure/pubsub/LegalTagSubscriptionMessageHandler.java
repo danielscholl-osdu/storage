@@ -39,10 +39,11 @@ public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
     public CompletableFuture<Void> onMessageAsync(IMessage message) {
         try {
             this.legalComplianceChangeServiceAzure.updateCompliance(message);
+            return this.receiveClient.completeAsync(message.getLockToken());
         } catch (Exception e) {
             LOGGER.error("Exception while processing legal tag subscription.", e);
+            return this.receiveClient.abandonAsync(message.getLockToken());
         }
-        return this.receiveClient.completeAsync(message.getLockToken());
     }
 
     @Override

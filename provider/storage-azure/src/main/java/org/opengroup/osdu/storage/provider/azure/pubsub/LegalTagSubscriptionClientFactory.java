@@ -33,12 +33,7 @@ public class LegalTagSubscriptionClientFactory {
     @Autowired
     private ISubscriptionClientFactory subscriptionClientFactory;
 
-    public SubscriptionClient getSubscriptionClient(String dataPartition, String serviceBusTopic, String serviceBusTopicSubscription) {
-        try {
+    public SubscriptionClient getSubscriptionClient(String dataPartition, String serviceBusTopic, String serviceBusTopicSubscription) throws ServiceBusException, InterruptedException {
             return subscriptionClientFactory.getClient(dataPartition, serviceBusTopic, serviceBusTopicSubscription);
-        } catch (ServiceBusException | InterruptedException e) {
-            LOGGER.error("Unexpected error creating Subscription Client", e);
-            throw new AppException(500, "Server Error", "Unexpected error creating Subscription Client", e);
-        }
     }
 }
