@@ -25,8 +25,9 @@ variables:
   OSDU_GCP_APPLICATION_NAME: os-storage
   OSDU_GCP_DEFAULT_DATA_COUNTRY: US
   # --- osdu specific variables for cloudrun storage w/o "/" at the end ---
-  OSDU_GCP_ENV_VARS: GOOGLE_AUDIENCES=$GOOGLE_AUDIENCE,AUTHORIZE_API=$OSDU_GCP_AUTHORIZE_API,LEGALTAG_API=$OSDU_GCP_LEGALTAG_API,STORAGE_HOSTNAME=$OSDU_GCP_STORAGE_HOSTNAME,CRS_API=$OSDU_GCP_CRS_API,DEFAULT_DATA_COUNTRY=$OSDU_GCP_DEFAULT_DATA_COUNTRY,REDIS_STORAGE_HOST=$REDIS_STORAGE_HOST,REDIS_GROUP_HOST=$REDIS_GROUP_HOST --vpc-connector=$OSDU_GCP_VPC_CONNECTOR
+  OSDU_GCP_ENV_VARS: GOOGLE_AUDIENCES=$GOOGLE_AUDIENCE,AUTHORIZE_API=$OSDU_GCP_AUTHORIZE_API,LEGALTAG_API=$OSDU_GCP_LEGALTAG_API,STORAGE_HOSTNAME=$OSDU_GCP_STORAGE_HOSTNAME,CRS_API=$OSDU_GCP_CRS_API,DEFAULT_DATA_COUNTRY=$OSDU_GCP_DEFAULT_DATA_COUNTRY,REDIS_STORAGE_HOST=$REDIS_STORAGE_HOST,REDIS_GROUP_HOST=$REDIS_GROUP_HOST,PARTITION_API=$OSDU_GCP_PARTITION_API,POLICY_API=$OSDU_GCP_POLICY_API --vpc-connector=$OSDU_GCP_VPC_CONNECTOR
   OSDU_GCP_TEST_SUBDIR: testing/$OSDU_GCP_SERVICE-test-$OSDU_GCP_VENDOR
+  OSDU_GCP_HELM_PACKAGE_CHARTS: "devops/gcp/deploy devops/gcp/configmap"
 
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
@@ -34,6 +35,7 @@ variables:
 
   IBM_BUILD_SUBDIR: provider/storage-ibm
   IBM_INT_TEST_SUBDIR: testing/storage-test-ibm
+  IBM_TENANT_NAME: tenant1
 
 include:
   - project: "osdu/platform/ci-cd-pipelines"
@@ -54,8 +56,11 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/ibm.yml"
 
-  - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/osdu-gcp-cloudrun.yml"
+  - project: 'osdu/platform/ci-cd-pipelines'
+    file: 'cloud-providers/osdu-gcp-cloudrun.yml'
+
+  - project: 'osdu/platform/ci-cd-pipelines'
+    file: 'publishing/pages.yml'
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"
@@ -65,6 +70,8 @@ include:
 
   - project: 'osdu/platform/ci-cd-pipelines'
     file: 'cloud-providers/aws-mongodb.yml'
+
+
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there

@@ -15,6 +15,8 @@
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 import com.amazonaws.AmazonServiceException;
+
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import java.util.Map;
@@ -27,19 +29,22 @@ class GetRecordTask implements Callable<GetRecordTask> {
     public RecordMetadata recordMetadata;
     public AmazonServiceException exception;
     public CallableResult result;
+    private String dataPartition;
 
     public GetRecordTask(S3RecordClient s3RecordClient,
                          AtomicReference<Map<String, String>> map,
-                         RecordMetadata recordMetadata){
+                         RecordMetadata recordMetadata,
+                         String dataPartition){
         this.s3RecordClient = s3RecordClient;
         this.map = map;
         this.recordMetadata = recordMetadata;
+        this.dataPartition = dataPartition;
     }
 
     @Override
     public GetRecordTask call() {
         try{
-            s3RecordClient.getRecord(recordMetadata, map);
+            s3RecordClient.getRecord(recordMetadata, map, dataPartition);
             result = CallableResult.Pass;
         }
          catch(AmazonServiceException e) {

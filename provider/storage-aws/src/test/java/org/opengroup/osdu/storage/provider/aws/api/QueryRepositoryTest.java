@@ -23,6 +23,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
@@ -51,7 +53,10 @@ public class QueryRepositoryTest {
     private QueryRepositoryImpl repo = new QueryRepositoryImpl();
 
     @Mock
-    private DynamoDBQueryHelper queryHelper;
+    private DynamoDBQueryHelperV2 queryHelper;
+
+    @Mock
+    private DynamoDBQueryHelperFactory queryHelperFactory;
 
     @Mock
     private DpsHeaders dpsHeaders;
@@ -59,6 +64,11 @@ public class QueryRepositoryTest {
     @Before
     public void setUp() {
         initMocks(this);
+
+        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
+        .thenReturn(queryHelper);
+        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(String.class), Mockito.any()))
+        .thenReturn(queryHelper);
     }
 
     @Test

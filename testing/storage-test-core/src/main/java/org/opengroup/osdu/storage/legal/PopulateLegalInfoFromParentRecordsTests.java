@@ -216,7 +216,7 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 		String responseBody = response.getEntity(String.class);
 		System.out.println("responseBody=" + parentId + " " + responseBody);
 		assertEquals(SC_CREATED, response.getStatus());
-		assertEquals("application/json; charset=UTF-8", response.getType().toString());
+		assertTrue(response.getType().toString().contains("application/json"));
 
 		CreateRecordResponse result = GSON.fromJson(responseBody, CreateRecordResponse.class);
 

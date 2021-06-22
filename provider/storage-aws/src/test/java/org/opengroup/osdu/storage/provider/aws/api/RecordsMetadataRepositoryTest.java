@@ -20,7 +20,10 @@ import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.dynamodb.IDynamoDBQueryHelperFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,18 +52,30 @@ public class RecordsMetadataRepositoryTest {
     private RecordsMetadataRepositoryImpl repo = new RecordsMetadataRepositoryImpl();
 
     @Mock
-    private DynamoDBQueryHelper queryHelper;
+    private DynamoDBQueryHelperV2 queryHelper;
+
+    @Mock
+    private DynamoDBQueryHelperFactory queryHelperFactory;
 
     @Mock
     private UserAccessService userAccessService;
 
+    @Mock
+    private DpsHeaders dpsHeaders;
+
     @Before
     public void setUp() {
         initMocks(this);
+        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
+        .thenReturn(queryHelper);
+        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(String.class), Mockito.any()))
+        .thenReturn(queryHelper);
+            
     }
 
     @Test
     public void createRecordMetadata() {
+
         // Arrange
         RecordMetadata recordMetadata = new RecordMetadata();
         recordMetadata.setId("opendes:id:15706318658560");

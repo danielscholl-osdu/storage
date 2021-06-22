@@ -16,7 +16,8 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -28,7 +29,6 @@ import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -38,27 +38,31 @@ import java.util.*;
 @Repository
 public class QueryRepositoryImpl implements IQueryRepository {
 
-    @Value("${aws.dynamodb.table.prefix}")
-    String tablePrefix;
-
-    @Value("${aws.region}")
-    String dynamoDbRegion;
-
-    @Value("${aws.dynamodb.endpoint}")
-    String dynamoDbEndpoint;
+    @Inject
+    DpsHeaders headers;    
 
     @Inject
-    DpsHeaders headers;
+    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
-    private DynamoDBQueryHelper queryHelper;
+    @Value("${aws.dynamodb.schemaRepositoryTable.ssm.relativePath}")
+    String schemaRepositoryTableParameterRelativePath;    
 
-    @PostConstruct
-    public void init() {
-        queryHelper = new DynamoDBQueryHelper(dynamoDbEndpoint, dynamoDbRegion, tablePrefix);
+    @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
+    String recordMetadataTableParameterRelativePath;
+
+    private DynamoDBQueryHelperV2 getSchemaTableQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, schemaRepositoryTableParameterRelativePath);
+    }    
+
+    private DynamoDBQueryHelperV2 getRecordMetadataQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath);
     }
 
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
+
+        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+
         // Set the page size or use the default constant
         int numRecords = PAGE_SIZE;
         if (limit != null) {
@@ -73,7 +77,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
             // Query by DataPartitionId global secondary index with User range key
             SchemaDoc queryObject = new SchemaDoc();
             queryObject.setDataPartitionId(headers.getPartitionId());
-            queryPageResult = queryHelper.queryByGSI(SchemaDoc.class, queryObject, numRecords, cursor);
+            queryPageResult = schemaTableQueryHelper.queryByGSI(SchemaDoc.class, queryObject, numRecords, cursor);
 
             for (SchemaDoc schemaDoc : queryPageResult.results) {
                 kinds.add(schemaDoc.getKind());
@@ -94,6 +98,10 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
+
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        
+
         // Set the page size, or use the default constant
         int numRecords = PAGE_SIZE;
         if (limit != null) {
@@ -109,7 +117,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
         QueryPageResult<RecordMetadataDoc> scanPageResults;
         try {
-            scanPageResults = queryHelper.queryPage(RecordMetadataDoc.class, recordMetadataKey, "Status", "active", numRecords, cursor);
+            scanPageResults = recordMetadataQueryHelper.queryPage(RecordMetadataDoc.class, recordMetadataKey, "Status", "active", numRecords, cursor);
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
                     e.getMessage(), e);
