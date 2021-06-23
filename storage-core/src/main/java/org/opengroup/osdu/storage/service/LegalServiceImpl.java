@@ -158,7 +158,11 @@ public class LegalServiceImpl implements ILegalService {
 
     private void addToCache(Set<String> legalTagNames) {
         for (String legalTagName : legalTagNames) {
-            this.cache.put(legalTagName, "Valid LegalTag");
+            try {
+                this.cache.put(legalTagName, "Valid LegalTag");
+            } catch (RedisException ex) {
+                this.log.error(String.format("Error puttig key %s into redis: %s", legalTagName, ex.getMessage()), ex);
+            }
         }
     }
 }

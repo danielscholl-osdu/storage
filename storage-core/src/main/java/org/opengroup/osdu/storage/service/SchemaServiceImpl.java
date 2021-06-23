@@ -212,8 +212,11 @@ public class SchemaServiceImpl implements SchemaService {
             if (schema == null) {
                 return null;
             }
-
+            try {
             this.cache.put(key, schema);
+            } catch (RedisException ex) {
+                this.log.error(String.format("Error puttig key %s into redis: %s", key, ex.getMessage()), ex);
+            }
 
             return schema;
         } else {
