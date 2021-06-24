@@ -21,13 +21,13 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
-import org.opengroup.osdu.storage.provider.interfaces.ILegalTagSubscriptionManager;
+import org.opengroup.osdu.storage.provider.azure.interfaces.ILegalTagSubscriptionManager;
+import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Named;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +41,7 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
     @Autowired
     private LegalTagSubscriptionClientFactory legalTagSubscriptionClientFactory;
     @Autowired
-    private LegalComplianceChangeServiceAzureImpl legalComplianceChangeServiceAzure;
+    private LegalComplianceChangeUpdate legalComplianceChangeUpdate;
     @Autowired
     private PubSubConfig pubSubConfig;
     @Autowired
@@ -69,7 +69,7 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
 
     private void registerMessageHandler(SubscriptionClient subscriptionClient, ExecutorService executorService) {
         try {
-            LegalTagSubscriptionMessageHandler messageHandler = new LegalTagSubscriptionMessageHandler(subscriptionClient, legalComplianceChangeServiceAzure);
+            LegalTagSubscriptionMessageHandler messageHandler = new LegalTagSubscriptionMessageHandler(subscriptionClient, legalComplianceChangeUpdate);
             subscriptionClient.registerMessageHandler(
                     messageHandler,
                     new MessageHandlerOptions(Integer.parseUnsignedInt(azureBootstrapConfig.getMaxConcurrentCalls()),

@@ -12,12 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.azure.pubsub;
+package org.opengroup.osdu.storage.provider.azure.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.microsoft.azure.servicebus.IMessage;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -29,12 +25,9 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.azure.MessageBusImpl;
 import org.opengroup.osdu.storage.provider.azure.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
-import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContextHolder;
-import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,8 +35,6 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 
 @Component
@@ -56,40 +47,9 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     @Autowired
     private ThreadDpsHeaders headers;
     @Autowired
-    private MDCContextMap mdcContextMap;
-    @Autowired
     private LegalTagCache legalTagCache;
-
     @Autowired
     private MessageBusImpl pubSubclient;
-
-    public Map<String, LegalCompliance> updateCompliance(IMessage message) {
-        Map<String, LegalCompliance> output = new HashMap<>();
-        Gson gson = new Gson();
-        try {
-            String messageBody = new String(message.getMessageBody().getBinaryData().get(0), UTF_8);
-            JsonElement jsonRoot = JsonParser.parseString(messageBody);
-            JsonElement messageData = jsonRoot.getAsJsonObject().get("data");
-            String messageId = jsonRoot.getAsJsonObject().get("id").getAsString();
-            message.setMessageId(messageId);
-
-            String dataPartitionId = messageData.getAsJsonObject().get(DpsHeaders.DATA_PARTITION_ID).getAsString();
-            String correlationId = messageData.getAsJsonObject().get(DpsHeaders.CORRELATION_ID).getAsString();
-            String accountId = messageData.getAsJsonObject().get(DpsHeaders.ACCOUNT_ID).getAsString();
-            String user = messageData.getAsJsonObject().get(DpsHeaders.USER_EMAIL).getAsString();
-            headers.setThreadContext(dataPartitionId, correlationId, accountId, user);
-            MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
-
-            LegalTagChangedCollection tags = gson.fromJson(messageData.getAsJsonObject().get("data"), LegalTagChangedCollection.class);
-            return updateComplianceOnRecords(tags, headers);
-        } catch (Exception ex) {
-            LOGGER.error(String.format("Error occurred while updating compliance on records: %s", ex.getMessage()), ex);
-        } finally {
-            ThreadScopeContextHolder.getContext().clear();
-            MDC.clear();
-        }
-        return output;
-    }
 
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,

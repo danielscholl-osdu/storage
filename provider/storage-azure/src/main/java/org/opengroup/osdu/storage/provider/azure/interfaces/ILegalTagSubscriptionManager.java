@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.interfaces;
+package org.opengroup.osdu.storage.provider.azure.interfaces;
 
 public interface ILegalTagSubscriptionManager {
 

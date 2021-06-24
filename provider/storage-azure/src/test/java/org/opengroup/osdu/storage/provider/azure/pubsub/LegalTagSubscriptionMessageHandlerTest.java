@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
 
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ public class LegalTagSubscriptionMessageHandlerTest {
     @InjectMocks
     private LegalTagSubscriptionMessageHandler legalTagSubscriptionMessageHandler;
     @Mock
-    private LegalComplianceChangeServiceAzureImpl legalComplianceChangeServiceAzure;
+    private LegalComplianceChangeUpdate legalComplianceChangeUpdate;
 
     @Mock
     private SubscriptionClient subscriptionClient;
@@ -35,11 +36,11 @@ public class LegalTagSubscriptionMessageHandlerTest {
     }
 
     @Test
-    public void shouldInvokeCompleteAsync() {
-        doThrow(new RuntimeException()).when(legalComplianceChangeServiceAzure).updateCompliance(message);
+    public void shouldInvokeAbandonAsync() {
+        doThrow(new RuntimeException()).when(legalComplianceChangeUpdate).updateCompliance(message);
         legalTagSubscriptionMessageHandler.onMessageAsync(message);
-        verify(subscriptionClient, times(1)).completeAsync(uuid);
-        verify(legalComplianceChangeServiceAzure, times(1)).updateCompliance(message);
+        verify(subscriptionClient, times(1)).abandonAsync(uuid);
+        verify(legalComplianceChangeUpdate, times(1)).updateCompliance(message);
     }
 
 

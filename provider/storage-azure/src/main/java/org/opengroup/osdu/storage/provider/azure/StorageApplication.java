@@ -14,15 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
-import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeBeanFactoryPostProcessor;
-import org.opengroup.osdu.storage.provider.interfaces.ILegalTagSubscriptionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
@@ -40,21 +33,9 @@ import org.springframework.context.annotation.FilterType;
 )
 @SpringBootApplication
 public class StorageApplication {
-    private static final Logger LOGGER = LoggerFactory.getLogger(org.opengroup.osdu.storage.StorageApplication.class);
 
     public static void main(String[] args) {
-
-        ApplicationContext context = SpringApplication.run(StorageApplication.class, args);
-        try {
-            ILegalTagSubscriptionManager legalTagSubscriptionManager = context.getBean(ILegalTagSubscriptionManager.class);
-            legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-        }
+        SpringApplication.run(StorageApplication.class, args);
     }
 
-    @Bean
-    public static BeanFactoryPostProcessor beanFactoryPostProcessor() {
-        return new ThreadScopeBeanFactoryPostProcessor();
-    }
 }

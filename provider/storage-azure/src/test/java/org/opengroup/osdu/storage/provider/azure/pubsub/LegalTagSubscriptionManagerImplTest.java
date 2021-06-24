@@ -12,6 +12,7 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
+import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
 
 import java.util.Collections;
 
@@ -31,9 +32,6 @@ public class LegalTagSubscriptionManagerImplTest {
 
     @Mock
     private LegalTagSubscriptionClientFactory subscriptionClientFactory;
-
-    @Mock
-    private LegalComplianceChangeServiceAzureImpl legalComplianceChangeServiceAzure;
 
     @Mock
     private AzureBootstrapConfig azureBootstrapConfig;
