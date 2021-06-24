@@ -28,11 +28,10 @@ import java.util.Map;
 @Scope(value = "ThreadScope", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ThreadDpsHeaders extends DpsHeaders {
 
-    public void setThreadContext(String dataPartitionId, String correlationId, String accountId, String userEmail) {
+    public void setThreadContext(String dataPartitionId, String correlationId, String userEmail) {
         Map<String, String> headers = new HashMap<>();
         headers.put(DpsHeaders.DATA_PARTITION_ID, dataPartitionId);
         headers.put(DpsHeaders.CORRELATION_ID, correlationId);
-        headers.put(DpsHeaders.ACCOUNT_ID, accountId);
         headers.put(DpsHeaders.USER_EMAIL, userEmail);
 
         this.addFromMap(headers);

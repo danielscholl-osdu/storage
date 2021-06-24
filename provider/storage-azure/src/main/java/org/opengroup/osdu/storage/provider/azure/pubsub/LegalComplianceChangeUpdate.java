@@ -66,9 +66,8 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
 
             String dataPartitionId = messageData.getAsJsonObject().get(DpsHeaders.DATA_PARTITION_ID).getAsString();
             String correlationId = messageData.getAsJsonObject().get(DpsHeaders.CORRELATION_ID).getAsString();
-            String accountId = messageData.getAsJsonObject().get(DpsHeaders.ACCOUNT_ID).getAsString();
             String user = messageData.getAsJsonObject().get(DpsHeaders.USER_EMAIL).getAsString();
-            headers.setThreadContext(dataPartitionId, correlationId, accountId, user);
+            headers.setThreadContext(dataPartitionId, correlationId, user);
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
             LegalTagChangedCollection tags = gson.fromJson(messageData.getAsJsonObject().get("data"), LegalTagChangedCollection.class);
