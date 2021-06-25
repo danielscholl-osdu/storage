@@ -6,9 +6,10 @@ metadata:
   name: "{{ .Values.conf.configmap }}"
   namespace: "{{ .Release.Namespace }}"
 data:
-  AUTHORIZE_API: "http://{{ .Values.conf.ent_name }}.{{ .Release.Namespace }}{{ .Values.data.authorize_api }}"
+  AUTHORIZE_API: "{{ .Values.data.authorize_api }}"
+  PARTITION_API: "{{ .Values.data.partition_api}}"
   LOG_LEVEL: "{{ .Values.data.log_level }}"
-  LEGALTAG_API: "http://{{ .Values.conf.legal_name }}.{{ .Release.Namespace }}{{ .Values.data.authorize_api }}"
+  LEGALTAG_API: "{{ .Values.data.legaltag_api }}"
   GOOGLE_AUDIENCES: "{{ .Values.data.google_audiences }}"
   STORAGE_HOSTNAME: "{{ .Values.conf.app_name }}"
   REDIS_GROUP_HOST: "{{ .Values.data.redis_group_host }}"
