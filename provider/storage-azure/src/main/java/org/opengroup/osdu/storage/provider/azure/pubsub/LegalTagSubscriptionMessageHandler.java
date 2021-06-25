@@ -18,7 +18,6 @@ import com.microsoft.azure.servicebus.ExceptionPhase;
 import com.microsoft.azure.servicebus.IMessage;
 import com.microsoft.azure.servicebus.IMessageHandler;
 import com.microsoft.azure.servicebus.SubscriptionClient;
-import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
