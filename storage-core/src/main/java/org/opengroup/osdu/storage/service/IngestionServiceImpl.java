@@ -243,22 +243,22 @@ public class IngestionServiceImpl implements IngestionService {
 			Map<String, List<RecordIdWithVersion>> recordParentMap) {
 
 		for (Entry<String, List<RecordIdWithVersion>> entry : recordParentMap.entrySet()) {
-			List<RecordIdWithVersion> parents = entry.getValue();
-			for (RecordIdWithVersion parentPair : parents) {
-				String parentId = parentPair.getRecordId();
+			List<RecordIdWithVersion> parentRecordIdsWithVersions = entry.getValue();
+			for (RecordIdWithVersion parentRecordIdWithVersion : parentRecordIdsWithVersions) {
+				String parentId = parentRecordIdWithVersion .getRecordId();
 				if (!existingRecords.containsKey(parentId)) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found",
-							String.format("The record '%s' was not found", parentPair));
+							String.format("The record '%s' was not found", parentRecordIdWithVersion ));
 				}
-				RecordMetadata recordMetadata = existingRecords.get(parentId);
-				if (recordMetadata == null) {
+				RecordMetadata parentRecordMetadata  = existingRecords.get(parentId);
+				if (parentRecordMetadata  == null) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata not found",
-							String.format("RecordMetadata for record '%s' was not found", parentPair));
+							String.format("RecordMetadata for parent record '%s' was not found", parentRecordIdWithVersion ));
 				}
-				long version = parentPair.getRecordVersion();
-				if (!recordUtil.hasVersionPath(recordMetadata.getGcsVersionPaths(), version)) {
+				long version = parentRecordIdWithVersion .getRecordVersion();
+				if (!recordUtil.hasVersionPath(parentRecordMetadata .getGcsVersionPaths(), version)) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata version not found",
-							String.format("The RecordMetadata version %d for record '%s' was not found", version, parentId));
+							String.format("The RecordMetadata version %d for parent record '%s' was not found", version, parentId));
 				}
 			}
 		}
