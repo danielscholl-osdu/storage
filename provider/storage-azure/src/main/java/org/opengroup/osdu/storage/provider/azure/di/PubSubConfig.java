@@ -21,6 +21,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Getter
 public class PubSubConfig {
+    @Value("${executor-n-threads}")
+    private String sbExecutorThreadPoolSize;
+
+    @Value("${max-concurrent-calls}")
+    private String maxConcurrentCalls;
+
+    @Value("${max-lock-renew}")
+    private String maxLockRenewDurationInSeconds;
+
     @Value("${azure.servicebus.topic-name}")
     private String serviceBusTopic;
 

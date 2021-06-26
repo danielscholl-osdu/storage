@@ -27,15 +27,6 @@ import javax.inject.Named;
 @Getter
 public class AzureBootstrapConfig {
 
-    @Value("${executor-n-threads}")
-    private String nThreads;
-
-    @Value("${max-concurrent-calls}")
-    private String maxConcurrentCalls;
-
-    @Value("${max-lock-renew}")
-    private String maxLockRenewDurationInSeconds;
-
     @Value("${azure.keyvault.url}")
     private String keyVaultURL;
 

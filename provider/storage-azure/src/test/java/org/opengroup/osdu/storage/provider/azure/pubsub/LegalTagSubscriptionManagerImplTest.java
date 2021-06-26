@@ -52,9 +52,9 @@ public class LegalTagSubscriptionManagerImplTest {
         TenantInfo tenantInfo = new TenantInfo();
         tenantInfo.setDataPartitionId(dataPartition);
 
-        when(azureBootstrapConfig.getMaxConcurrentCalls()).thenReturn(maxConcurrentCalls);
-        when(azureBootstrapConfig.getNThreads()).thenReturn(nThreads);
-        when(azureBootstrapConfig.getMaxLockRenewDurationInSeconds()).thenReturn(maxLockRenewDuration);
+        when(pubSubConfig.getMaxConcurrentCalls()).thenReturn(maxConcurrentCalls);
+        when(pubSubConfig.getSbExecutorThreadPoolSize()).thenReturn(nThreads);
+        when(pubSubConfig.getMaxConcurrentCalls()).thenReturn(maxLockRenewDuration);
         when(tenantFactory.listTenantInfo()).thenReturn(Collections.singletonList(tenantInfo));
     }
 
@@ -66,9 +66,9 @@ public class LegalTagSubscriptionManagerImplTest {
 
         subscriptionManager.subscribeLegalTagsChangeEvent();
 
-        verify(azureBootstrapConfig, times(1)).getMaxConcurrentCalls();
-        verify(azureBootstrapConfig, times(1)).getNThreads();
-        verify(azureBootstrapConfig, times(1)).getMaxLockRenewDurationInSeconds();
+        verify(pubSubConfig, times(1)).getMaxConcurrentCalls();
+        verify(pubSubConfig, times(1)).getSbExecutorThreadPoolSize();
+        verify(pubSubConfig, times(1)).getMaxLockRenewDurationInSeconds();
     }
 
 
@@ -81,9 +81,9 @@ public class LegalTagSubscriptionManagerImplTest {
 
         subscriptionManager.subscribeLegalTagsChangeEvent();
 
-        verify(azureBootstrapConfig, times(1)).getMaxConcurrentCalls();
-        verify(azureBootstrapConfig, times(1)).getNThreads();
-        verify(azureBootstrapConfig, times(1)).getMaxLockRenewDurationInSeconds();
+        verify(pubSubConfig, times(1)).getMaxConcurrentCalls();
+        verify(pubSubConfig, times(1)).getSbExecutorThreadPoolSize();
+        verify(pubSubConfig, times(1)).getMaxLockRenewDurationInSeconds();
     }
 
 

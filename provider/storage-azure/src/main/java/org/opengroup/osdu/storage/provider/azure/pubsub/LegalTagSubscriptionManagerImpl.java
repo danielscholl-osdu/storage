@@ -22,7 +22,6 @@ import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
 import org.opengroup.osdu.storage.provider.azure.interfaces.ILegalTagSubscriptionManager;
-import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,36 +50,34 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
 
     @Override
     public void subscribeLegalTagsChangeEvent() {
+
         List<String> tenantList = tenantFactory.listTenantInfo().stream().map(TenantInfo::getDataPartitionId)
                 .collect(Collectors.toList());
         ExecutorService executorService = Executors
-                .newFixedThreadPool(Integer.parseUnsignedInt(azureBootstrapConfig.getNThreads()));
+                .newFixedThreadPool(Integer.parseUnsignedInt(pubSubConfig.getSbExecutorThreadPoolSize()));
         for (String partition : tenantList) {
             try {
                 SubscriptionClient subscriptionClient = this
                         .legalTagSubscriptionClientFactory
                         .getSubscriptionClient(partition, pubSubConfig.getLegalServiceBusTopic(), pubSubConfig.getLegalServiceBusTopicSubscription());
                 registerMessageHandler(subscriptionClient, executorService);
+            } catch (InterruptedException | ServiceBusException e) {
+                LOGGER.error("Error while creating or registering subscription client {}", e.getMessage(), e);
             } catch (Exception e) {
-                LOGGER.error("Error while creating or registering subscription client", e);
+                LOGGER.error("Error while creating or registering subscription client {}", e.getMessage(), e);
             }
         }
     }
 
-    private void registerMessageHandler(SubscriptionClient subscriptionClient, ExecutorService executorService) {
-        try {
-            LegalTagSubscriptionMessageHandler messageHandler = new LegalTagSubscriptionMessageHandler(subscriptionClient, legalComplianceChangeUpdate);
-            subscriptionClient.registerMessageHandler(
-                    messageHandler,
-                    new MessageHandlerOptions(Integer.parseUnsignedInt(azureBootstrapConfig.getMaxConcurrentCalls()),
-                            false,
-                            Duration.ofSeconds(Integer.parseUnsignedInt(azureBootstrapConfig.getMaxLockRenewDurationInSeconds())),
-                            Duration.ofSeconds(1)
-                    ),
-                    executorService);
-
-        } catch (InterruptedException | ServiceBusException e) {
-            LOGGER.error("Error registering message handler {}", e.getMessage(), e);
-        }
+    private void registerMessageHandler(SubscriptionClient subscriptionClient, ExecutorService executorService) throws ServiceBusException, InterruptedException {
+        LegalTagSubscriptionMessageHandler messageHandler = new LegalTagSubscriptionMessageHandler(subscriptionClient, legalComplianceChangeUpdate);
+        subscriptionClient.registerMessageHandler(
+                messageHandler,
+                new MessageHandlerOptions(Integer.parseUnsignedInt(pubSubConfig.getMaxConcurrentCalls()),
+                        false,
+                        Duration.ofSeconds(Integer.parseUnsignedInt(pubSubConfig.getMaxLockRenewDurationInSeconds())),
+                        Duration.ofSeconds(1)
+                ),
+                executorService);
     }
 }
