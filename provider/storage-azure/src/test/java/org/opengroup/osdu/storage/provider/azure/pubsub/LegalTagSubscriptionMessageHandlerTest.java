@@ -36,7 +36,7 @@ public class LegalTagSubscriptionMessageHandlerTest {
     }
 
     @Test
-    public void shouldInvokeAbandonAsync() {
+    public void shouldInvokeAbandonAsync() throws Exception {
         doThrow(new RuntimeException()).when(legalComplianceChangeUpdate).updateCompliance(message);
         legalTagSubscriptionMessageHandler.onMessageAsync(message);
         verify(subscriptionClient, times(1)).abandonAsync(uuid);

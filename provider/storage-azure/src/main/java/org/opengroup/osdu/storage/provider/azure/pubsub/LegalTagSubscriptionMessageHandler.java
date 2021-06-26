@@ -18,6 +18,7 @@ import com.microsoft.azure.servicebus.ExceptionPhase;
 import com.microsoft.azure.servicebus.IMessage;
 import com.microsoft.azure.servicebus.IMessageHandler;
 import com.microsoft.azure.servicebus.SubscriptionClient;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,11 @@ public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
         try {
             this.legalComplianceChangeUpdate.updateCompliance(message);
             return this.receiveClient.completeAsync(message.getLockToken());
-        } catch (Exception e) {
+        } catch (ComplianceUpdateStoppedException e) {
+            LOGGER.error("Exception while processing legal tag subscription.", e);
+            return this.receiveClient.abandonAsync(message.getLockToken());
+        }
+        catch (Exception e) {
             LOGGER.error("Exception while processing legal tag subscription.", e);
             return this.receiveClient.abandonAsync(message.getLockToken());
         }

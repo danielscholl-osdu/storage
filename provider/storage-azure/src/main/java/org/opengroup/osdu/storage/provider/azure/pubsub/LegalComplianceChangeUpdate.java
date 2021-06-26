@@ -21,6 +21,7 @@ import com.microsoft.azure.servicebus.IMessage;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
@@ -54,7 +55,7 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
     private ComplianceMessagePullReceiver complianceMessagePullReceiver;
 
 
-    public Map<String, LegalCompliance> updateCompliance(IMessage message) {
+    public Map<String, LegalCompliance> updateCompliance(IMessage message) throws ComplianceUpdateStoppedException , Exception{
         Map<String, LegalCompliance> output = new HashMap<>();
         Gson gson = new Gson();
         try {
@@ -72,8 +73,6 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
 
             LegalTagChangedCollection tags = gson.fromJson(messageData.getAsJsonObject().get("data"), LegalTagChangedCollection.class);
             complianceMessagePullReceiver.receiveMessage(tags, headers);
-        } catch (Exception ex) {
-            LOGGER.error(String.format("Error occurred while updating compliance on records: %s", ex.getMessage()), ex);
         } finally {
             ThreadScopeContextHolder.getContext().clear();
             MDC.clear();
