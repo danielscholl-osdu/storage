@@ -41,7 +41,7 @@
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>core-lib-gcp</artifactId>
-			<version>0.9.0</version>
+			<version>0.10.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -84,6 +84,11 @@
 			<groupId>com.google.apis</groupId>
 			<artifactId>google-api-services-iam</artifactId>
 			<version>v1-rev289-1.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-core</artifactId>
+			<version>1.38.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
