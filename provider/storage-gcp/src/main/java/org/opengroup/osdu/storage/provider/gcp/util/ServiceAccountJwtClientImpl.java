@@ -17,13 +17,20 @@
 
 package org.opengroup.osdu.storage.provider.gcp.util;
 
+import com.google.auth.oauth2.AccessToken;
+import com.google.cloud.iam.credentials.v1.IamCredentialsClient;
+import com.google.cloud.iam.credentials.v1.ServiceAccountName;
+import com.google.cloud.iam.credentials.v1.SignJwtRequest;
+import com.google.cloud.iam.credentials.v1.SignJwtResponse;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -47,10 +54,6 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
-import com.google.api.services.iam.v1.Iam;
-import com.google.api.services.iam.v1.IamScopes;
-import com.google.api.services.iam.v1.model.SignJwtRequest;
-import com.google.api.services.iam.v1.model.SignJwtResponse;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
@@ -65,11 +68,11 @@ import org.springframework.web.context.annotation.RequestScope;
 public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 
 	private static final String JWT_AUDIENCE = "https://www.googleapis.com/oauth2/v4/token";
-	private static final String SERVICE_ACCOUNT_NAME_FORMAT = "projects/%s/serviceAccounts/%s";
+	private static final String SERVICE_ACCOUNT_NAME_FORMAT ="projects/-/serviceAccounts/%s";
 
 	private static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
-	private Iam iam;
+	private IamCredentialsClient iamCredentialsClient;
 
 	@Autowired
 	private ITenantFactory tenantStorageFactory;
@@ -95,15 +98,17 @@ public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 			// 1. get signed JWT
 			Map<String, Object> signJwtPayload = getJwtCreationPayload(tenantInfo);
 
-			SignJwtRequest signJwtRequest = new SignJwtRequest();
-			signJwtRequest.setPayload(JSON_FACTORY.toString(signJwtPayload));
+			ServiceAccountName name = ServiceAccountName.parse(String.format(SERVICE_ACCOUNT_NAME_FORMAT,
+					tenantInfo.getServiceAccount()));
+			List<String> delegates = new ArrayList<>();
+			delegates.add(tenantInfo.getServiceAccount());
 
-			String serviceAccountName = String.format(SERVICE_ACCOUNT_NAME_FORMAT, tenantInfo.getProjectId(),
-					tenantInfo.getServiceAccount());
-
-			Iam.Projects.ServiceAccounts.SignJwt signJwt = getIam().projects().serviceAccounts()
-					.signJwt(serviceAccountName, signJwtRequest);
-			SignJwtResponse signJwtResponse = signJwt.execute();
+			SignJwtRequest request = SignJwtRequest.newBuilder()
+					.setName(name.toString())
+					.addAllDelegates(delegates)
+					.setPayload(JSON_FACTORY.toString(signJwtPayload))
+					.build();
+			SignJwtResponse signJwtResponse = this.getIamCredentialsClient().signJwt(request);
 			String signedJwt = signJwtResponse.getSignedJwt();
 
 			// 2. get id token
@@ -140,22 +145,11 @@ public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 
 	}
 
-	Iam getIam() throws GeneralSecurityException, IOException {
-		if (this.iam == null) {
-			HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-
-			GoogleCredentials credential = GoogleCredentials.getApplicationDefault();
-			if (credential.createScopedRequired()) {
-				List<String> scopes = new ArrayList<>();
-				scopes.add(IamScopes.CLOUD_PLATFORM);
-				credential = credential.createScoped(scopes);
-			}
-
-			this.iam = new Iam.Builder(httpTransport, JSON_FACTORY, new HttpCredentialsAdapter(credential))
-					.setApplicationName(storageHostname).build();
+	IamCredentialsClient getIamCredentialsClient() throws IOException {
+		if (this.iamCredentialsClient == null) {
+			this.iamCredentialsClient = IamCredentialsClient.create();
 		}
-
-		return this.iam;
+		return this.iamCredentialsClient;
 	}
 
 	private Map<String, Object> getJwtCreationPayload(TenantInfo tenantInfo) {
