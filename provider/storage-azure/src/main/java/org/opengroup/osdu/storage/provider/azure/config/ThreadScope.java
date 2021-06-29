@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.azure.config;
 
 
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +27,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -59,7 +58,8 @@ public class ThreadScope implements Scope, DisposableBean {
                     headers.put(entry.getKey(), entry.getValue());
                 }
                 context.setBean(name, headers);
-                ThreadScopeContextHolder.setContext(context);
+                MDC.setContextMap(header);
+
                 return headers;
             } else {
                 result = factory.getObject();
