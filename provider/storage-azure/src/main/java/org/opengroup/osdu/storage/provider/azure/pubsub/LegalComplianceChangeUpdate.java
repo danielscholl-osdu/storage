@@ -48,8 +48,10 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
     private IRecordsMetadataRepository recordsRepo;
     @Autowired
     private StorageAuditLogger auditLogger;
+//    @Autowired
+//    private ThreadDpsHeaders headers; //to be used when azure.feature.legaltag-compliance-update.enabled is set
     @Autowired
-    private ThreadDpsHeaders headers;
+    private DpsHeaders headers;
     @Autowired
     private MDCContextMap mdcContextMap;
     @Autowired
@@ -69,12 +71,20 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
             String dataPartitionId = messageData.getAsJsonObject().get(DpsHeaders.DATA_PARTITION_ID).getAsString();
             String correlationId = messageData.getAsJsonObject().get(DpsHeaders.CORRELATION_ID).getAsString();
             String user = messageData.getAsJsonObject().get(DpsHeaders.USER_EMAIL).getAsString();
-            headers.setThreadContext(dataPartitionId, correlationId, user);
+            //headers.setThreadContext(dataPartitionId, correlationId, user);
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
             LegalTagChangedCollection tags = gson.fromJson(messageData.getAsJsonObject().get("data"), LegalTagChangedCollection.class);
             complianceMessagePullReceiver.receiveMessage(tags, headers);
-        } finally {
+        }catch (NullPointerException ex){
+            LOGGER.error("Invalid format for message with id: {}", message.getMessageId(), ex);
+            throw new NullPointerException(ex.toString());
+        }
+        catch (Exception ex){
+            LOGGER.error(String.format("Error occurred while updating compliance on records: %s", ex.getMessage()), ex);
+            throw new Exception(ex.toString());
+        }
+        finally {
             ThreadScopeContextHolder.getContext().clear();
             MDC.clear();
         }

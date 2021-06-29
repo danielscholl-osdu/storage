@@ -29,8 +29,8 @@ import org.springframework.stereotype.Component;
 public class LegalTagSubscriberSetUp implements ApplicationListener<ContextRefreshedEvent> {
     @Autowired
     private LegalTagSubscriptionManagerImpl legalTagSubscriptionManager;
-    @Value("${azure.subscriber.setUp}")
-    private Boolean subscriberSetUpEnabled;
+    @Value("${azure.feature.legaltag-compliance-update.enabled}")
+    private Boolean legalTagComplianceUpdateEnabled;
 
     @Bean
     public static BeanFactoryPostProcessor beanFactoryPostProcessor() {
@@ -39,7 +39,7 @@ public class LegalTagSubscriberSetUp implements ApplicationListener<ContextRefre
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        if(subscriberSetUpEnabled)
+        if(legalTagComplianceUpdateEnabled)
           legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
     }
 }

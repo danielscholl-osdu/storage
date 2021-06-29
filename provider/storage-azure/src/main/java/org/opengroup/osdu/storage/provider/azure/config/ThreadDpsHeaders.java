@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 @Component
 @Primary
-@ConditionalOnProperty(value = "azure.subscriber.setUp", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 @Scope(value = "ThreadScope", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ThreadDpsHeaders extends DpsHeaders {
 
