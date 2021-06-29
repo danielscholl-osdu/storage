@@ -25,6 +25,7 @@ import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedEx
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
+import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContext;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContextHolder;
 import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -48,7 +49,7 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
     @Autowired
     private StorageAuditLogger auditLogger;
     @Autowired
-    private ThreadDpsHeaders headers;
+    private DpsHeaders headers;
     @Autowired
     private MDCContextMap mdcContextMap;
     @Autowired
@@ -68,7 +69,7 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
             String dataPartitionId = messageData.getAsJsonObject().get(DpsHeaders.DATA_PARTITION_ID).getAsString();
             String correlationId = messageData.getAsJsonObject().get(DpsHeaders.CORRELATION_ID).getAsString();
             String user = messageData.getAsJsonObject().get(DpsHeaders.USER_EMAIL).getAsString();
-            headers.setThreadContext(dataPartitionId, correlationId, user);
+            //headers.setThreadContext(dataPartitionId, correlationId, user);
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
             LegalTagChangedCollection tags = gson.fromJson(messageData.getAsJsonObject().get("data"), LegalTagChangedCollection.class);

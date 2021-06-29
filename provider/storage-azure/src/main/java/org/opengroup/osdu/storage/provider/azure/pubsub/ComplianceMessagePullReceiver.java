@@ -14,11 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.azure.pubsub;
 
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
-import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +28,7 @@ public class ComplianceMessagePullReceiver extends ComplianceMessagePushReceiver
     @Autowired
     private ILegalComplianceChangeService legalComplianceChangeService;
 
-    public void receiveMessage(LegalTagChangedCollection legalTagChanged, ThreadDpsHeaders headers) throws ComplianceUpdateStoppedException {
+    public void receiveMessage(LegalTagChangedCollection legalTagChanged, DpsHeaders headers) throws ComplianceUpdateStoppedException {
         this.legalComplianceChangeService.updateComplianceOnRecords(legalTagChanged, headers);
     }
 }

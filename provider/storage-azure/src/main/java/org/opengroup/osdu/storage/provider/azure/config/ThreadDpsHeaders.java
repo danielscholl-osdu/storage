@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.azure.config;
 
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -22,9 +23,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-
 @Component
 @Primary
+@ConditionalOnProperty(value = "azure.subscriber.setUp", havingValue = "true", matchIfMissing = false)
 @Scope(value = "ThreadScope", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ThreadDpsHeaders extends DpsHeaders {
 

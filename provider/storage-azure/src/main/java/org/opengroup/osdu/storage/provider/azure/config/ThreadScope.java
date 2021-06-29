@@ -14,28 +14,58 @@
 
 package org.opengroup.osdu.storage.provider.azure.config;
 
-import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContext;
-import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContextHolder;
+
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.Scope;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Thread scope which allows putting data in thread scope and clearing up afterwards.
  */
 
 public class ThreadScope implements Scope, DisposableBean {
+    @Autowired
+    HttpServletRequest request;
 
     /**
      * Get bean for given name in the "ThreadScope".
      */
     public Object get(String name, ObjectFactory<?> factory) {
         ThreadScopeContext context = ThreadScopeContextHolder.getContext();
-
+        RequestAttributes att = RequestContextHolder.getRequestAttributes();
         Object result = context.getBean(name);
         if (null == result) {
-            result = factory.getObject();
-            context.setBean(name, result);
+            if (att != null) {
+                DpsHeaders headers = new DpsHeaders();
+                HttpServletRequest request = ((ServletRequestAttributes) att).getRequest();
+
+                Map<String, String> header = Collections
+                        .list(request.getHeaderNames())
+                        .stream()
+                        .collect(Collectors.toMap(h -> h, request::getHeader));
+                for (Map.Entry<String, String> entry : header.entrySet()) {
+                    headers.put(entry.getKey(), entry.getValue());
+                }
+                context.setBean(name, headers);
+                ThreadScopeContextHolder.setContext(context);
+                return headers;
+            } else {
+                result = factory.getObject();
+                context.setBean(name, result);
+                return result;
+            }
         }
         return result;
     }

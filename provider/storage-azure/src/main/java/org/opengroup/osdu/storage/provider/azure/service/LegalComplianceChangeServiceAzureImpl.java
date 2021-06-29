@@ -24,7 +24,6 @@ import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.azure.MessageBusImpl;
 import org.opengroup.osdu.storage.provider.azure.cache.LegalTagCache;
-import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     @Autowired
     private StorageAuditLogger auditLogger;
     @Autowired
-    private ThreadDpsHeaders headers;
+    private DpsHeaders headers;
     @Autowired
     private LegalTagCache legalTagCache;
     @Autowired

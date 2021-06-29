@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.azure.util;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeBeanFactoryPostProcessor;
 import org.opengroup.osdu.storage.provider.azure.pubsub.LegalTagSubscriptionManagerImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Component;
 public class LegalTagSubscriberSetUp implements ApplicationListener<ContextRefreshedEvent> {
     @Autowired
     private LegalTagSubscriptionManagerImpl legalTagSubscriptionManager;
+    @Value("${azure.subscriber.setUp}")
+    private Boolean subscriberSetUpEnabled;
 
     @Bean
     public static BeanFactoryPostProcessor beanFactoryPostProcessor() {
@@ -36,7 +39,8 @@ public class LegalTagSubscriberSetUp implements ApplicationListener<ContextRefre
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
+        if(subscriberSetUpEnabled)
+          legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
     }
 }
 
