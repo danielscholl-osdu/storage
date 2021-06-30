@@ -108,7 +108,7 @@ public class SchemaServiceImpl implements SchemaService {
             throw new AppException(HttpStatus.SC_CONFLICT, "Schema already registered",
                     "Concurrent schema modification error.");
         } catch (RedisException ex) {
-            this.log.error(String.format("Error puttig key %s into redis: %s", this.getSchemaCacheKey(inputSchema.getKind()), ex.getMessage()), ex);
+            this.log.error(String.format("Error putting key %s into redis: %s", this.getSchemaCacheKey(inputSchema.getKind()), ex.getMessage()), ex);
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error on schema creation",
                     "An unknown error occurred during schema creation.");
@@ -217,7 +217,7 @@ public class SchemaServiceImpl implements SchemaService {
             try {
                 this.cache.put(key, schema);
             } catch (RedisException ex) {
-                this.log.error(String.format("Error puttig key %s into redis: %s", key, ex.getMessage()), ex);
+                this.log.error(String.format("Error putting key %s into redis: %s", key, ex.getMessage()), ex);
             }
 
             return schema;
