@@ -25,8 +25,9 @@ import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedEx
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
-import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContext;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContextHolder;
+import org.opengroup.osdu.storage.provider.azure.model.LegalTagsChangedRequest;
+import org.opengroup.osdu.storage.provider.azure.model.LegalTagsChangedData;
 import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.slf4j.Logger;
@@ -57,24 +58,19 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
     @Autowired
     private ComplianceMessagePullReceiver complianceMessagePullReceiver;
 
-
-    public Map<String, LegalCompliance> updateCompliance(IMessage message) throws ComplianceUpdateStoppedException , Exception{
-        Map<String, LegalCompliance> output = new HashMap<>();
+    public void updateCompliance(IMessage message) throws ComplianceUpdateStoppedException , Exception{
         Gson gson = new Gson();
         try {
             String messageBody = new String(message.getMessageBody().getBinaryData().get(0), UTF_8);
             JsonElement jsonRoot = JsonParser.parseString(messageBody);
-            JsonElement messageData = jsonRoot.getAsJsonObject().get("data");
-            String messageId = jsonRoot.getAsJsonObject().get("id").getAsString();
-            message.setMessageId(messageId);
+            LegalTagsChangedRequest legalTagsChangedRequest = gson.fromJson(jsonRoot, LegalTagsChangedRequest.class);
+            LegalTagsChangedData legalTagsChangedData = gson.fromJson(legalTagsChangedRequest.getData(), LegalTagsChangedData.class);
+            LegalTagChangedCollection tags = gson.fromJson(legalTagsChangedData.getData(), LegalTagChangedCollection.class);
 
-            String dataPartitionId = messageData.getAsJsonObject().get(DpsHeaders.DATA_PARTITION_ID).getAsString();
-            String correlationId = messageData.getAsJsonObject().get(DpsHeaders.CORRELATION_ID).getAsString();
-            String user = messageData.getAsJsonObject().get(DpsHeaders.USER_EMAIL).getAsString();
-            //headers.setThreadContext(dataPartitionId, correlationId, user);
+            message.setMessageId(legalTagsChangedRequest.getId());
+            //headers.setThreadContext(legalTagsChangedData.getDataPartitionId(), legalTagsChangedData.getCorrelationId(), legalTagsChangedData.getUser());
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
-            LegalTagChangedCollection tags = gson.fromJson(messageData.getAsJsonObject().get("data"), LegalTagChangedCollection.class);
             complianceMessagePullReceiver.receiveMessage(tags, headers);
         }catch (NullPointerException ex){
             LOGGER.error("Invalid format for message with id: {}", message.getMessageId(), ex);
@@ -88,6 +84,5 @@ public class LegalComplianceChangeUpdate extends ComplianceMessagePushReceiver  
             ThreadScopeContextHolder.getContext().clear();
             MDC.clear();
         }
-        return output;
     }
 }
