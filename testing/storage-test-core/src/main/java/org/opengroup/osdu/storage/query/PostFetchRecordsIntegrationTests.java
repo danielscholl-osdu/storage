@@ -454,4 +454,108 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
     }
+
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
+    @Test
+    public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
+        String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
+        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getStatus());
+
+        JsonArray records = new JsonArray();
+        records.add(recordId + 13);
+
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(1, responseObject.records.length);
+        assertEquals(0, responseObject.notFound.length);
+        assertEquals(1, responseObject.conversionStatuses.size());
+        assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
+        assertEquals(KIND, responseObject.records[0].kind);
+        assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
+        assertEquals(2, responseObject.records[0].data.size());
+        List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
+        assertEquals("SUCCESS", conversionStatuses.get(0).status);
+
+        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getStatus());
+    }
+
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
+    @Test
+    public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
+        String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
+        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getStatus());
+
+        JsonArray records = new JsonArray();
+        records.add(recordId + 13);
+
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(1, responseObject.records.length);
+        assertEquals(0, responseObject.notFound.length);
+        assertEquals(1, responseObject.conversionStatuses.size());
+        assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
+        assertEquals(KIND, responseObject.records[0].kind);
+        assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
+        assertEquals(2, responseObject.records[0].data.size());
+        List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
+        assertEquals("ERROR", conversionStatuses.get(0).status);
+        assertEquals("Unit conversion: illegal value for property markers[1].measuredDepth", conversionStatuses.get(0).errors.get(0));
+
+        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getStatus());
+    }
+
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
+    @Test
+    public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithIndexOutOfBoundary() throws Exception {
+        String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
+        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getStatus());
+
+        JsonArray records = new JsonArray();
+        records.add(recordId + 13);
+
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(1, responseObject.records.length);
+        assertEquals(0, responseObject.notFound.length);
+        assertEquals(1, responseObject.conversionStatuses.size());
+        assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
+        assertEquals(KIND, responseObject.records[0].kind);
+        assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
+        assertEquals(2, responseObject.records[0].data.size());
+        List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
+        assertEquals("SUCCESS", conversionStatuses.get(0).status);
+        assertEquals("Unit conversion: property markers[2].measuredDepth missing", conversionStatuses.get(0).errors.get(0));
+
+        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getStatus());
+    }
 }
