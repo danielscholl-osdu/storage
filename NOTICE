@@ -1249,6 +1249,7 @@ CDDL-1.1
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- JavaBeans Activation Framework (from )
 - JavaBeans(TM) Activation Framework (from http://java.sun.com/javase/technologies/desktop/javabeans/jaf/index.jsp)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - tomcat-embed-core (from http://tomcat.apache.org/)
@@ -1312,6 +1313,7 @@ The following software have components provided under the terms of this license:
 
 - Expression Language 3.0 (from https://projects.eclipse.org/projects/ee4j.el)
 - Java Servlet API (from http://servlet-spec.java.net)
+- JavaBeans Activation Framework (from )
 - RabbitMQ Java Client (from http://www.rabbitmq.com)
 - jakarta.annotation-api (from https://projects.eclipse.org/projects/ee4j.ca)
 - javax.annotation-api (from http://jcp.org/en/jsr/detail?id=250)
@@ -1327,6 +1329,7 @@ The following software have components provided under the terms of this license:
 
 - Checker Qual (from https://checkerframework.org)
 - Expression Language 3.0 (from https://projects.eclipse.org/projects/ee4j.el)
+- JavaBeans Activation Framework (from )
 - RabbitMQ Java Client (from http://www.rabbitmq.com)
 - jakarta.annotation-api (from https://projects.eclipse.org/projects/ee4j.ca)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
