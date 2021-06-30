@@ -386,6 +386,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(204, deleteResponse.getStatus());
     }
 
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -419,6 +420,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(204, deleteResponse.getStatus());
     }
 
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
