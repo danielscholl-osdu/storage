@@ -36,6 +36,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+
 @Service
 public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionService {
 
@@ -155,7 +158,14 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
             } catch (EntitlementsException e) {
                 HttpResponse response = e.getHttpResponse();
                 this.logger.error(String.format("Error requesting entitlements service %s", response));
-                throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, ERROR_MSG, e);
+
+                int code = response.getResponseCode();
+
+                if (code == SC_NOT_FOUND && response.getBody().contains("Partition does not exist")) {
+                    code = SC_UNAUTHORIZED;
+                }
+
+                throw new AppException(code, ERROR_REASON, ERROR_MSG, e);
             }
         }
 
