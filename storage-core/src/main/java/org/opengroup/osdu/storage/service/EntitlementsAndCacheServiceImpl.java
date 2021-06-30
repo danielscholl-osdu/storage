@@ -160,7 +160,6 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
                 this.logger.error(String.format("Error putting key %s into redis: %s", cacheKey, ex.getMessage()), ex);
             }
         }
-
         return groups;
     }
 

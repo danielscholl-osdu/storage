@@ -161,7 +161,7 @@ public class LegalServiceImpl implements ILegalService {
             try {
                 this.cache.put(legalTagName, "Valid LegalTag");
             } catch (RedisException ex) {
-                this.log.error(String.format("Error puttig key %s into redis: %s", legalTagName, ex.getMessage()), ex);
+                this.log.error(String.format("Error putting key %s into redis: %s", legalTagName, ex.getMessage()), ex);
             }
         }
     }
