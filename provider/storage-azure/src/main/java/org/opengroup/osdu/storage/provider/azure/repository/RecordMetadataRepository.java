@@ -58,9 +58,6 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     private String cosmosDBName;
 
     @Autowired
-    private JaxRsDpsLog logger;
-
-    @Autowired
     private int minBatchSizeToUseBulkUpload;
 
     public RecordMetadataRepository() {

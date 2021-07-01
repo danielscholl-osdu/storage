@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.azure.di;
 
+import lombok.Getter;
+import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -22,22 +24,8 @@ import javax.inject.Named;
 
 
 @Component
+@Getter
 public class AzureBootstrapConfig {
-
-    @Value("${azure.servicebus.topic-name}")
-    private String serviceBusTopic;
-
-    @Bean
-    @Named("STORAGE_CONTAINER_NAME")
-    public String containerName() {
-        return "opendes";
-    }
-
-    @Bean
-    @Named("SERVICE_BUS_TOPIC")
-    public String serviceBusTopic() {
-        return serviceBusTopic;
-    }
 
     @Value("${azure.keyvault.url}")
     private String keyVaultURL;
@@ -46,9 +34,21 @@ public class AzureBootstrapConfig {
     private String cosmosDBName;
 
     @Bean
+    @Named("STORAGE_CONTAINER_NAME")
+    public String containerName() {
+        return "opendes";
+    }
+
+
+    @Bean
     @Named("KEY_VAULT_URL")
     public String keyVaultURL() {
         return keyVaultURL;
+    }
+
+    @Bean
+    public MDCContextMap mdcContextMap() {
+        return new MDCContextMap();
     }
 
     @Bean
@@ -61,7 +61,7 @@ public class AzureBootstrapConfig {
      */
     @Bean
     public int minBatchSizeToUseBulkUpload() {
-        if(System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD") == null) return 50;
+        if (System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD") == null) return 50;
         else return Integer.parseInt(System.getenv("MIN_BATCH_SIZE_TO_USE_BULK_UPLOAD"));
     }
 
@@ -69,8 +69,8 @@ public class AzureBootstrapConfig {
      * @return The maximum degree of concurrency per partition key range. The default value in the SDK is 20.
      */
     @Bean
-    public int bulkImportMaxConcurrencyPePartitionRange(){
-        if(System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE") == null) return 20;
+    public int bulkImportMaxConcurrencyPePartitionRange() {
+        if (System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE") == null) return 20;
         else return Integer.parseInt(System.getenv("BULK_IMPORT_MAX_CONCURRENCY_PER_PARTITION_RANGE"));
     }
 }

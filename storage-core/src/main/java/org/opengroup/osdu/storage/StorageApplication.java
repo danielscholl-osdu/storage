@@ -24,12 +24,11 @@ import javax.annotation.PostConstruct;
 @SpringBootApplication
 @ComponentScan({"org.opengroup.osdu"})
 public class StorageApplication {
+    @PostConstruct
+    void f() {
 
-	@PostConstruct
-	void f() {
-
-	}
-	public static void main(String[] args) {
-		SpringApplication.run(StorageApplication.class, args);
-	}
+    }
+    public static void main(String[] args) {
+        SpringApplication.run(StorageApplication.class, args);
+    }
 }
