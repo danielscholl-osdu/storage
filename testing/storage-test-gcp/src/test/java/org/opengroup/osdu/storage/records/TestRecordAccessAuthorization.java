@@ -14,11 +14,16 @@
 
 package org.opengroup.osdu.storage.records;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.opengroup.osdu.storage.util.GCPTestUtils;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.http.HttpStatus;
+import org.junit.*;
+import org.opengroup.osdu.storage.util.*;
+
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTests {
 
@@ -46,4 +51,43 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         this.testUtils = null;
 	}
 
+	@Override
+    @Test
+    public void should_NoneRecords_when_fetchingMultipleRecords_and_notAuthorizedToRecords()
+            throws Exception {
+
+        // Creates a new record
+        String newRecordId = TenantUtils.getTenantName() + ":no:2.2." + NOW;
+
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+                testUtils.getToken());
+
+        ClientResponse response = TestUtils.send("records", "PUT", headers,
+                RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
+
+        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+
+        // Query for original record (no access) and recently created record (with
+        // access)
+        JsonArray records = new JsonArray();
+        records.add(RECORD_ID);
+        records.add(newRecordId);
+
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+
+        Map<String, String> noDataAccessHeaders = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+                testUtils.getNoDataAccessToken());
+
+        response = TestUtils.send("query/records", "POST", noDataAccessHeaders, body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
+
+        assertEquals(0, responseObject.records.length);
+        assertEquals(0, responseObject.invalidRecords.length);
+        assertEquals(0, responseObject.retryRecords.length);
+
+        TestUtils.send("records/" + newRecordId, "DELETE", headers, "", "");
+    }
 }
