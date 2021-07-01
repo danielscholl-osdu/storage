@@ -20,11 +20,12 @@ import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedEx
 import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Component
+@Primary
 public class ComplianceMessagePullReceiver extends ComplianceMessagePushReceiver {
-
     @Autowired
     private ILegalComplianceChangeService legalComplianceChangeService;
 

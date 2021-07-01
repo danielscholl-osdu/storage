@@ -16,9 +16,10 @@ package org.opengroup.osdu.storage.provider.azure.di;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-
 @Configuration
+@ConfigurationProperties(prefix = "azure.pubsub")
 @Getter
 public class PubSubConfig {
     @Value("${executor-n-threads}")

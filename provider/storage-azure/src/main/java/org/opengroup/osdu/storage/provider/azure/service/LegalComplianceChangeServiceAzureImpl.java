@@ -42,8 +42,6 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     @Autowired
     private IRecordsMetadataRepository recordsRepo;
     @Autowired
-    private StorageAuditLogger auditLogger;
-    @Autowired
     private DpsHeaders headers;
     @Autowired
     private LegalTagCache legalTagCache;
@@ -74,8 +72,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     for (RecordMetadata recordMetadata : recordsMetadata) {
                         recordsId.append(", ").append(recordMetadata.getId());
                     }
-                    this.auditLogger.updateRecordsComplianceStateSuccess(
-                            singletonList("[" + recordsId.substring(2) + "]"));
+                    LOGGER.info("Record Updated Successfully {}",recordsId.substring(2));
 
                     this.pubSubclient.publishMessage(headers, pubsubInfos);
                 }
