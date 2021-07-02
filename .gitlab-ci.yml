@@ -48,9 +48,6 @@ include:
     file: "scanners/fossa.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/gcp.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
