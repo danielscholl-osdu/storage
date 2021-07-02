@@ -1150,6 +1150,7 @@ The following software have components provided under the terms of this license:
 - Lucene Common Analyzers (from )
 - Lucene Common Analyzers (from )
 - Lucene Core (from )
+- Lucene Core (from )
 - Reflections (from http://github.com/ronmamo/reflections)
 - Stax2 API (from http://github.com/FasterXML/stax2-api)
 - ThreeTen backport (from https://www.threeten.org/threetenbp)
@@ -1251,6 +1252,7 @@ The following software have components provided under the terms of this license:
 
 - JavaBeans Activation Framework (from )
 - JavaBeans(TM) Activation Framework (from http://java.sun.com/javase/technologies/desktop/javabeans/jaf/index.jsp)
+- JavaMail API (from )
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
@@ -1269,6 +1271,8 @@ DOC
 The following software have components provided under the terms of this license:
 
 - Lucene Core (from )
+- Lucene Core (from )
+- Woodstox (from https://github.com/FasterXML/woodstox)
 - aalto-xml (from )
 
 ========================================================================
@@ -1362,6 +1366,7 @@ The following software have components provided under the terms of this license:
 
 - Jackson (from http://jackson.codehaus.org)
 - Stax2 API (from http://github.com/FasterXML/stax2-api)
+- Woodstox (from https://github.com/FasterXML/woodstox)
 - aalto-xml (from )
 
 ========================================================================
@@ -1506,6 +1511,7 @@ SunPro
 The following software have components provided under the terms of this license:
 
 - Lucene Core (from )
+- Lucene Core (from )
 
 ========================================================================
 TCL
@@ -1529,6 +1535,7 @@ The following software have components provided under the terms of this license:
 - Guava: Google Core Libraries for Java (from https://github.com/google/guava.git)
 - Guava: Google Core Libraries for Java (from https://github.com/google/guava.git)
 - Guava: Google Core Libraries for Java (from https://github.com/google/guava.git)
+- Lucene Core (from )
 - Lucene Core (from )
 - MongoDB Java Driver (from http://www.mongodb.org)
 - MongoDB Java Driver Core (from http://www.mongodb.org)
