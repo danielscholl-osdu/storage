@@ -21,7 +21,7 @@ import org.springframework.context.annotation.FilterType;
 
 /**
  * Note: these exclusions are the result of duplicate dependencies being introduced in the
- * {@link org.opengroup.osdu.is} package, which is pulled in through the os-core-lib-azure
+ * {@link //org.opengroup.osdu.is} package, which is pulled in through the os-core-lib-azure
  * mvn project. These duplicate beans are not needed by this application and so they are explicity
  * ignored.
  */
@@ -33,7 +33,9 @@ import org.springframework.context.annotation.FilterType;
 )
 @SpringBootApplication
 public class StorageApplication {
+
     public static void main(String[] args) {
         SpringApplication.run(StorageApplication.class, args);
     }
+
 }
