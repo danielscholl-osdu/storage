@@ -17,14 +17,7 @@ package org.opengroup.osdu.storage.util;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
+import java.util.*;
 import java.util.stream.Stream;
 
 import com.google.gson.JsonParser;
@@ -121,7 +114,9 @@ public class RecordUtilImpl implements RecordUtil {
     }
 
     public boolean hasVersionPath(List<String> gcsVersionPaths, Long version) {
-        return gcsVersionPaths.stream().anyMatch(path -> path.endsWith("/" + version));
+        return gcsVersionPaths.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(path -> path.endsWith("/" + version));
     }
 
     private RecordMetadata updateMetadataForAclAndLegal(RecordMetadata recordMetadata, List<PatchOperation> ops) {

@@ -346,6 +346,13 @@ public class RecordUtilImplTest {
   }
 
   @Test
+  public void hasVersionPath_shouldProcessPathsCorrectly_withNullValues() {
+    Long version = 100L;
+    List<String> gcsVersionPaths = Arrays.asList(null, null, null);
+    assertFalse(recordUtil.hasVersionPath(gcsVersionPaths, version));
+  }
+
+  @Test
   public void hasVersionPath_shouldReturnFalse_ifIncorrectVersionPathExists() {
     Long version = 100L;
     List<String> gcsVersionPaths = Arrays.asList("id/" + 200L);
@@ -353,7 +360,7 @@ public class RecordUtilImplTest {
   }
 
   @Test
-  public void hasVersionPath_shouldReturnFalse_IfGcsVersionPaths() {
+  public void hasVersionPath_shouldReturnFalse_IfGcsVersionPathsEmpty() {
     Long version = 100L;
     assertFalse(recordUtil.hasVersionPath(emptyList(), version));
   }

@@ -251,12 +251,8 @@ public class IngestionServiceImpl implements IngestionService {
 							String.format("The record '%s' was not found", parentRecordIdWithVersion ));
 				}
 				RecordMetadata parentRecordMetadata  = existingRecords.get(parentId);
-				if (parentRecordMetadata  == null) {
-					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata not found",
-							String.format("RecordMetadata for parent record '%s' was not found", parentRecordIdWithVersion ));
-				}
 				long version = parentRecordIdWithVersion .getRecordVersion();
-				if (!recordUtil.hasVersionPath(parentRecordMetadata .getGcsVersionPaths(), version)) {
+				if (!recordUtil.hasVersionPath(parentRecordMetadata.getGcsVersionPaths(), version)) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata version not found",
 							String.format("The RecordMetadata version %d for parent record '%s' was not found", version, parentId));
 				}
