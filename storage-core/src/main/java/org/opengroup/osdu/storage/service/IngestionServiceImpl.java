@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -77,6 +78,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Autowired(required = false)
 	private IPolicyService policyService;
+
+	@Autowired
+	private RecordUtil recordUtil;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -239,11 +243,18 @@ public class IngestionServiceImpl implements IngestionService {
 			Map<String, List<RecordIdWithVersion>> recordParentMap) {
 
 		for (Entry<String, List<RecordIdWithVersion>> entry : recordParentMap.entrySet()) {
-			List<RecordIdWithVersion> parents = entry.getValue();
-			for (RecordIdWithVersion parent : parents) {
-				if (!existingRecords.containsKey(parent.getRecordId())) {
+			List<RecordIdWithVersion> parentRecordIdsWithVersions = entry.getValue();
+			for (RecordIdWithVersion parentRecordIdWithVersion : parentRecordIdsWithVersions) {
+				String parentId = parentRecordIdWithVersion .getRecordId();
+				if (!existingRecords.containsKey(parentId)) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found",
-							String.format("The record '%s' was not found", parent));
+							String.format("The record '%s' was not found", parentRecordIdWithVersion ));
+				}
+				RecordMetadata parentRecordMetadata  = existingRecords.get(parentId);
+				long version = parentRecordIdWithVersion .getRecordVersion();
+				if (!recordUtil.hasVersionPath(parentRecordMetadata.getGcsVersionPaths(), version)) {
+					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata version not found",
+							String.format("The RecordMetadata version %d for parent record '%s' was not found", version, parentId));
 				}
 			}
 		}
