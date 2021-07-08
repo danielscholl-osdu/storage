@@ -46,6 +46,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 
 import java.util.*;
 
@@ -95,6 +96,9 @@ public class IngestionServiceImplTest {
 
     @Mock
     private JaxRsDpsLog logger;
+
+    @Mock
+    private RecordUtil recordUtil;
 
     @InjectMocks
     private IngestionServiceImpl sut;
@@ -541,5 +545,81 @@ public class IngestionServiceImplTest {
         TransferBatch batch = captor.getValue();
         assertEquals(new Integer(1), batch.getTransferInfo().getRecordCount());
         assertEquals(RecordState.active, batch.getRecords().get(0).getRecordMetadata().getStatus());
+    }
+
+    @Test
+    public void should_return404_when_updatingARecordWithNonExistingParent() {
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        // set up non-empty ancestry
+        RecordAncestry ancestry = new RecordAncestry();
+        Set<String> parentSet = new HashSet<String>();
+        parentSet.add("test:doc:non-existing record id:111");
+        ancestry.setParents(parentSet);
+        this.record1.setAncestry(ancestry);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
+
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        recordMetadataList.add(existingRecordMetadata1);
+        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
+        when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
+
+        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        try {
+            this.sut.createUpdateRecords(false, this.records, USER);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("Record not found", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_return404_when_updatingARecordWithNonExistingRecordMetaData() {
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        // set up non-empty ancestry
+        RecordAncestry ancestry = new RecordAncestry();
+        Set<String> parentSet = new HashSet<String>();
+        parentSet.add(RECORD_ID1 + ":111");
+        ancestry.setParents(parentSet);
+        this.record1.setAncestry(ancestry);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
+
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        recordMetadataList.add(existingRecordMetadata1);
+        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
+        when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
+
+        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        try {
+            this.sut.createUpdateRecords(false, this.records, USER);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("RecordMetadata version not found", e.getError().getReason());
+        }
     }
 }
