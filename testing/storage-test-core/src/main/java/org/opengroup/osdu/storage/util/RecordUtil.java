@@ -26,6 +26,18 @@ public class RecordUtil {
         return records.toString();
     }
 
+	public static String createDefaultJsonRecordWithParentId(String id, String kind, String legalTag, String parentId) {
+		JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
+		JsonObject ancestryObject = new JsonObject();
+		JsonArray parents = new JsonArray();
+		parents.add(parentId);
+		ancestryObject.add("parents", parents);
+		record.add("ancestry", ancestryObject);
+		JsonArray records = new JsonArray();
+		records.add(record);
+		return records.toString();
+	}
+
     public static String createDefaultJsonRecords(int recordsCount, String id, String kind, String legalTag) {
         JsonArray records = new JsonArray();
         for (int i = 0; i < recordsCount; i++) {
