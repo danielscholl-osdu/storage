@@ -142,27 +142,27 @@ public class LegalServiceImpl implements ILegalService {
     }
 
     private boolean isInCache(Set<String> legalTagNames) {
-        for (String legalTagName : legalTagNames) {
-            String legalTag = null;
-            try {
+        try {
+            for (String legalTagName : legalTagNames) {
+                String legalTag = null;
                 legalTag = this.cache.get(legalTagName);
-            } catch (RedisException ex) {
-                this.log.error(String.format("Error getting key %s from redis: %s", legalTagName, ex.getMessage()), ex);
+                if (legalTag == null) {
+                    return false;
+                }
             }
-            if (legalTag == null) {
-                return false;
-            }
+        } catch (RedisException ex) {
+            this.log.error(String.format("Error getting key %s from redis: %s", legalTagName, ex.getMessage()), ex);
         }
         return true;
     }
 
     private void addToCache(Set<String> legalTagNames) {
-        for (String legalTagName : legalTagNames) {
-            try {
+        try {
+            for (String legalTagName : legalTagNames) {
                 this.cache.put(legalTagName, "Valid LegalTag");
-            } catch (RedisException ex) {
-                this.log.error(String.format("Error putting key %s into redis: %s", legalTagName, ex.getMessage()), ex);
             }
+        } catch (RedisException ex) {
+            this.log.error(String.format("Error putting key %s into redis: %s", legalTagName, ex.getMessage()), ex);
         }
     }
 }
