@@ -14,19 +14,20 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.lambdaworks.redis.RedisException;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.util.Crc32c;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
+import org.opengroup.osdu.core.common.http.HttpResponse;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.http.HttpResponse;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.util.Crc32c;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -136,22 +137,29 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
     @Override
     public Groups getGroups(DpsHeaders headers) {
         String cacheKey = this.getGroupCacheKey(headers);
-        Groups groups = this.cache.get(cacheKey);
+
+        Groups groups = null;
+        try {
+            groups = this.cache.get(cacheKey);
+        } catch (RedisException ex) {
+            this.logger.error(String.format("Error getting key %s from redis: %s", cacheKey, ex.getMessage()), ex);
+        }
 
         if (groups == null) {
             IEntitlementsService service = this.factory.create(headers);
             try {
                 groups = service.getGroups();
                 this.cache.put(cacheKey, groups);
-                this.logger.info("Entitlements cache miss");
+                this.logger.debug("Entitlements cache miss");
 
             } catch (EntitlementsException e) {
                 HttpResponse response = e.getHttpResponse();
                 this.logger.error(String.format("Error requesting entitlements service %s", response));
                 throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, ERROR_MSG, e);
+            } catch (RedisException ex) {
+                this.logger.error(String.format("Error putting key %s into redis: %s", cacheKey, ex.getMessage()), ex);
             }
         }
-
         return groups;
     }
 

@@ -21,20 +21,20 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>0.10.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-aws-mongodb</artifactId>
     <description>Storage service on AWS using MongoDB</description>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <aws.version>1.11.637</aws.version>
         <deployment.environment>dev</deployment.environment>
-        <version.number>0.9.0-SNAPSHOT</version.number>
+        <version.number>0.10.0-SNAPSHOT</version.number>
     </properties>
 
     <dependencyManagement>

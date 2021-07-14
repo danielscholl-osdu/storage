@@ -1,0 +1,20 @@
+# Default values for storage-configmap.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+data:
+  authorize_api: ""
+  partition_api: "" 
+  log_level: ""
+  legaltag_api: ""
+  google_audiences: ""
+  redis_group_host: ""
+  redis_storage_host: ""
+  default_data_country: "US"
+  crs_api: "https://os-crs-converter-jvmvia5dea-uc.a.run.app/api/crs/v2/"
+
+conf:
+  ent_name: ""
+  legal_name: ""
+  configmap: "storage-config"
+  app_name: "storage"

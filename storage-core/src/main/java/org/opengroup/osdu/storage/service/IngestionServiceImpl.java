@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -77,6 +78,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Autowired(required = false)
 	private IPolicyService policyService;
+
+	@Autowired
+	private RecordUtil recordUtil;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -156,7 +160,7 @@ public class IngestionServiceImpl implements IngestionService {
 
 	private List<RecordProcessing> getRecordsForProcessing(boolean skipDupes, List<Record> inputRecords,
 			TransferInfo transfer) {
-		Map<String, List<String>> recordParentMap = new HashMap<>();
+		Map<String, List<RecordIdWithVersion>> recordParentMap = new HashMap<>();
 		List<RecordProcessing> recordsToProcess = new ArrayList<>();
 
 		List<String> ids = this.getRecordIds(inputRecords, recordParentMap);
@@ -215,7 +219,7 @@ public class IngestionServiceImpl implements IngestionService {
 	}
 
 	private void validateUserAccessAndComplianceConstraints(
-			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<String>> recordParentMap) {
+			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<RecordIdWithVersion>> recordParentMap) {
 		this.validateUserHasAccessToAllRecords(existingRecords);
 		this.validateLegalConstraints(inputRecords);
 		this.validateOwnerAccessOnExistingRecords(inputRecords, existingRecords);
@@ -236,14 +240,21 @@ public class IngestionServiceImpl implements IngestionService {
 	}
 
 	private void validateParentsExist(Map<String, RecordMetadata> existingRecords,
-			Map<String, List<String>> recordParentMap) {
+			Map<String, List<RecordIdWithVersion>> recordParentMap) {
 
-		for (Entry<String, List<String>> entry : recordParentMap.entrySet()) {
-			List<String> parents = entry.getValue();
-			for (String parent : parents) {
-				if (!existingRecords.containsKey(parent)) {
+		for (Entry<String, List<RecordIdWithVersion>> entry : recordParentMap.entrySet()) {
+			List<RecordIdWithVersion> parentRecordIdsWithVersions = entry.getValue();
+			for (RecordIdWithVersion parentRecordIdWithVersion : parentRecordIdsWithVersions) {
+				String parentId = parentRecordIdWithVersion .getRecordId();
+				if (!existingRecords.containsKey(parentId)) {
 					throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found",
-							String.format("The record '%s' was not found", parent));
+							String.format("The record '%s' was not found", parentRecordIdWithVersion ));
+				}
+				RecordMetadata parentRecordMetadata  = existingRecords.get(parentId);
+				long version = parentRecordIdWithVersion .getRecordVersion();
+				if (!recordUtil.hasVersionPath(parentRecordMetadata.getGcsVersionPaths(), version)) {
+					throw new AppException(HttpStatus.SC_NOT_FOUND, "RecordMetadata version not found",
+							String.format("The RecordMetadata version %d for parent record '%s' was not found", version, parentId));
 				}
 			}
 		}
@@ -260,7 +271,7 @@ public class IngestionServiceImpl implements IngestionService {
 
 	private void populateLegalInfoFromParents(List<Record> inputRecords,
 										  Map<String, RecordMetadata> existingRecordsMetadata,
-										  Map<String, List<String>> recordParentMap) {
+										  Map<String, List<RecordIdWithVersion>> recordParentMap) {
 
 		this.legalService.populateLegalInfoFromParents(inputRecords, existingRecordsMetadata, recordParentMap);
 
@@ -316,19 +327,25 @@ public class IngestionServiceImpl implements IngestionService {
 		return recordIds;
 	}
 
-	private List<String> getRecordIds(List<Record> records, Map<String, List<String>> recordParentMap) {
+	private List<String> getRecordIds(List<Record> records, Map<String, List<RecordIdWithVersion>> recordParentMap) {
 		List<String> ids = new ArrayList<>();
 		for (Record record : records) {
 			if (record.getAncestry() != null && !Collections.isEmpty(record.getAncestry().getParents())) {
 
-				List<String> parents = new ArrayList<>();
+				List<RecordIdWithVersion> parents = new ArrayList<>();
 
 				for (String parent : record.getAncestry().getParents()) {
 					String[] tokens = parent.split(":");
 					String parentRecordId = String.join(":", tokens[0], tokens[1], tokens[2]);
 					Long parentRecordVersion = Long.parseLong(tokens[3]);
 
-					parents.add(parentRecordId);
+					parents.add(
+							RecordIdWithVersion
+									.builder()
+									.recordId(parentRecordId)
+									.recordVersion(parentRecordVersion)
+									.build()
+					);
 					ids.add(parentRecordId);
 				}
 
@@ -367,7 +384,7 @@ public class IngestionServiceImpl implements IngestionService {
 	}
 
 	private void validateUserAccessAndCompliancePolicyConstraints(
-			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<String>> recordParentMap) {
+			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<RecordIdWithVersion>> recordParentMap) {
 		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
 		for (Record record : inputRecords) {
 			RecordMetadata recordMetadata;

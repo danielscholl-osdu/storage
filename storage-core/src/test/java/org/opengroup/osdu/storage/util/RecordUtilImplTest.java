@@ -14,16 +14,13 @@
 
 package org.opengroup.osdu.storage.util;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
@@ -339,8 +336,33 @@ public class RecordUtilImplTest {
       Assert.fail("Should not get different exception");
     }
 
+  }
 
+  @Test
+  public void hasVersionPath_shouldReturnTrue_ifCorrectVersionPathExists() {
+    Long version = 100L;
+    List<String> gcsVersionPaths = Arrays.asList("id/" + version);
+    assertTrue(recordUtil.hasVersionPath(gcsVersionPaths, version));
+  }
 
+  @Test
+  public void hasVersionPath_shouldProcessPathsCorrectly_withNullValues() {
+    Long version = 100L;
+    List<String> gcsVersionPaths = Arrays.asList(null, null, null);
+    assertFalse(recordUtil.hasVersionPath(gcsVersionPaths, version));
+  }
+
+  @Test
+  public void hasVersionPath_shouldReturnFalse_ifIncorrectVersionPathExists() {
+    Long version = 100L;
+    List<String> gcsVersionPaths = Arrays.asList("id/" + 200L);
+    assertFalse(recordUtil.hasVersionPath(gcsVersionPaths, version));
+  }
+
+  @Test
+  public void hasVersionPath_shouldReturnFalse_IfGcsVersionPathsEmpty() {
+    Long version = 100L;
+    assertFalse(recordUtil.hasVersionPath(emptyList(), version));
   }
 
   private PatchOperation buildPatchOperation(String path, String operation, String... value) {

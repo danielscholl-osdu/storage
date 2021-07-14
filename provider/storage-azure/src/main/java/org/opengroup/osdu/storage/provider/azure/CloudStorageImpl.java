@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
@@ -71,6 +73,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Autowired
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
@@ -170,11 +174,16 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
-        Gson gson = new Gson();
         Map<String, String> hashes = new HashMap<>();
+        RecordData data;
         for (RecordMetadata rm : records) {
             String jsonData = this.read(rm, rm.getLatestVersion(), false);
-            RecordData data = gson.fromJson(jsonData, RecordData.class);
+            try {
+                data = objectMapper.readValue(jsonData, RecordData.class);
+            } catch (JsonProcessingException e){
+                logger.error(String.format("Error while converting metadata for record %s", rm.getId()), e);
+                continue;
+            }
             String hash = getHash(data);
             hashes.put(rm.getId(), hash);
         }
@@ -200,7 +209,6 @@ public class CloudStorageImpl implements ICloudStorage {
     private String getHash(RecordData data) {
         Gson gson = new Gson();
         Crc32c checksumGenerator = new Crc32c();
-
         String newRecordStr = gson.toJson(data);
         byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
         checksumGenerator.update(bytes, 0, bytes.length);
