@@ -20,18 +20,18 @@ The following software have components provided under the terms of this license:
 - ASM based accessors helper used by json-smart (from )
 - AWS Event Stream (from https://github.com/awslabs/aws-eventstream-java)
 - AWS Java SDK :: AWS Core (from https://aws.amazon.com/sdkforjava)
-- AWS Java SDK :: Annotations (from )
+- AWS Java SDK :: Annotations (from https://repo1.maven.org/maven2/software/amazon/awssdk/annotations)
 - AWS Java SDK :: Auth (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Core :: Protocols :: AWS Json Protocol (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Core :: Protocols :: Protocol Core (from https://aws.amazon.com/sdkforjava)
-- AWS Java SDK :: HTTP Client Interface (from )
-- AWS Java SDK :: HTTP Clients :: Apache (from )
-- AWS Java SDK :: HTTP Clients :: Netty Non-Blocking I/O (from )
+- AWS Java SDK :: HTTP Client Interface (from https://repo1.maven.org/maven2/software/amazon/awssdk/http-client-spi)
+- AWS Java SDK :: HTTP Clients :: Apache (from https://repo1.maven.org/maven2/software/amazon/awssdk/apache-client)
+- AWS Java SDK :: HTTP Clients :: Netty Non-Blocking I/O (from https://repo1.maven.org/maven2/software/amazon/awssdk/netty-nio-client)
 - AWS Java SDK :: Profiles (from https://aws.amazon.com/sdkforjava)
-- AWS Java SDK :: Regions (from )
+- AWS Java SDK :: Regions (from https://repo1.maven.org/maven2/software/amazon/awssdk/regions)
 - AWS Java SDK :: SDK Core (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Services :: AWS Simple Systems Management (SSM) (from https://aws.amazon.com/sdkforjava)
-- AWS Java SDK :: Utilities (from )
+- AWS Java SDK :: Utilities (from https://repo1.maven.org/maven2/software/amazon/awssdk/utils)
 - AWS Java SDK for AWS Amplify (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK for AWS Amplify (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK for AWS Amplify (from https://aws.amazon.com/sdkforjava)
@@ -703,8 +703,8 @@ The following software have components provided under the terms of this license:
 - Bean Validation API (from http://beanvalidation.org)
 - Brave Instrumentation: Http Adapters (from )
 - Brave instrumentation for Reactor Netty HTTP (from https://github.com/reactor/reactor-netty)
-- Byte Buddy (without dependencies) (from )
-- Byte Buddy (without dependencies) (from )
+- Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
+- Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy Java agent (from )
 - Byte Buddy Java agent (from )
 - ClassMate (from http://github.com/cowtowncoder/java-classmate)
@@ -774,6 +774,8 @@ The following software have components provided under the terms of this license:
 - Jackson datatype: JSR310 (from http://wiki.fasterxml.com/JacksonModuleJSR310)
 - Jackson datatype: JSR310 (from http://wiki.fasterxml.com/JacksonModuleJSR310)
 - Jackson extensions to the Google HTTP Client Library for Java. (from )
+- Jackson module: Afterburner (from https://github.com/FasterXML/jackson-modules-base)
+- Jackson module: Afterburner (from https://github.com/FasterXML/jackson-modules-base)
 - Jackson-annotations (from http://github.com/FasterXML/jackson)
 - Jackson-annotations (from http://github.com/FasterXML/jackson)
 - Jackson-annotations (from http://github.com/FasterXML/jackson)
@@ -782,14 +784,12 @@ The following software have components provided under the terms of this license:
 - Jackson-dataformat-Smile (from http://github.com/FasterXML/jackson-dataformat-smile)
 - Jackson-dataformat-Smile (from http://github.com/FasterXML/jackson-dataformat-smile)
 - Jackson-dataformat-XML (from http://wiki.fasterxml.com/JacksonExtensionXmlDataBinding)
-- Jackson-dataformat-YAML (from https://github.com/FasterXML/jackson)
-- Jackson-dataformat-YAML (from https://github.com/FasterXML/jackson)
-- Jackson-dataformat-YAML (from https://github.com/FasterXML/jackson)
+- Jackson-dataformat-YAML (from https://github.com/FasterXML/jackson-dataformats-text)
+- Jackson-dataformat-YAML (from https://github.com/FasterXML/jackson-dataformats-text)
+- Jackson-dataformat-YAML (from https://github.com/FasterXML/jackson-dataformats-text)
 - Jackson-datatype-Joda (from http://wiki.fasterxml.com/JacksonModuleJoda)
 - Jackson-datatype-jdk8 (from )
 - Jackson-datatype-jdk8 (from )
-- Jackson-module-Afterburner (from http://wiki.fasterxml.com/JacksonHome)
-- Jackson-module-Afterburner (from http://wiki.fasterxml.com/JacksonHome)
 - Jackson-module-JAXB-annotations (from http://wiki.fasterxml.com/JacksonJAXBAnnotations)
 - Jackson-module-parameter-names (from )
 - Jackson-module-parameter-names (from )
@@ -855,8 +855,8 @@ The following software have components provided under the terms of this license:
 - Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
 - Mockito (from http://mockito.org)
-- Mockito (from http://www.mockito.org)
 - Mockito (from http://mockito.org)
+- Mockito (from http://www.mockito.org)
 - MongoDB Driver (from http://www.mongodb.org)
 - MongoDB Java Driver (from http://www.mongodb.org)
 - MongoDB Java Driver Core (from http://www.mongodb.org)
@@ -977,6 +977,7 @@ The following software have components provided under the terms of this license:
 - Spring Expression Language (SpEL) (from https://github.com/spring-projects/spring-framework)
 - Spring JMS (from https://github.com/spring-projects/spring-framework)
 - Spring Messaging (from https://github.com/spring-projects/spring-framework)
+- Spring Plugin - Core (from )
 - Spring Plugin - Metadata Extension (from )
 - Spring TestContext Framework (from https://github.com/spring-projects/spring-framework)
 - Spring TestContext Framework (from https://github.com/spring-projects/spring-framework)
@@ -1538,13 +1539,6 @@ The following software have components provided under the terms of this license:
 - Lucene Core (from )
 
 ========================================================================
-TCL
-========================================================================
-The following software have components provided under the terms of this license:
-
-- HK2 API module (from git://java.net/hk2~git/hk2-api)
-
-========================================================================
 WTFPL
 ========================================================================
 The following software have components provided under the terms of this license:
@@ -1598,8 +1592,8 @@ unknown
 The following software have components provided under the terms of this license:
 
 - "Java Concurrency in Practice" book annotations (from http://jcip.net/)
-- Byte Buddy (without dependencies) (from )
-- Byte Buddy (without dependencies) (from )
+- Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
+- Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Checker Qual (from https://checkerframework.org)
 - JSON in Java (from https://github.com/douglascrockford/JSON-java)
 - JUnit (from http://junit.org)
