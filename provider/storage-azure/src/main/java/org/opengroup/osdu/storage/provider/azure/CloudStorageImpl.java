@@ -14,11 +14,12 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
-
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -29,6 +30,7 @@ import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -39,9 +41,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import org.slf4j.MDC;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -72,10 +71,10 @@ public class CloudStorageImpl implements ICloudStorage {
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public void write(RecordProcessing... recordsProcessing) {
-        validateRecordAcls(recordsProcessing);
-
         List<Callable<Boolean>> tasks = new ArrayList<>();
         String dataPartitionId = headers.getPartitionId();
         for (RecordProcessing rp : recordsProcessing) {
@@ -133,33 +132,6 @@ public class CloudStorageImpl implements ICloudStorage {
         }
     }
 
-
-    /**
-     * Ensures that the ACLs of the record are a subset of the ACLs
-     * @param records the records to validate
-     */
-    private void validateRecordAcls(RecordProcessing... records) {
-        String[] groups = groupsInfoRepository.findById(headers.getPartitionId())
-                .orElseThrow(() -> new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown Tenant", "Tenant was not found"))
-                .getGroups();
-        Set<String> validGroups = Arrays.asList(groups)
-                .stream()
-                .map(group -> group.toLowerCase())
-                .collect(Collectors.toSet());
-
-        for (RecordProcessing record : records) {
-            for (String acl : record.getRecordMetadata().getAcl().getOwners()) {
-                String groupName = acl.split("@")[0].toLowerCase();
-                if (!validGroups.contains(groupName)) {
-                    throw new AppException(
-                            HttpStatus.SC_FORBIDDEN,
-                            "Invalid ACL",
-                            "Record ACL is not one of " + String.join(",", validGroups));
-                }
-            }
-        }
-    }
-
     private boolean writeBlobThread(RecordProcessing rp, String dataPartitionId)
     {
         Gson gson = new GsonBuilder().serializeNulls().create();
@@ -172,11 +144,16 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
-        Gson gson = new Gson();
         Map<String, String> hashes = new HashMap<>();
+        RecordData data;
         for (RecordMetadata rm : records) {
             String jsonData = this.read(rm, rm.getLatestVersion(), false);
-            RecordData data = gson.fromJson(jsonData, RecordData.class);
+            try {
+                data = objectMapper.readValue(jsonData, RecordData.class);
+            } catch (JsonProcessingException e){
+                logger.error(String.format("Error while converting metadata for record %s", rm.getId()), e);
+                continue;
+            }
             String hash = getHash(data);
             hashes.put(rm.getId(), hash);
         }
@@ -202,7 +179,6 @@ public class CloudStorageImpl implements ICloudStorage {
     private String getHash(RecordData data) {
         Gson gson = new Gson();
         Crc32c checksumGenerator = new Crc32c();
-
         String newRecordStr = gson.toJson(data);
         byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
         checksumGenerator.update(bytes, 0, bytes.length);
