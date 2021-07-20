@@ -62,6 +62,21 @@ public class RecordUtil {
 		return records.toString();
 	}
 
+	public static String createJsonRecordWithEntV2OnlyAcl(String id, String kind, String legalTag, String data) {
+		JsonObject dataJson = new JsonObject();
+		dataJson.addProperty("custom", data);
+		dataJson.addProperty("score-int", 58377304471659395L);
+		dataJson.addProperty("score-double", 58377304.471659395);
+
+		JsonObject record = getRecordWithInputDataAndAcl(id, kind, legalTag, dataJson);
+
+		JsonArray records = new JsonArray();
+		records.add(record);
+
+		return records.toString();
+
+	}
+
 	public static String createJsonRecordWithReference(int recordsCount, String id, String kind, String legalTag, String fromCrs, String conversionType) {
 
 		JsonArray records = new JsonArray();
@@ -411,9 +426,19 @@ public class RecordUtil {
 	}
 
 	private static JsonObject getDefaultRecord(String id, String kind, String legalTag) {
-		JsonObject acl = new JsonObject();
 		JsonArray acls = new JsonArray();
 		acls.add(TestUtils.getAcl());
+		return getDefaultRecordFromAcl(id, kind, legalTag, acls);
+	}
+
+	private static JsonObject getDefaultRecordWithEntV2OnlyAcl(String id, String kind, String legalTag) {
+		JsonArray acls = new JsonArray();
+		acls.add(TestUtils.getEntV2OnlyAcl());
+		return getDefaultRecordFromAcl(id, kind, legalTag, acls);
+	}
+
+	private static JsonObject getDefaultRecordFromAcl(String id, String kind, String legalTag, JsonArray acls) {
+		JsonObject acl = new JsonObject();
 		acl.add("viewers", acls);
 		acl.add("owners", acls);
 
@@ -446,6 +471,12 @@ public class RecordUtil {
 
 	private static JsonObject getRecordWithInputData(String id, String kind, String legalTag, JsonObject data) {
 		JsonObject record = getDefaultRecord(id, kind, legalTag);
+		record.add("data", data);
+		return record;
+	}
+
+	private static JsonObject getRecordWithInputDataAndAcl(String id, String kind, String legalTag, JsonObject data) {
+		JsonObject record = getDefaultRecordWithEntV2OnlyAcl(id, kind, legalTag);
 		record.add("data", data);
 		return record;
 	}
