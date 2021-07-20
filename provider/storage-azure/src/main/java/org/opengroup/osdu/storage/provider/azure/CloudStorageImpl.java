@@ -20,7 +20,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
-
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -31,6 +30,7 @@ import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -41,9 +41,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import org.slf4j.MDC;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -78,8 +75,6 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
-        validateRecordAcls(recordsProcessing);
-
         List<Callable<Boolean>> tasks = new ArrayList<>();
         String dataPartitionId = headers.getPartitionId();
         for (RecordProcessing rp : recordsProcessing) {
@@ -134,33 +129,6 @@ public class CloudStorageImpl implements ICloudStorage {
             this.recordRepository.createOrUpdate(originalAclRecords);
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
-        }
-    }
-
-
-    /**
-     * Ensures that the ACLs of the record are a subset of the ACLs
-     * @param records the records to validate
-     */
-    private void validateRecordAcls(RecordProcessing... records) {
-        String[] groups = groupsInfoRepository.findById(headers.getPartitionId())
-                .orElseThrow(() -> new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown Tenant", "Tenant was not found"))
-                .getGroups();
-        Set<String> validGroups = Arrays.asList(groups)
-                .stream()
-                .map(group -> group.toLowerCase())
-                .collect(Collectors.toSet());
-
-        for (RecordProcessing record : records) {
-            for (String acl : record.getRecordMetadata().getAcl().getOwners()) {
-                String groupName = acl.split("@")[0].toLowerCase();
-                if (!validGroups.contains(groupName)) {
-                    throw new AppException(
-                            HttpStatus.SC_FORBIDDEN,
-                            "Invalid ACL",
-                            "Record ACL is not one of " + String.join(",", validGroups));
-                }
-            }
         }
     }
 
