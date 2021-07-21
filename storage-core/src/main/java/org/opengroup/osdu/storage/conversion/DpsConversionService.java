@@ -107,7 +107,7 @@ public class DpsConversionService {
     private boolean isMetaBlockPresent(JsonObject record) {
         boolean isPresent = true;
         JsonArray metaBlock = record.getAsJsonArray("meta");
-        if (metaBlock == null || metaBlock.size() == 0) {
+        if (metaBlock == null || metaBlock.size() == 0 || (metaBlock.size() == 1 && metaBlock.get(0).isJsonNull())) {
             isPresent = false;
         }
         return isPresent;
