@@ -21,11 +21,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.datastore.Cursor;
 import com.google.cloud.storage.*;
-import com.google.cloud.storage.Acl.Group;
-import com.google.cloud.storage.Acl.Role;
-import com.google.cloud.storage.Acl.User;
 import com.google.cloud.storage.StorageException;
 import com.google.gson.Gson;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -37,6 +36,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -49,6 +49,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
@@ -85,6 +86,9 @@ public class GoogleCloudStorage implements ICloudStorage {
 	private IRecordsMetadataRepository<Cursor> recordRepository;
 
 	@Autowired
+	private IEntitlementsExtensionService entitlementsService;
+
+	@Autowired
 	private ExecutorService threadPool;
 
 	@Autowired
@@ -110,6 +114,10 @@ public class GoogleCloudStorage implements ICloudStorage {
 			String serviceAccount = this.tenant.getServiceAccount();
 			String projectId = this.tenant.getProjectId();
 			String tenantName = this.tenant.getName();
+
+			RecordMetadata metadata = record.getRecordMetadata();
+			validateMetadata(metadata);
+
 			tasks.add(() -> this.writeBlobThread(email, serviceAccount, projectId, tenantName, record, mapper, bucket));
 		}
 
@@ -133,16 +141,15 @@ public class GoogleCloudStorage implements ICloudStorage {
 	}
 
 	@Override
-	public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+	public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
 		String bucket = getBucketName(this.tenant);
 		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
-		Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
+		Map<String, Acl> originalAcls = new HashMap<>();
 		Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
 
 		for (RecordMetadata recordMetadata : recordsMetadata) {
 			String id = recordMetadata.getId();
 			String idWithVersion = recordsIdMap.get(id);
-			List<Acl> acls = this.constructObjectAcls(tenant.getServiceAccount(), recordMetadata.getAcl());
 
 			if (!id.equalsIgnoreCase(idWithVersion)) {
 				long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
@@ -155,21 +162,20 @@ public class GoogleCloudStorage implements ICloudStorage {
 			validMetadata.add(recordMetadata);
 			Blob blob = storage.get(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
 			originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
-			blob.toBuilder().setAcl(acls).build().update();
+			blob.update();
 		}
 
 		return originalAcls;
 	}
 
 	@Override
-	public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
+	public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls) {
 		String bucket = getBucketName(this.tenant);
 		Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
 
 		for (RecordMetadata recordMetadata : recordsMetadata) {
 			Blob blob = storage.get(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
-			List<Acl> acls = this.constructObjectAcls(tenant.getServiceAccount(), originalAcls.get(recordMetadata.getId()));
-			blob.toBuilder().setAcl(acls).build().update();
+			blob.update();
 		}
 	}
 
@@ -402,17 +408,12 @@ public class GoogleCloudStorage implements ICloudStorage {
 	private boolean writeBlobThread(String userId, String serviceAccount, String projectId, String tenantName, RecordProcessing processing, ObjectMapper mapper, String bucket) {
 
 		RecordMetadata metadata = processing.getRecordMetadata();
-
-		org.opengroup.osdu.core.common.model.entitlements.Acl storageAcl = metadata.getAcl();
 		String objectPath = metadata.getVersionPath(metadata.getLatestVersion());
-
-		List<Acl> acls = this.constructObjectAcls(serviceAccount, storageAcl);
 
 		BlobInfo blobInfo = BlobInfo
 				.newBuilder(bucket, objectPath)
 				.setContentType(MediaType.APPLICATION_JSON_VALUE)
 				.setContentEncoding(UTF_8.toString())
-				.setAcl(acls)
 				.build();
 
 		try {
@@ -438,6 +439,27 @@ public class GoogleCloudStorage implements ICloudStorage {
 		return true;
 	}
 
+	private void validateMetadata(RecordMetadata metadata) {
+			List<String> aclGroups = new ArrayList<>();
+
+			Collections.addAll(aclGroups, metadata.getAcl().getViewers());
+			Collections.addAll(aclGroups, metadata.getAcl().getOwners());
+
+			List<String> groups = entitlementsService.getGroups(headers)
+						.getGroups()
+					.stream()
+					.map(GroupInfo::getEmail)
+					.collect(Collectors.toList());
+
+			Optional<String> missingGroup = aclGroups.stream().filter((s) -> !groups.contains(s)).findFirst();
+
+			if (missingGroup.isPresent()){
+				throw new AppException(HttpStatus.SC_BAD_REQUEST,
+						RECORD_WRITING_ERROR_REASON,
+						String.format("Could not find group \"%s\".", missingGroup.get()));
+			}
+	}
+
 	private boolean readBlobThread(String userId, String serviceAccount, String projectId, String tenantName, String object, String bucket, Map<String, String> map, String recordId) {
 		String[] tokens = object.split("/");
 		String key = tokens[tokens.length - 2];
@@ -455,20 +477,4 @@ public class GoogleCloudStorage implements ICloudStorage {
 	private static String getBucketName(TenantInfo tenant) {
 		return String.format("%s-records", tenant.getProjectId());
 	}
-
-	private List<Acl> constructObjectAcls(String serviceAccount, org.opengroup.osdu.core.common.model.entitlements.Acl osduAcl) {
-		List<Acl> acls = new ArrayList<>();
-
-		for (String acl : osduAcl.getViewers()) {
-			acls.add(Acl.newBuilder(new Group(acl), Role.READER).build());
-		}
-
-		for (String acl : osduAcl.getOwners()) {
-			acls.add(Acl.newBuilder(new Group(acl), Role.OWNER).build());
-		}
-
-		acls.add(Acl.newBuilder(new User(serviceAccount), Role.OWNER).build());
-		return acls;
-	}
-
 }
