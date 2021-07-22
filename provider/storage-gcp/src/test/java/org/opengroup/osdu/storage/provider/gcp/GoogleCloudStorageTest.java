@@ -30,7 +30,6 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 @RunWith(MockitoJUnitRunner.class)
 public class GoogleCloudStorageTest {
@@ -134,10 +133,6 @@ public class GoogleCloudStorageTest {
         when(this.storage.get(BUCKET, PATH_2)).thenReturn(blob);
         when(this.storage.get(BUCKET, PATH_3)).thenReturn(blob);
 
-        Blob.Builder blobBuilder = mock(Blob.Builder.class, RETURNS_DEEP_STUBS);
-        when(blob.toBuilder()).thenReturn(blobBuilder);
-        when(blobBuilder.setAcl(any())).thenReturn(blobBuilder);
-
         List<String> recordsId = new ArrayList<>();
         recordsId.add("id1");
         recordsId.add("id2");
@@ -160,7 +155,6 @@ public class GoogleCloudStorageTest {
         Map<String, Acl> originalAcls = this.sut.updateObjectMetadata(recordMetadataList, recordsId, validMetadata, lockedRecords, idMap);
         assertEquals(3, originalAcls.size());
         assertEquals(0, lockedRecords.size());
-        verify(blobBuilder, times(3)).setAcl(any());
     }
 
     @Test
@@ -199,10 +193,6 @@ public class GoogleCloudStorageTest {
         when(this.storage.get(BUCKET, PATH_2)).thenReturn(blob);
         when(this.storage.get(BUCKET, PATH_3)).thenReturn(blob);
 
-        Blob.Builder blobBuilder = mock(Blob.Builder.class, RETURNS_DEEP_STUBS);
-        when(blob.toBuilder()).thenReturn(blobBuilder);
-        when(blobBuilder.setAcl(any())).thenReturn(blobBuilder);
-
         List<String> recordsId = new ArrayList<>();
         recordsId.add("id1:unit:test:123");
         recordsId.add("id2:unit:test:456");
@@ -226,7 +216,6 @@ public class GoogleCloudStorageTest {
         assertEquals(2, originalAcls.size());
         assertEquals(1, lockedRecords.size());
         assertEquals(2, validMetadata.size());
-        verify(blobBuilder, times(2)).setAcl(any());
     }
 
     @Test
@@ -264,11 +253,6 @@ public class GoogleCloudStorageTest {
         when(this.storage.get(BUCKET, PATH_2)).thenReturn(blob);
         when(this.storage.get(BUCKET, PATH_3)).thenReturn(blob);
 
-        Blob.Builder blobBuilder = mock(Blob.Builder.class, RETURNS_DEEP_STUBS);
-        when(blob.toBuilder()).thenReturn(blobBuilder);
-        when(blobBuilder.setAcl(any())).thenReturn(blobBuilder);
-
         this.sut.revertObjectMetadata(recordMetadataList, originalAcls);
-        verify(blobBuilder, times(3)).setAcl(any());
     }
 }
