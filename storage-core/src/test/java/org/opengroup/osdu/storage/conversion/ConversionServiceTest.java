@@ -54,18 +54,17 @@ public class ConversionServiceTest {
     private static final String RECORD_3 = "{\"id\":\"unit-test-3\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String CONVERTED_RECORD_1 = "{\"id\":\"unit-test-1\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":15788.036,\"Y\":9567.40,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String CONVERTED_RECORD_3 = "{\"id\":\"unit-test-3\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":15788.036,\"Y\":9567.40,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
-
+    private static final String GEO_JSON_RECORD_1 = "{\"id\":\"geo-json-test-1\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"geo-json-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0,\"SpatialLocation\":{\"AsIngestedCoordinates\":{}}}}";
 
     @Test
     public void should_returnOriginalRecordsAndStatusesAsNoMetaBlock_whenProvidedRecordsWithoutMetaBlock() {
         this.originalRecords.add(this.jsonParser.parse(RECORD_2).getAsJsonObject());
 
-
         RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(RECORD_2));
-        Assert.assertEquals("No Meta Block in This Record.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals("No Conversion Blocks exist in This Record.", result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
@@ -244,5 +243,14 @@ public class ConversionServiceTest {
         Assert.assertTrue(result.getRecords().contains(this.jsonParser.parse(RECORD_2).getAsJsonObject()));
     }
 
-}
+    @Test
+    public void should_returnOriginalRecordsAndStatusesAsNoMetaAndAsIngestedCoordinatesBlocks_whenProvidedRecordsWithoutConversionBlocks() {
+        this.originalRecords.add(this.jsonParser.parse(GEO_JSON_RECORD_1).getAsJsonObject());
 
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+        Assert.assertEquals(1, result.getConversionStatuses().size());
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(GEO_JSON_RECORD_1));
+        Assert.assertEquals("No Conversion Blocks exist in This Record.", result.getConversionStatuses().get(0).getErrors().get(0));
+    }
+}
