@@ -52,7 +52,7 @@ public class DpsConversionService {
     private static final String SPATIAL_LOCATION = "SpatialLocation";
     private static final String AS_INGESTED_COORDINATES = "AsIngestedCoordinates";
     private static final String WGS84_COORDINATES = "Wgs84Coordinates";
-    private static final String CONVERSION_NO_META_BLOCK = "No Conversion Blocks exist in This Record.";
+    private static final String CONVERSION_NO_CONVERSION_BLOCK = "No Conversion Blocks exist in This Record.";
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -101,7 +101,7 @@ public class DpsConversionService {
                 conversionRecord.setRecordJsonObject(recordJsonObject);
                 conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
                 List<String> conversionStatusNoConversionBlock = new ArrayList<>();
-                conversionStatusNoConversionBlock.add(CONVERSION_NO_META_BLOCK);
+                conversionStatusNoConversionBlock.add(CONVERSION_NO_CONVERSION_BLOCK);
                 conversionRecord.setConversionMessages(conversionStatusNoConversionBlock);
                 recordsWithoutConversionBlock.add(conversionRecord);
             }
