@@ -52,7 +52,8 @@ public class DpsConversionService {
     private static final String SPATIAL_LOCATION = "SpatialLocation";
     private static final String AS_INGESTED_COORDINATES = "AsIngestedCoordinates";
     private static final String WGS84_COORDINATES = "Wgs84Coordinates";
-    private static final String CONVERSION_NO_CONVERSION_BLOCK = "No Conversion Blocks exist in This Record.";
+    private static final String NO_CONVERSION_BLOCK = "No Conversion Blocks exist in This Record.";
+    private static final String WGS84_COORDINATES_BLOCK = "'Wgs84Coordinates' block exists, Conversion is not required for this record.";
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -86,22 +87,29 @@ public class DpsConversionService {
 
     private List<ConversionRecord> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<JsonObject> recordsWithMetaBlock, List<JsonObject> recordsWithGeoJsonBlock) {
         List<ConversionRecord> recordsWithoutConversionBlock = new ArrayList<>();
+        ConversionRecord conversionRecord = new ConversionRecord();
         for (int i = 0; i < originalRecords.size(); i++) {
             JsonObject recordJsonObject = originalRecords.get(i);
             if (this.isMetaBlockPresent(recordJsonObject)) {
                 recordsWithMetaBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
+            } else if (this.isWgs84CoordinatesBlockPresent(recordJsonObject)) {
+                conversionRecord.setRecordJsonObject(recordJsonObject);
+                conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
+                List<String> conversionStatusWgs84Block = new ArrayList<>();
+                conversionStatusWgs84Block.add(WGS84_COORDINATES_BLOCK);
+                conversionRecord.setConversionMessages(conversionStatusWgs84Block);
+                recordsWithoutConversionBlock.add(conversionRecord);
             } else if (this.isAsIngestedCoordinatesPresent(recordJsonObject)) {
                 recordsWithGeoJsonBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
             } else {
-                ConversionRecord conversionRecord = new ConversionRecord();
                 conversionRecord.setRecordJsonObject(recordJsonObject);
                 conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
                 List<String> conversionStatusNoConversionBlock = new ArrayList<>();
-                conversionStatusNoConversionBlock.add(CONVERSION_NO_CONVERSION_BLOCK);
+                conversionStatusNoConversionBlock.add(NO_CONVERSION_BLOCK);
                 conversionRecord.setConversionMessages(conversionStatusNoConversionBlock);
                 recordsWithoutConversionBlock.add(conversionRecord);
             }
@@ -110,25 +118,35 @@ public class DpsConversionService {
     }
 
     private boolean isMetaBlockPresent(JsonObject record) {
-        if (record.get(META) == null || record.get(META).isJsonNull()) {
-            return false;
-        }
+        boolean isPresent = true;
         JsonArray metaBlock = record.getAsJsonArray(META);
-        return metaBlock != null && metaBlock.size() != 0;
+        if (metaBlock == null || metaBlock.size() == 0) {
+            isPresent = false;
+        }
+        return isPresent;
     }
 
     private boolean isAsIngestedCoordinatesPresent(JsonObject record) {
         JsonObject asIngestedBlock = null;
-        if (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION) == null || record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).isJsonNull()) {
+        if (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION) == null || record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).size() == 0) {
             return false;
         } else {
             JsonObject spatialLocation = record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION);
-            if ((spatialLocation.getAsJsonObject(AS_INGESTED_COORDINATES) == null || spatialLocation.getAsJsonObject(AS_INGESTED_COORDINATES).isJsonNull()) && (!spatialLocation.getAsJsonObject(WGS84_COORDINATES).isJsonNull())) {
+            if (spatialLocation.getAsJsonObject(AS_INGESTED_COORDINATES) == null || spatialLocation.getAsJsonObject(AS_INGESTED_COORDINATES).isJsonNull()) {
                 return false;
             }
             asIngestedBlock = record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).getAsJsonObject(AS_INGESTED_COORDINATES);
         }
         return asIngestedBlock != null && asIngestedBlock.size() != 0;
+    }
+
+    private boolean isWgs84CoordinatesBlockPresent(JsonObject record) {
+        if (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION) != null) {
+            if ((record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).getAsJsonObject(WGS84_COORDINATES) != null) && (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).getAsJsonObject(WGS84_COORDINATES).size() > 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String getRecordId(JsonObject record) {
