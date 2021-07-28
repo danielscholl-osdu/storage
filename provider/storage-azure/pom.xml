@@ -20,21 +20,21 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.10.0-SNAPSHOT</version>
+        <version>0.11.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>0.11.0-SNAPSHOT</version>
     <properties>
         <azure.appservice.resourcegroup />
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.10.0-rc8</osdu.corelibazure.version>
-        <osdu.storage-core.version>0.10.0-SNAPSHOT</osdu.storage-core.version>
+        <osdu.corelibazure.version>0.10.0</osdu.corelibazure.version>
+        <osdu.storage-core.version>0.11.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <powermock.version>2.0.2</powermock.version>

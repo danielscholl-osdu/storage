@@ -16,7 +16,7 @@
 	<parent>
 		<artifactId>os-storage</artifactId>
 		<groupId>org.opengroup.osdu</groupId>
-		<version>0.10.0-SNAPSHOT</version>
+		<version>0.11.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
@@ -26,7 +26,7 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<os-core-lib-ibm.version>0.9.0</os-core-lib-ibm.version>
+		<os-core-lib-ibm.version>0.10.0</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 	</properties>
 
@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>storage-core</artifactId>
-			<version>0.10.0-SNAPSHOT</version>
+			<version>0.11.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
