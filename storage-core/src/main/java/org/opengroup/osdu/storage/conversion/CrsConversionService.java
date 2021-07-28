@@ -184,22 +184,24 @@ public class CrsConversionService {
                     feature.setType(featureItem.get(TYPE).getAsString());
                     JsonArray coordinatesValues = featureItem.getAsJsonObject(GEOMETRY).get(COORDINATES).getAsJsonArray();
                     String geometryType = featureItem.getAsJsonObject(GEOMETRY).get(TYPE).getAsString();
-                    if (geometryType.equals("AnyCrsPoint")) {
-                        GeoJsonPoint p = new GeoJsonPoint();
-                        p.setCoordinates(this.createCoordinates1(coordinatesValues));
-                        feature.setGeometry(p);
-                    } else if (geometryType.equals("AnyCrsMultiPoint")) {
-                        GeoJsonMultiPoint p = new GeoJsonMultiPoint();
-                        p.setCoordinates(this.createCoordinates2(coordinatesValues));
-                        feature.setGeometry(p);
-                    } else if (geometryType.equals("AnyCrsPolygon")) {
-                        GeoJsonPolygon p = new GeoJsonPolygon();
-                        p.setCoordinates(this.createCoordinates3(coordinatesValues));
-                        feature.setGeometry(p);
-                    } else if (geometryType.equals("AnyCrsMultiPolygon")) {
-                        GeoJsonMultiPolygon p = new GeoJsonMultiPolygon();
-                        p.setCoordinates(this.createCoordinates4(coordinatesValues));
-                        feature.setGeometry(p);
+
+                    switch (geometryType) {
+                        case "AnyCrsPoint":
+                            GeoJsonPoint point = new GeoJsonPoint();
+                            point.setCoordinates(this.createCoordinates1(coordinatesValues));
+                            feature.setGeometry(point);
+                        case "AnyCrsMultiPoint":
+                            GeoJsonMultiPoint multiPoint = new GeoJsonMultiPoint();
+                            multiPoint.setCoordinates(this.createCoordinates2(coordinatesValues));
+                            feature.setGeometry(multiPoint);
+                        case "AnyCrsPolygon":
+                            GeoJsonPolygon polygon = new GeoJsonPolygon();
+                            polygon.setCoordinates(this.createCoordinates3(coordinatesValues));
+                            feature.setGeometry(polygon);
+                        case "AnyCrsMultiPolygon":
+                            GeoJsonMultiPolygon multiPolygon = new GeoJsonMultiPolygon();
+                            multiPolygon.setCoordinates(this.createCoordinates4(coordinatesValues));
+                            feature.setGeometry(multiPolygon);
                     }
                     featureArray[j] = feature;
                 }
