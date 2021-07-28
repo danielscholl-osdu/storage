@@ -109,8 +109,8 @@ public class DpsConversionService {
         if(metaBlock == null) {
             return false;
         }
-        for (int i = 0; i < metaBlock.size(); i++) {
-            if(!metaBlock.get(i).isJsonNull()){
+        for (JsonElement block: metaBlock) {
+            if(!block.isJsonNull()){
                 return true;
             }
         }
