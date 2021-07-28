@@ -72,7 +72,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     for (RecordMetadata recordMetadata : recordsMetadata) {
                         recordsId.append(", ").append(recordMetadata.getId());
                     }
-                    LOGGER.info("Record Updated Successfully {}",recordsId.substring(2));
+                    LOGGER.debug("Record Updated Successfully {}",recordsId.substring(2));
 
                     this.pubSubclient.publishMessage(headers, pubsubInfos);
                 }

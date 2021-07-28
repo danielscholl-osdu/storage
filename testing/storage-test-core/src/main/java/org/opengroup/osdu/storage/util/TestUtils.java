@@ -65,6 +65,10 @@ public abstract class TestUtils {
         return String.format("data.test1@%s", getAclSuffix());
     }
 
+    public static final String getEntV2OnlyAcl() {
+        return String.format("data.storage-integration-test-acl.ent-v2@%s", getAclSuffix());
+    }
+
     public static final String getIntegrationTesterAcl() {
         return String.format("data.integration.test@%s", getAclSuffix());
     }

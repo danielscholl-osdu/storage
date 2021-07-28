@@ -150,15 +150,16 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
             try {
                 groups = service.getGroups();
                 this.cache.put(cacheKey, groups);
-                this.logger.info("Entitlements cache miss");
+                this.logger.debug("Entitlements cache miss");
 
             } catch (EntitlementsException e) {
                 HttpResponse response = e.getHttpResponse();
                 this.logger.error(String.format("Error requesting entitlements service %s", response));
                 throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, ERROR_MSG, e);
+            } catch (RedisException ex) {
+                this.logger.error(String.format("Error putting key %s into redis: %s", cacheKey, ex.getMessage()), ex);
             }
         }
-
         return groups;
     }
 

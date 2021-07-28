@@ -80,7 +80,7 @@ public class MessageBusImpl implements IMessageBus {
                     DateTime.now(),
                     RECORDS_CHANGED_EVENT_DATA_VERSION
             ));
-            LOGGER.info("Event generated: " + messageId);
+            LOGGER.debug("Event generated: " + messageId);
 
             // If a record change is not published (publishToEventGridTopic throws) we fail the job.
             // This is done to make sure no notifications are missed.
@@ -124,7 +124,7 @@ public class MessageBusImpl implements IMessageBus {
             message.setContentType("application/json");
 
             try {
-                LOGGER.info("Storage publishes message to Service Bus " + headers.getCorrelationId());
+                LOGGER.debug("Storage publishes message to Service Bus " + headers.getCorrelationId());
                 topicClientFactory.getClient(headers.getPartitionId(), pubSubConfig.getServiceBusTopic()).send(message);
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
