@@ -14,24 +14,20 @@
 
 package org.opengroup.osdu.storage.api;
 
-import javax.validation.Valid;
-
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidKind;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.annotation.RequestScope;
+
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping("query")
@@ -45,7 +41,7 @@ public class QueryApi {
 	@Autowired
 	private EncodeDecode encodeDecode;
 
-	@PostMapping("/records")
+	@PostMapping(value = "/records", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<MultiRecordInfo> getRecords(@Valid @RequestBody MultiRecordIds ids) {
 		return new ResponseEntity<MultiRecordInfo>(this.batchService.getMultipleRecords(ids), HttpStatus.OK);
@@ -56,7 +52,7 @@ public class QueryApi {
 	 * @param ids id of records to be fetched
 	 * @return valid records
 	 */
-	@PostMapping("/records:batch")
+	@PostMapping(value = "/records:batch", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<MultiRecordResponse> fetchRecords(@Valid @RequestBody MultiRecordRequest ids) {
 		return new ResponseEntity<MultiRecordResponse>(this.batchService.fetchMultipleRecords(ids), HttpStatus.OK);
@@ -64,7 +60,7 @@ public class QueryApi {
 
 	// This endpoint is deprecated as of M6, replaced by schema service. In M7 this endpoint will be deleted
 	@Deprecated
-	@GetMapping("/kinds")
+	@GetMapping(value = "/kinds", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getKinds(@RequestParam(required = false) String cursor,
 			@RequestParam(required = false) Integer limit) {
@@ -73,7 +69,7 @@ public class QueryApi {
 		return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
 	}
 
-	@GetMapping("/records")
+	@GetMapping(value = "/records", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getAllRecords(
 			@RequestParam(required = false) String cursor,
