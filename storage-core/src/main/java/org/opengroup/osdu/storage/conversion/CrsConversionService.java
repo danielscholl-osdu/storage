@@ -36,6 +36,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.crs.ICrsConverterFactory;
 import org.opengroup.osdu.core.common.crs.ICrsConverterService;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
+import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -43,6 +44,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.common.base.Strings;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 
@@ -68,6 +70,9 @@ public class CrsConversionService {
 
     @Autowired
     private JaxRsDpsLog logger;
+
+    @Autowired
+    private IServiceAccountJwtClient jwtClient;
 
     public RecordsAndStatuses doCrsConversion(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
@@ -617,8 +622,12 @@ public class CrsConversionService {
     }
 
     private DpsHeaders customizeHeaderBeforeCallingCrsConversion(DpsHeaders dpsHeaders) {
+        String token = this.jwtClient.getIdToken(dpsHeaders.getPartitionId());
+        if (Strings.isNullOrEmpty(token)) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "authorization for crs conversion failed");
+        }
         DpsHeaders headers = DpsHeaders.createFromMap(dpsHeaders.getHeaders());
-        headers.put(DpsHeaders.AUTHORIZATION, dpsHeaders.getAuthorization());
+        headers.put(DpsHeaders.AUTHORIZATION, token);
         headers.put(DpsHeaders.DATA_PARTITION_ID, dpsHeaders.getPartitionId());
         return headers;
     }
