@@ -15,6 +15,8 @@
 package org.opengroup.osdu.storage.conversion;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,12 +50,13 @@ public class DpsConversionService {
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
     private static final String META = "meta";
+    private static final String TYPE = "type";
     private static final String DATA = "data";
-    private static final String SPATIAL_LOCATION = "SpatialLocation";
-    private static final String AS_INGESTED_COORDINATES = "AsIngestedCoordinates";
     private static final String WGS84_COORDINATES = "Wgs84Coordinates";
-    private static final String NO_CONVERSION_BLOCK = "No Conversion Blocks exist in This Record.";
-    private static final String WGS84_COORDINATES_BLOCK = "'Wgs84Coordinates' block exists, Conversion is not required for this record.";
+    private static final String AS_INGESTED_COORDINATES = "AsIngestedCoordinates";
+    private static final String ANY_CRS_FEATURE_COLLECTION = "AnyCrsFeatureCollection";
+    private static final String NO_CONVERSION = "No Conversion Blocks or 'Wgs84Coordinates' block exists in this record.";
+    public static final List<String> validAttributes = new ArrayList<>(Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline"));
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -65,7 +68,6 @@ public class DpsConversionService {
 
         if (conversionStatuses.size() > 0) {
             RecordsAndStatuses crsConversionResult = null;
-
             if (recordsWithMetaBlock.size() > 0) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
@@ -73,7 +75,6 @@ public class DpsConversionService {
                 this.datesConversionService.convertDatesToISO(conversionRecords);
                 allRecords.addAll(conversionRecords);
             }
-
             if (recordsWithGeoJsonBlock.size() > 0) {
                 crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
@@ -94,13 +95,6 @@ public class DpsConversionService {
                 recordsWithMetaBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
-            } else if (this.isWgs84CoordinatesBlockPresent(recordJsonObject)) {
-                conversionRecord.setRecordJsonObject(recordJsonObject);
-                conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
-                List<String> conversionStatusWgs84Block = new ArrayList<>();
-                conversionStatusWgs84Block.add(WGS84_COORDINATES_BLOCK);
-                conversionRecord.setConversionMessages(conversionStatusWgs84Block);
-                recordsWithoutConversionBlock.add(conversionRecord);
             } else if (this.isAsIngestedCoordinatesPresent(recordJsonObject)) {
                 recordsWithGeoJsonBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
@@ -109,7 +103,7 @@ public class DpsConversionService {
                 conversionRecord.setRecordJsonObject(recordJsonObject);
                 conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
                 List<String> conversionStatusNoConversionBlock = new ArrayList<>();
-                conversionStatusNoConversionBlock.add(NO_CONVERSION_BLOCK);
+                conversionStatusNoConversionBlock.add(NO_CONVERSION);
                 conversionRecord.setConversionMessages(conversionStatusNoConversionBlock);
                 recordsWithoutConversionBlock.add(conversionRecord);
             }
@@ -117,36 +111,17 @@ public class DpsConversionService {
         return recordsWithoutConversionBlock;
     }
 
-    private boolean isMetaBlockPresent(JsonObject record) {
-        boolean isPresent = true;
-        JsonArray metaBlock = record.getAsJsonArray(META);
-        if (metaBlock == null || metaBlock.size() == 0) {
-            isPresent = false;
-        }
-        return isPresent;
-    }
-
     private boolean isAsIngestedCoordinatesPresent(JsonObject record) {
-        JsonObject asIngestedBlock = null;
-        if (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION) == null || record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).size() == 0) {
-            return false;
-        } else {
-            JsonObject spatialLocation = record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION);
-            if (spatialLocation.getAsJsonObject(AS_INGESTED_COORDINATES) == null || spatialLocation.getAsJsonObject(AS_INGESTED_COORDINATES).isJsonNull()) {
-                return false;
-            }
-            asIngestedBlock = record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).getAsJsonObject(AS_INGESTED_COORDINATES);
-        }
-        return asIngestedBlock != null && asIngestedBlock.size() != 0;
+        JsonObject filteredObject = this.filterDataFields(record,validAttributes);
+        return ((filteredObject != null) && (filteredObject.size() > 0)) ? true : false;
     }
 
-    private boolean isWgs84CoordinatesBlockPresent(JsonObject record) {
-        if (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION) != null) {
-            if ((record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).getAsJsonObject(WGS84_COORDINATES) != null) && (record.getAsJsonObject(DATA).getAsJsonObject(SPATIAL_LOCATION).getAsJsonObject(WGS84_COORDINATES).size() > 0)) {
-                return true;
-            }
+    private boolean isMetaBlockPresent(JsonObject record) {
+        if (record.get(META) == null || record.get(META).isJsonNull()) {
+            return false;
         }
-        return false;
+        JsonArray metaBlock = record.getAsJsonArray(META);
+        return metaBlock != null && metaBlock.size() != 0;
     }
 
     private String getRecordId(JsonObject record) {
@@ -219,4 +194,41 @@ public class DpsConversionService {
             }
         }
     }
+
+    public JsonObject filterDataFields(JsonObject record, List<String> attributes) {
+        JsonObject dataObject = record.get(DATA).getAsJsonObject();
+        JsonObject filteredData = new JsonObject();
+        Iterator var = attributes.iterator();
+
+        while (var.hasNext()) {
+            String attribute = (String) var.next();
+            JsonElement property = getDataSubProperty(attribute, dataObject);
+            if (property != null) {
+                JsonObject recordObj = property.getAsJsonObject();
+                if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(AS_INGESTED_COORDINATES) != null) && (recordObj.getAsJsonObject(WGS84_COORDINATES) == null)) {
+                    if ((recordObj.getAsJsonObject(AS_INGESTED_COORDINATES).get(TYPE) != null) && (recordObj.getAsJsonObject(AS_INGESTED_COORDINATES).get(TYPE).getAsString().equals(ANY_CRS_FEATURE_COLLECTION))) filteredData.add(attribute, property);
+                }
+            }
+        }
+        return filteredData;
+    }
+
+    private static JsonElement getDataSubProperty(String field, JsonObject data) {
+        if (field.contains(".")) {
+            String[] fieldArray = field.split("\\.", 2);
+            String subFieldParent = fieldArray[0];
+            String subFieldChild = fieldArray[1];
+            JsonElement subFieldParentElement = data.get(subFieldParent);
+            if (subFieldParentElement.isJsonObject()) {
+                JsonElement parentObjectValue = getDataSubProperty(subFieldChild, subFieldParentElement.getAsJsonObject());
+                if (parentObjectValue != null) {
+                    return parentObjectValue;
+                }
+            }
+            return null;
+        } else {
+            return data.get(field);
+        }
+    }
+
 }

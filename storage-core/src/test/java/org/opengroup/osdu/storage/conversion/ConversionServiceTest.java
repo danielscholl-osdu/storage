@@ -69,7 +69,7 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(RECORD_2));
-        Assert.assertEquals("No Conversion Blocks exist in This Record.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals("No Conversion Blocks or 'Wgs84Coordinates' block exists in this record.", result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
@@ -253,18 +253,7 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(GEO_JSON_RECORD_1));
-        Assert.assertEquals("No Conversion Blocks exist in This Record.", result.getConversionStatuses().get(0).getErrors().get(0));
-    }
-
-    @Test
-    public void should_returnOriginalRecordsAndStatusesAsIngestedCoordinatesBlockWithWgs84Coordinates_whenProvidedRecordsWithWgs84Coordinates() {
-        this.originalRecords.add(this.jsonParser.parse(GEO_JSON_CONVERTED_RECORD_2).getAsJsonObject());
-
-        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
-        Assert.assertEquals(1, result.getConversionStatuses().size());
-        Assert.assertEquals(1, result.getRecords().size());
-        Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(GEO_JSON_CONVERTED_RECORD_2));
-        Assert.assertEquals("'Wgs84Coordinates' block exists, Conversion is not required for this record.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals("No Conversion Blocks or 'Wgs84Coordinates' block exists in this record.", result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
