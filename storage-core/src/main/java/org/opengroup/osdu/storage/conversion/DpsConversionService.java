@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.crs.UnitConversionImpl;
 import org.opengroup.osdu.core.common.crs.dates.DatesConversionImpl;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -49,12 +50,6 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final String META = "meta";
-    private static final String TYPE = "type";
-    private static final String DATA = "data";
-    private static final String WGS84_COORDINATES = "Wgs84Coordinates";
-    private static final String AS_INGESTED_COORDINATES = "AsIngestedCoordinates";
-    private static final String ANY_CRS_FEATURE_COLLECTION = "AnyCrsFeatureCollection";
     private static final String NO_CONVERSION = "No Conversion Blocks or 'Wgs84Coordinates' block exists in this record.";
     public static final List<String> validAttributes = new ArrayList<>(Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline"));
 
@@ -117,10 +112,10 @@ public class DpsConversionService {
     }
 
     private boolean isMetaBlockPresent(JsonObject record) {
-        if (record.get(META) == null || record.get(META).isJsonNull()) {
+        if (record.get(Constants.META) == null || record.get(Constants.META).isJsonNull()) {
             return false;
         }
-        JsonArray metaBlock = record.getAsJsonArray(META);
+        JsonArray metaBlock = record.getAsJsonArray(Constants.META);
         return metaBlock != null && metaBlock.size() != 0;
     }
 
@@ -196,7 +191,7 @@ public class DpsConversionService {
     }
 
     public JsonObject filterDataFields(JsonObject record, List<String> attributes) {
-        JsonObject dataObject = record.get(DATA).getAsJsonObject();
+        JsonObject dataObject = record.get(Constants.DATA).getAsJsonObject();
         JsonObject filteredData = new JsonObject();
         Iterator var = attributes.iterator();
 
@@ -205,8 +200,8 @@ public class DpsConversionService {
             JsonElement property = getDataSubProperty(attribute, dataObject);
             if (property != null) {
                 JsonObject recordObj = property.getAsJsonObject();
-                if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(AS_INGESTED_COORDINATES) != null) && (recordObj.getAsJsonObject(WGS84_COORDINATES) == null)) {
-                    if ((recordObj.getAsJsonObject(AS_INGESTED_COORDINATES).get(TYPE) != null) && (recordObj.getAsJsonObject(AS_INGESTED_COORDINATES).get(TYPE).getAsString().equals(ANY_CRS_FEATURE_COLLECTION))) filteredData.add(attribute, property);
+                if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES) != null) && (recordObj.getAsJsonObject(Constants.WGS84_COORDINATES) == null)) {
+                    if ((recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE) != null) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).getAsString().equals(Constants.ANY_CRS_FEATURE_COLLECTION))) filteredData.add(attribute, property);
                 }
             }
         }
