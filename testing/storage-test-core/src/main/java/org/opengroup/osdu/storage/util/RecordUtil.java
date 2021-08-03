@@ -460,6 +460,92 @@ public class RecordUtil {
 		return record;
 	}
 
+	public static String createJsonRecordWithAsIngestedCoordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
+		JsonArray records = new JsonArray();
+
+		for (int i = 0; i <  recordsNumber; i++) {
+			JsonObject data = new JsonObject();
+
+			JsonArray coordinates = new JsonArray();
+			coordinates.add(313405.9477893702);
+			coordinates.add(6544797.620047403);
+			coordinates.add(6.561679790026246);
+
+			JsonObject properties = new JsonObject();
+
+			JsonObject geometry = new JsonObject();
+			geometry.add("coordinates", coordinates);
+			geometry.addProperty("type", geometryType);
+			geometry.addProperty("bbox", (Boolean) null);
+
+			JsonArray features = new JsonArray();
+			JsonObject feature = new JsonObject();
+			feature.addProperty("bbox", (Boolean) null);
+			feature.addProperty("type", "AnyCrsFeature");
+			feature.add("properties", properties);
+			feature.add("geometry", geometry);
+			features.add(feature);
+
+			JsonObject asIngestedCoordinates = new JsonObject();
+			asIngestedCoordinates.addProperty("persistableReferenceCrs", prCRS);
+			asIngestedCoordinates.addProperty("persistableReferenceUnitZ", prUNITZ);
+			asIngestedCoordinates.addProperty("type", "AnyCrsFeatureCollection");
+			asIngestedCoordinates.add("properties", properties);
+			asIngestedCoordinates.add("features", features);
+
+			JsonObject validAttribute = new JsonObject();
+			validAttribute.add("AsIngestedCoordinates", asIngestedCoordinates);
+
+			data.add(attributeType, validAttribute);
+
+			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
+			record.add("data", data);
+			records.add(record);
+		}
+		return records.toString();
+	}
+
+	public static String createJsonRecordWithInvalidAsIngestedCoordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
+		JsonArray records = new JsonArray();
+
+		for (int i = 0; i <  recordsNumber; i++) {
+			JsonObject data = new JsonObject();
+
+			JsonArray coordinates = new JsonArray();
+			coordinates.add(313405.9477893702);
+			coordinates.add(6544797.620047403);
+			coordinates.add(6.561679790026246);
+
+			JsonObject geometry = new JsonObject();
+			geometry.add("coordinates", coordinates);
+			geometry.addProperty("type", geometryType);
+			geometry.addProperty("bbox", (Boolean) null);
+
+			JsonArray features = new JsonArray();
+			JsonObject feature = new JsonObject();
+			feature.addProperty("bbox", (Boolean) null);
+			feature.addProperty("type", "AnyCrsFeature");
+			feature.add("geometry", geometry);
+			features.add(feature);
+
+			JsonObject asIngestedCoordinates = new JsonObject();
+			asIngestedCoordinates.addProperty("persistableReferenceCrs", prCRS);
+			asIngestedCoordinates.addProperty("persistableReferenceUnitZ", prUNITZ);
+			asIngestedCoordinates.addProperty("type", "AnyCrsFeatureCollection");
+			asIngestedCoordinates.add("features", features);
+
+			JsonObject validAttribute = new JsonObject();
+			validAttribute.add("AsIngestedCoordinates", asIngestedCoordinates);
+
+			data.add(attributeType, validAttribute);
+
+			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
+			record.add("data", data);
+			records.add(record);
+		}
+		return records.toString();
+	}
+
 	private static JsonObject getDefaultRecordWithDefaultData(String id, String kind, String legalTag) {
 		JsonObject data = new JsonObject();
 		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
