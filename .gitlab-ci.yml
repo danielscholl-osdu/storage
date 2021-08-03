@@ -28,6 +28,11 @@ variables:
   OSDU_GCP_ENV_VARS: GOOGLE_AUDIENCES=$GOOGLE_AUDIENCE,AUTHORIZE_API=$OSDU_GCP_ENTITLEMENTS_V2_URL,LEGALTAG_API=$OSDU_GCP_LEGALTAG_API,STORAGE_HOSTNAME=$OSDU_GCP_STORAGE_HOSTNAME,CRS_API=$OSDU_GCP_CRS_API,DEFAULT_DATA_COUNTRY=$OSDU_GCP_DEFAULT_DATA_COUNTRY,REDIS_STORAGE_HOST=$REDIS_STORAGE_HOST,REDIS_GROUP_HOST=$REDIS_GROUP_HOST,PARTITION_API=$OSDU_GCP_PARTITION_API,POLICY_API=$OSDU_GCP_POLICY_API,POLICY_ID=storage --vpc-connector=$OSDU_GCP_VPC_CONNECTOR
   OSDU_GCP_TEST_SUBDIR: testing/$OSDU_GCP_SERVICE-test-$OSDU_GCP_VENDOR
   OSDU_GCP_HELM_PACKAGE_CHARTS: "devops/gcp/deploy devops/gcp/configmap"
+  # --- osdu specific variables for GKE ---
+  OSDU_GCP_HELM_CONFIG_SERVICE_VARS: "--set data.google_audiences=$GOOGLE_AUDIENCE --set data.redis_group_host=$REDIS_GROUP_HOST --set data.redis_storage_host=$REDIS_STORAGE_HOST --set data.crs_api=$OSDU_GCP_CRS_API --set data.storage_hostname=$OSDU_GCP_SERVICE"
+  OSDU_GCP_HELM_DEPLOYMENT_SERVICE_VARS: "--set data.image=$CI_REGISTRY_IMAGE/osdu-gcp:$CI_COMMIT_SHORT_SHA --set data.serviceAccountName=workload-identity-storage --set data.limits_cpu=1.5 --set data.limits_memory=2048M"
+  OSDU_GCP_HELM_CONFIG_SERVICE: storage-config
+  OSDU_GCP_HELM_DEPLOYMENT_SERVICE: storage-deploy
 
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
@@ -57,7 +62,7 @@ include:
     file: "cloud-providers/ibm.yml"
 
   - project: 'osdu/platform/ci-cd-pipelines'
-    file: 'cloud-providers/osdu-gcp-cloudrun.yml'
+    file: "cloud-providers/osdu-gcp-gke.yml"
 
   - project: 'osdu/platform/ci-cd-pipelines'
     file: 'publishing/pages.yml'
@@ -70,8 +75,6 @@ include:
 
   - project: 'osdu/platform/ci-cd-pipelines'
     file: 'cloud-providers/aws-mongodb.yml'
-
-
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there
