@@ -11,7 +11,7 @@ data:
   redis_group_host: ""
   redis_storage_host: ""
   default_data_country: "US"
-  crs_api: "https://os-crs-converter-jvmvia5dea-uc.a.run.app/api/crs/v2/"
+  crs_api: ""
 
 conf:
   ent_name: ""
