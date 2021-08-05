@@ -19,6 +19,7 @@ import org.opengroup.osdu.storage.provider.azure.pubsub.LegalTagSubscriptionMana
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 
 @Component
+@ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalTagSubscriberSetUp implements ApplicationListener<ContextRefreshedEvent> {
     @Autowired
     private LegalTagSubscriptionManagerImpl legalTagSubscriptionManager;
