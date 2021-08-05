@@ -22,9 +22,11 @@ import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalTagSubscriptionClientFactory {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagSubscriptionClientFactory.class);
