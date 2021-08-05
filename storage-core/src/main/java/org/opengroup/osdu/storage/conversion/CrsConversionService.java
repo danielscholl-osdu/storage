@@ -176,36 +176,32 @@ public class CrsConversionService {
                         feature.setType(featureItem.get(Constants.TYPE).getAsString());
                         JsonArray coordinatesValues = featureItem.getAsJsonObject(Constants.GEOMETRY).get(Constants.COORDINATES).getAsJsonArray();
                         String geometryType = featureItem.getAsJsonObject(Constants.GEOMETRY).get(Constants.TYPE).getAsString();
-
+                        JsonObject coordinatesObj = new JsonObject();
+                        coordinatesObj.add(Constants.COORDINATES, coordinatesValues);
+                        Gson gson = new Gson();
                         switch (geometryType) {
-                            case "AnyCrsPoint":
-                                GeoJsonPoint point = new GeoJsonPoint();
-                                point.setCoordinates(this.createCoordinates1(coordinatesValues));
+                            case Constants.ANY_CRS_POINT:
+                                GeoJsonPoint point = gson.fromJson(coordinatesObj, GeoJsonPoint.class);
                                 feature.setGeometry(point);
                                 break;
-                            case "AnyCrsMultiPoint":
-                                GeoJsonMultiPoint multiPoint = new GeoJsonMultiPoint();
-                                multiPoint.setCoordinates(this.createCoordinates2(coordinatesValues));
+                            case Constants.ANY_CRS_MULTIPOINT:
+                                GeoJsonMultiPoint multiPoint = gson.fromJson(coordinatesObj, GeoJsonMultiPoint.class);
                                 feature.setGeometry(multiPoint);
                                 break;
-                            case "AnyCrsLineString":
-                                GeoJsonLineString line = new GeoJsonLineString();
-                                line.setCoordinates(this.createCoordinates2(coordinatesValues));
+                            case Constants.ANY_CRS_LINE_STRING:
+                                GeoJsonLineString line = gson.fromJson(coordinatesObj, GeoJsonLineString.class);
                                 feature.setGeometry(line);
                                 break;
-                            case "AnyCrsMultiLineString":
-                                GeoJsonMultiLineString multiLine = new GeoJsonMultiLineString();
-                                multiLine.setCoordinates(this.createCoordinates3(coordinatesValues));
+                            case Constants.ANY_CRS_MULTILINE_STRING:
+                                GeoJsonMultiLineString multiLine = gson.fromJson(coordinatesObj, GeoJsonMultiLineString.class);
                                 feature.setGeometry(multiLine);
                                 break;
-                            case "AnyCrsPolygon":
-                                GeoJsonPolygon polygon = new GeoJsonPolygon();
-                                polygon.setCoordinates(this.createCoordinates3(coordinatesValues));
+                            case Constants.ANY_CRS_POLYGON:
+                                GeoJsonPolygon polygon = gson.fromJson(coordinatesObj, GeoJsonPolygon.class);
                                 feature.setGeometry(polygon);
                                 break;
-                            case "AnyCrsMultiPolygon":
-                                GeoJsonMultiPolygon multiPolygon = new GeoJsonMultiPolygon();
-                                multiPolygon.setCoordinates(this.createCoordinates4(coordinatesValues));
+                            case Constants.ANY_CRS_MULTIPOLYGON:
+                                GeoJsonMultiPolygon multiPolygon = gson.fromJson(coordinatesObj, GeoJsonMultiPolygon.class);
                                 feature.setGeometry(multiPolygon);
                                 break;
                         }
@@ -639,56 +635,4 @@ public class CrsConversionService {
         }
         return bbox;
     }
-
-    private double[] createCoordinates1(JsonArray coordinatesValues) {
-        double[] coordinates = new double[coordinatesValues.size()];
-        for (int i = 0; i < coordinatesValues.size(); i++) {
-            coordinates[i] = coordinatesValues.get(i).getAsDouble();
-        }
-        return coordinates;
-    }
-
-    private double[][] createCoordinates2(JsonArray coordinatesValues) {
-        double[][] coordinates = new double[coordinatesValues.size()][1];
-        for (int i = 0; i < coordinatesValues.size(); i++) {
-            JsonArray jsonArray1 = (JsonArray) coordinatesValues.get(i);
-            for (int j= 0; j < jsonArray1.size(); j++) {
-                coordinates[i][j] = jsonArray1.get(j).getAsDouble();
-            }
-        }
-        return coordinates;
-    }
-
-    private double[][][] createCoordinates3(JsonArray coordinatesValues) {
-        double[][][] coordinates = new double[coordinatesValues.size()][5][2];
-        for(int i = 0; i < coordinatesValues.size(); i ++) {
-            JsonArray jsonArray1 = (JsonArray) coordinatesValues.get(i);
-            for (int j = 0; j < jsonArray1.size(); j++) {
-                JsonArray jsonArray2 = (JsonArray) jsonArray1.get(j);
-                for (int k = 0; k < jsonArray2.size(); k++) {
-                    coordinates[i][j][k] = jsonArray2.get(k).getAsDouble();
-                }
-            }
-        }
-        return coordinates;
-    }
-
-    private double[][][][] createCoordinates4(JsonArray coordinatesValues) {
-        double[][][][] coordinates = new double[coordinatesValues.size()][1][5][2];
-
-        for(int i = 0; i < coordinatesValues.size(); i ++) {
-            JsonArray jsonArray1 = (JsonArray) coordinatesValues.get(i);
-            for (int j = 0; j < jsonArray1.size(); j++) {
-                JsonArray jsonArray2 = (JsonArray) jsonArray1.get(j);
-                for (int k = 0; k < jsonArray2.size(); k++) {
-                    JsonArray jsonArray3 = (JsonArray) jsonArray2.get(k);
-                    for (int l = 0; l < jsonArray3.size(); l++) {
-                        coordinates[i][j][k][l] = jsonArray3.get(l).getAsDouble();
-                    }
-                }
-            }
-        }
-        return coordinates;
-    }
-
 }

@@ -561,6 +561,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(204, deleteResponse.getStatus());
     }
 
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnConvertedRecords_whenConversionRequiredWithAsIngestedCoordinatesBlockAndNoError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -594,6 +595,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(204, deleteResponse1.getStatus());
     }
 
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnConvertedRecords_whenConversionRequiredWithAsIngestedCoordinatesBlockWithError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -618,6 +620,40 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(0, responseObject.notFound.length);
         assertEquals(1, responseObject.conversionStatuses.size());
         assertEquals("Error making request to CrsConverter service. Check the inner HttpResponse for more info.", responseObject.conversionStatuses.get(0).errors.get(0));
+
+        assertEquals(KIND, responseObject.records[0].kind);
+        assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
+        assertEquals(1, responseObject.records[0].data.size());
+
+        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getStatus());
+    }
+
+    @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
+    @Test
+    public void should_returnConvertedRecords_whenConversionNotRequiredWithAsIngestedCoordinatesAndWgs84CoordinatesBlocks() throws Exception {
+        String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
+        String jsonInput = RecordUtil.createJsonRecordWithWGS84Coordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
+        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getStatus());
+
+        JsonArray records = new JsonArray();
+        records.add(recordId + 0);
+
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+                "");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(1, responseObject.records.length);
+        assertEquals(0, responseObject.notFound.length);
+        assertEquals(1, responseObject.conversionStatuses.size());
+        assertEquals("No Conversion Blocks or 'Wgs84Coordinates' block exists in this record.", responseObject.conversionStatuses.get(0).errors.get(0));
 
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());

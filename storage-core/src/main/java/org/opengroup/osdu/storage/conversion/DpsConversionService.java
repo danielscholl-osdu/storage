@@ -86,12 +86,12 @@ public class DpsConversionService {
         ConversionRecord conversionRecord = new ConversionRecord();
         for (int i = 0; i < originalRecords.size(); i++) {
             JsonObject recordJsonObject = originalRecords.get(i);
-            if (this.isMetaBlockPresent(recordJsonObject)) {
-                recordsWithMetaBlock.add(recordJsonObject);
+            if (this.isAsIngestedCoordinatesPresent(recordJsonObject)) {
+                recordsWithGeoJsonBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
-            } else if (this.isAsIngestedCoordinatesPresent(recordJsonObject)) {
-                recordsWithGeoJsonBlock.add(recordJsonObject);
+            } else if (this.isMetaBlockPresent(recordJsonObject)) {
+                recordsWithMetaBlock.add(recordJsonObject);
                 String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
             } else {
