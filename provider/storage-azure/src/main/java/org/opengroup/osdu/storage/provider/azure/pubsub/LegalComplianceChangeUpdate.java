@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
+@ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalComplianceChangeUpdate{
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeUpdate.class);
 
@@ -49,10 +51,8 @@ public class LegalComplianceChangeUpdate{
     private IRecordsMetadataRepository recordsRepo;
     @Autowired
     private StorageAuditLogger auditLogger;
-//    @Autowired
-//   private ThreadDpsHeaders headers; //to be used when azure.feature.legaltag-compliance-update.enabled is set
     @Autowired
-   private DpsHeaders headers;
+    private ThreadDpsHeaders headers; //to be used when azure.feature.legaltag-compliance-update.enabled is set
     @Autowired
     private MDCContextMap mdcContextMap;
     @Autowired
@@ -68,8 +68,7 @@ public class LegalComplianceChangeUpdate{
             LegalTagChangedCollection tags = gson.fromJson(legalTagsChangedData.getData(), LegalTagChangedCollection.class);
 
             message.setMessageId(legalTagsChangedRequest.getId());
-            //uncomment when azure.feature.legaltag-compliance-update.enabled is enabled
-            //headers.setThreadContext(legalTagsChangedData.getDataPartitionId(), legalTagsChangedData.getCorrelationId(), legalTagsChangedData.getUser());
+            headers.setThreadContext(legalTagsChangedData.getDataPartitionId(), legalTagsChangedData.getCorrelationId(), legalTagsChangedData.getUser());
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
             complianceMessagePullReceiver.receiveMessage(tags, headers);
