@@ -25,6 +25,7 @@ import org.opengroup.osdu.storage.provider.azure.interfaces.ILegalTagSubscriptio
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -34,6 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionManager {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagSubscriptionManagerImpl.class);
