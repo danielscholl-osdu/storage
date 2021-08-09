@@ -50,7 +50,7 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final String NO_CONVERSION = "No Conversion Blocks or 'Wgs84Coordinates' block exists in this record.";
+    private static final String NO_CONVERSION = "No Conversion Blocks ('meta' or 'AsIngestedCoordinates') or 'Wgs84Coordinates' block exists in this record.";
     public static final List<String> validAttributes = new ArrayList<>(Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline"));
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
@@ -63,16 +63,16 @@ public class DpsConversionService {
 
         if (conversionStatuses.size() > 0) {
             RecordsAndStatuses crsConversionResult = null;
+            if (recordsWithGeoJsonBlock.size() > 0) {
+                crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
+                List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
+                allRecords.addAll(conversionRecords);
+            }
             if (recordsWithMetaBlock.size() > 0) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 this.unitConversionService.convertUnitsToSI(conversionRecords);
                 this.datesConversionService.convertDatesToISO(conversionRecords);
-                allRecords.addAll(conversionRecords);
-            }
-            if (recordsWithGeoJsonBlock.size() > 0) {
-                crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
-                List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 allRecords.addAll(conversionRecords);
             }
         }
