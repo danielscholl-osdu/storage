@@ -16,10 +16,9 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
+import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import com.google.gson.Gson;
 import com.amazonaws.services.sns.AmazonSNS;
-import org.opengroup.osdu.core.aws.ssm.ParameterStorePropertySource;
-import org.opengroup.osdu.core.aws.ssm.SSMConfig;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -39,36 +38,27 @@ import java.util.Map;
 public class MessageBusImpl implements IMessageBus {
 
     private String amazonSNSTopic;
-
-    @Value("${aws.sns.topic.arn}")
-    private String parameter;
-
     private AmazonSNS snsClient;
-    @Value("${aws.primary.region}")
-    private String primaryRegionName;
     @Value("${AWS.REGION}")
     private String currentRegion;
 
     @Inject
     private JaxRsDpsLog logger;
 
-    private ParameterStorePropertySource ssm;
-
     @PostConstruct
-    public void init(){
-        AmazonSNSConfig config;
-        SSMConfig ssmConfig = new SSMConfig();
-        ssm = ssmConfig.amazonSSM();
-        String amazonSNSRegion = ssm.getProperty(primaryRegionName).toString();
-        if (amazonSNSRegion!=null){
-            config = new AmazonSNSConfig(amazonSNSRegion);
-        }else{
-            config= new AmazonSNSConfig(currentRegion);
+    public void init() throws Exception{
+        String amazonSNSRegion;
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        try {
+            amazonSNSRegion = provider.getParameterAsString("primary-region");
+        }catch ( Exception e){
+            amazonSNSRegion =  null;
         }
-
-        snsClient = config.AmazonSNS();
-        amazonSNSTopic = ssm.getProperty(parameter).toString();
-
+        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
+        if (amazonSNSRegion == null){
+            amazonSNSRegion = currentRegion;
+        }
+        snsClient = new AmazonSNSConfig(amazonSNSRegion).AmazonSNS();
     }
 
     @Override
