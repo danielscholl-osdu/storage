@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.util;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
