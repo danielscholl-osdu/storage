@@ -18,12 +18,6 @@ import static org.opengroup.osdu.core.common.util.JsonUtils.jsonElementToString;
 
 import java.util.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.google.gson.*;
 import org.apache.http.HttpStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -147,22 +141,23 @@ public class CrsConversionService {
                 continue;
             }
 
-            JsonObject filteredObject = this.dpsConversionService.filterDataFields(recordJsonObject, this.dpsConversionService.validAttributes);
-            Iterator<String> keys = filteredObject.keySet().iterator();
+            List<String> validationErrors = new ArrayList<>();
+            JsonObject filteredObjects = this.dpsConversionService.filterDataFields(recordJsonObject, validationErrors);
+            Iterator<String> keys = filteredObjects.keySet().iterator();
 
             while(keys.hasNext()) {
                 String attributeName = keys.next();
-                JsonObject asIngestedCoordinates = filteredObject.getAsJsonObject(attributeName).getAsJsonObject(Constants.AS_INGESTED_COORDINATES);
+                JsonObject asIngestedCoordinates = filteredObjects.getAsJsonObject(attributeName).getAsJsonObject(Constants.AS_INGESTED_COORDINATES);
 
                 if (asIngestedCoordinates != null) {
                     GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection();
-                    if (!asIngestedCoordinates.get(Constants.TYPE).isJsonNull()) fc.setType(asIngestedCoordinates.get(Constants.TYPE).getAsString());
-                    if (!asIngestedCoordinates.get(Constants.PROPERTIES).isJsonNull()) fc.setProperties(asIngestedCoordinates.getAsJsonObject(Constants.PROPERTIES));
-                    if (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull()) fc.setPersistableReferenceCrs(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).getAsString());
-                    if (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull()) fc.setPersistableReferenceUnitZ(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).getAsString());
-                    if (!asIngestedCoordinates.get(Constants.BBOX).isJsonNull()) fc.setBbox(this.bboxValues(asIngestedCoordinates.getAsJsonArray(Constants.BBOX)));
+                    if (asIngestedCoordinates.has(Constants.TYPE) && (!asIngestedCoordinates.get(Constants.TYPE).isJsonNull())) fc.setType(asIngestedCoordinates.get(Constants.TYPE).getAsString());
+                    if (asIngestedCoordinates.has(Constants.PROPERTIES) && (!asIngestedCoordinates.get(Constants.PROPERTIES).isJsonNull())) fc.setProperties(asIngestedCoordinates.getAsJsonObject(Constants.PROPERTIES));
+                    if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_CRS) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull())) fc.setPersistableReferenceCrs(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).getAsString());
+                    if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_UNIT_Z) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).isJsonNull())) fc.setPersistableReferenceUnitZ(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).getAsString());
+                    if (asIngestedCoordinates.has(Constants.BBOX) && (!asIngestedCoordinates.get(Constants.BBOX).isJsonNull())) fc.setBbox(this.bboxValues(asIngestedCoordinates.getAsJsonArray(Constants.BBOX)));
 
-                    JsonArray featuresArray = (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull()) ? asIngestedCoordinates.getAsJsonArray(Constants.FEATURES) : null;
+                    JsonArray featuresArray = (asIngestedCoordinates.has(Constants.FEATURES) && (!asIngestedCoordinates.get(Constants.FEATURES).isJsonNull())) ? asIngestedCoordinates.getAsJsonArray(Constants.FEATURES) : null;
                     if (featuresArray == null || featuresArray.size() == 0) {
                         statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_FEATURES);
                         continue;
@@ -173,16 +168,17 @@ public class CrsConversionService {
                         JsonObject featureItem = featuresArray.get(j).getAsJsonObject();
 
                         GeoJsonFeature feature = new GeoJsonFeature();
-                        if (!featureItem.get(Constants.BBOX).isJsonNull()) fc.setBbox(this.bboxValues(featureItem.getAsJsonArray(Constants.BBOX)));
-                        if (!featureItem.get(Constants.TYPE).isJsonNull()) feature.setType(featureItem.get(Constants.TYPE).getAsString());
-                        if (!featureItem.getAsJsonObject(Constants.PROPERTIES).isJsonNull()) feature.setProperties(featureItem.getAsJsonObject(Constants.PROPERTIES));
-                        if (!featureItem.getAsJsonObject(Constants.GEOMETRY).isJsonNull()) {
+
+                        if (featureItem.has(Constants.BBOX) && (!featureItem.get(Constants.BBOX).isJsonNull())) fc.setBbox(this.bboxValues(featureItem.getAsJsonArray(Constants.BBOX)));
+                        if (featureItem.has(Constants.TYPE) && (!featureItem.get(Constants.TYPE).isJsonNull())) feature.setType(featureItem.get(Constants.TYPE).getAsString());
+                        if (featureItem.has(Constants.PROPERTIES) && (!featureItem.get(Constants.PROPERTIES).isJsonNull())) feature.setProperties(featureItem.getAsJsonObject(Constants.PROPERTIES));
+                        if (featureItem.has(Constants.GEOMETRY) && (!featureItem.get(Constants.GEOMETRY).isJsonNull())) {
                             JsonObject geometry = featureItem.getAsJsonObject(Constants.GEOMETRY);
 
-                            String geometryType = geometry.get(Constants.TYPE).getAsString();
+                            String geometryType = (geometry.has(Constants.TYPE) && (!geometry.get(Constants.TYPE).isJsonNull())) ? geometry.get(Constants.TYPE).getAsString() : "";
                             JsonObject coordinatesObj = new JsonObject();
                             if (!geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
-                                JsonArray coordinatesValues = geometry.get(Constants.COORDINATES).getAsJsonArray();
+                                JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
                                 coordinatesObj.add(Constants.COORDINATES, coordinatesValues);
                             }
 
@@ -214,15 +210,21 @@ public class CrsConversionService {
                                     break;
                                 case Constants.ANY_CRS_GEOMETRY_COLLECTION:
                                     GeoJsonGeometryCollection gc = new GeoJsonGeometryCollection();
-                                    JsonArray geometriesArray = geometry.get(Constants.GEOMETRIES).getAsJsonArray();
-                                    GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
+                                    JsonArray geometriesArray = (geometry.has(Constants.GEOMETRIES) && (!geometry.get(Constants.GEOMETRIES).isJsonNull())) ? geometry.get(Constants.GEOMETRIES).getAsJsonArray() : new JsonArray();
 
+                                    if (geometriesArray == null || geometriesArray.size() == 0) {
+                                        statusBuilder.addError("CRS conversion: 'geometries' missing in AsIngestedCoordinates block, no conversion applied.");
+                                        continue;
+                                    }
+
+                                    GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
                                     for (int k = 0; k < geometriesArray.size(); k++) {
                                         JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
 
                                         String geometriesType = geometryObj.get(Constants.TYPE).getAsString();
                                         JsonObject geometriesCoordinatesObj = new JsonObject();
-                                        JsonArray coordinatesValues = geometryObj.get(Constants.COORDINATES).getAsJsonArray();
+
+                                        JsonArray coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
                                         geometriesCoordinatesObj.add(Constants.COORDINATES, coordinatesValues);
 
                                         switch (geometriesType) {
@@ -241,7 +243,7 @@ public class CrsConversionService {
                                                 geometries[k] = line;
                                                 geometries[k].setType(geometriesType);
                                                 break;
-                                            case Constants.MULTI_LINE_STRING:
+                                            case Constants.MULTILINE_STRING:
                                                 GeoJsonMultiLineString multiLine = gson.fromJson(geometriesCoordinatesObj, GeoJsonMultiLineString.class);
                                                 geometries[k] = multiLine;
                                                 geometries[k].setType(geometriesType);
@@ -256,10 +258,17 @@ public class CrsConversionService {
                                                 geometries[k] = multiPolygon;
                                                 geometries[k].setType(geometriesType);
                                                 break;
+                                            default:
+                                                statusBuilder.addError(String.format("CRS conversion: Not a valid geometries type %s, no conversion applied.", geometriesType));
+                                                break;
                                         }
                                         gc.setGeometries(geometries);
                                         feature.setGeometry(gc);
                                     }
+                                    break;
+                                default:
+                                    statusBuilder.addError(String.format("CRS conversion: Not a valid geometry type %s, no conversion applied.", geometryType));
+                                    break;
                             }
                             featureArray[j] = feature;
                         } else {

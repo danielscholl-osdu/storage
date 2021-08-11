@@ -14,12 +14,10 @@
 
 package org.opengroup.osdu.storage.conversion;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.gson.*;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.crs.UnitConversionImpl;
@@ -33,11 +31,6 @@ import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-
 @Service
 public class DpsConversionService {
 
@@ -50,7 +43,6 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final String NO_CONVERSION = "No Conversion Blocks ('meta' or 'AsIngestedCoordinates') or 'Wgs84Coordinates' block exists in this record.";
     public static final List<String> validAttributes = new ArrayList<>(Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline"));
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
@@ -83,36 +75,36 @@ public class DpsConversionService {
 
     private List<ConversionRecord> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<JsonObject> recordsWithMetaBlock, List<JsonObject> recordsWithGeoJsonBlock) {
         List<ConversionRecord> recordsWithoutConversionBlock = new ArrayList<>();
-        ConversionRecord conversionRecord = new ConversionRecord();
+
         for (int i = 0; i < originalRecords.size(); i++) {
             JsonObject recordJsonObject = originalRecords.get(i);
-            if (this.isAsIngestedCoordinatesPresent(recordJsonObject)) {
+            String recordId = this.getRecordId(recordJsonObject);
+            List<String> validationErrors = new ArrayList<>();
+            if (this.isAsIngestedCoordinatesPresent(recordJsonObject, validationErrors)) {
                 recordsWithGeoJsonBlock.add(recordJsonObject);
-                String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
-            } else if (this.isMetaBlockPresent(recordJsonObject)) {
+            } else if (this.isMetaBlockPresent(recordJsonObject, validationErrors)) {
                 recordsWithMetaBlock.add(recordJsonObject);
-                String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
             } else {
+                ConversionRecord conversionRecord = new ConversionRecord();
                 conversionRecord.setRecordJsonObject(recordJsonObject);
                 conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
-                List<String> conversionStatusNoConversionBlock = new ArrayList<>();
-                conversionStatusNoConversionBlock.add(NO_CONVERSION);
-                conversionRecord.setConversionMessages(conversionStatusNoConversionBlock);
+                conversionRecord.setConversionMessages(validationErrors);
                 recordsWithoutConversionBlock.add(conversionRecord);
             }
         }
         return recordsWithoutConversionBlock;
     }
 
-    private boolean isAsIngestedCoordinatesPresent(JsonObject record) {
-        JsonObject filteredObject = this.filterDataFields(record,validAttributes);
+    private boolean isAsIngestedCoordinatesPresent(JsonObject record, List<String> validationErrors) {
+        JsonObject filteredObject = this.filterDataFields(record, validationErrors);
         return ((filteredObject != null) && (filteredObject.size() > 0)) ? true : false;
     }
 
-    private boolean isMetaBlockPresent(JsonObject record) {
+    private boolean isMetaBlockPresent(JsonObject record, List<String> validationErrors) {
         if (record.get(Constants.META) == null || record.get(Constants.META).isJsonNull()) {
+            validationErrors.add("Meta block is missing or empty, no conversion applied.");
             return false;
         }
         JsonArray metaBlock = record.getAsJsonArray(Constants.META);
@@ -190,18 +182,30 @@ public class DpsConversionService {
         }
     }
 
-    public JsonObject filterDataFields(JsonObject record, List<String> attributes) {
+    public JsonObject filterDataFields(JsonObject record, List<String> validationErrors) {
         JsonObject dataObject = record.get(Constants.DATA).getAsJsonObject();
         JsonObject filteredData = new JsonObject();
-        Iterator var = attributes.iterator();
+        Iterator var = validAttributes.iterator();
 
         while (var.hasNext()) {
             String attribute = (String) var.next();
             JsonElement property = getDataSubProperty(attribute, dataObject);
             if (property != null) {
                 JsonObject recordObj = property.getAsJsonObject();
-                if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES) != null) && (recordObj.getAsJsonObject(Constants.WGS84_COORDINATES) == null)) {
-                    if ((recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE) != null) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).getAsString().equals(Constants.ANY_CRS_FEATURE_COLLECTION))) filteredData.add(attribute, property);
+
+                if ((recordObj.getAsJsonObject(Constants.WGS84_COORDINATES) == null)) {
+                    if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES) != null)) {
+                        String type = ((recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).has(Constants.TYPE)) && (!recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).isJsonNull())) ? recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).getAsString() : "";
+                        if (type.equals(Constants.ANY_CRS_FEATURE_COLLECTION)) {
+                            filteredData.add(attribute, property);
+                        } else {
+                            validationErrors.add(String.format("AsIngestedCoordinates type: %s, is not valid, no conversion applied.", type));
+                        }
+                    }else {
+                        validationErrors.add("AsIngestedCoordinates block is missing or empty, no conversion applied.");
+                    }
+                } else {
+                    validationErrors.add("Wgs84Coordinates block exists, no conversion applied.");
                 }
             }
         }

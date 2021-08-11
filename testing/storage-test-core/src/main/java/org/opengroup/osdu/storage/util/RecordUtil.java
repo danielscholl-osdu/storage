@@ -462,19 +462,42 @@ public class RecordUtil {
 
 	public static String createJsonRecordWithAsIngestedCoordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
 		JsonArray records = new JsonArray();
-
+		Gson gson = new Gson();
 		for (int i = 0; i <  recordsNumber; i++) {
 			JsonObject data = new JsonObject();
 
-			JsonArray coordinates = new JsonArray();
-			coordinates.add(313405.9477893702);
-			coordinates.add(6544797.620047403);
-			coordinates.add(6.561679790026246);
-
 			JsonObject properties = new JsonObject();
-
 			JsonObject geometry = new JsonObject();
-			geometry.add("coordinates", coordinates);
+
+			switch (geometryType) {
+				case "AnyCrsPoint":
+					geometry.add("coordinates", gson.toJsonTree(createCoordinates1(1,2)));
+					break;
+				case "AnyCrsMultiPoint":
+					geometry.add("coordinates", gson.toJsonTree(createCoordinates2(1,2)));
+					break;	
+				case "AnyCrsLineString":
+					geometry.add("coordinates", gson.toJsonTree(createCoordinates2(1,2)));
+					break;
+				case "AnyCrsMultiLineString":
+					geometry.add("coordinates", gson.toJsonTree(createCoordinates3(1,2)));
+					break;
+				case "AnyCrsPolygon":
+					geometry.add("coordinates", gson.toJsonTree(createCoordinates3(1,2)));
+					break;
+				case "AnyCrsMultiPolygon":
+					geometry.add("coordinates", gson.toJsonTree(createCoordinates4(1,2)));
+					break;
+				case "AnyCrsGeometryCollection":
+					JsonArray geometries = new JsonArray();
+					JsonObject geometriesObj = new JsonObject();
+					geometriesObj.addProperty("bbox", (Boolean) null);
+					geometriesObj.addProperty("type", "Point");
+					geometriesObj.add("coordinates", gson.toJsonTree(createCoordinates1(1,2)));
+					geometries.add(geometriesObj);
+					geometry.add("geometries", geometries);
+					break;
+			}
 			geometry.addProperty("type", geometryType);
 			geometry.addProperty("bbox", (Boolean) null);
 
@@ -507,17 +530,11 @@ public class RecordUtil {
 
 	public static String createJsonRecordWithInvalidAsIngestedCoordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
 		JsonArray records = new JsonArray();
-
+		Gson gson = new Gson();
 		for (int i = 0; i <  recordsNumber; i++) {
 			JsonObject data = new JsonObject();
-
-			JsonArray coordinates = new JsonArray();
-			coordinates.add(313405.9477893702);
-			coordinates.add(6544797.620047403);
-			coordinates.add(6.561679790026246);
-
 			JsonObject geometry = new JsonObject();
-			geometry.add("coordinates", coordinates);
+			geometry.add("coordinates", gson.toJsonTree(createCoordinates1(1,2)));
 			geometry.addProperty("type", geometryType);
 			geometry.addProperty("bbox", (Boolean) null);
 
@@ -532,7 +549,7 @@ public class RecordUtil {
 			asIngestedCoordinates.addProperty("persistableReferenceCrs", prCRS);
 			asIngestedCoordinates.addProperty("persistableReferenceUnitZ", prUNITZ);
 			asIngestedCoordinates.addProperty("type", "AnyCrsFeatureCollection");
-			asIngestedCoordinates.add("features", features);
+			asIngestedCoordinates.add("features1", features);
 
 			JsonObject validAttribute = new JsonObject();
 			validAttribute.add("AsIngestedCoordinates", asIngestedCoordinates);
@@ -548,7 +565,7 @@ public class RecordUtil {
 
 	public static String createJsonRecordWithWGS84Coordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
 		JsonArray records = new JsonArray();
-
+		Gson gson = new Gson();
 		for (int i = 0; i <  recordsNumber; i++) {
 			JsonObject data = new JsonObject();
 
@@ -558,7 +575,7 @@ public class RecordUtil {
 			coordinates.add(6.561679790026246);
 
 			JsonObject geometry = new JsonObject();
-			geometry.add("coordinates", coordinates);
+			geometry.add("coordinates", gson.toJsonTree(createCoordinates1(1,2)));
 			geometry.addProperty("type", geometryType);
 			geometry.addProperty("bbox", (Boolean) null);
 
@@ -608,6 +625,55 @@ public class RecordUtil {
 			records.add(record);
 		}
 		return records.toString();
+	}
+
+	private static double[][][][] createCoordinates4(int mode, int dimension) {
+		double[][][][] pts_s = new double[2][2][5][dimension];
+		for (int l = 0; l < 2; l++) {
+			for (int k = 0; k < pts_s[0].length; k++) {
+				double[][][] pts = createCoordinates3(mode, dimension);
+				for (int j = 0; j < pts[0].length; j++) {
+					for (int i = 0; i < dimension; i++) {
+						pts_s[l][k][j][i] = pts[k][j][i] + (k + l) * 4;
+					}
+				}
+			}
+		}
+		return pts_s;
+	}
+
+	private static double[] createCoordinates1(int mode, int dimension) {
+		double[] pt_ac = new double[]{500000, 6500000, 1000};
+		double[] pt_gj = new double[]{3, 60, 2000};
+		double[] pts = new double[dimension];
+		if (mode == 0) System.arraycopy(pt_gj, 0, pts, 0, dimension);
+		else System.arraycopy(pt_ac, 0, pts, 0, dimension);
+		return pts;
+	}
+
+	private static double[][] createCoordinates2(int mode, int dimension) {
+		double[][] s = new double[][]{{-1, 1, 10}, {1, 1, 10}, {1, -1, 20}, {-1, -1, 20}, {-1, 1, 10}};
+		double[][] pts = new double[5][dimension];
+		double[] pt = createCoordinates1(mode, dimension);
+		for (int j = 0; j < 5; j++) {
+			for (int i = 0; i < dimension; i++) {
+				pts[j][i] = pt[i] + s[j][i];
+			}
+		}
+		return pts;
+	}
+
+	private static double[][][] createCoordinates3(int mode, int dimension) {
+		double[][][] pts_s = new double[2][5][dimension];
+		for (int k = 0; k < pts_s.length; k++) {
+			double[][] pts = createCoordinates2(mode, dimension);
+			for (int j = 0; j < pts.length; j++) {
+				for (int i = 0; i < dimension; i++) {
+					pts_s[k][j][i] = pts[j][i] + k * 4;
+				}
+			}
+		}
+		return pts_s;
 	}
 
 	private static JsonObject getDefaultRecordWithDefaultData(String id, String kind, String legalTag) {
