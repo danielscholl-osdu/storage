@@ -179,6 +179,12 @@ public class CrsConversionService {
                             JsonObject coordinatesObj = new JsonObject();
                             if (!geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
                                 JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                                if (coordinatesValues.size() > 0) {
+                                    geometry.add(Constants.COORDINATES, coordinatesValues);
+                                } else {
+                                    statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_COORDINATES);
+                                    continue;
+                                }
                                 coordinatesObj.add(Constants.COORDINATES, coordinatesValues);
                             }
 
@@ -213,7 +219,7 @@ public class CrsConversionService {
                                     JsonArray geometriesArray = (geometry.has(Constants.GEOMETRIES) && (!geometry.get(Constants.GEOMETRIES).isJsonNull())) ? geometry.get(Constants.GEOMETRIES).getAsJsonArray() : new JsonArray();
 
                                     if (geometriesArray == null || geometriesArray.size() == 0) {
-                                        statusBuilder.addError("CRS conversion: 'geometries' missing in AsIngestedCoordinates block, no conversion applied.");
+                                        statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRIES);
                                         continue;
                                     }
 
@@ -221,11 +227,17 @@ public class CrsConversionService {
                                     for (int k = 0; k < geometriesArray.size(); k++) {
                                         JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
 
-                                        String geometriesType = geometryObj.get(Constants.TYPE).getAsString();
+                                        String geometriesType = (geometryObj.has(Constants.TYPE) && (!geometryObj.get(Constants.TYPE).isJsonNull())) ? geometryObj.get(Constants.TYPE).getAsString() : "";
                                         JsonObject geometriesCoordinatesObj = new JsonObject();
 
-                                        JsonArray coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
-                                        geometriesCoordinatesObj.add(Constants.COORDINATES, coordinatesValues);
+                                        JsonArray coordinatesValues;
+                                        coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                                        if (coordinatesValues.size() > 0) {
+                                            geometriesCoordinatesObj.add(Constants.COORDINATES, coordinatesValues);
+                                        } else {
+                                            statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_COORDINATES);
+                                            continue;
+                                        }
 
                                         switch (geometriesType) {
                                             case Constants.POINT:
@@ -259,7 +271,7 @@ public class CrsConversionService {
                                                 geometries[k].setType(geometriesType);
                                                 break;
                                             default:
-                                                statusBuilder.addError(String.format("CRS conversion: Not a valid geometries type %s, no conversion applied.", geometriesType));
+                                                statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRIES, geometriesType));
                                                 break;
                                         }
                                         gc.setGeometries(geometries);
@@ -267,7 +279,7 @@ public class CrsConversionService {
                                     }
                                     break;
                                 default:
-                                    statusBuilder.addError(String.format("CRS conversion: Not a valid geometry type %s, no conversion applied.", geometryType));
+                                    statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRY, geometryType));
                                     break;
                             }
                             featureArray[j] = feature;
@@ -281,9 +293,11 @@ public class CrsConversionService {
                     ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
                     ConvertGeoJsonRequest request = new ConvertGeoJsonRequest(fc, TO_CRS_GEO_JSON, TO_UNIT_Z);
                     try {
-                        ConvertGeoJsonResponse response = crsConverterService.convertGeoJson(request);
-                        GeoJsonFeatureCollection wgs84Coordinates = response.getFeatureCollection();
-                        this.appendObjectInRecord(recordJsonObject, attributeName, wgs84Coordinates);
+                        if (statusBuilder.getErrors().size() == 0) {
+                            ConvertGeoJsonResponse response = crsConverterService.convertGeoJson(request);
+                            GeoJsonFeatureCollection wgs84Coordinates = response.getFeatureCollection();
+                            this.appendObjectInRecord(recordJsonObject, attributeName, wgs84Coordinates);
+                        }
                     } catch (CrsConverterException crsEx) {
                         statusBuilder.addError(crsEx.getMessage());
                     }

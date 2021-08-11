@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import com.google.gson.*;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.crs.UnitConversionImpl;
 import org.opengroup.osdu.core.common.crs.dates.DatesConversionImpl;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -59,8 +60,7 @@ public class DpsConversionService {
                 crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 allRecords.addAll(conversionRecords);
-            }
-            if (recordsWithMetaBlock.size() > 0) {
+            } else if(recordsWithMetaBlock.size() > 0) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 this.unitConversionService.convertUnitsToSI(conversionRecords);
@@ -75,7 +75,6 @@ public class DpsConversionService {
 
     private List<ConversionRecord> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<JsonObject> recordsWithMetaBlock, List<JsonObject> recordsWithGeoJsonBlock) {
         List<ConversionRecord> recordsWithoutConversionBlock = new ArrayList<>();
-
         for (int i = 0; i < originalRecords.size(); i++) {
             JsonObject recordJsonObject = originalRecords.get(i);
             String recordId = this.getRecordId(recordJsonObject);
@@ -104,7 +103,7 @@ public class DpsConversionService {
 
     private boolean isMetaBlockPresent(JsonObject record, List<String> validationErrors) {
         if (record.get(Constants.META) == null || record.get(Constants.META).isJsonNull()) {
-            validationErrors.add("Meta block is missing or empty, no conversion applied.");
+            validationErrors.add(CrsConversionServiceErrorMessages.MISSING_META_BLOCK);
             return false;
         }
         JsonArray metaBlock = record.getAsJsonArray(Constants.META);
@@ -199,13 +198,13 @@ public class DpsConversionService {
                         if (type.equals(Constants.ANY_CRS_FEATURE_COLLECTION)) {
                             filteredData.add(attribute, property);
                         } else {
-                            validationErrors.add(String.format("AsIngestedCoordinates type: %s, is not valid, no conversion applied.", type));
+                            validationErrors.add(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, type));
                         }
                     }else {
-                        validationErrors.add("AsIngestedCoordinates block is missing or empty, no conversion applied.");
+                        validationErrors.add(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
                     }
                 } else {
-                    validationErrors.add("Wgs84Coordinates block exists, no conversion applied.");
+                    validationErrors.add(CrsConversionServiceErrorMessages.WGS84COORDINATES_EXISTS);
                 }
             }
         }

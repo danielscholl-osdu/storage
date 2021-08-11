@@ -21,6 +21,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,7 +81,7 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(RECORD_2));
-        Assert.assertEquals("Meta block is missing or empty, no conversion applied.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals(CrsConversionServiceErrorMessages.MISSING_META_BLOCK, result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
@@ -264,18 +265,19 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(GEO_JSON_RECORD));
-        Assert.assertEquals("AsIngestedCoordinates block is missing or empty, no conversion applied.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES, result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
     public void should_returnOriginalRecordsAndStatusesAsNoMetaAndAsIngestedCoordinatesBlocks_whenProvidedRecordsWithInvalidType() {
         this.originalRecords.add(this.jsonParser.parse(GEO_JSON_RECORD_1).getAsJsonObject());
+        String type = "CrsFeatureCollection";
 
         RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(GEO_JSON_RECORD_1));
-        Assert.assertEquals("AsIngestedCoordinates type: CrsFeatureCollection, is not valid, no conversion applied.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, type), result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
@@ -460,43 +462,4 @@ public class ConversionServiceTest {
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(ANY_CRS_POINT_CONVERTED_RECORD));
         Assert.assertTrue(result.getRecords().get(1).toString().equalsIgnoreCase(ANY_CRS_POLYGON_CONVERTED_RECORD));
     }
-
-    @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesWithMetaRecords() {
-        this.originalRecords.add(this.jsonParser.parse(RECORD_1).getAsJsonObject());
-        this.originalRecords.add(this.jsonParser.parse(ANY_CRS_POINT_RECORD).getAsJsonObject());
-        this.originalRecords.add(this.jsonParser.parse(ANY_CRS_POLYGON_RECORD).getAsJsonObject());
-
-        List<JsonObject> convertedRecords = new ArrayList<>();
-        convertedRecords.add(this.jsonParser.parse(CONVERTED_RECORD_1).getAsJsonObject());
-        convertedRecords.add(this.jsonParser.parse(ANY_CRS_POINT_CONVERTED_RECORD).getAsJsonObject());
-        convertedRecords.add(this.jsonParser.parse(ANY_CRS_POLYGON_CONVERTED_RECORD).getAsJsonObject());
-        List<ConversionStatus> conversionStatuses = new ArrayList<>();
-        ConversionStatus conversionStatus1 = new ConversionStatus();
-        conversionStatus1.setStatus(ConvertStatus.SUCCESS.toString());
-        conversionStatus1.setId("unit-test-1");
-        ConversionStatus conversionStatus2 = new ConversionStatus();
-        conversionStatus2.setStatus(ConvertStatus.SUCCESS.toString());
-        conversionStatus2.setId("geo-json-point-test");
-        ConversionStatus conversionStatus3 = new ConversionStatus();
-        conversionStatus3.setStatus(ConvertStatus.SUCCESS.toString());
-        conversionStatus3.setId("geo-json-polygon-test");
-        conversionStatuses.add(conversionStatus1);
-        conversionStatuses.add(conversionStatus2);
-        conversionStatuses.add(conversionStatus3);
-
-        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
-        crsConversionResult.setConversionStatuses(conversionStatuses);
-        crsConversionResult.setRecords(convertedRecords);
-
-        when(this.crsConversionService.doCrsConversion(any(), any())).thenReturn(crsConversionResult);
-        when(this.crsConversionService.doCrsGeoJsonConversion(any(), any())).thenReturn(crsConversionResult);
-        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
-
-        Assert.assertEquals(6, result.getRecords().size());
-        Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(CONVERTED_RECORD_1));
-        Assert.assertTrue(result.getRecords().get(1).toString().equalsIgnoreCase(ANY_CRS_POINT_CONVERTED_RECORD));
-        Assert.assertTrue(result.getRecords().get(2).toString().equalsIgnoreCase(ANY_CRS_POLYGON_CONVERTED_RECORD));
-    }
-
 }
