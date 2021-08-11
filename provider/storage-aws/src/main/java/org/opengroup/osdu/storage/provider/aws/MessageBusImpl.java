@@ -49,15 +49,8 @@ public class MessageBusImpl implements IMessageBus {
     public void init() throws Exception{
         String amazonSNSRegion;
         K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        try {
-            amazonSNSRegion = provider.getParameterAsString("primary-region");
-        }catch ( Exception e){
-            amazonSNSRegion =  null;
-        }
+        amazonSNSRegion = provider.getParameterAsStringWithDefault("primary-region", currentRegion);
         amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
-        if (amazonSNSRegion == null){
-            amazonSNSRegion = currentRegion;
-        }
         snsClient = new AmazonSNSConfig(amazonSNSRegion).AmazonSNS();
     }
 
