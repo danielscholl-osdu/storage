@@ -248,7 +248,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(3, responseObject.records[0].data.size());
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
-        assertEquals("No Meta Block in This Record.", conversionStatuses.get(0).errors.get(0));
+        assertEquals("CRS Conversion: Meta Block is missing or empty in this record, no conversion applied.", conversionStatuses.get(0).errors.get(0));
         ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse1.getStatus());
         ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
@@ -319,8 +319,6 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
-//        List<String> conversionStatus = (List<String>)responseObject.conversionStatuses.get(RECORD_ID + 8);
-//        assertEquals("nested property projectOutlineLocalGeographic converted successfully", conversionStatus.get(0));
 
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
@@ -351,8 +349,6 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
-//        List<String> conversionStatus = (List<String>)responseObject.conversionStatuses.get(RECORD_ID + 8);
-//        assertEquals("nested property projectOutlineLocalGeographic converted successfully", conversionStatus.get(0));
 
         ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(204, deleteResponse.getStatus());
