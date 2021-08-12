@@ -44,7 +44,7 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    public static final List<String> validAttributes = new ArrayList<>(Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline"));
+    public static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -54,13 +54,14 @@ public class DpsConversionService {
         List<ConversionRecord> recordsWithoutConversionBlock = this.classifyRecords(originalRecords, conversionStatuses, recordsWithMetaBlock, recordsWithGeoJsonBlock);
         List<ConversionRecord> allRecords = recordsWithoutConversionBlock;
 
-        if (conversionStatuses.size() > 0) {
+        if (!conversionStatuses.isEmpty()) {
             RecordsAndStatuses crsConversionResult = null;
             if (recordsWithGeoJsonBlock.size() > 0) {
                 crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 allRecords.addAll(conversionRecords);
-            } else if(recordsWithMetaBlock.size() > 0) {
+            }
+            if (recordsWithMetaBlock.size() > 0) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 this.unitConversionService.convertUnitsToSI(conversionRecords);
@@ -75,8 +76,7 @@ public class DpsConversionService {
 
     private List<ConversionRecord> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<JsonObject> recordsWithMetaBlock, List<JsonObject> recordsWithGeoJsonBlock) {
         List<ConversionRecord> recordsWithoutConversionBlock = new ArrayList<>();
-        for (int i = 0; i < originalRecords.size(); i++) {
-            JsonObject recordJsonObject = originalRecords.get(i);
+        for (JsonObject recordJsonObject : originalRecords) {
             String recordId = this.getRecordId(recordJsonObject);
             List<String> validationErrors = new ArrayList<>();
             if (this.isAsIngestedCoordinatesPresent(recordJsonObject, validationErrors)) {
@@ -151,16 +151,16 @@ public class DpsConversionService {
         List<ConversionStatus> crsConversionStatuses = crsConversionResult.getConversionStatuses();
 
         List<ConversionRecord> conversionRecords = new ArrayList<>();
-        for (int i = 0; i < crsConvertedRecords.size(); i++) {
-            ConversionRecord conversionRecord = new ConversionRecord();
-            conversionRecord.setRecordJsonObject(crsConvertedRecords.get(i));
+        for (JsonObject conversionRecord : crsConvertedRecords) {
+            ConversionRecord ConversionRecordObj = new ConversionRecord();
+            ConversionRecordObj.setRecordJsonObject(conversionRecord);
             ConversionStatus conversionStatus = this.getRecordConversionStatus(crsConversionStatuses,
-                    this.getRecordId(crsConvertedRecords.get(i)));
+                    this.getRecordId(conversionRecord));
             if (conversionStatus != null) {
-                conversionRecord.setConversionMessages(conversionStatus.getErrors());
-                conversionRecord.setConvertStatus(ConvertStatus.valueOf(conversionStatus.getStatus()));
+                ConversionRecordObj.setConversionMessages(conversionStatus.getErrors());
+                ConversionRecordObj.setConvertStatus(ConvertStatus.valueOf(conversionStatus.getStatus()));
             }
-            conversionRecords.add(conversionRecord);
+            conversionRecords.add(ConversionRecordObj);
         }
         return conversionRecords;
     }

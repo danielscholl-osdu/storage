@@ -48,6 +48,7 @@ public class CrsConversionService {
     private static final String TO_CRS_GEO_JSON = "{\"authCode\":{\"auth\":\"EPSG\",\"code\":\"4326\"},\"name\":\"GCS_WGS_1984\",\"type\":\"LBC\",\"ver\":\"PE_10_3_1\",\"wkt\":\"GEOGCS[\\\"GCS_WGS_1984\\\",DATUM[\\\"D_WGS_1984\\\",SPHEROID[\\\"WGS_1984\\\",6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0],UNIT[\\\"Degree\\\",0.0174532925199433],AUTHORITY[\\\"EPSG\\\",4326]]\"}";
     private static final String TO_UNIT_Z = "{\"baseMeasurement\":{\"ancestry\":\"Length\",\"type\":\"UM\"},\"scaleOffset\":{\"offset\":0.0,\"scale\":1.0},\"symbol\":\"m\",\"type\":\"USO\"}";
     private static final String UNKNOWN_ERROR = "unknown error";
+    private static final String BAD_REQUEST = "CRS conversion: bad request from crs converter, no conversion applied. Response From CRS Converter: %s.";
     private static final String CONVERSION_FAILURE = "CRS Conversion Error: Point Converted failed(CRS Converter is returning null), no conversion applied. Affected property names: %s, %s";
 
     @Autowired
@@ -140,15 +141,12 @@ public class CrsConversionService {
                 statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
                 continue;
             }
-
             List<String> validationErrors = new ArrayList<>();
             JsonObject filteredObjects = this.dpsConversionService.filterDataFields(recordJsonObject, validationErrors);
             Iterator<String> keys = filteredObjects.keySet().iterator();
-
             while(keys.hasNext()) {
                 String attributeName = keys.next();
                 JsonObject asIngestedCoordinates = filteredObjects.getAsJsonObject(attributeName).getAsJsonObject(Constants.AS_INGESTED_COORDINATES);
-
                 if (asIngestedCoordinates != null) {
                     GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection();
                     if (asIngestedCoordinates.has(Constants.TYPE) && (!asIngestedCoordinates.get(Constants.TYPE).isJsonNull())) fc.setType(asIngestedCoordinates.get(Constants.TYPE).getAsString());
@@ -162,32 +160,28 @@ public class CrsConversionService {
                         statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_FEATURES);
                         continue;
                     }
-
                     GeoJsonFeature[] featureArray = new GeoJsonFeature[featuresArray.size()];
                     for (int j = 0; j < featuresArray.size(); j++) {
                         JsonObject featureItem = featuresArray.get(j).getAsJsonObject();
 
                         GeoJsonFeature feature = new GeoJsonFeature();
-
                         if (featureItem.has(Constants.BBOX) && (!featureItem.get(Constants.BBOX).isJsonNull())) fc.setBbox(this.bboxValues(featureItem.getAsJsonArray(Constants.BBOX)));
                         if (featureItem.has(Constants.TYPE) && (!featureItem.get(Constants.TYPE).isJsonNull())) feature.setType(featureItem.get(Constants.TYPE).getAsString());
                         if (featureItem.has(Constants.PROPERTIES) && (!featureItem.get(Constants.PROPERTIES).isJsonNull())) feature.setProperties(featureItem.getAsJsonObject(Constants.PROPERTIES));
                         if (featureItem.has(Constants.GEOMETRY) && (!featureItem.get(Constants.GEOMETRY).isJsonNull())) {
                             JsonObject geometry = featureItem.getAsJsonObject(Constants.GEOMETRY);
-
                             String geometryType = (geometry.has(Constants.TYPE) && (!geometry.get(Constants.TYPE).isJsonNull())) ? geometry.get(Constants.TYPE).getAsString() : "";
                             JsonObject coordinatesObj = new JsonObject();
                             if (!geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
                                 JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
                                 if (coordinatesValues.size() > 0) {
                                     geometry.add(Constants.COORDINATES, coordinatesValues);
+                                    coordinatesObj.add(Constants.COORDINATES, coordinatesValues);
                                 } else {
                                     statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_COORDINATES);
                                     continue;
                                 }
-                                coordinatesObj.add(Constants.COORDINATES, coordinatesValues);
                             }
-
                             Gson gson = new Gson();
                             switch (geometryType) {
                                 case Constants.ANY_CRS_POINT:
@@ -217,16 +211,13 @@ public class CrsConversionService {
                                 case Constants.ANY_CRS_GEOMETRY_COLLECTION:
                                     GeoJsonGeometryCollection gc = new GeoJsonGeometryCollection();
                                     JsonArray geometriesArray = (geometry.has(Constants.GEOMETRIES) && (!geometry.get(Constants.GEOMETRIES).isJsonNull())) ? geometry.get(Constants.GEOMETRIES).getAsJsonArray() : new JsonArray();
-
                                     if (geometriesArray == null || geometriesArray.size() == 0) {
                                         statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRIES);
                                         continue;
                                     }
-
                                     GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
                                     for (int k = 0; k < geometriesArray.size(); k++) {
                                         JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
-
                                         String geometriesType = (geometryObj.has(Constants.TYPE) && (!geometryObj.get(Constants.TYPE).isJsonNull())) ? geometryObj.get(Constants.TYPE).getAsString() : "";
                                         JsonObject geometriesCoordinatesObj = new JsonObject();
 
@@ -238,7 +229,6 @@ public class CrsConversionService {
                                             statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_COORDINATES);
                                             continue;
                                         }
-
                                         switch (geometriesType) {
                                             case Constants.POINT:
                                                 GeoJsonPoint point = gson.fromJson(geometriesCoordinatesObj, GeoJsonPoint.class);
@@ -293,13 +283,18 @@ public class CrsConversionService {
                     ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
                     ConvertGeoJsonRequest request = new ConvertGeoJsonRequest(fc, TO_CRS_GEO_JSON, TO_UNIT_Z);
                     try {
-                        if (statusBuilder.getErrors().size() == 0) {
+                        if (statusBuilder.getErrors().isEmpty()) {
                             ConvertGeoJsonResponse response = crsConverterService.convertGeoJson(request);
                             GeoJsonFeatureCollection wgs84Coordinates = response.getFeatureCollection();
                             this.appendObjectInRecord(recordJsonObject, attributeName, wgs84Coordinates);
                         }
                     } catch (CrsConverterException crsEx) {
-                        statusBuilder.addError(crsEx.getMessage());
+                        if (crsEx.getHttpResponse().IsBadRequestCode()) {
+                            statusBuilder.addError(String.format(BAD_REQUEST, crsEx.getHttpResponse().getBody()));
+                        } else {
+                            this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, crsEx.getHttpResponse().toString()));
+                            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "crs conversion service error.");
+                        }
                     }
                 } else {
                     statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);

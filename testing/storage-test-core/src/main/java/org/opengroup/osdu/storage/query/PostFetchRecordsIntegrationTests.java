@@ -848,7 +848,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records.length);
         assertEquals(0, responseObject.notFound.length);
         assertEquals(1, responseObject.conversionStatuses.size());
-        assertEquals("Wgs84Coordinates block exists, no conversion applied.", responseObject.conversionStatuses.get(0).errors.get(0));
+        assertEquals("CRS conversion: 'Wgs84Coordinates' block exists, no conversion applied.", responseObject.conversionStatuses.get(0).errors.get(0));
 
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
