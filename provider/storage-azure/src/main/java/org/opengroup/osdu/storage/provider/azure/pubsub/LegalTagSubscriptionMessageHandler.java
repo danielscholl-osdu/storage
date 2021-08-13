@@ -22,9 +22,11 @@ import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedEx
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.concurrent.CompletableFuture;
 
+@ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
     @Autowired
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagSubscriptionMessageHandler.class);
