@@ -44,7 +44,7 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    public static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
+    private static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -56,12 +56,12 @@ public class DpsConversionService {
 
         if (!conversionStatuses.isEmpty()) {
             RecordsAndStatuses crsConversionResult = null;
-            if (recordsWithGeoJsonBlock.size() > 0) {
+            if (!recordsWithGeoJsonBlock.isEmpty()) {
                 crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 allRecords.addAll(conversionRecords);
             }
-            if (recordsWithMetaBlock.size() > 0) {
+            if (!recordsWithMetaBlock.isEmpty()) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
                 this.unitConversionService.convertUnitsToSI(conversionRecords);
@@ -98,7 +98,7 @@ public class DpsConversionService {
 
     private boolean isAsIngestedCoordinatesPresent(JsonObject record, List<String> validationErrors) {
         JsonObject filteredObject = this.filterDataFields(record, validationErrors);
-        return ((filteredObject != null) && (filteredObject.size() > 0)) ? true : false;
+        return ((filteredObject != null) && (filteredObject.size() > 0));
     }
 
     private boolean isMetaBlockPresent(JsonObject record, List<String> validationErrors) {
