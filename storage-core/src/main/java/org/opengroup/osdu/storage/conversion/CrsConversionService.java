@@ -604,50 +604,52 @@ public class CrsConversionService {
         if (featureItem.has(Constants.TYPE) && (!featureItem.get(Constants.TYPE).isJsonNull())) feature.setType(featureItem.get(Constants.TYPE).getAsString());
         if (featureItem.has(Constants.PROPERTIES) && (!featureItem.get(Constants.PROPERTIES).isJsonNull())) feature.setProperties(featureItem.getAsJsonObject(Constants.PROPERTIES));
         if (featureItem.has(Constants.BBOX) && (!featureItem.get(Constants.BBOX).isJsonNull())) feature.setBbox(this.bboxValues(featureItem.getAsJsonArray(Constants.BBOX)));
+
         if (featureItem.has(Constants.GEOMETRY) && (!featureItem.get(Constants.GEOMETRY).isJsonNull())) {
             JsonObject geometry = featureItem.getAsJsonObject(Constants.GEOMETRY);
             String geometryType = (geometry.has(Constants.TYPE) && (!geometry.get(Constants.TYPE).isJsonNull())) ? geometry.get(Constants.TYPE).getAsString() : "";
-            JsonObject coordinatesObj = new JsonObject();
-            if (!geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
-                JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
-                coordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
-            }
+
             if (geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
-                GeoJsonGeometryCollection gc = new GeoJsonGeometryCollection();
                 JsonArray geometriesArray = (geometry.has(Constants.GEOMETRIES) && (!geometry.get(Constants.GEOMETRIES).isJsonNull())) ? geometry.get(Constants.GEOMETRIES).getAsJsonArray() : new JsonArray();
                 if (geometriesArray == null || geometriesArray.size() == 0) {
                     statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRIES);
-                }
-                GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
-                for (int k = 0; k < geometriesArray.size(); k++) {
-                    JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
-                    String geometriesType = (geometryObj.has(Constants.TYPE) && (!geometryObj.get(Constants.TYPE).isJsonNull())) ? geometryObj.get(Constants.TYPE).getAsString() : "";
-                    JsonArray coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
-                    JsonObject gmCoordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
-                    Gson gson = new Gson();
-                    switch (geometriesType) {
-                        case Constants.POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj);
-                            break;
-                        case Constants.MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj);
-                            break;
-                        case Constants.LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj);
-                            break;
-                        case Constants.MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj);
-                            break;
-                        case Constants.POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj);
-                            break;
-                        case Constants.MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj);
-                            break;
-                        default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRIES, geometriesType));
-                            break;
+                } else {
+                    GeoJsonGeometryCollection gc = new GeoJsonGeometryCollection();
+                    GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
+                    for (int k = 0; k < geometriesArray.size(); k++) {
+                        JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
+                        String geometriesType = (geometryObj.has(Constants.TYPE) && (!geometryObj.get(Constants.TYPE).isJsonNull())) ? geometryObj.get(Constants.TYPE).getAsString() : "";
+                        JsonArray coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                        JsonObject gmCoordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
+                        Gson gson = new Gson();
+                        switch (geometriesType) {
+                            case Constants.POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj);
+                                break;
+                            default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRIES, geometriesType));
+                                break;
+                        }
+                        geometries[k].setType(geometriesType);
+                        gc.setGeometries(geometries);
+                        feature.setGeometry(gc);
                     }
-                    geometries[k].setType(geometriesType);
-                    gc.setGeometries(geometries);
-                    feature.setGeometry(gc);
                 }
             } else {
+                JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                JsonObject coordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
                 this.setGeometry(geometryType, feature, coordinatesObj, statusBuilder);
             }
+        } else {
+            statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRY);
         }
         return feature;
     }
