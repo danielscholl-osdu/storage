@@ -186,6 +186,11 @@ public class DpsConversionService {
         JsonObject filteredData = new JsonObject();
         Iterator var = validAttributes.iterator();
 
+        if (dataObject == null) {
+            validationErrors.add(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
+            return null;
+        }
+
         while (var.hasNext()) {
             String attribute = (String) var.next();
             JsonElement property = getDataSubProperty(attribute, dataObject);
