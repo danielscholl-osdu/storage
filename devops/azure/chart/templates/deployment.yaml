@@ -28,6 +28,10 @@ spec:
         app: {{ .Chart.Name }}
         aadpodidbinding: osdu-identity
     spec:
+{{- if .Values.global.isAutoscalingEnabled }}
+      nodeSelector:
+        nodepool: {{ .Values.global.nodepool }} 
+{{- end }}   
       volumes:
       - name: azure-keyvault
         csi:
