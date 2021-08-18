@@ -14,8 +14,11 @@
 
 package org.opengroup.osdu.storage.util;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import org.opengroup.osdu.core.common.Constants;
 
 public class RecordUtil {
 
@@ -94,15 +97,15 @@ public class RecordUtil {
 			propertyNames.add("Z");
 
 			JsonObject meta = new JsonObject();
-			meta.addProperty("kind", conversionType);
-			meta.addProperty("persistableReference", fromCrs);
-			meta.add("propertyNames", propertyNames);
+			meta.addProperty(Constants.KIND, conversionType);
+			meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromCrs);
+			meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
 			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
-			record.add("meta", metaBlocks);
+			record.add(Constants.META, metaBlocks);
 
 			records.add(record);
 		}
@@ -126,15 +129,15 @@ public class RecordUtil {
 			propertyNames.add("Z");
 
 			JsonObject meta = new JsonObject();
-			meta.addProperty("kind", conversionType);
-			meta.addProperty("persistableReference", fromCrs);
-			meta.add("propertyNames", propertyNames);
+			meta.addProperty(Constants.KIND, conversionType);
+			meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromCrs);
+			meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
 			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
-			record.add("meta", metaBlocks);
+			record.add(Constants.META, metaBlocks);
 
 			records.add(record);
 		}
@@ -171,15 +174,15 @@ public class RecordUtil {
 			propertyNames.add(propertyName);
 
 			JsonObject meta = new JsonObject();
-			meta.addProperty("persistableReference", persistableReference);
-			meta.addProperty("kind", "DateTime");
-			meta.add("propertyNames", propertyNames);
+			meta.addProperty(Constants.PERSISTABLE_REFERENCE, persistableReference);
+			meta.addProperty(Constants.KIND, "DateTime");
+			meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 			JsonArray metas = new JsonArray();
 			metas.add(meta);
 
 			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
-			record.add("meta", metas);
+			record.add(Constants.META, metas);
 			records.add(record);
 		}
 
@@ -204,7 +207,7 @@ public class RecordUtil {
 
 			JsonObject nestedProperty = new JsonObject();
 			nestedProperty.addProperty("crsKey", "Native");
-			nestedProperty.add("points", points);
+			nestedProperty.add(Constants.POINTS, points);
 
 			JsonObject data = new JsonObject();
 			data.addProperty("message", "integration-test-record");
@@ -214,15 +217,15 @@ public class RecordUtil {
 			propertyNames.add("projectOutlineLocalGeographic");
 
 			JsonObject meta = new JsonObject();
-			meta.addProperty("kind", conversionType);
-			meta.addProperty("persistableReference", fromCrs);
-			meta.add("propertyNames", propertyNames);
+			meta.addProperty(Constants.KIND, conversionType);
+			meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromCrs);
+			meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
 			JsonObject record = getRecordWithInputData(id + i, kind, legalTag, data);
-			record.add("meta", metaBlocks);
+			record.add(Constants.META, metaBlocks);
 
 			records.add(record);
 		}
@@ -354,15 +357,15 @@ public class RecordUtil {
 		propertyNames.add(propertyName);
 
 		JsonObject meta = new JsonObject();
-		meta.addProperty("kind", conversionType);
-		meta.addProperty("persistableReference", fromRef);
-		meta.add("propertyNames", propertyNames);
+		meta.addProperty(Constants.KIND, conversionType);
+		meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromRef);
+		meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 		JsonArray metaBlocks = new JsonArray();
 		metaBlocks.add(meta);
 
 		JsonObject record = getRecordWithInputData(id, kind, legalTag, data);
-		record.add("meta", metaBlocks);
+		record.add(Constants.META, metaBlocks);
 
 		return record;
 	}
@@ -376,23 +379,21 @@ public class RecordUtil {
 		propertyNames.add("markers[].measuredDepth");
 
 		JsonObject meta = new JsonObject();
-		meta.addProperty("kind", conversionType);
-		meta.addProperty("persistableReference", fromRef);
-		meta.add("propertyNames", propertyNames);
+		meta.addProperty(Constants.KIND, conversionType);
+		meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromRef);
+		meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 		JsonArray metaBlocks = new JsonArray();
 		metaBlocks.add(meta);
 
 		JsonObject record = getRecordWithInputData(id, kind, legalTag, data);
-		record.add("meta", metaBlocks);
+		record.add(Constants.META, metaBlocks);
 
 		return record;
 	}
 
 	public static String createJsonRecordWithMultiplePairOfCoordinates(int recordsNumber, String id, String kind, String legalTag, String fromCrs, String conversionType) {
-
 		JsonArray records = new JsonArray();
-
 		for (int i = 0; i <  recordsNumber; i++) {
 
 			JsonObject data = new JsonObject();
@@ -408,21 +409,232 @@ public class RecordUtil {
 			propertyNames.add("LAT");
 
 			JsonObject meta = new JsonObject();
-			meta.addProperty("kind", conversionType);
-			meta.addProperty("persistableReference", fromCrs);
-			meta.add("propertyNames", propertyNames);
+			meta.addProperty(Constants.KIND, conversionType);
+			meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromCrs);
+			meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 			JsonArray metaBlocks = new JsonArray();
 			metaBlocks.add(meta);
 
 			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
-			record.add("data", data);
-			record.add("meta", metaBlocks);
+			record.add(Constants.DATA, data);
+			record.add(Constants.META, metaBlocks);
 
 			records.add(record);
 		}
-
 		return records.toString();
+	}
+
+	public static String createJsonRecordWithAsIngestedCoordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
+		JsonArray records = new JsonArray();
+		Gson gson = new Gson();
+		for (int i = 0; i <  recordsNumber; i++) {
+			JsonObject data = new JsonObject();
+
+			JsonObject properties = new JsonObject();
+			JsonObject geometry = new JsonObject();
+
+			switch (geometryType) {
+				case Constants.ANY_CRS_POINT:
+					geometry.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates1(1,2)));
+					break;
+				case Constants.ANY_CRS_MULTIPOINT:
+				case Constants.ANY_CRS_LINE_STRING:
+					geometry.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates2(1,2)));
+					break;
+				case Constants.ANY_CRS_MULTILINE_STRING:
+				case Constants.ANY_CRS_POLYGON:
+					geometry.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates3(1,2)));
+					break;
+				case Constants.ANY_CRS_MULTIPOLYGON:
+					geometry.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates4(1,2)));
+					break;
+				case Constants.ANY_CRS_GEOMETRY_COLLECTION:
+					JsonArray geometries = new JsonArray();
+					JsonObject geometriesObj = new JsonObject();
+					geometriesObj.addProperty(Constants.BBOX, (Boolean) null);
+					geometriesObj.addProperty(Constants.TYPE, Constants.POINT);
+					geometriesObj.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates1(1,2)));
+					geometries.add(geometriesObj);
+					geometry.add(Constants.GEOMETRIES, geometries);
+					break;
+			}
+			geometry.addProperty(Constants.TYPE, geometryType);
+			geometry.addProperty(Constants.BBOX, (Boolean) null);
+
+			JsonArray features = new JsonArray();
+			JsonObject feature = new JsonObject();
+			feature.addProperty(Constants.BBOX, (Boolean) null);
+			feature.addProperty(Constants.TYPE, Constants.ANY_CRS_FEATURE);
+			feature.add(Constants.PROPERTIES, properties);
+			feature.add(Constants.GEOMETRY, geometry);
+			features.add(feature);
+
+			JsonObject asIngestedCoordinates = new JsonObject();
+			asIngestedCoordinates.addProperty(Constants.PERSISTABLE_REFERENCE_CRS, prCRS);
+			asIngestedCoordinates.addProperty(Constants.PERSISTABLE_REFERENCE_UNIT_Z, prUNITZ);
+			asIngestedCoordinates.addProperty(Constants.TYPE, Constants.ANY_CRS_FEATURE_COLLECTION);
+			asIngestedCoordinates.add(Constants.PROPERTIES, properties);
+			asIngestedCoordinates.add(Constants.FEATURES, features);
+
+			JsonObject validAttribute = new JsonObject();
+			validAttribute.add(Constants.AS_INGESTED_COORDINATES, asIngestedCoordinates);
+
+			data.add(attributeType, validAttribute);
+
+			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
+			record.add(Constants.DATA, data);
+			records.add(record);
+		}
+		return records.toString();
+	}
+
+	public static String createJsonRecordWithInvalidAsIngestedCoordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
+		JsonArray records = new JsonArray();
+		Gson gson = new Gson();
+		for (int i = 0; i <  recordsNumber; i++) {
+			JsonObject data = new JsonObject();
+			JsonObject geometry = new JsonObject();
+			geometry.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates1(1,2)));
+			geometry.addProperty(Constants.TYPE, geometryType);
+			geometry.addProperty(Constants.BBOX, (Boolean) null);
+
+			JsonArray features = new JsonArray();
+			JsonObject feature = new JsonObject();
+			feature.addProperty(Constants.BBOX, (Boolean) null);
+			feature.addProperty(Constants.TYPE, Constants.ANY_CRS_FEATURE);
+			feature.add(Constants.GEOMETRY, geometry);
+			features.add(feature);
+
+			JsonObject asIngestedCoordinates = new JsonObject();
+			asIngestedCoordinates.addProperty(Constants.PERSISTABLE_REFERENCE_CRS, prCRS);
+			asIngestedCoordinates.addProperty(Constants.PERSISTABLE_REFERENCE_UNIT_Z, prUNITZ);
+			asIngestedCoordinates.addProperty(Constants.TYPE, Constants.ANY_CRS_FEATURE_COLLECTION);
+			asIngestedCoordinates.add("features1", features);
+
+			JsonObject validAttribute = new JsonObject();
+			validAttribute.add(Constants.AS_INGESTED_COORDINATES, asIngestedCoordinates);
+
+			data.add(attributeType, validAttribute);
+
+			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
+			record.add(Constants.DATA, data);
+			records.add(record);
+		}
+		return records.toString();
+	}
+
+	public static String createJsonRecordWithWGS84Coordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
+		JsonArray records = new JsonArray();
+		Gson gson = new Gson();
+		for (int i = 0; i <  recordsNumber; i++) {
+			JsonObject data = new JsonObject();
+
+			JsonArray coordinates = new JsonArray();
+			coordinates.add(313405.9477893702);
+			coordinates.add(6544797.620047403);
+			coordinates.add(6.561679790026246);
+
+			JsonObject geometry = new JsonObject();
+			geometry.add(Constants.COORDINATES, gson.toJsonTree(createCoordinates1(1,2)));
+			geometry.addProperty(Constants.TYPE, geometryType);
+			geometry.addProperty(Constants.BBOX, (Boolean) null);
+
+			JsonArray features = new JsonArray();
+			JsonObject feature = new JsonObject();
+			feature.addProperty(Constants.BBOX, (Boolean) null);
+			feature.addProperty(Constants.TYPE, Constants.ANY_CRS_FEATURE);
+			feature.add(Constants.GEOMETRY, geometry);
+			features.add(feature);
+
+			JsonObject asIngestedCoordinates = new JsonObject();
+			asIngestedCoordinates.addProperty(Constants.PERSISTABLE_REFERENCE_CRS, prCRS);
+			asIngestedCoordinates.addProperty(Constants.PERSISTABLE_REFERENCE_UNIT_Z, prUNITZ);
+			asIngestedCoordinates.addProperty(Constants.TYPE, Constants.ANY_CRS_FEATURE_COLLECTION);
+			asIngestedCoordinates.add(Constants.FEATURES, features);
+
+			JsonArray wgsCoordinates = new JsonArray();
+			wgsCoordinates.add(5.7500000010406245);
+			wgsCoordinates.add(59.000000000399105);
+			wgsCoordinates.add(1.9999999999999998);
+
+			JsonObject wgsGeometry = new JsonObject();
+			wgsGeometry.add(Constants.COORDINATES, wgsCoordinates);
+			wgsGeometry.addProperty(Constants.TYPE, Constants.POINT);
+			wgsGeometry.addProperty(Constants.BBOX, (Boolean) null);
+
+			JsonArray wgsFeatures = new JsonArray();
+			JsonObject wgsFeature = new JsonObject();
+			wgsFeature.addProperty(Constants.BBOX, (Boolean) null);
+			wgsFeature.add(Constants.GEOMETRY, wgsGeometry);
+			wgsFeatures.add(wgsFeature);
+
+			JsonObject wgs84Coordinates = new JsonObject();
+			wgs84Coordinates.addProperty(Constants.PERSISTABLE_REFERENCE_CRS, (Boolean) null);
+			wgs84Coordinates.addProperty(Constants.PERSISTABLE_REFERENCE_UNIT_Z, prUNITZ);
+			wgs84Coordinates.addProperty(Constants.TYPE, Constants.FEATURE_COLLECTION);
+			wgs84Coordinates.add(Constants.FEATURES, wgsFeatures);
+
+			JsonObject validAttribute = new JsonObject();
+			validAttribute.add(Constants.AS_INGESTED_COORDINATES, asIngestedCoordinates);
+			validAttribute.add(Constants.WGS84_COORDINATES, wgs84Coordinates);
+
+			data.add(attributeType, validAttribute);
+
+			JsonObject record = getDefaultRecord(id + i, kind, legalTag);
+			record.add(Constants.DATA, data);
+			records.add(record);
+		}
+		return records.toString();
+	}
+
+	private static double[][][][] createCoordinates4(int mode, int dimension) {
+		double[][][][] pts_s = new double[2][2][5][dimension];
+		for (int l = 0; l < 2; l++) {
+			for (int k = 0; k < pts_s[0].length; k++) {
+				double[][][] pts = createCoordinates3(mode, dimension);
+				for (int j = 0; j < pts[0].length; j++) {
+					for (int i = 0; i < dimension; i++) {
+						pts_s[l][k][j][i] = pts[k][j][i] + (k + l) * 4;
+					}
+				}
+			}
+		}
+		return pts_s;
+	}
+
+	private static double[] createCoordinates1(int mode, int dimension) {
+		double[] pt_ac = new double[]{500000, 6500000, 1000};
+		double[] pt_gj = new double[]{3, 60, 2000};
+		double[] pts = new double[dimension];
+		if (mode == 0) System.arraycopy(pt_gj, 0, pts, 0, dimension);
+		else System.arraycopy(pt_ac, 0, pts, 0, dimension);
+		return pts;
+	}
+
+	private static double[][] createCoordinates2(int mode, int dimension) {
+		double[][] s = new double[][]{{-1, 1, 10}, {1, 1, 10}, {1, -1, 20}, {-1, -1, 20}, {-1, 1, 10}};
+		double[][] pts = new double[5][dimension];
+		double[] pt = createCoordinates1(mode, dimension);
+		for (int j = 0; j < 5; j++) {
+			for (int i = 0; i < dimension; i++) {
+				pts[j][i] = pt[i] + s[j][i];
+			}
+		}
+		return pts;
+	}
+
+	private static double[][][] createCoordinates3(int mode, int dimension) {
+		double[][][] pts_s = new double[2][5][dimension];
+		for (int k = 0; k < pts_s.length; k++) {
+			double[][] pts = createCoordinates2(mode, dimension);
+			for (int j = 0; j < pts.length; j++) {
+				for (int i = 0; i < dimension; i++) {
+					pts_s[k][j][i] = pts[j][i] + k * 4;
+				}
+			}
+		}
+		return pts_s;
 	}
 
 	private static JsonObject getDefaultRecord(String id, String kind, String legalTag) {
