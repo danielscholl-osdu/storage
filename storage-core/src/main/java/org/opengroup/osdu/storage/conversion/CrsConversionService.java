@@ -14,27 +14,23 @@
 
 package org.opengroup.osdu.storage.conversion;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
-import org.opengroup.osdu.core.common.model.crs.*;
-import org.opengroup.osdu.core.common.model.http.AppException;
+import java.util.*;
+import com.google.gson.*;
+import com.google.common.base.Strings;
 import org.apache.http.HttpStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opengroup.osdu.core.common.Constants;
+import org.opengroup.osdu.core.common.model.crs.*;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.*;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.crs.ICrsConverterFactory;
 import org.opengroup.osdu.core.common.crs.ICrsConverterService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import com.google.common.base.Strings;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 
@@ -42,19 +38,18 @@ import static org.opengroup.osdu.core.common.util.JsonUtils.jsonElementToString;
 
 @Service
 public class CrsConversionService {
-    private static final String KIND = "kind";
-    private static final String CRS = "crs";
-    private static final String META = "meta";
-    private static final String DATA = "data";
-    private static final String POINTS = "points";
-    private static final String PROPERTY_NAMES = "propertyNames";
-    private static final String PERSISTABLE_REFERENCE = "persistableReference";
     private static final String TO_CRS = "{\"wkt\":\"GEOGCS[\\\"GCS_WGS_1984\\\",DATUM[\\\"D_WGS_1984\\\",SPHEROID[\\\"WGS_1984\\\",6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0],UNIT[\\\"Degree\\\",0.0174532925199433],AUTHORITY[\\\"EPSG\\\",4326]]\",\"ver\":\"PE_10_3_1\",\"name\":\"GCS_WGS_1984\",\"authCode\":{\"auth\":\"EPSG\",\"code\":\"4326\"},\"type\":\"LBC\"}";
+    private static final String TO_CRS_GEO_JSON = "{\"authCode\":{\"auth\":\"EPSG\",\"code\":\"4326\"},\"name\":\"GCS_WGS_1984\",\"type\":\"LBC\",\"ver\":\"PE_10_3_1\",\"wkt\":\"GEOGCS[\\\"GCS_WGS_1984\\\",DATUM[\\\"D_WGS_1984\\\",SPHEROID[\\\"WGS_1984\\\",6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0],UNIT[\\\"Degree\\\",0.0174532925199433],AUTHORITY[\\\"EPSG\\\",4326]]\"}";
+    private static final String TO_UNIT_Z = "{\"baseMeasurement\":{\"ancestry\":\"Length\",\"type\":\"UM\"},\"scaleOffset\":{\"offset\":0.0,\"scale\":1.0},\"symbol\":\"m\",\"type\":\"USO\"}";
     private static final String UNKNOWN_ERROR = "unknown error";
+    private static final String BAD_REQUEST = "CRS conversion: bad request from crs converter, no conversion applied. Response From CRS Converter: %s.";
     private static final String CONVERSION_FAILURE = "CRS Conversion Error: Point Converted failed(CRS Converter is returning null), no conversion applied. Affected property names: %s, %s";
 
     @Autowired
     private CrsPropertySet crsPropertySet;
+
+    @Autowired
+    private DpsConversionService dpsConversionService;
 
     @Autowired
     private ICrsConverterFactory crsConverterFactory;
@@ -79,7 +74,6 @@ public class CrsConversionService {
         }
 
         List<PointConversionInfo> convertedPointsInfo = this.callClientLibraryDoConversion(pointConversionInfoList, conversionStatuses);
-
         for (PointConversionInfo convertedInfo: convertedPointsInfo) {
             JsonObject record = originalRecords.get(convertedInfo.getRecordIndex());
             this.updateValuesInRecord(record, convertedInfo, conversionStatuses);
@@ -88,6 +82,14 @@ public class CrsConversionService {
         crsConversionResult.setConversionStatuses(this.buildConversionStatuses(conversionStatuses));
         crsConversionResult.setRecords(originalRecords);
         return crsConversionResult;
+    }
+
+    public RecordsAndStatuses doCrsGeoJsonConversion(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
+        RecordsAndStatuses crsGeoJsonConversionResult = new RecordsAndStatuses();
+        this.gatherCrsGeoJsonConversionData(originalRecords, conversionStatuses);
+        crsGeoJsonConversionResult.setConversionStatuses(this.buildConversionStatuses(conversionStatuses));
+        crsGeoJsonConversionResult.setRecords(originalRecords);
+        return crsGeoJsonConversionResult;
     }
 
     private List<ConversionStatus> buildConversionStatuses(List<ConversionStatus.ConversionStatusBuilder> builders) {
@@ -105,8 +107,8 @@ public class CrsConversionService {
             JsonObject recordJsonObject = originalRecords.get(i);
             String recordId = this.getRecordId(recordJsonObject);
             ConversionStatus.ConversionStatusBuilder statusBuilder = this.getConversionStatusBuilderFromList(recordId, conversionStatuses);
-            JsonObject dataBlcok = recordJsonObject.getAsJsonObject(DATA);
-            if (dataBlcok == null) {
+            JsonObject dataBlock = recordJsonObject.getAsJsonObject(Constants.DATA);
+            if (dataBlock == null) {
                 statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
                 continue;
             }
@@ -114,18 +116,72 @@ public class CrsConversionService {
             List<JsonObject> metaBlocks = this.extractValidMetaItemsFromRecord(recordJsonObject, statusBuilder);
             for (int j = 0; j < metaBlocks.size(); j++) {
                 JsonObject metaBlock = metaBlocks.get(j);
-                if (!metaBlock.get(KIND).getAsString().equalsIgnoreCase(CRS)) {
+                if (!metaBlock.get(Constants.KIND).getAsString().equalsIgnoreCase(Constants.CRS)) {
                     continue;
                 }
-                this.constructPointConversionInfoList(originalRecords, recordId, metaBlock, i, batchPointConversionMap, dataBlcok, j, metaBlocks, statusBuilder);
+                this.constructPointConversionInfoList(originalRecords, recordId, metaBlock, i, batchPointConversionMap, dataBlock, j, metaBlocks, statusBuilder);
             }
         }
         return batchPointConversionMap;
     }
 
+    private void gatherCrsGeoJsonConversionData(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
+        for (int i = 0; i < originalRecords.size(); i++) {
+            JsonObject recordJsonObject = originalRecords.get(i);
+            String recordId = this.getRecordId(recordJsonObject);
+            ConversionStatus.ConversionStatusBuilder statusBuilder = this.getConversionStatusBuilderFromList(recordId, conversionStatuses);
+            List<String> validationErrors = new ArrayList<>();
+            JsonObject filteredObjects = this.dpsConversionService.filterDataFields(recordJsonObject, validationErrors);
+            Iterator<String> keys = filteredObjects.keySet().iterator();
+            while(keys.hasNext()) {
+                String attributeName = keys.next();
+                JsonObject asIngestedCoordinates = filteredObjects.getAsJsonObject(attributeName).getAsJsonObject(Constants.AS_INGESTED_COORDINATES);
+                if (asIngestedCoordinates != null) {
+                    GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection();
+                    if (asIngestedCoordinates.has(Constants.TYPE) && (!asIngestedCoordinates.get(Constants.TYPE).isJsonNull())) fc.setType(asIngestedCoordinates.get(Constants.TYPE).getAsString());
+                    if (asIngestedCoordinates.has(Constants.PROPERTIES) && (!asIngestedCoordinates.get(Constants.PROPERTIES).isJsonNull())) fc.setProperties(asIngestedCoordinates.getAsJsonObject(Constants.PROPERTIES));
+                    if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_CRS) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull())) fc.setPersistableReferenceCrs(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).getAsString());
+                    if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_UNIT_Z) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).isJsonNull())) fc.setPersistableReferenceUnitZ(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).getAsString());
+                    if (asIngestedCoordinates.has(Constants.BBOX) && (!asIngestedCoordinates.get(Constants.BBOX).isJsonNull())) fc.setBbox(this.bboxValues(asIngestedCoordinates.getAsJsonArray(Constants.BBOX)));
+
+                    JsonArray featuresArray = (asIngestedCoordinates.has(Constants.FEATURES) && (!asIngestedCoordinates.get(Constants.FEATURES).isJsonNull())) ? asIngestedCoordinates.getAsJsonArray(Constants.FEATURES) : null;
+                    if (featuresArray == null || featuresArray.size() == 0) {
+                        statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_FEATURES);
+                        continue;
+                    }
+                    GeoJsonFeature[] featureArray = new GeoJsonFeature[featuresArray.size()];
+                    for (int j = 0; j < featuresArray.size(); j++) {
+                        JsonObject featureItem = featuresArray.get(j).getAsJsonObject();
+                        featureArray[j] = this.getFeature(featureItem, statusBuilder);
+                    }
+                    fc.setFeatures(featureArray);
+
+                    ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
+                    ConvertGeoJsonRequest request = new ConvertGeoJsonRequest(fc, TO_CRS_GEO_JSON, TO_UNIT_Z);
+                    try {
+                        if (statusBuilder.getErrors().isEmpty()) {
+                            ConvertGeoJsonResponse response = crsConverterService.convertGeoJson(request);
+                            GeoJsonFeatureCollection wgs84Coordinates = response.getFeatureCollection();
+                            this.appendObjectInRecord(recordJsonObject, attributeName, wgs84Coordinates);
+                        }
+                    } catch (CrsConverterException crsEx) {
+                        if (crsEx.getHttpResponse().IsBadRequestCode()) {
+                            statusBuilder.addError(String.format(BAD_REQUEST, crsEx.getHttpResponse().getBody()));
+                        } else {
+                            this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, crsEx.getHttpResponse().toString()));
+                        }
+                    }
+                } else {
+                    statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
+                    continue;
+                }
+            }
+        }
+    }
+
     private List<JsonObject> extractValidMetaItemsFromRecord(JsonObject recordJsonObject, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         try {
-            JsonArray metaItemsArray = recordJsonObject.getAsJsonArray(META);
+            JsonArray metaItemsArray = recordJsonObject.getAsJsonArray(Constants.META);
             for (int i = 0; i < metaItemsArray.size(); i++) {
                 JsonObject metaItem = metaItemsArray.get(i).getAsJsonObject();
                 conversionStatusBuilder.addErrorsFromMetaItemChecking(metaItem);
@@ -138,8 +194,8 @@ public class CrsConversionService {
 
     private List<PointConversionInfo> constructPointConversionInfoList(List<JsonObject> originalRecords, String recordId, JsonObject metaItem, int recordIndex, Map<String, List<PointConversionInfo>> mapOfPoints, JsonObject dataBlock, int metaItemIndex, List<JsonObject> metaBlocks, ConversionStatus.ConversionStatusBuilder conversionStatusBuilder) {
         List<PointConversionInfo> pointConversionInfoList = new ArrayList<>();
-        String persistableReference = jsonElementToString(metaItem.get(PERSISTABLE_REFERENCE));
-        JsonArray propertyNamesArray = metaItem.get(PROPERTY_NAMES).getAsJsonArray();
+        String persistableReference = jsonElementToString(metaItem.get(Constants.PERSISTABLE_REFERENCE));
+        JsonArray propertyNamesArray = metaItem.get(Constants.PROPERTY_NAMES).getAsJsonArray();
         List<String> propertyNames = this.convertPropertyNamesToStringList(propertyNamesArray);
         List<String> propertyNamesRemain = new ArrayList<>();
         for (String name: propertyNames) {
@@ -289,7 +345,7 @@ public class CrsConversionService {
 
         try {
             JsonObject nestedProperty = nestedFieldValue.getAsJsonObject();
-            JsonArray originalJsonPoints = nestedProperty.getAsJsonArray(POINTS);
+            JsonArray originalJsonPoints = nestedProperty.getAsJsonArray(Constants.POINTS);
             if (originalJsonPoints == null || originalJsonPoints.size() == 0) {
                 statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_POINTS_IN_NESTED_PROPERTY);
                 return pointConversionInfo;
@@ -320,14 +376,14 @@ public class CrsConversionService {
                 pointValues.add(convertedPoint.getZ());
                 convertedJsonPoints.add(pointValues);
             }
-            nestedProperty.remove(POINTS);
-            nestedProperty.add(POINTS, convertedJsonPoints);
+            nestedProperty.remove(Constants.POINTS);
+            nestedProperty.add(Constants.POINTS, convertedJsonPoints);
             dataBlock.add(nestedFieldName, nestedProperty);
 
             int metaItemIndex = pointConversionInfo.getMetaItemIndex();
             JsonObject metaItem = metaBlocks.get(metaItemIndex);
-            metaItem.remove(PERSISTABLE_REFERENCE);
-            metaItem.addProperty(PERSISTABLE_REFERENCE, TO_CRS);
+            metaItem.remove(Constants.PERSISTABLE_REFERENCE);
+            metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, TO_CRS);
             metaBlocks.set(metaItemIndex, metaItem);
             JsonArray metas = new JsonArray();
             for (JsonObject m : metaBlocks) {
@@ -336,8 +392,8 @@ public class CrsConversionService {
 
             int recordIndex = pointConversionInfo.getRecordIndex();
             JsonObject originalRecord = originalRecords.get(recordIndex);
-            originalRecord.add(DATA, dataBlock);
-            originalRecord.add(META, metas);
+            originalRecord.add(Constants.DATA, dataBlock);
+            originalRecord.add(Constants.META, metas);
             originalRecords.set(recordIndex, originalRecord);
             return pointConversionInfo;
         } catch (CrsConverterException cvEx) {
@@ -370,7 +426,6 @@ public class CrsConversionService {
         listOfPointsWithSameReference.add(pointInfo);
         pointsToBeConverted.put(reference, listOfPointsWithSameReference);
     }
-
 
     List<PointConversionInfo> callClientLibraryDoConversion(Map<String, List<PointConversionInfo>> originalPointsMap, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
@@ -429,8 +484,8 @@ public class CrsConversionService {
             int metaItemIndex = toBeUpdatedInfo.getMetaItemIndex();
             List<JsonObject> metaBlocks = toBeUpdatedInfo.getMetaItems();
             JsonObject metaItem = metaBlocks.get(metaItemIndex);
-            metaItem.remove(PERSISTABLE_REFERENCE);
-            metaItem.addProperty(PERSISTABLE_REFERENCE, TO_CRS);
+            metaItem.remove(Constants.PERSISTABLE_REFERENCE);
+            metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, TO_CRS);
             metaBlocks.set(metaItemIndex, metaItem);
             toBeUpdatedInfo.setMetaItems(metaBlocks);
         }
@@ -448,20 +503,38 @@ public class CrsConversionService {
     }
 
     private void updateValuesInRecord(JsonObject recordJsonObject, PointConversionInfo convertedInfo, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
-        JsonObject dataBlcok = recordJsonObject.getAsJsonObject(DATA);
+        JsonObject dataBlcok = recordJsonObject.getAsJsonObject(Constants.DATA);
 
         this.overwritePropertyToData(convertedInfo.getXFieldName(), convertedInfo.getXValue(), dataBlcok);
         this.overwritePropertyToData(convertedInfo.getYFieldName(), convertedInfo.getYValue(), dataBlcok);
         this.overwritePropertyToData(convertedInfo.getZFieldName(), convertedInfo.getZValue(), dataBlcok);
 
-        recordJsonObject.add(DATA, dataBlcok);
+        recordJsonObject.add(Constants.DATA, dataBlcok);
 
         List<JsonObject> metaBlocks = convertedInfo.getMetaItems();
         JsonArray metas = new JsonArray();
         for (JsonObject m : metaBlocks) {
             metas.add(m);
         }
-        recordJsonObject.add(META, metas);
+        recordJsonObject.add(Constants.META, metas);
+    }
+
+    private void appendObjectInRecord(JsonObject recordJsonObject, String attributeName, GeoJsonFeatureCollection wgs84Coordinates) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            String jsonString = mapper.writeValueAsString(wgs84Coordinates);
+            JsonParser parser = new JsonParser();
+            JsonObject convertObj = (JsonObject) parser.parse(jsonString);
+
+            JsonObject dataBlock = recordJsonObject.getAsJsonObject(Constants.DATA);
+            JsonObject conversionBlock = recordJsonObject.getAsJsonObject(Constants.DATA).getAsJsonObject(attributeName);
+            conversionBlock.add(Constants.WGS84_COORDINATES, convertObj);
+            dataBlock.add(attributeName, conversionBlock);
+            recordJsonObject.add(Constants.DATA, dataBlock);
+        } catch (JsonProcessingException ex) {
+            logger.error(String.format("There was an error converting the schema to a JSON string. %s", ex.getMessage(), ex));
+        }
     }
 
     private void overwritePropertyToData(String name, double value, JsonObject data) {
@@ -490,7 +563,7 @@ public class CrsConversionService {
     private String getRecordId(JsonObject record) {
         JsonElement recordId = record.get("id");
         if (recordId == null || recordId instanceof JsonNull || recordId.getAsString().isEmpty()) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "record does not have id");
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "Record does not have id.");
         }
         return recordId.getAsString();
     }
@@ -504,5 +577,122 @@ public class CrsConversionService {
         headers.put(DpsHeaders.AUTHORIZATION, token);
         headers.put(DpsHeaders.DATA_PARTITION_ID, dpsHeaders.getPartitionId());
         return headers;
+    }
+
+    private void setGeometry(String type, GeoJsonFeature feature, JsonObject coordinates, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        Gson gson = new Gson();
+        switch (type) {
+            case Constants.ANY_CRS_POINT: feature.setGeometry(this.getGeoJsonPoint(gson, coordinates));
+                break;
+            case Constants.ANY_CRS_MULTIPOINT: feature.setGeometry(this.getGeoJsonMultiPoint(gson, coordinates));
+                break;
+            case Constants.ANY_CRS_LINE_STRING: feature.setGeometry(this.getGeoJsonLineString(gson, coordinates));
+                break;
+            case Constants.ANY_CRS_MULTILINE_STRING: feature.setGeometry(this.getGeoJsonMultiLineString(gson, coordinates));
+                break;
+            case Constants.ANY_CRS_POLYGON: feature.setGeometry(this.getGeoJsonPolygon(gson, coordinates));
+                break;
+            case Constants.ANY_CRS_MULTIPOLYGON: feature.setGeometry(this.getGeoJsonMultiPolygon(gson, coordinates));
+                break;
+            default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRY, type));
+                break;
+        }
+    }
+
+    private GeoJsonFeature getFeature(JsonObject featureItem, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonFeature feature = new GeoJsonFeature();
+        if (featureItem.has(Constants.TYPE) && (!featureItem.get(Constants.TYPE).isJsonNull())) feature.setType(featureItem.get(Constants.TYPE).getAsString());
+        if (featureItem.has(Constants.PROPERTIES) && (!featureItem.get(Constants.PROPERTIES).isJsonNull())) feature.setProperties(featureItem.getAsJsonObject(Constants.PROPERTIES));
+        if (featureItem.has(Constants.BBOX) && (!featureItem.get(Constants.BBOX).isJsonNull())) feature.setBbox(this.bboxValues(featureItem.getAsJsonArray(Constants.BBOX)));
+
+        if (featureItem.has(Constants.GEOMETRY) && (!featureItem.get(Constants.GEOMETRY).isJsonNull())) {
+            JsonObject geometry = featureItem.getAsJsonObject(Constants.GEOMETRY);
+            String geometryType = (geometry.has(Constants.TYPE) && (!geometry.get(Constants.TYPE).isJsonNull())) ? geometry.get(Constants.TYPE).getAsString() : "";
+
+            if (geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
+                JsonArray geometriesArray = (geometry.has(Constants.GEOMETRIES) && (!geometry.get(Constants.GEOMETRIES).isJsonNull())) ? geometry.get(Constants.GEOMETRIES).getAsJsonArray() : new JsonArray();
+                if (geometriesArray == null || geometriesArray.size() == 0) {
+                    statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRIES);
+                } else {
+                    GeoJsonGeometryCollection gc = new GeoJsonGeometryCollection();
+                    GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
+                    for (int k = 0; k < geometriesArray.size(); k++) {
+                        JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
+                        String geometriesType = (geometryObj.has(Constants.TYPE) && (!geometryObj.get(Constants.TYPE).isJsonNull())) ? geometryObj.get(Constants.TYPE).getAsString() : "";
+                        JsonArray coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                        JsonObject gmCoordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
+                        Gson gson = new Gson();
+                        switch (geometriesType) {
+                            case Constants.POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj);
+                                break;
+                            case Constants.MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj);
+                                break;
+                            default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRIES, geometriesType));
+                                break;
+                        }
+                        geometries[k].setType(geometriesType);
+                        gc.setGeometries(geometries);
+                        feature.setGeometry(gc);
+                    }
+                }
+            } else {
+                JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                JsonObject coordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
+                this.setGeometry(geometryType, feature, coordinatesObj, statusBuilder);
+            }
+        } else {
+            statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRY);
+        }
+        return feature;
+    }
+
+    private GeoJsonPoint getGeoJsonPoint(Gson gson, JsonObject coordinatesObj) {
+        return gson.fromJson(coordinatesObj, GeoJsonPoint.class);
+    }
+
+    private GeoJsonMultiPoint getGeoJsonMultiPoint(Gson gson, JsonObject coordinatesObj) {
+        return gson.fromJson(coordinatesObj, GeoJsonMultiPoint.class);
+    }
+
+    private GeoJsonLineString getGeoJsonLineString(Gson gson, JsonObject coordinatesObj) {
+        return gson.fromJson(coordinatesObj, GeoJsonLineString.class);
+    }
+
+    private GeoJsonMultiLineString getGeoJsonMultiLineString(Gson gson, JsonObject coordinatesObj) {
+        return gson.fromJson(coordinatesObj, GeoJsonMultiLineString.class);
+    }
+
+    private GeoJsonPolygon getGeoJsonPolygon(Gson gson, JsonObject coordinatesObj) {
+        return gson.fromJson(coordinatesObj, GeoJsonPolygon.class);
+    }
+
+    private GeoJsonMultiPolygon getGeoJsonMultiPolygon(Gson gson, JsonObject coordinatesObj) {
+        return gson.fromJson(coordinatesObj, GeoJsonMultiPolygon.class);
+    }
+
+    private JsonObject getCoordinates(JsonArray coordinates, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        JsonObject coordinatesObj = new JsonObject();
+        if (coordinates.size() > 0) {
+            coordinatesObj.add(Constants.COORDINATES, coordinates);
+        } else {
+            statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_COORDINATES);
+        }
+        return coordinatesObj;
+    }
+
+    private double[] bboxValues(JsonArray bboxValues) {
+        double[] bbox = new double[bboxValues.size()];
+        for (int i = 0; i < bboxValues.size(); i++) {
+            bbox[i] = bboxValues.get(i).getAsDouble();
+        }
+        return bbox;
     }
 }
