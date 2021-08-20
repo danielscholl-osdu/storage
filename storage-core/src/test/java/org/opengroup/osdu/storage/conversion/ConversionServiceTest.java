@@ -89,12 +89,11 @@ public class ConversionServiceTest {
     public void should_returnOriginalRecordsAndStatusesAsNoMetaBlock_whenProvidedRecordsWithNullArrayMetaBlock() {
         this.originalRecords.add(this.jsonParser.parse(RECORD_4).getAsJsonObject());
 
-
         RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(RECORD_4));
-        Assert.assertEquals("No Meta Block in This Record.", result.getConversionStatuses().get(0).getErrors().get(0));
+        Assert.assertEquals(CrsConversionServiceErrorMessages.MISSING_META_BLOCK, result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test

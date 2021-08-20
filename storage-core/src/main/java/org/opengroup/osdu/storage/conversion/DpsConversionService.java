@@ -107,7 +107,13 @@ public class DpsConversionService {
             return false;
         }
         JsonArray metaBlock = record.getAsJsonArray(Constants.META);
-        return metaBlock != null && metaBlock.size() != 0;
+        for (JsonElement block: metaBlock){
+            if(!block.isJsonNull()){
+                return true;
+            }
+        }
+        validationErrors.add(CrsConversionServiceErrorMessages.MISSING_META_BLOCK);
+        return false;
     }
 
     private String getRecordId(JsonObject record) {
