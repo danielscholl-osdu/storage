@@ -14,8 +14,10 @@
 
 package org.opengroup.osdu.storage.api;
 
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidKind;
+import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,9 @@ public class QueryApi {
 	@Autowired
 	private EncodeDecode encodeDecode;
 
+	@Autowired
+	private SchemaEndpointsConfig schemaEndpointsConfig;
+
 	@PostMapping(value = "/records", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<MultiRecordInfo> getRecords(@Valid @RequestBody MultiRecordIds ids) {
@@ -69,9 +74,13 @@ public class QueryApi {
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getKinds(@RequestParam(required = false) String cursor,
 			@RequestParam(required = false) Integer limit) {
-		DatastoreQueryResult result = this.batchService.getAllKinds(encodeDecode.deserializeCursor(cursor), limit);
-		result.setCursor(encodeDecode.serializeCursor(result.getCursor()));
-		return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
+        if (!this.schemaEndpointsConfig.isDisabled()) {
+			DatastoreQueryResult result = this.batchService.getAllKinds(encodeDecode.deserializeCursor(cursor), limit);
+            result.setCursor(encodeDecode.serializeCursor(result.getCursor()));
+            return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
+        } else {
+			throw new AppException(org.apache.http.HttpStatus.SC_NOT_FOUND,"This API has been deprecated","Unable to perform action");
+        }
 	}
 
 	@GetMapping(value = "/records", produces = MediaType.APPLICATION_JSON_VALUE)
