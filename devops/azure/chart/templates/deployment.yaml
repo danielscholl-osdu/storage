@@ -28,6 +28,10 @@ spec:
         app: {{ .Chart.Name }}
         aadpodidbinding: osdu-identity
     spec:
+{{- if .Values.global.isAutoscalingEnabled }}
+      nodeSelector:
+        nodepool: {{ .Values.global.nodepool }} 
+{{- end }}   
       volumes:
       - name: azure-keyvault
         csi:
@@ -119,6 +123,8 @@ spec:
           value: "{{ .Values.policy.enabled }}"
         - name: policy_service_endpoint
           value: http://policy-service/api/policy/v1
+        - name: schema_endpoints_disabled
+          value: "{{ .Values.schemaEndpoints.disabled }}"
         - name: azure_istioauth_enabled
           value: "true"
         - name: azure_activedirectory_AppIdUri

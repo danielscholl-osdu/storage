@@ -14,26 +14,23 @@
 
 package org.opengroup.osdu.storage.conversion;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.gson.*;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.Constants;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
+import org.opengroup.osdu.core.common.crs.UnitConversionImpl;
 import org.opengroup.osdu.core.common.crs.dates.DatesConversionImpl;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.crs.ConversionRecord;
 import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.opengroup.osdu.core.common.crs.UnitConversionImpl;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import org.opengroup.osdu.core.common.model.http.AppException;
 
 @Service
 public class DpsConversionService {
@@ -47,74 +44,70 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final String CONVERSION_NO_META_BLOCK = "No Meta Block in This Record.";
+    private static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
-        List<ConversionRecord> recordsWithoutMetaBlock = new ArrayList<>();
-        List<JsonObject> recordsWithMetaBlock = this.classifyRecords(originalRecords, conversionStatuses,
-                recordsWithoutMetaBlock);
-        List<ConversionRecord> allRecords = recordsWithoutMetaBlock;
-        if (conversionStatuses.size() > 0) {
-            RecordsAndStatuses crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock,
-                    conversionStatuses);
-            List<JsonObject> crsConvertedRecords = crsConversionResult.getRecords();
-            List<ConversionStatus> crsConversionStatuses = crsConversionResult.getConversionStatuses();
+        List<JsonObject> recordsWithMetaBlock = new ArrayList<>();
+        List<JsonObject> recordsWithGeoJsonBlock = new ArrayList<>();
 
-            List<ConversionRecord> conversionRecords = new ArrayList<>();
-            for (int i = 0; i < crsConvertedRecords.size(); i++) {
-                ConversionRecord conversionRecord = new ConversionRecord();
-                conversionRecord.setRecordJsonObject(crsConvertedRecords.get(i));
-                ConversionStatus conversionStatus = this.getRecordConversionStatus(crsConversionStatuses,
-                        this.getRecordId(crsConvertedRecords.get(i)));
-                if (conversionStatus != null) {
-                    conversionRecord.setConversionMessages(conversionStatus.getErrors());
-                    conversionRecord.setConvertStatus(ConvertStatus.valueOf(conversionStatus.getStatus()));
-                }
-                conversionRecords.add(conversionRecord);
+        List<ConversionRecord> recordsWithoutConversionBlock = this.classifyRecords(originalRecords, conversionStatuses, recordsWithMetaBlock, recordsWithGeoJsonBlock);
+        List<ConversionRecord> allRecords = recordsWithoutConversionBlock;
+
+        if (!conversionStatuses.isEmpty()) {
+            RecordsAndStatuses crsConversionResult = null;
+            if (!recordsWithGeoJsonBlock.isEmpty()) {
+                crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
+                List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
+                allRecords.addAll(conversionRecords);
             }
-
-            this.unitConversionService.convertUnitsToSI(conversionRecords);
-            this.datesConversionService.convertDatesToISO(conversionRecords);
-            allRecords.addAll(conversionRecords);
+            if (!recordsWithMetaBlock.isEmpty()) {
+                crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
+                List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
+                this.unitConversionService.convertUnitsToSI(conversionRecords);
+                this.datesConversionService.convertDatesToISO(conversionRecords);
+                allRecords.addAll(conversionRecords);
+            }
         }
         this.checkMismatchAndLogMissing(originalRecords, allRecords);
 
         return this.MakeResponseStatus(allRecords);
     }
 
-    private List<JsonObject> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<ConversionRecord> recordsWithoutMetaBlock) {
-        List<JsonObject> recordsWithMetaBlock = new ArrayList<>();
-        for (int i = 0; i < originalRecords.size(); i++) {
-            JsonObject recordJsonObject = originalRecords.get(i);
-            if (this.isMetaBlockPresent(recordJsonObject)) {
+    private List<ConversionRecord> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<JsonObject> recordsWithMetaBlock, List<JsonObject> recordsWithGeoJsonBlock) {
+        List<ConversionRecord> recordsWithoutConversionBlock = new ArrayList<>();
+        for (JsonObject recordJsonObject : originalRecords) {
+            String recordId = this.getRecordId(recordJsonObject);
+            List<String> validationErrors = new ArrayList<>();
+            if (this.isAsIngestedCoordinatesPresent(recordJsonObject, validationErrors)) {
+                recordsWithGeoJsonBlock.add(recordJsonObject);
+                conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
+            } else if (this.isMetaBlockPresent(recordJsonObject, validationErrors)) {
                 recordsWithMetaBlock.add(recordJsonObject);
-                String recordId = this.getRecordId(recordJsonObject);
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
             } else {
                 ConversionRecord conversionRecord = new ConversionRecord();
                 conversionRecord.setRecordJsonObject(recordJsonObject);
                 conversionRecord.setConvertStatus(ConvertStatus.NO_FRAME_OF_REFERENCE);
-                List<String> conversionStatusNoMeta = new ArrayList<>();
-                conversionStatusNoMeta.add(CONVERSION_NO_META_BLOCK);
-                conversionRecord.setConversionMessages(conversionStatusNoMeta);
-                recordsWithoutMetaBlock.add(conversionRecord);
+                conversionRecord.setConversionMessages(validationErrors);
+                recordsWithoutConversionBlock.add(conversionRecord);
             }
         }
-        return recordsWithMetaBlock;
+        return recordsWithoutConversionBlock;
     }
 
-    private boolean isMetaBlockPresent(JsonObject record) {
-        JsonArray metaBlock = record.getAsJsonArray("meta");
-        if(metaBlock == null) {
+    private boolean isAsIngestedCoordinatesPresent(JsonObject record, List<String> validationErrors) {
+        JsonObject filteredObject = this.filterDataFields(record, validationErrors);
+        return ((filteredObject != null) && (filteredObject.size() > 0));
+    }
+
+    private boolean isMetaBlockPresent(JsonObject record, List<String> validationErrors) {
+        if (record.get(Constants.META) == null || record.get(Constants.META).isJsonNull()) {
+            validationErrors.add(CrsConversionServiceErrorMessages.MISSING_META_BLOCK);
             return false;
         }
-        for (JsonElement block: metaBlock) {
-            if(!block.isJsonNull()){
-                return true;
-            }
-        }
-        return false;
+        JsonArray metaBlock = record.getAsJsonArray(Constants.META);
+        return metaBlock != null && metaBlock.size() != 0;
     }
 
     private String getRecordId(JsonObject record) {
@@ -153,6 +146,25 @@ public class DpsConversionService {
         return result;
     }
 
+    private List<ConversionRecord> getConversionRecords(RecordsAndStatuses crsConversionResult) {
+        List<JsonObject> crsConvertedRecords = crsConversionResult.getRecords();
+        List<ConversionStatus> crsConversionStatuses = crsConversionResult.getConversionStatuses();
+
+        List<ConversionRecord> conversionRecords = new ArrayList<>();
+        for (JsonObject conversionRecord : crsConvertedRecords) {
+            ConversionRecord ConversionRecordObj = new ConversionRecord();
+            ConversionRecordObj.setRecordJsonObject(conversionRecord);
+            ConversionStatus conversionStatus = this.getRecordConversionStatus(crsConversionStatuses,
+                    this.getRecordId(conversionRecord));
+            if (conversionStatus != null) {
+                ConversionRecordObj.setConversionMessages(conversionStatus.getErrors());
+                ConversionRecordObj.setConvertStatus(ConvertStatus.valueOf(conversionStatus.getStatus()));
+            }
+            conversionRecords.add(ConversionRecordObj);
+        }
+        return conversionRecords;
+    }
+
     private void checkMismatchAndLogMissing(List<JsonObject> originalRecords, List<ConversionRecord> convertedRecords) {
         if (originalRecords.size() == convertedRecords.size()) {
             return;
@@ -168,4 +180,58 @@ public class DpsConversionService {
             }
         }
     }
+
+    public JsonObject filterDataFields(JsonObject record, List<String> validationErrors) {
+        JsonObject dataObject = record.get(Constants.DATA).getAsJsonObject();
+        JsonObject filteredData = new JsonObject();
+        Iterator var = validAttributes.iterator();
+
+        if (dataObject == null) {
+            validationErrors.add(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
+            return null;
+        }
+
+        while (var.hasNext()) {
+            String attribute = (String) var.next();
+            JsonElement property = getDataSubProperty(attribute, dataObject);
+            if (property != null) {
+                JsonObject recordObj = property.getAsJsonObject();
+
+                if ((recordObj.getAsJsonObject(Constants.WGS84_COORDINATES) == null)) {
+                    if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES) != null)) {
+                        String type = ((recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).has(Constants.TYPE)) && (!recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).isJsonNull())) ? recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).getAsString() : "";
+                        if (type.equals(Constants.ANY_CRS_FEATURE_COLLECTION)) {
+                            filteredData.add(attribute, property);
+                        } else {
+                            validationErrors.add(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, type));
+                        }
+                    }else {
+                        validationErrors.add(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
+                    }
+                } else {
+                    validationErrors.add(CrsConversionServiceErrorMessages.WGS84COORDINATES_EXISTS);
+                }
+            }
+        }
+        return filteredData;
+    }
+
+    private static JsonElement getDataSubProperty(String field, JsonObject data) {
+        if (field.contains(".")) {
+            String[] fieldArray = field.split("\\.", 2);
+            String subFieldParent = fieldArray[0];
+            String subFieldChild = fieldArray[1];
+            JsonElement subFieldParentElement = data.get(subFieldParent);
+            if (subFieldParentElement.isJsonObject()) {
+                JsonElement parentObjectValue = getDataSubProperty(subFieldChild, subFieldParentElement.getAsJsonObject());
+                if (parentObjectValue != null) {
+                    return parentObjectValue;
+                }
+            }
+            return null;
+        } else {
+            return data.get(field);
+        }
+    }
+
 }

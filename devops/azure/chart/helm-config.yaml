@@ -3,6 +3,8 @@ global:
 
   # Service(s) Replica Count
   replicaCount: 10
+  nodepool: services
+  isAutoscalingEnabled: false
 
 ################################################################################
 # Specify the Gitlab branch being used for image creation
@@ -15,3 +17,6 @@ image:
 
 policy:
   enabled: #{POLICY_ENABLED}#
+
+schemaEndpoints:
+  disabled: #{SCHEMA_ENDPOINTS_DISABLED}#
