@@ -17,12 +17,15 @@ package org.opengroup.osdu.storage.api;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidKind;
+import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +41,9 @@ import org.springframework.web.context.annotation.RequestScope;
 public class SchemaApi {
 	private SchemaService schemaService;
 
+	@Autowired
+	private SchemaEndpointsConfig schemaEndpointsConfig;
+
 	// @InjectMocks and @Autowired together only work on setter DI
 	@Autowired
 	public void setSchemaService(SchemaService schemaService)
@@ -51,8 +57,13 @@ public class SchemaApi {
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Void> createSchema(@Valid @NotNull @RequestBody Schema schema)
 	{
-		this.schemaService.createSchema(schema);
-		return new ResponseEntity<Void>(HttpStatus.CREATED);
+		if (!this.schemaEndpointsConfig.isDisabled()) {
+			this.schemaService.createSchema(schema);
+			return new ResponseEntity<Void>(HttpStatus.CREATED);
+		} else {
+			throw new AppException(org.apache.http.HttpStatus.SC_NOT_FOUND,"This API has been deprecated","Unable to perform action");
+		}
+
 	}
 
 	// This endpoint is deprecated as of M6, replaced by schema service.  In M7 this endpoint will be deleted
@@ -60,7 +71,11 @@ public class SchemaApi {
 	@GetMapping(value = "/{kind}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Schema> getSchema(@PathVariable("kind") @ValidKind String kind) {
-		return new ResponseEntity<Schema>(this.schemaService.getSchema(kind), HttpStatus.OK);
+		if (!this.schemaEndpointsConfig.isDisabled()) {
+			return new ResponseEntity<Schema>(this.schemaService.getSchema(kind), HttpStatus.OK);
+		} else {
+			throw new AppException(org.apache.http.HttpStatus.SC_NOT_FOUND,"This API has been deprecated","Unable to perform action");
+		}
 	}
 
 	// This endpoint is deprecated as of M6. In M7 this endpoint will be deleted
@@ -68,7 +83,11 @@ public class SchemaApi {
 	@DeleteMapping(value = "/{kind}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Void> deleteSchema(@PathVariable("kind") @ValidKind String kind) {
-		this.schemaService.deleteSchema(kind);
-		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+		if (!this.schemaEndpointsConfig.isDisabled()) {
+			this.schemaService.deleteSchema(kind);
+			return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+		} else {
+			throw new AppException(org.apache.http.HttpStatus.SC_NOT_FOUND,"This API has been deprecated","Unable to perform action");
+		}
 	}
 }

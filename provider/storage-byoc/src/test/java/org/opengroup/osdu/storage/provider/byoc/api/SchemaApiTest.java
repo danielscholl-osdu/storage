@@ -20,6 +20,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
+import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.SchemaService;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -40,6 +41,9 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class SchemaApiTest {
     @Mock
     private SchemaService schemaService;
+
+    @Mock
+    private SchemaEndpointsConfig schemaEndpointsConfig;
 
     @InjectMocks
     @Autowired //this causes the Spring app to start, otherwise, it's just a mocked object
