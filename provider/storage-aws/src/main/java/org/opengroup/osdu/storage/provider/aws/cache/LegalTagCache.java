@@ -21,7 +21,6 @@ import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.MultiTenantCache;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
