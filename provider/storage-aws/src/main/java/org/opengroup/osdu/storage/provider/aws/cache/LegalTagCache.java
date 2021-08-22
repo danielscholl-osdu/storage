@@ -14,9 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.aws.cache;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opengroup.osdu.core.aws.cache.AwsElasticCache;
+import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.MultiTenantCache;
-import org.opengroup.osdu.core.common.cache.RedisCache;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -32,8 +34,9 @@ public class LegalTagCache implements ICache<String, String> {
 
     private final MultiTenantCache<String> caches;
 
-    public LegalTagCache(@Value("${aws.elasticache.cluster.endpoint}") final String REDIS_LEGALTAG_HOST, @Value("${aws.elasticache.cluster.port}") final String REDIS_LEGALTAG_PORT, @Value("${aws.elasticache.cluster.key}") final String REDIS_LEGALTAG_KEY) {
-        this.caches = new MultiTenantCache<>(new RedisCache<>(REDIS_LEGALTAG_HOST,Integer.parseInt(REDIS_LEGALTAG_PORT), REDIS_LEGALTAG_KEY, 
+    public LegalTagCache() throws K8sParameterNotFoundException, JsonProcessingException {
+        this.caches = new MultiTenantCache<>(
+                AwsElasticCache.RedisCache(
                 60 * 60,
                 String.class,
                 String.class));

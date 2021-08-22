@@ -14,6 +14,10 @@
 
 package org.opengroup.osdu.storage.provider.aws.cache;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opengroup.osdu.core.aws.cache.AwsElasticCache;
+import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.cache.RedisCache;
@@ -22,9 +26,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GroupCache extends RedisCache<String, Groups> {
-    public GroupCache(@Value("${aws.elasticache.cluster.endpoint}") final String REDIS_GROUP_HOST, @Value("${aws.elasticache.cluster.port}") final String REDIS_GROUP_PORT, @Value("${aws.elasticache.cluster.key}") final String REDIS_GROUP_KEY) {
-        super(REDIS_GROUP_HOST, Integer.parseInt(REDIS_GROUP_PORT), REDIS_GROUP_KEY, 60, String.class, Groups.class);
+public class GroupCache {
+    public ICache<String, Groups> GetGroupCache() throws K8sParameterNotFoundException, JsonProcessingException {
+       return  AwsElasticCache.RedisCache(60, String.class, Groups.class);
     }
 
     public static String getGroupCacheKey(DpsHeaders headers) {
