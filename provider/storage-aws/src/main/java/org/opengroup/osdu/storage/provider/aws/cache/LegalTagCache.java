@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import jdk.nashorn.internal.runtime.regexp.joni.ast.StringNode;
 import org.opengroup.osdu.core.aws.cache.DummyCache;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
