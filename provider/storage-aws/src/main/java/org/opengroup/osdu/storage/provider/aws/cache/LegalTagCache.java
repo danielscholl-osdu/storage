@@ -52,7 +52,6 @@ public class LegalTagCache implements ICache<String, String> {
             }else{
                 caches = new MultiTenantCache<String>(new VmCache<String,String>(expTimeSeconds, 10));
             }
-
         }else {
             String host = provider.getParameterAsStringOrDefault("CACHE_CLUSTER_ENDPOINT", REDIS_SEARCH_HOST);
             int port = Integer.parseInt(provider.getParameterAsStringOrDefault("CACHE_CLUSTER_PORT", REDIS_SEARCH_PORT));
