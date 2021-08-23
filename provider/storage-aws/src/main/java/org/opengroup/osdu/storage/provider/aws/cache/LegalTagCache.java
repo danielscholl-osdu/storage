@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opengroup.osdu.core.aws.cache.AwsElasticCache;
+import org.opengroup.osdu.core.aws.cache.AwsRedisCache;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.MultiTenantCache;
@@ -35,7 +35,7 @@ public class LegalTagCache implements ICache<String, String> {
 
     public LegalTagCache() throws K8sParameterNotFoundException, JsonProcessingException {
         this.caches = new MultiTenantCache<>(
-                AwsElasticCache.RedisCache(
+                AwsRedisCache.RedisCache(
                 60 * 60,
                 String.class,
                 String.class));
