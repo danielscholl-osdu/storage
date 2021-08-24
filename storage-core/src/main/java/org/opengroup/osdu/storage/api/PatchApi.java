@@ -19,6 +19,7 @@ import javax.validation.Valid;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -42,7 +43,7 @@ public class PatchApi {
 	@Autowired
 	private BulkUpdateRecordService bulkUpdateRecordService;
 
-	@PatchMapping()
+	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
 		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail());

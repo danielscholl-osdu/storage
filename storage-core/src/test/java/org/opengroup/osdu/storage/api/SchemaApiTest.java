@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.api;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -28,14 +29,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
+import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.SchemaService;
 import org.springframework.http.ResponseEntity;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.security.access.prepost.PreAuthorize;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class SchemaApiTest {
@@ -44,6 +48,9 @@ public class SchemaApiTest {
 
     @Mock
     private SchemaService schemaService;
+
+    @Mock
+    private SchemaEndpointsConfig schemaEndpointsConfig;
 
     @Mock
     private DpsHeaders httpHeaders;
@@ -60,7 +67,7 @@ public class SchemaApiTest {
     }
 
     @Test
-    public void should_returnHttp201_when_creatingSchemaSuccessfully() {
+    public void should_returnHttp201_when_schemaApiIsEnabled_and_creatingSchemaSuccessfully() {
         final String USER = "testUser@gmail.com";
 
         Schema schema = new Schema();
@@ -74,7 +81,22 @@ public class SchemaApiTest {
     }
 
     @Test
-    public void should_returnHttp200_when_gettingSchemaSuccessfully() {
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_creatingSchema() {
+        final String USER = "testUser@gmail.com";
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+
+        Schema schema = new Schema();
+        try {
+            ResponseEntity response = this.sut.createSchema(schema);
+            fail("Should not succeed");
+        } catch (AppException e){
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_returnHttp200_when_schemaApiIsEnabled_and_gettingSchemaSuccessfully() {
         final String KIND = "anyKind";
 
         Schema schema = new Schema();
@@ -91,12 +113,37 @@ public class SchemaApiTest {
     }
 
     @Test
-    public void should_returnHttp204_when_deletingSchemaSuccessfully() {
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_gettingSchema() {
+        final String KIND = "anyKind";
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+        try {
+            ResponseEntity response = this.sut.getSchema(KIND);
+        }catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_returnHttp204_when_schemaApiIsEnabled_and_deletingSchemaSuccessfully() {
         final String KIND = "anyKind";
 
         ResponseEntity response = this.sut.deleteSchema(KIND);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_deletingSchema() {
+        final String KIND = "anyKind";
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+
+        try {
+            ResponseEntity response = this.sut.deleteSchema(KIND);
+        }catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
     }
 
     @Test
