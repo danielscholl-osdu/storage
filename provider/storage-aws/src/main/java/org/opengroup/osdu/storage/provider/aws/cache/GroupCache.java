@@ -29,11 +29,11 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 @Component
 public class GroupCache {
-    @Value("${aws.elasticache.cluster.endpoint}")
+    @Value("${aws.elasticache.cluster.endpoint:null}")
     String REDIS_SEARCH_HOST;
-    @Value("${aws.elasticache.cluster.port}")
+    @Value("${aws.elasticache.cluster.port:null}")
     String REDIS_SEARCH_PORT;
-    @Value("${aws.elasticache.cluster.key}")
+    @Value("${aws.elasticache.cluster.key:null}")
     String REDIS_SEARCH_KEY;
     public ICache<String, Groups> GetGroupCache() throws K8sParameterNotFoundException, JsonProcessingException {
         K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
