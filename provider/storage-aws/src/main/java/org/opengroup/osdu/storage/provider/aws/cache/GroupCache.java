@@ -28,7 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 @Component
-public class GroupCache {
+public class GroupCache{
     @Value("${aws.elasticache.cluster.endpoint:null}")
     String REDIS_SEARCH_HOST;
     @Value("${aws.elasticache.cluster.port:null}")
