@@ -209,8 +209,10 @@ public class DpsConversionService {
             if (property == null || property instanceof JsonNull) continue;
 
             JsonObject recordObj = property.getAsJsonObject();
-            if (recordObj.has(Constants.WGS84_COORDINATES) && !recordObj.get(Constants.WGS84_COORDINATES).isJsonNull())
+            if (recordObj.has(Constants.WGS84_COORDINATES) && !recordObj.get(Constants.WGS84_COORDINATES).isJsonNull()) {
+                validationErrors.add(CrsConversionServiceErrorMessages.WGS84COORDINATES_EXISTS);
                 continue;
+            }
 
             if ((recordObj.size() == 0) || !recordObj.has(Constants.AS_INGESTED_COORDINATES) || recordObj.get(Constants.AS_INGESTED_COORDINATES).isJsonNull()) {
                 validationErrors.add(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
