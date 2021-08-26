@@ -14,10 +14,10 @@
 
 package org.opengroup.osdu.storage.conversion;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
@@ -32,6 +32,12 @@ import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class DpsConversionService {
 
@@ -44,7 +50,7 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
+    private static final List<String> validAttributes = Arrays.asList("SpatialLocation", "ProjectedBottomHoleLocation", "GeographicBottomHoleLocation", "SpatialArea", "SpatialPoint", "ABCDBinGridSpatialLocation", "FirstLocation", "LastLocation", "LiveTraceOutline");
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -107,8 +113,8 @@ public class DpsConversionService {
             return false;
         }
         JsonArray metaBlock = record.getAsJsonArray(Constants.META);
-        for (JsonElement block: metaBlock){
-            if(!block.isJsonNull()){
+        for (JsonElement block : metaBlock) {
+            if (!block.isJsonNull()) {
                 return true;
             }
         }
@@ -181,7 +187,7 @@ public class DpsConversionService {
 
         for (JsonObject originalRecord : originalRecords) {
             String originalId = this.getRecordId(originalRecord);
-            if (!convertedIds.contains(originalId) ) {
+            if (!convertedIds.contains(originalId)) {
                 this.logger.warning("Missing record after conversion: " + originalId);
             }
         }
@@ -200,23 +206,24 @@ public class DpsConversionService {
         while (var.hasNext()) {
             String attribute = (String) var.next();
             JsonElement property = getDataSubProperty(attribute, dataObject);
-            if (property != null) {
-                JsonObject recordObj = property.getAsJsonObject();
+            if (property == null || property instanceof JsonNull) continue;
 
-                if ((recordObj.getAsJsonObject(Constants.WGS84_COORDINATES) == null)) {
-                    if ((recordObj.size() > 0) && (recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES) != null)) {
-                        String type = ((recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).has(Constants.TYPE)) && (!recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).isJsonNull())) ? recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES).get(Constants.TYPE).getAsString() : "";
-                        if (type.equals(Constants.ANY_CRS_FEATURE_COLLECTION)) {
-                            filteredData.add(attribute, property);
-                        } else {
-                            validationErrors.add(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, type));
-                        }
-                    }else {
-                        validationErrors.add(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
-                    }
-                } else {
-                    validationErrors.add(CrsConversionServiceErrorMessages.WGS84COORDINATES_EXISTS);
-                }
+            JsonObject recordObj = property.getAsJsonObject();
+            if (recordObj.has(Constants.WGS84_COORDINATES) && !recordObj.get(Constants.WGS84_COORDINATES).isJsonNull())
+                continue;
+
+            if ((recordObj.size() == 0) || !recordObj.has(Constants.AS_INGESTED_COORDINATES) || recordObj.get(Constants.AS_INGESTED_COORDINATES).isJsonNull()) {
+                validationErrors.add(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
+                continue;
+            }
+
+            JsonObject asIngestedCoordinates = recordObj.getAsJsonObject(Constants.AS_INGESTED_COORDINATES);
+            String type = asIngestedCoordinates.has(Constants.TYPE) && !asIngestedCoordinates.get(Constants.TYPE).isJsonNull()
+                    ? asIngestedCoordinates.get(Constants.TYPE).getAsString() : "";
+            if (type.equals(Constants.ANY_CRS_FEATURE_COLLECTION)) {
+                filteredData.add(attribute, property);
+            } else {
+                validationErrors.add(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, type));
             }
         }
         return filteredData;
