@@ -50,7 +50,7 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final List<String> validAttributes = Arrays.asList("SpatialLocation", "ProjectedBottomHoleLocation", "GeographicBottomHoleLocation", "SpatialArea", "SpatialPoint", "ABCDBinGridSpatialLocation", "FirstLocation", "LastLocation", "LiveTraceOutline");
+    private static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -113,8 +113,8 @@ public class DpsConversionService {
             return false;
         }
         JsonArray metaBlock = record.getAsJsonArray(Constants.META);
-        for (JsonElement block : metaBlock) {
-            if (!block.isJsonNull()) {
+        for (JsonElement block: metaBlock){
+            if(!block.isJsonNull()){
                 return true;
             }
         }
@@ -187,7 +187,7 @@ public class DpsConversionService {
 
         for (JsonObject originalRecord : originalRecords) {
             String originalId = this.getRecordId(originalRecord);
-            if (!convertedIds.contains(originalId)) {
+            if (!convertedIds.contains(originalId) ) {
                 this.logger.warning("Missing record after conversion: " + originalId);
             }
         }
