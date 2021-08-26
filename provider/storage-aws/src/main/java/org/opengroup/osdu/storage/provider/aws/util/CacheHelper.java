@@ -13,9 +13,8 @@
 // limitations under the License.
 
 package org.opengroup.osdu.storage.provider.aws.util;
-
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
 public class CacheHelper {
     public String getGroupCacheKey(DpsHeaders headers){
