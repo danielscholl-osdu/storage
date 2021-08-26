@@ -30,6 +30,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
+import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,7 @@ public class UserAccessService {
 
     private CacheHelper cacheHelper;
     @Inject
-    private ICache<String, Groups> cache;
+    private GroupCache cache;
     @Inject
     private IEntitlementsFactory entitlementsFactory;
     @Inject

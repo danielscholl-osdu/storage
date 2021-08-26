@@ -33,6 +33,7 @@ import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.StorageApplication;
+import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
@@ -70,7 +71,7 @@ public class UserAccessServiceTest {
         Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject())).thenReturn("test-cache-key");
         Whitebox.setInternalState(CUT, "cacheHelper", cacheHelper);
 
-        ICache cache = Mockito.mock(ICache.class);
+        GroupCache cache = Mockito.mock(GroupCache.class);
         Mockito.when(cache.get(Mockito.anyObject())).thenReturn(null);
         Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
         Whitebox.setInternalState(CUT, "cache", cache);

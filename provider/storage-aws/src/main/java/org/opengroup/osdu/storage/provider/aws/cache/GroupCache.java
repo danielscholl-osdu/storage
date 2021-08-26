@@ -28,20 +28,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 @Component
-public class GroupCache {
+public class GroupCache<K,V> implements ICache<K,V>{
     @Value("${aws.elasticache.cluster.endpoint:null}")
     String REDIS_SEARCH_HOST;
     @Value("${aws.elasticache.cluster.port:null}")
     String REDIS_SEARCH_PORT;
     @Value("${aws.elasticache.cluster.key:null}")
     String REDIS_SEARCH_KEY;
-    public ICache<String, Groups> GetGroupCache() throws K8sParameterNotFoundException, JsonProcessingException {
+    private ICache cache;
+    public GroupCache() throws K8sParameterNotFoundException, JsonProcessingException {
         K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
         if (provider.getLocalMode()){
             if (Boolean.parseBoolean(System.getenv("DISABLE_CACHE"))){
-                return new DummyCache();
+                this.cache =  new DummyCache();
             }
-            return new VmCache<>(60, 10);
+            this.cache =  new VmCache<>(60, 10);
         }else {
             String host = provider.getParameterAsStringOrDefault("CACHE_CLUSTER_ENDPOINT", REDIS_SEARCH_HOST);
             int port = Integer.parseInt(provider.getParameterAsStringOrDefault("CACHE_CLUSTER_PORT", REDIS_SEARCH_PORT));
@@ -52,7 +53,7 @@ public class GroupCache {
             }else{
                 password = REDIS_SEARCH_KEY;
             }
-            return new RedisCache(host, port, password, 60, String.class, Groups.class);
+            this.cache =  new RedisCache(host, port, password, 60, String.class, Groups.class);
         }
     }
     public static String getGroupCacheKey(DpsHeaders headers) {
@@ -63,5 +64,25 @@ public class GroupCache {
     public static String getPartitionGroupsCacheKey(String dataPartitionId) {
         String key = String.format("entitlement-groups:data-partition:%s", dataPartitionId);
         return Crc32c.hashToBase64EncodedString(key);
+    }
+
+    @Override
+    public void put(K k, V o) {
+        this.cache.put(k,o);
+    }
+
+    @Override
+    public V get(K k) {
+        return (V) this.cache.get(k);
+    }
+
+    @Override
+    public void delete(K k) {
+        this.cache.delete(k);
+    }
+
+    @Override
+    public void clearAll() {
+        this.cache.clearAll();
     }
 }
