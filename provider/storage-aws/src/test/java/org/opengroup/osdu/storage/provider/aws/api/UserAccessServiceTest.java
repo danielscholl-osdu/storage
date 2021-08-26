@@ -34,7 +34,8 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
-import org.opengroup.osdu.core.aws.cache.CacheHelper;
+
+import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.service.EntitlementsAndCacheServiceImpl;
 
 import org.springframework.boot.test.context.SpringBootTest;

@@ -32,11 +32,11 @@ import java.util.Map;
 
 @Component
 public class LegalTagCache implements ICache<String, String> {
-    @Value("${aws.elasticache.cluster.endpoint}")
+    @Value("${aws.elasticache.cluster.endpoint:null}")
     String REDIS_SEARCH_HOST;
-    @Value("${aws.elasticache.cluster.port}")
+    @Value("${aws.elasticache.cluster.port:null}")
     String REDIS_SEARCH_PORT;
-    @Value("${aws.elasticache.cluster.key}")
+    @Value("${aws.elasticache.cluster.key:null}")
     String REDIS_SEARCH_KEY;
     @Inject
     private TenantInfo tenant;
