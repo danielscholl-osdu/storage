@@ -53,15 +53,17 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 	
 	@Test
 	public void should_retrieveAllKinds_when_toCursorIdIsGiven() throws Exception {
-		ClientResponse recordResponse = TestUtils.send("query/kinds?limit=10", HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
-				"", "");
-		GetCursorValue getCursorValue = TestUtils.getResult(recordResponse, HttpStatus.SC_OK, GetCursorValue.class);
-		String cursorValue = getCursorValue.getCursor();
-		assertEquals(HttpStatus.SC_OK, recordResponse.getStatus());
-		assertEquals(cursorValue, getCursorValue.getCursor());
-		ClientResponse recordResponseWithCursorValue = TestUtils.send("query/kinds?cursor=" + cursorValue + "&limit=10",
-				HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, recordResponseWithCursorValue.getStatus());
+		if(configUtils!=null&&configUtils.getBooleanProperty("schema.endpoints.disabled","false")) {
+			ClientResponse recordResponse = TestUtils.send("query/kinds?limit=10", HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+					"", "");
+			GetCursorValue getCursorValue = TestUtils.getResult(recordResponse, HttpStatus.SC_OK, GetCursorValue.class);
+			String cursorValue = getCursorValue.getCursor();
+			assertEquals(HttpStatus.SC_OK, recordResponse.getStatus());
+			assertEquals(cursorValue, getCursorValue.getCursor());
+			ClientResponse recordResponseWithCursorValue = TestUtils.send("query/kinds?cursor=" + cursorValue + "&limit=10",
+					HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_OK, recordResponseWithCursorValue.getStatus());
+		}
 	}
 
 	@Test
