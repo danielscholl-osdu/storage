@@ -3,6 +3,8 @@ variables:
   AWS_TEST_SUBDIR: testing/storage-test-aws
   AWS_SERVICE: storage
   AWS_ENVIRONMENT: dev
+  AWS_DEPLOY_TARGET: EKS
+  AWS_EKS_DEPLOYMENT_NAME: os-storage
 
   AWS_MONGODB_BUILD_SUBDIR: provider/storage-aws-mongodb/build-aws
   AWS_MONGODB_TEST_SUBDIR: testing/storage-test-aws-mongodb

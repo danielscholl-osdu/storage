@@ -24,3 +24,6 @@ image:
 
 policy:
   enabled: true 
+
+schemaEndpoints:
+  disabled: false

@@ -31,6 +31,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 public class SpringConfig {
 
     private boolean enableEncodedSpecialCharacters;
+    private boolean createCrsJWTToken = true;
 
 
     @Bean

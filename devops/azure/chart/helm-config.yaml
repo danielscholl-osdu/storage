@@ -17,3 +17,6 @@ image:
 
 policy:
   enabled: #{POLICY_ENABLED}#
+
+schemaEndpoints:
+  disabled: #{SCHEMA_ENDPOINTS_DISABLED}#
