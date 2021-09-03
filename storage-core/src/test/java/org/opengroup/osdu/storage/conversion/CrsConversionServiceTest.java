@@ -23,6 +23,7 @@ import org.opengroup.osdu.core.common.model.crs.CrsPropertySet;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
+import org.opengroup.osdu.storage.di.SpringConfig;
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,7 +53,7 @@ public class CrsConversionServiceTest {
 
     @Mock
     private CrsConverterService crsConverterService;
-
+   
     @Mock
     private CrsPropertySet crsPropertySet;
 
@@ -64,6 +65,9 @@ public class CrsConversionServiceTest {
 
     @InjectMocks
     private CrsConversionService sut;
+    
+    @Mock
+    private SpringConfig springConfig;
 
     private List<JsonObject> originalRecords = new ArrayList<>();
     private List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -72,7 +76,7 @@ public class CrsConversionServiceTest {
     private JsonParser jsonParser = new JsonParser();
     private Set<String> nestedPropertyNames = new HashSet<>();
     private Map<String, String> pairProperty = new HashMap<>();
-
+   
     private static final String RECORD_1 = "{\"id\":\"unit-test-1\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String RECORD_2 = "{\"id\":\"unit-test-2\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String RECORD_3 = "{\"id\":\"unit-test-3\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"unit\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
@@ -124,7 +128,7 @@ public class CrsConversionServiceTest {
         this.nestedPropertyNames.add("validNestedProperty");
         this.pairProperty.put("x", "y");
         this.pairProperty.put("lon", "lat");
-
+         
         when(this.crsPropertySet.getPropertyPairing()).thenReturn(this.pairProperty);
         when(this.crsPropertySet.getNestedPropertyNames()).thenReturn(this.nestedPropertyNames);
 
@@ -132,6 +136,7 @@ public class CrsConversionServiceTest {
         when(this.crsConverterService.convertPoints(any())).thenReturn(this.convertPointsResponse);
 
         when(this.jwtClient.getIdToken(any())).thenReturn("auth-token-unit-test");
+        when(this.springConfig.isCreateCrsJWTToken()).thenReturn(true);
     }
 
     @Test

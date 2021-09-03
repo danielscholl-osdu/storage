@@ -53,6 +53,7 @@ public class ConversionServiceTest {
     private static final String RECORD_1 = "{\"id\":\"unit-test-1\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String RECORD_2 = "{\"id\":\"unit-test-2\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}";
     private static final String RECORD_3 = "{\"id\":\"unit-test-3\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
+    private static final String RECORD_4 = "{\"id\":\"unit-test-4\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 4\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[null]}";
     private static final String CONVERTED_RECORD_1 = "{\"id\":\"unit-test-1\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":15788.036,\"Y\":9567.40,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String CONVERTED_RECORD_3 = "{\"id\":\"unit-test-3\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":15788.036,\"Y\":9567.40,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
 
@@ -73,6 +74,8 @@ public class ConversionServiceTest {
     private static final String ANY_CRS_GEOMETRY_COLLECTION_RECORD = "{\"id\":\"geo-json-geometry-collection-test\",\"kind\":\"geo-json-geometry-collection:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"type\":\"AnyCrsGeometryCollection\",\"bbox\":null,\"geometries\":[{\"type\":\"Point\",\"bbox\":null,\"coordinates\":[500000.0,7000000.0]},{\"type\":\"LineString\",\"bbox\":null,\"coordinates\":[[501000.0,7001000.0],[502000.0,7002000.0]]}]},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}}";
     private static final String ANY_CRS_GEOMETRY_COLLECTION_CONVERTED_RECORD = "{\"id\":\"geo-json-geometry-collection-test\",\"kind\":\"geo-json-geometry-collection:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"type\":\"AnyCrsGeometryCollection\",\"bbox\":null,\"geometries\":[{\"type\":\"Point\",\"bbox\":null,\"coordinates\":[500000.0,7000000.0]},{\"type\":\"LineString\",\"bbox\":null,\"coordinates\":[[501000.0,7001000.0],[502000.0,7002000.0]]}]},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"Wgs84Coordinates\":{\"type\":\"FeatureCollection\",\"bbox\":null,\"features\":[{\"type\":\"Feature\",\"bbox\":null,\"geometry\":{\"type\":\"GeometryCollection\",\"geometries\":[{\"type\":\"Point\",\"coordinates\":[8.998433675254244,63.1274769068748]},{\"type\":\"LineString\",\"coordinates\":[[9.018268130018686,63.136450807807265],[9.0381148358597,63.145421923557194]]}]},\"properties\":{}}],\"properties\":{},\"persistableReferenceCrs\":null,\"persistableReferenceUnitZ\":\"reference\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}}";
 
+    private static final String ERRONEOUS_ANY_CRS_RECORD_1 = "{\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"Type\":\"AnyCrsFeatureCollection\",\"CoordinateReferenceSystemID\":\"NAD27\",\"VerticalCoordinateReferenceSystemID\":null,\"PersistableReferenceCrs\":null,\"PersistableReferenceVerticalCrs\":null,\"PersistableReferenceUnitZ\":null,\"Features\":[{\"Type\":\"AnyCrsFeature\",\"Properties\":null,\"Geometry\":{\"Coordinates\":[30.8793048,-87.7801454],\"Type\":\"AnyCrsPoint\",\"Bbox\":null}}],\"Bbox\":null},\"Wgs84Coordinates\":null}}}";
+
     @Test
     public void should_returnOriginalRecordsAndStatusesAsNoMetaBlock_whenProvidedRecordsWithoutMetaBlock() {
         this.originalRecords.add(this.jsonParser.parse(RECORD_2).getAsJsonObject());
@@ -81,6 +84,17 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getConversionStatuses().size());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(RECORD_2));
+        Assert.assertEquals(CrsConversionServiceErrorMessages.MISSING_META_BLOCK, result.getConversionStatuses().get(0).getErrors().get(0));
+    }
+
+    @Test
+    public void should_returnOriginalRecordsAndStatusesAsNoMetaBlock_whenProvidedRecordsWithNullArrayMetaBlock() {
+        this.originalRecords.add(this.jsonParser.parse(RECORD_4).getAsJsonObject());
+
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+        Assert.assertEquals(1, result.getConversionStatuses().size());
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(RECORD_4));
         Assert.assertEquals(CrsConversionServiceErrorMessages.MISSING_META_BLOCK, result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
@@ -461,5 +475,18 @@ public class ConversionServiceTest {
         Assert.assertEquals(2, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(ANY_CRS_POINT_CONVERTED_RECORD));
         Assert.assertTrue(result.getRecords().get(1).toString().equalsIgnoreCase(ANY_CRS_POLYGON_CONVERTED_RECORD));
+    }
+
+    @Test
+    public void should_applyNoCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypePoint() {
+        this.originalRecords.add(this.jsonParser.parse(ERRONEOUS_ANY_CRS_RECORD_1).getAsJsonObject());
+
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+        Assert.assertEquals(1, result.getConversionStatuses().size());
+        Assert.assertEquals(2, result.getConversionStatuses().get(0).getErrors().size());
+        Assert.assertEquals(ConvertStatus.NO_FRAME_OF_REFERENCE.toString(), result.getConversionStatuses().get(0).getStatus());
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(ERRONEOUS_ANY_CRS_RECORD_1));
+        Assert.assertEquals(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, ""), result.getConversionStatuses().get(0).getErrors().get(0));
     }
 }

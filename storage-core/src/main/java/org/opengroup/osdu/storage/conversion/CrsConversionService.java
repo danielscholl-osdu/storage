@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-
+import org.opengroup.osdu.storage.di.SpringConfig;
 import static org.opengroup.osdu.core.common.util.JsonUtils.jsonElementToString;
 
 @Service
@@ -62,6 +62,9 @@ public class CrsConversionService {
 
     @Autowired
     private IServiceAccountJwtClient jwtClient;
+    
+    @Autowired
+    private SpringConfig springConfig;
 
     public RecordsAndStatuses doCrsConversion(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
@@ -428,8 +431,8 @@ public class CrsConversionService {
     }
 
     List<PointConversionInfo> callClientLibraryDoConversion(Map<String, List<PointConversionInfo>> originalPointsMap, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
-        ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
-        List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
+      ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
+      List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
 
         for (Map.Entry<String, List<PointConversionInfo>> entry : originalPointsMap.entrySet()) {
             List<Point> pointsToBeConverted = new ArrayList<>();
@@ -569,10 +572,18 @@ public class CrsConversionService {
     }
 
     private DpsHeaders customizeHeaderBeforeCallingCrsConversion(DpsHeaders dpsHeaders) {
-        String token = this.jwtClient.getIdToken(dpsHeaders.getPartitionId());
-        if (Strings.isNullOrEmpty(token)) {
+    	 String token=null;    	
+    	 boolean createToken=springConfig.isCreateCrsJWTToken();
+   	
+    	if (createToken) {
+    		token = this.jwtClient.getIdToken(dpsHeaders.getPartitionId());
+    		if (Strings.isNullOrEmpty(token)) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "authorization for crs conversion failed");
-        }
+    		}
+    	}else {
+
+    		token=dpsHeaders.getAuthorization();
+    	}
         DpsHeaders headers = DpsHeaders.createFromMap(dpsHeaders.getHeaders());
         headers.put(DpsHeaders.AUTHORIZATION, token);
         headers.put(DpsHeaders.DATA_PARTITION_ID, dpsHeaders.getPartitionId());
@@ -695,4 +706,6 @@ public class CrsConversionService {
         }
         return bbox;
     }
+    
+   
 }

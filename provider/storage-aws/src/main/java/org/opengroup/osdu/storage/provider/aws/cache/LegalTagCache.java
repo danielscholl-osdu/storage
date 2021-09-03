@@ -14,29 +14,58 @@
 
 package org.opengroup.osdu.storage.provider.aws.cache;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opengroup.osdu.core.aws.cache.DummyCache;
+import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.MultiTenantCache;
 import org.opengroup.osdu.core.common.cache.RedisCache;
+import org.opengroup.osdu.core.common.cache.VmCache;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.util.Map;
 
 @Component
 public class LegalTagCache implements ICache<String, String> {
-
+    @Value("${aws.elasticache.cluster.endpoint:null}")
+    String REDIS_SEARCH_HOST;
+    @Value("${aws.elasticache.cluster.port:null}")
+    String REDIS_SEARCH_PORT;
+    @Value("${aws.elasticache.cluster.key:null}")
+    String REDIS_SEARCH_KEY;
     @Inject
     private TenantInfo tenant;
 
     private final MultiTenantCache<String> caches;
+    private boolean local;
+    public LegalTagCache() throws K8sParameterNotFoundException, JsonProcessingException {
+        int expTimeSeconds = 60 * 60;
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        if (provider.getLocalMode()){
+            if (Boolean.parseBoolean(System.getenv("DISABLE_CACHE"))){
+                caches =  new MultiTenantCache<String>(new DummyCache<>());
+            }else{
+                caches = new MultiTenantCache<String>(new VmCache<String,String>(expTimeSeconds, 10));
+            }
+        }else {
+            String host = provider.getParameterAsStringOrDefault("CACHE_CLUSTER_ENDPOINT", REDIS_SEARCH_HOST);
+            int port = Integer.parseInt(provider.getParameterAsStringOrDefault("CACHE_CLUSTER_PORT", REDIS_SEARCH_PORT));
+            Map<String, String > credential =provider.getCredentialsAsMap("CACHE_CLUSTER_KEY");
+            String password;
+            if (credential !=null){
+                password = credential.get("token");
+            }else{
+                password = REDIS_SEARCH_KEY;
+            }
+            caches = new MultiTenantCache<String>(new RedisCache<>(host, port, password, expTimeSeconds, String.class, String.class));
+        }
+        local = caches instanceof AutoCloseable;
 
-    public LegalTagCache(@Value("${aws.elasticache.cluster.endpoint}") final String REDIS_LEGALTAG_HOST, @Value("${aws.elasticache.cluster.port}") final String REDIS_LEGALTAG_PORT, @Value("${aws.elasticache.cluster.key}") final String REDIS_LEGALTAG_KEY) {
-        this.caches = new MultiTenantCache<>(new RedisCache<>(REDIS_LEGALTAG_HOST,Integer.parseInt(REDIS_LEGALTAG_PORT), REDIS_LEGALTAG_KEY, 
-                60 * 60,
-                String.class,
-                String.class));
     }
 
     @Override

@@ -30,22 +30,28 @@ import org.mockito.Mock;
 
 import com.google.common.collect.Lists;
 import org.mockito.Spy;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.http.ResponseEntity;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueryApiTest {
 
     @Mock
     private BatchService batchService;
+
+    @Mock
+    private SchemaEndpointsConfig schemaEndpointsConfig;
 
     @Spy
     private EncodeDecode encodeDecode;
@@ -86,7 +92,7 @@ public class QueryApiTest {
     }
 
     @Test
-    public void should_returnHttp200_when_gettingAllKindsSuccessfully() {
+    public void should_returnHttp200_when_schemaApiIsEnabled_and_gettingAllKindsSuccessfully() {
         final String CURSOR = "any cursor";
         final String ENCODED_CURSOR = Base64.getEncoder().encodeToString("any cursor".getBytes());
         final int LIMIT = 10;
@@ -111,6 +117,22 @@ public class QueryApiTest {
         assertTrue(allKindsResult.getResults().contains("kind1"));
         assertTrue(allKindsResult.getResults().contains("kind2"));
         assertTrue(allKindsResult.getResults().contains("kind3"));
+    }
+
+    @Test
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_gettingAllKinds() {
+        final String CURSOR = "any cursor";
+        final String ENCODED_CURSOR = Base64.getEncoder().encodeToString("any cursor".getBytes());
+        final int LIMIT = 10;
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+
+        try {
+            ResponseEntity response = this.sut.getKinds(ENCODED_CURSOR, LIMIT);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
     }
 
     @Test
