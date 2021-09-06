@@ -26,7 +26,6 @@ In order to run the service locally or remotely, you will need to have the follo
 | `REDIS_STORAGE_HOST` | ex `127.0.0.1` | Redis host for storage | no | https://console.cloud.google.com/memorystore/redis/instances |
 | `STORAGE_HOSTNAME` | ex `os-storage-dot-opendes.appspot.com` | Hostname | no | - |
 | `GOOGLE_AUDIENCES` | ex `*****.apps.googleusercontent.com` | Client ID for getting access to cloud resources | yes | https://console.cloud.google.com/apis/credentials |
-| `GOOGLE_APPLICATION_CREDENTIALS` | ex `/path/to/directory/service-key.json` | Service account credentials, you only need this if running locally | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
 | `POLICY_API` | ex `http://localhost:8080/api/policy/v1/` | Police service endpoint | no | output of infrastructure deployment |
 | `POLICY_ID` | ex `search` | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no | - |
 | `PARTITION_API` | ex `http://localhost:8081/api/partition/v1` | Partition service endpoint | no | - |
@@ -114,7 +113,7 @@ mvn clean install -DskipTests
 After configuring your environment as specified above, you can follow these steps to build and run the application. These steps should be invoked from the *repository root.*
 
 ```bash
-cd provider/storage-gcp/ && mvn spring-boot:run
+cd provider/storage-reference/ && mvn spring-boot:run
 ```
 
 ## Testing
@@ -156,13 +155,9 @@ cd provider/storage-gcp/ && mvn spring-boot:run
  ```
 
 ## Deployment
-Storage Service is compatible with App Engine Flexible Environment and Cloud Run.
+GKE Google Documentation: https://cloud.google.com/build/docs/deploying-builds/deploy-gke
+Anthos Google Documentation: https://cloud.google.com/anthos/multicluster-management/gateway/tutorials/cloud-build-integration
 
-* To deploy into Cloud run, please, use this documentation:
-https://cloud.google.com/run/docs/quickstarts/build-and-deploy
-
-* To deploy into App Engine, please, use this documentation:
-https://cloud.google.com/appengine/docs/flexible/java/quickstart
 
 ## License
 Copyright © Google LLC
