@@ -18,7 +18,9 @@
 package org.opengroup.osdu.storage.provider.reference.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -45,4 +47,5 @@ public class RecordMetadataDocument {
   private Long createTime;
   private String modifyUser;
   private Long modifyTime;
+  private Map<String, String> tags = new HashMap<>();
 }
