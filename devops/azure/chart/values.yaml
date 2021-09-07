@@ -27,3 +27,5 @@ policy:
 
 schemaEndpoints:
   disabled: false
+
+istioDnsHost: "" 
