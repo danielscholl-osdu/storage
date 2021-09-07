@@ -670,8 +670,8 @@ public class CrsConversionService {
         GeoJsonPoint point = new GeoJsonPoint();
         try {
             point =  gson.fromJson(coordinatesObj, GeoJsonPoint.class);
-        } catch (Exception ex) {
-            statusBuilder.addError(String.format(INVALID_COORDINATES, ex.getMessage()));
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
         }
         return point;
     }
@@ -680,8 +680,8 @@ public class CrsConversionService {
         GeoJsonMultiPoint multiPoint = new GeoJsonMultiPoint();
         try {
             multiPoint =  gson.fromJson(coordinatesObj, GeoJsonMultiPoint.class);
-        } catch (Exception ex) {
-            statusBuilder.addError(String.format(INVALID_COORDINATES, ex.getMessage()));
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
         }
         return multiPoint;
     }
@@ -690,8 +690,8 @@ public class CrsConversionService {
         GeoJsonLineString lintString = new GeoJsonLineString();
         try {
             lintString =  gson.fromJson(coordinatesObj, GeoJsonLineString.class);
-        } catch (Exception ex) {
-            statusBuilder.addError(String.format(INVALID_COORDINATES, ex.getMessage()));
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
         }
         return lintString;
     }
@@ -700,8 +700,8 @@ public class CrsConversionService {
         GeoJsonMultiLineString multiLintString = new GeoJsonMultiLineString();
         try {
             multiLintString =  gson.fromJson(coordinatesObj, GeoJsonMultiLineString.class);
-        } catch (Exception ex) {
-            statusBuilder.addError(String.format(INVALID_COORDINATES, ex.getMessage()));
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
         }
         return multiLintString;
     }
@@ -710,8 +710,8 @@ public class CrsConversionService {
         GeoJsonPolygon polygon = new GeoJsonPolygon();
         try {
             polygon =  gson.fromJson(coordinatesObj, GeoJsonPolygon.class);
-        } catch (Exception ex) {
-            statusBuilder.addError(String.format(INVALID_COORDINATES, ex.getMessage()));
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
         }
         return polygon;
     }
@@ -720,8 +720,8 @@ public class CrsConversionService {
         GeoJsonMultiPolygon multiPolygon = new GeoJsonMultiPolygon();
         try {
             multiPolygon =  gson.fromJson(coordinatesObj, GeoJsonMultiPolygon.class);
-        } catch (Exception ex) {
-            statusBuilder.addError(String.format(INVALID_COORDINATES, ex.getMessage()));
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
         }
         return multiPolygon;
     }
