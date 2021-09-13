@@ -53,7 +53,7 @@ include:
 
 fossa-analyze:
   extends: .maven
-  image: $CI_REGISTRY/divido/fossa-with-cache:latest
+  image: $CI_REGISTRY/divido/fossa-with-cache/incremental:latest
   stage: scan
   needs: ['compile-and-unit-test']
   tags: ['osdu-medium']
