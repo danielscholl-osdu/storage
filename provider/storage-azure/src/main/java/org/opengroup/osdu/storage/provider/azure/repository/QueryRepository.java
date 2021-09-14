@@ -142,10 +142,11 @@ public class QueryRepository implements IQueryRepository {
                     continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
                 }
 
-                String hashedCursor = Crc32c.hashToBase64EncodedString(continuation);
-                this.cursorCache.put(hashedCursor, continuation);
-
-                dqr.setCursor(hashedCursor);
+                if (!Strings.isNullOrEmpty(continuation)) {
+                    String hashedCursor = Crc32c.hashToBase64EncodedString(continuation);
+                    this.cursorCache.put(hashedCursor, continuation);
+                    dqr.setCursor(hashedCursor);
+                }
                 docs = docPage.getContent();
             } else {
                 docs = record.findByMetadata_kindAndMetadata_status(kind, status);
