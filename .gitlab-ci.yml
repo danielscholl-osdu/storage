@@ -54,9 +54,13 @@ include:
 fossa-analyze:
   extends: .maven
   image: $CI_REGISTRY/divido/fossa-with-cache/incremental:latest
+  cache:
+    paths:
+      - $MAVEN_REPO_PATH
+    policy: pull
+
   stage: scan
   needs: ['compile-and-unit-test']
-  tags: ['osdu-medium']
   rules:
     - if: $FOSSA_API_KEY
 
@@ -68,5 +72,7 @@ fossa-analyze:
 
     - $MAVEN_FOREACH maven-fossa-output.txt install --update-snapshots -DskipTests=true
     - cp "$CI_PROJECT_DIR/.mvn/community-maven.settings.xml" ~/.m2/settings.xml
+    - rm -rf ~/.m2/repository
+    - mv -v $MAVEN_REPO_PATH ~/.m2/repository
 
     - fossa-with-cache
