@@ -20,6 +20,9 @@ public class RedisConfig {
     @Value("${redis.group.ttl:30}")
     public int groupRedisTtl;
 
+    @Value("${redis.cursor.ttl:600}")
+    public int cursorRedisTtl;
+
     @Bean
     @Named("REDIS_PORT")
     public int getRedisPort() {
@@ -35,6 +38,10 @@ public class RedisConfig {
     @Bean
     @Named("GROUP_REDIS_TTL")
     public int getGroupRedisTtl() { return groupRedisTtl; }
+
+    @Bean
+    @Named("CURSOR_REDIS_TTL")
+    public int getCursorRedisTtl() { return cursorRedisTtl; }
 
     @Bean
     @Named("REDIS_HOST")
