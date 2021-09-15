@@ -20,7 +20,7 @@ public class RedisConfig {
     @Value("${redis.group.ttl:30}")
     public int groupRedisTtl;
 
-    @Value("${redis.cursor.ttl:600}")
+    @Value("${redis.cursor.ttl:90}")
     public int cursorRedisTtl;
 
     @Bean
