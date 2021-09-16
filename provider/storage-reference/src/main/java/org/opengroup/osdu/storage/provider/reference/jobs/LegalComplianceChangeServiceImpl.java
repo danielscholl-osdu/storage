@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
@@ -59,11 +60,15 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
   @Autowired
   private LegalTagCache legalTagCache;
 
+  private long maxRunningTimeMills = 115000;
+
   @Override
   public Map<String, LegalCompliance> updateComplianceOnRecords(
       LegalTagChangedCollection legalTagsChanged,
-      DpsHeaders headers) {
+      DpsHeaders headers) throws ComplianceUpdateStoppedException {
     Map<String, LegalCompliance> output = new HashMap<>();
+    long currentTimeMills;
+    long start = System.currentTimeMillis();
 
     for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
 
@@ -72,28 +77,28 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
         continue;
       }
 
-      String cursor = null;
-      do {
-        //TODO replace with the new method queryByLegal
-        AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = this.recordsRepo
-            .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
-        cursor = results.getKey();
+      AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = this.recordsRepo
+          .queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);
 
-        if (results.getValue() != null && !results.getValue().isEmpty()) {
-          List<RecordMetadata> recordsMetadata = results.getValue();
-          PubSubInfo[] pubSubInfos = this
-              .updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-          this.recordsRepo.createOrUpdate(recordsMetadata);
-          StringBuilder recordsId = new StringBuilder();
-          for (RecordMetadata recordMetadata : recordsMetadata) {
-            recordsId.append(", ").append(recordMetadata.getId());
-          }
-          this.auditLogger.updateRecordsComplianceStateSuccess(
-              singletonList("[" + recordsId.substring(2) + "]"));
-
-          this.pubSubClient.publishMessage(headers, pubSubInfos);
+      while (results.getValue() != null && !results.getValue().isEmpty()) {
+        currentTimeMills = System.currentTimeMillis() - start;
+        if (currentTimeMills >= maxRunningTimeMills) {
+          throw new ComplianceUpdateStoppedException(currentTimeMills / 1000);
         }
-      } while (cursor != null);
+        List<RecordMetadata> recordsMetadata = results.getValue();
+        PubSubInfo[] pubsubInfos = this
+            .updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
+        StringBuilder recordsId = new StringBuilder();
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+          recordsId.append(", ").append(recordMetadata.getId());
+        }
+        this.recordsRepo.createOrUpdate(recordsMetadata);
+        this.pubSubClient.publishMessage(headers, pubsubInfos);
+        this.auditLogger.updateRecordsComplianceStateSuccess(
+            singletonList("[" + recordsId.toString().substring(2) + "]"));
+        results = this.recordsRepo
+            .queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);
+      }
     }
 
     return output;
