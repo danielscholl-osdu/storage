@@ -84,6 +84,6 @@ fossa-analyze:
     - $MAVEN_FOREACH maven-fossa-output.txt install --update-snapshots -DskipTests=true
     - cp "$CI_PROJECT_DIR/.mvn/community-maven.settings.xml" ~/.m2/settings.xml
     - rm -rf ~/.m2/repository
-    - mv -v $MAVEN_REPO_PATH ~/.m2/repository
+    - mv $MAVEN_REPO_PATH ~/.m2/repository
 
     - fossa-with-cache
