@@ -230,6 +230,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DeleteRecordsException"
+        "400":
+          description: "Invalid id format"
+          schema:
+            $ref: "#/definitions/AppError"
       security:
         - bearer: []
         - appkey: []
