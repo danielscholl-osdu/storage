@@ -31,6 +31,7 @@ import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -46,6 +47,7 @@ public class LegalServiceImpl implements ILegalService {
     @Autowired
     private DpsHeaders headers;
     @Autowired
+    @Qualifier("LegalTagCache")
     private ICache<String, String> cache;
     @Autowired
     private ILegalFactory factory;

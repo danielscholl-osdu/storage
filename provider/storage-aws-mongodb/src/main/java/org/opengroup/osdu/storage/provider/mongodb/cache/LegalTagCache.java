@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-@Component
+@Component("LegalTagCache")
 public class LegalTagCache implements ICache<String, String> {
 
     @Inject

@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.Map;
 
-@Component
+@Component("LegalTagCache")
 public class LegalTagCache implements ICache<String, String> {
     @Value("${aws.elasticache.cluster.endpoint:null}")
     String REDIS_SEARCH_HOST;
