@@ -37,7 +37,7 @@ public abstract class CreateSchemaIntegrationTests extends TestBase {
 	@Test
 	public void should_createSchema_and_returnHttp409IfTryToCreateItAgain_and_getSchema_and_deleteSchema_when_providingValidSchemaInfo()
 			throws Exception {
-		if (configUtils != null && configUtils.getBooleanProperty("schema.endpoints.disabled", "false")) {
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
 			String body = this.validPostBody(this.schema);
 
 			// Create schema
