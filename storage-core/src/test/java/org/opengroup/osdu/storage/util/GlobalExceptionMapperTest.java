@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.verify;
 
 import javax.validation.ValidationException;
@@ -35,6 +36,8 @@ import org.mockito.Mock;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.springframework.http.ResponseEntity;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.io.IOException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class GlobalExceptionMapperTest {
@@ -108,5 +111,23 @@ public class GlobalExceptionMapperTest {
 		assertNotNull(response.getBody());
 		assertEquals(AppError.class, response.getBody().getClass());
 		assertEquals("Unrecognized property.", ((AppError)response.getBody()).getReason());
+	}
+
+	@Test
+	public void should_returnNullResponse_when_BrokenPipeIOExceptionIsCaptured() {
+		IOException ioException = new IOException("Broken pipe");
+
+		ResponseEntity response = this.sut.handleIOException(ioException);
+
+		assertNull(response);
+	}
+
+	@Test
+	public void should_returnServiceUnavailable_when_IOExceptionIsCaptured() {
+		IOException ioException = new IOException("Not broken yet");
+
+		ResponseEntity response = this.sut.handleIOException(ioException);
+
+		assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, response.getStatusCodeValue());
 	}
 }
