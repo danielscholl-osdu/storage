@@ -131,7 +131,23 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
   @Override
   public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName,
       LegalCompliance status, int limit) {
-    return null;
+
+    MongoCollection<Document> mongoCollection = mongoDdmsClient
+        .getMongoCollection(SCHEMA_DATABASE, STORAGE_RECORD);
+    List<RecordMetadata> outputRecords = new ArrayList<>();
+    FindIterable<Document> results = mongoCollection.find().skip(limit * (limit - 1)).limit(limit);
+    for (Document document : results) {
+      RecordMetadataDocument recordMetadataDocument = new Gson()
+          .fromJson(serialize(document), RecordMetadataDocument.class);
+      if (Objects.nonNull(recordMetadataDocument)) {
+        if (recordMetadataDocument.getLegal().getLegaltags().contains(legalTagName)
+            && recordMetadataDocument.getLegal().getStatus() == status) {
+          RecordMetadata recordMetadata = convertToRecordMetadata(recordMetadataDocument);
+          outputRecords.add(recordMetadata);
+        }
+      }
+    }
+    return new AbstractMap.SimpleEntry<>("cursor", outputRecords);
   }
 
   private RecordMetadataDocument convertToRecordMetadataDocument(RecordMetadata recordMetadata) {
@@ -147,6 +163,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     recordMetadataDocument.setModifyUser(recordMetadata.getModifyUser());
     recordMetadataDocument.setStatus(recordMetadata.getStatus());
     recordMetadataDocument.setUser(recordMetadata.getUser());
+    recordMetadataDocument.setTags(recordMetadata.getTags());
 
     return recordMetadataDocument;
   }
@@ -167,6 +184,10 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     recordMetadata.setModifyUser(recordMetadataDocument.getModifyUser());
     recordMetadata.setStatus(recordMetadataDocument.getStatus());
     recordMetadata.setUser(recordMetadataDocument.getUser());
+
+    if (!recordMetadataDocument.getTags().isEmpty()) {
+      recordMetadata.setTags(recordMetadataDocument.getTags());
+    }
 
     return recordMetadata;
   }

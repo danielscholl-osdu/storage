@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-
+import org.opengroup.osdu.storage.di.SpringConfig;
 import static org.opengroup.osdu.core.common.util.JsonUtils.jsonElementToString;
 
 @Service
@@ -42,6 +42,7 @@ public class CrsConversionService {
     private static final String TO_CRS_GEO_JSON = "{\"authCode\":{\"auth\":\"EPSG\",\"code\":\"4326\"},\"name\":\"GCS_WGS_1984\",\"type\":\"LBC\",\"ver\":\"PE_10_3_1\",\"wkt\":\"GEOGCS[\\\"GCS_WGS_1984\\\",DATUM[\\\"D_WGS_1984\\\",SPHEROID[\\\"WGS_1984\\\",6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0],UNIT[\\\"Degree\\\",0.0174532925199433],AUTHORITY[\\\"EPSG\\\",4326]]\"}";
     private static final String TO_UNIT_Z = "{\"baseMeasurement\":{\"ancestry\":\"Length\",\"type\":\"UM\"},\"scaleOffset\":{\"offset\":0.0,\"scale\":1.0},\"symbol\":\"m\",\"type\":\"USO\"}";
     private static final String UNKNOWN_ERROR = "unknown error";
+    private static final String INVALID_COORDINATES = "CRS conversion: Invalid Coordinates values, no conversion applied. Error: %s";
     private static final String BAD_REQUEST = "CRS conversion: bad request from crs converter, no conversion applied. Response From CRS Converter: %s.";
     private static final String CONVERSION_FAILURE = "CRS Conversion Error: Point Converted failed(CRS Converter is returning null), no conversion applied. Affected property names: %s, %s";
 
@@ -62,6 +63,9 @@ public class CrsConversionService {
 
     @Autowired
     private IServiceAccountJwtClient jwtClient;
+    
+    @Autowired
+    private SpringConfig springConfig;
 
     public RecordsAndStatuses doCrsConversion(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
@@ -428,8 +432,8 @@ public class CrsConversionService {
     }
 
     List<PointConversionInfo> callClientLibraryDoConversion(Map<String, List<PointConversionInfo>> originalPointsMap, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
-        ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
-        List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
+      ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
+      List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
 
         for (Map.Entry<String, List<PointConversionInfo>> entry : originalPointsMap.entrySet()) {
             List<Point> pointsToBeConverted = new ArrayList<>();
@@ -569,10 +573,18 @@ public class CrsConversionService {
     }
 
     private DpsHeaders customizeHeaderBeforeCallingCrsConversion(DpsHeaders dpsHeaders) {
-        String token = this.jwtClient.getIdToken(dpsHeaders.getPartitionId());
-        if (Strings.isNullOrEmpty(token)) {
+    	 String token=null;    	
+    	 boolean createToken=springConfig.isCreateCrsJWTToken();
+   	
+    	if (createToken) {
+    		token = this.jwtClient.getIdToken(dpsHeaders.getPartitionId());
+    		if (Strings.isNullOrEmpty(token)) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "authorization for crs conversion failed");
-        }
+    		}
+    	}else {
+
+    		token=dpsHeaders.getAuthorization();
+    	}
         DpsHeaders headers = DpsHeaders.createFromMap(dpsHeaders.getHeaders());
         headers.put(DpsHeaders.AUTHORIZATION, token);
         headers.put(DpsHeaders.DATA_PARTITION_ID, dpsHeaders.getPartitionId());
@@ -582,17 +594,17 @@ public class CrsConversionService {
     private void setGeometry(String type, GeoJsonFeature feature, JsonObject coordinates, ConversionStatus.ConversionStatusBuilder statusBuilder) {
         Gson gson = new Gson();
         switch (type) {
-            case Constants.ANY_CRS_POINT: feature.setGeometry(this.getGeoJsonPoint(gson, coordinates));
+            case Constants.ANY_CRS_POINT: feature.setGeometry(this.getGeoJsonPoint(gson, coordinates, statusBuilder));
                 break;
-            case Constants.ANY_CRS_MULTIPOINT: feature.setGeometry(this.getGeoJsonMultiPoint(gson, coordinates));
+            case Constants.ANY_CRS_MULTIPOINT: feature.setGeometry(this.getGeoJsonMultiPoint(gson, coordinates, statusBuilder));
                 break;
-            case Constants.ANY_CRS_LINE_STRING: feature.setGeometry(this.getGeoJsonLineString(gson, coordinates));
+            case Constants.ANY_CRS_LINE_STRING: feature.setGeometry(this.getGeoJsonLineString(gson, coordinates, statusBuilder));
                 break;
-            case Constants.ANY_CRS_MULTILINE_STRING: feature.setGeometry(this.getGeoJsonMultiLineString(gson, coordinates));
+            case Constants.ANY_CRS_MULTILINE_STRING: feature.setGeometry(this.getGeoJsonMultiLineString(gson, coordinates, statusBuilder));
                 break;
-            case Constants.ANY_CRS_POLYGON: feature.setGeometry(this.getGeoJsonPolygon(gson, coordinates));
+            case Constants.ANY_CRS_POLYGON: feature.setGeometry(this.getGeoJsonPolygon(gson, coordinates, statusBuilder));
                 break;
-            case Constants.ANY_CRS_MULTIPOLYGON: feature.setGeometry(this.getGeoJsonMultiPolygon(gson, coordinates));
+            case Constants.ANY_CRS_MULTIPOLYGON: feature.setGeometry(this.getGeoJsonMultiPolygon(gson, coordinates, statusBuilder));
                 break;
             default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRY, type));
                 break;
@@ -623,17 +635,17 @@ public class CrsConversionService {
                         JsonObject gmCoordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
                         Gson gson = new Gson();
                         switch (geometriesType) {
-                            case Constants.POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj);
+                            case Constants.POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj);
+                            case Constants.MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj);
+                            case Constants.LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj);
+                            case Constants.MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj);
+                            case Constants.POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj);
+                            case Constants.MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj, statusBuilder);
                                 break;
                             default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRIES, geometriesType));
                                 break;
@@ -654,28 +666,64 @@ public class CrsConversionService {
         return feature;
     }
 
-    private GeoJsonPoint getGeoJsonPoint(Gson gson, JsonObject coordinatesObj) {
-        return gson.fromJson(coordinatesObj, GeoJsonPoint.class);
+    private GeoJsonPoint getGeoJsonPoint(Gson gson, JsonObject coordinatesObj, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonPoint point = new GeoJsonPoint();
+        try {
+            point =  gson.fromJson(coordinatesObj, GeoJsonPoint.class);
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
+        }
+        return point;
     }
 
-    private GeoJsonMultiPoint getGeoJsonMultiPoint(Gson gson, JsonObject coordinatesObj) {
-        return gson.fromJson(coordinatesObj, GeoJsonMultiPoint.class);
+    private GeoJsonMultiPoint getGeoJsonMultiPoint(Gson gson, JsonObject coordinatesObj, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonMultiPoint multiPoint = new GeoJsonMultiPoint();
+        try {
+            multiPoint =  gson.fromJson(coordinatesObj, GeoJsonMultiPoint.class);
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
+        }
+        return multiPoint;
     }
 
-    private GeoJsonLineString getGeoJsonLineString(Gson gson, JsonObject coordinatesObj) {
-        return gson.fromJson(coordinatesObj, GeoJsonLineString.class);
+    private GeoJsonLineString getGeoJsonLineString(Gson gson, JsonObject coordinatesObj, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonLineString lintString = new GeoJsonLineString();
+        try {
+            lintString =  gson.fromJson(coordinatesObj, GeoJsonLineString.class);
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
+        }
+        return lintString;
     }
 
-    private GeoJsonMultiLineString getGeoJsonMultiLineString(Gson gson, JsonObject coordinatesObj) {
-        return gson.fromJson(coordinatesObj, GeoJsonMultiLineString.class);
+    private GeoJsonMultiLineString getGeoJsonMultiLineString(Gson gson, JsonObject coordinatesObj, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonMultiLineString multiLintString = new GeoJsonMultiLineString();
+        try {
+            multiLintString =  gson.fromJson(coordinatesObj, GeoJsonMultiLineString.class);
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
+        }
+        return multiLintString;
     }
 
-    private GeoJsonPolygon getGeoJsonPolygon(Gson gson, JsonObject coordinatesObj) {
-        return gson.fromJson(coordinatesObj, GeoJsonPolygon.class);
+    private GeoJsonPolygon getGeoJsonPolygon(Gson gson, JsonObject coordinatesObj, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonPolygon polygon = new GeoJsonPolygon();
+        try {
+            polygon =  gson.fromJson(coordinatesObj, GeoJsonPolygon.class);
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
+        }
+        return polygon;
     }
 
-    private GeoJsonMultiPolygon getGeoJsonMultiPolygon(Gson gson, JsonObject coordinatesObj) {
-        return gson.fromJson(coordinatesObj, GeoJsonMultiPolygon.class);
+    private GeoJsonMultiPolygon getGeoJsonMultiPolygon(Gson gson, JsonObject coordinatesObj, ConversionStatus.ConversionStatusBuilder statusBuilder) {
+        GeoJsonMultiPolygon multiPolygon = new GeoJsonMultiPolygon();
+        try {
+            multiPolygon =  gson.fromJson(coordinatesObj, GeoJsonMultiPolygon.class);
+        } catch (JsonSyntaxException jsonEx) {
+            statusBuilder.addError(String.format(INVALID_COORDINATES, jsonEx.getMessage()));
+        }
+        return multiPolygon;
     }
 
     private JsonObject getCoordinates(JsonArray coordinates, ConversionStatus.ConversionStatusBuilder statusBuilder) {
@@ -695,4 +743,6 @@ public class CrsConversionService {
         }
         return bbox;
     }
+    
+   
 }

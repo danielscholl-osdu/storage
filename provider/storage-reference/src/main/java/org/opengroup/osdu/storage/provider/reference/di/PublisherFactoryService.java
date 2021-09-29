@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.reference.config;
+package org.opengroup.osdu.storage.provider.reference.di;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.opengroup.osdu.core.gcp.multitenancy.IPublisherFactory;
+import org.opengroup.osdu.core.gcp.multitenancy.PublisherFactory;
+import org.springframework.beans.factory.config.AbstractFactoryBean;
 
-@Configuration
-@ConfigurationProperties
-@Getter
-@Setter
-public class RedisConfigProperties {
+public class PublisherFactoryService extends AbstractFactoryBean<IPublisherFactory> {
 
-  private String redisPort;
-  private String redisHost;
-  private String redisExpTime;
+  @Override
+  protected IPublisherFactory createInstance() throws Exception {
+    return new PublisherFactory();
+  }
+
+  @Override
+  public Class<?> getObjectType() {
+    return IPublisherFactory.class;
+  }
 }

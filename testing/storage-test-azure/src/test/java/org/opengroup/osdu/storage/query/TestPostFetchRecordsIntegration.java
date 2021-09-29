@@ -201,40 +201,4 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
 
         TestUtils.send("records/" + recordId + 8, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
     }
-
-    @Override
-    @Test
-    public void should_returnConvertedRecords_whenConversionRequiredAndNoErrorWithMultiplePairOfCoordinates() throws Exception {
-        String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
-        String jsonInput = RecordUtil.createJsonRecordWithMultiplePairOfCoordinates(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
-
-        JsonArray records = new JsonArray();
-        records.add(recordId + 0);
-        records.add(recordId + 1);
-
-        JsonObject body = new JsonObject();
-        body.add("records", records);
-
-        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
-                "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
-
-        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
-        assertEquals(2, responseObject.records.length);
-        assertEquals(0, responseObject.notFound.length);
-
-        assertEquals(KIND, responseObject.records[0].kind);
-        assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
-        assertEquals(4, responseObject.records[0].data.size());
-
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
-
-    }
 }

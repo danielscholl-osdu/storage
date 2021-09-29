@@ -17,19 +17,24 @@
 
 package org.opengroup.osdu.storage.provider.reference.cache;
 
-import org.opengroup.osdu.core.common.cache.RedisCache;
-import org.opengroup.osdu.core.common.model.entitlements.Groups;
-import org.opengroup.osdu.storage.provider.reference.config.RedisConfigProperties;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.VmCache;
+import org.opengroup.osdu.core.gcp.multitenancy.credentials.DatastoreCredential;
+import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GroupCache extends RedisCache<String, Groups> {
+public class DatastoreCredentialsCacheFactory extends
+    AbstractFactoryBean<ICache<String, DatastoreCredential>> {
 
-  @Autowired
-  public GroupCache(RedisConfigProperties redisConfigProperties) {
-    super(redisConfigProperties.getRedisHost(),
-        Integer.parseInt(redisConfigProperties.getRedisPort()),
-        Integer.parseInt(redisConfigProperties.getRedisExpTime()), String.class, Groups.class);
+  @Override
+  public Class<?> getObjectType() {
+    return ICache.class;
+  }
+
+  @Override
+  protected ICache<String, DatastoreCredential> createInstance() throws Exception {
+    return new VmCache<>(5 * 60, 20);
   }
 }
+
