@@ -69,7 +69,6 @@ fossa-analyze:
 
   artifacts:
     paths:
-      - ./**/target/*.jar
       - ./**/maven-*-output.txt
       - fossa-output
     when: always
@@ -87,3 +86,14 @@ fossa-analyze:
     - mv $MAVEN_REPO_PATH ~/.m2/repository
 
     - fossa-with-cache
+
+fossa-check-notice:
+  image: $CI_REGISTRY/divido/fossa-with-cache/incremental:latest
+  stage: attribution
+  needs: ['fossa-analyze']
+  tags: ['osdu-small']
+  rules:
+    - if: $FOSSA_API_KEY
+
+  script:
+    - fossa-compare-notices NOTICE fossa-output/generated-clean-NOTICE
