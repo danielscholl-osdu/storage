@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: "{{ .Values.conf.app_name }}"
-  replicas: 1
+  replicas: {{ .Values.conf.replicas }}
   template:
     metadata:
       labels:
@@ -36,4 +36,3 @@ spec:
             cpu: "{{ .Values.data.limits_cpu }}"
             memory: "{{ .Values.data.limits_memory }}"
       serviceAccountName: "{{ .Values.data.serviceAccountName }}"
-
