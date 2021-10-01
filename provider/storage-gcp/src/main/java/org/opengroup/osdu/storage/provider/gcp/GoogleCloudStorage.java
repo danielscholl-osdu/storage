@@ -208,8 +208,15 @@ public class GoogleCloudStorage implements ICloudStorage {
 				// inconsistency then cleanup and check the access again
 				// This makes all the APIs robust to inconsistent data, but will add some
 				// latency
-				if (!this.hasAccessRobustToDataCorruption(bucket, record, this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization()))) {
-					return false;
+				try {
+					if (!this.hasAccessRobustToDataCorruption(bucket, record,
+							this.storageFactory.getStorage(this.headers.getUserEmail(),
+									tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(),
+									properties.isEnableImpersonalization()))) {
+						return false;
+					}
+				} catch (StorageException exception) {
+					throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
 				}
 			}
 		}
