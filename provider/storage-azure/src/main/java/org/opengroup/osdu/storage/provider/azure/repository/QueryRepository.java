@@ -127,7 +127,7 @@ public class QueryRepository implements IQueryRepository {
             if (Strings.isNullOrEmpty(cursor)) throw this.getInvalidCursorException();
         }
         String status = RecordState.active.toString();
-        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+//        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         DatastoreQueryResult dqr = new DatastoreQueryResult();
         List<String> ids = new ArrayList<>();
         Iterable<RecordMetadataDoc> docs;
@@ -135,7 +135,7 @@ public class QueryRepository implements IQueryRepository {
         try {
             if (paginated) {
                 final Page<RecordMetadataDoc> docPage = record.findByMetadata_kindAndMetadata_status(kind, status,
-                        CosmosStorePageRequest.of(0, numRecords, cursor, sort));
+                        CosmosStorePageRequest.of(0, numRecords, cursor));
                 Pageable pageable = docPage.getPageable();
                 String continuation = null;
                 if (pageable instanceof CosmosStorePageRequest) {
