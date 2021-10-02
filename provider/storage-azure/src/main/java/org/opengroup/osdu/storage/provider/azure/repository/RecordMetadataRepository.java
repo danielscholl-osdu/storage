@@ -185,7 +185,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     private static SqlQuerySpec getMetadata_kindAndMetada_statusQuery(String kind, String status) {
-        String queryText = String.format("SELECT * FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
+        String queryText = String.format("SELECT c.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
         SqlQuerySpec query = new SqlQuerySpec(queryText);
         return query;
     }
