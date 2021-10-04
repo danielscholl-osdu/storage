@@ -28,6 +28,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
+import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.slf4j.MDC;
@@ -66,6 +67,9 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Autowired
     private GroupsInfoRepository groupsInfoRepository;
+
+    @Autowired
+    private RecordUtil recordUtil;
 
     @Autowired
     @Named("STORAGE_CONTAINER_NAME")
@@ -313,9 +317,9 @@ public class CloudStorageImpl implements ICloudStorage {
         return path;
     }
 
-    private String buildPath(RecordMetadata record, String version)
-    {
-        String path = record.getKind() + "/" + record.getId() + "/" + version;
+    private String buildPath(RecordMetadata record, String version) {
+        String kind = recordUtil.getKindForVersion(record, version);
+        String path = kind + "/" + record.getId() + "/" + version;
         return path;
     }
 }

@@ -13,3 +13,4 @@ data:
 conf:
   configmap: "storage-config"
   app_name: "storage"
+  replicas: 3
