@@ -53,9 +53,11 @@ import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@ConditionalOnProperty(name = "osmDriver", havingValue = "legacy", matchIfMissing = true)
 @Log
 public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepository<Cursor> {
 

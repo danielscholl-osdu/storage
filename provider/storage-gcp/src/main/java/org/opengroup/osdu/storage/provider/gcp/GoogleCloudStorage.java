@@ -83,7 +83,7 @@ public class GoogleCloudStorage implements ICloudStorage {
 	private IStorageFactory storageFactory;
 
 	@Autowired
-	private IRecordsMetadataRepository<Cursor> recordRepository;
+	private IRecordsMetadataRepository<String> recordRepository;
 
 	@Autowired
 	private IEntitlementsExtensionService entitlementsService;

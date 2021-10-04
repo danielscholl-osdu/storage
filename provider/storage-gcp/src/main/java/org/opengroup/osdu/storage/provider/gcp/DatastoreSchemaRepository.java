@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 import com.google.cloud.datastore.Blob;
@@ -38,6 +39,7 @@ import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import io.jsonwebtoken.lang.Collections;
 
 @Repository
+@ConditionalOnProperty(name = "osmDriver", havingValue = "legacy", matchIfMissing = true)
 public class DatastoreSchemaRepository implements ISchemaRepository {
 
 	@Autowired
