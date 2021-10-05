@@ -21,7 +21,6 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import com.microsoft.azure.documentdb.bulkexecutor.BulkImportResponse;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -169,22 +168,22 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 "The requested cursor does not exist or is invalid");
     }
 
-    public List<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status) {
+    public List<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status) {
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
-        SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
+        SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
         return this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
     }
 
-    public Page<RecordMetadataDoc> findByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable) {
+    public Page<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable) {
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
-        SqlQuerySpec query = getMetadata_kindAndMetada_statusQuery(kind, status);
+        SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status);
         return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
 
-    private static SqlQuerySpec getMetadata_kindAndMetada_statusQuery(String kind, String status) {
+    private static SqlQuerySpec getIdsByMetadata_kindAndMetada_statusQuery(String kind, String status) {
         String queryText = String.format("SELECT c.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
         SqlQuerySpec query = new SqlQuerySpec(queryText);
         return query;

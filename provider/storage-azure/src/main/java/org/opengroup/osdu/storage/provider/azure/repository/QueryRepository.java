@@ -127,14 +127,13 @@ public class QueryRepository implements IQueryRepository {
             if (Strings.isNullOrEmpty(cursor)) throw this.getInvalidCursorException();
         }
         String status = RecordState.active.toString();
-//        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         DatastoreQueryResult dqr = new DatastoreQueryResult();
         List<String> ids = new ArrayList<>();
         Iterable<RecordMetadataDoc> docs;
 
         try {
             if (paginated) {
-                final Page<RecordMetadataDoc> docPage = record.findByMetadata_kindAndMetadata_status(kind, status,
+                final Page<RecordMetadataDoc> docPage = record.findIdsByMetadata_kindAndMetadata_status(kind, status,
                         CosmosStorePageRequest.of(0, numRecords, cursor));
                 Pageable pageable = docPage.getPageable();
                 String continuation = null;
@@ -149,7 +148,7 @@ public class QueryRepository implements IQueryRepository {
                 }
                 docs = docPage.getContent();
             } else {
-                docs = record.findByMetadata_kindAndMetadata_status(kind, status);
+                docs = record.findIdsByMetadata_kindAndMetadata_status(kind, status);
             }
             docs.forEach(d -> ids.add(d.getId()));
             dqr.setResults(ids);
