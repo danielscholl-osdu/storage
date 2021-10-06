@@ -28,6 +28,7 @@ public class DsTenantDestinationResolver implements DsDestinationResolver {
     @Override
     public DsDestinationResolution resolve(Destination destination) {
         TenantInfo ti = tenantInfoFactory.getTenantInfo(destination.getPartitionId());
+
         return DsDestinationResolution.builder().projectId(ti.getProjectId()).build();
     }
 }

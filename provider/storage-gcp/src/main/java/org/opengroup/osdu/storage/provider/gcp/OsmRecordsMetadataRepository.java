@@ -75,7 +75,7 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
         if (recordsMetadata != null) {
             for (RecordMetadata recordMetadata : recordsMetadata) {
                 try {
-                    context.update(recordMetadata, getDestination());
+                    context.upsert(recordMetadata, getDestination());
                 } catch (TranslatorException e) {
                     log.throwing(this.getClass().getName(), "createOrUpdate", e);
                     throw new RuntimeException("OSM TranslatorException", e);
