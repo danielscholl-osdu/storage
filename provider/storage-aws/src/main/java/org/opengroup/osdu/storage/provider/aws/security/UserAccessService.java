@@ -113,6 +113,8 @@ public class UserAccessService {
     {
         DpsHeaders newHeaders = DpsHeaders.createFromMap(headers.getHeaders());
         newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
+        //TODO: Refactor this, use either from SSM or use Istio service account and stop using hard code.
+        newHeaders.put(DpsHeaders.USER_ID, "serviceprincipal@testing.com");
         Groups groups = this.entitlementsExtensions.getGroups(newHeaders);
         return groups.getGroupNames();
     }

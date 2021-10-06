@@ -131,7 +131,8 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());
-
+		System.out.println("What is the header");
+		System.out.println(headers);
 		ClientResponse response = TestUtils.send("records", "PUT", headers,
 				RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
 
