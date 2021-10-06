@@ -28,7 +28,6 @@ import org.opengroup.osdu.core.gcp.osm.model.Namespace;
 import org.opengroup.osdu.core.gcp.osm.model.Query;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
-import org.opengroup.osdu.core.gcp.osm.translate.TranslatorException;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -56,55 +55,35 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
 
 
     public static final String KIND = "kind";
-    public static final String LEGAL = "legal";
-    public static final String LEGAL_TAGS = "legaltags";
-    public static final String LEGAL_COMPLIANCE = "status";
+    public static final String LEGAL_TAGS = "legal.legaltags";
+    public static final String LEGAL_COMPLIANCE = "legal.status";
     public static final String STATUS = "status";
 
 
     private Destination getDestination() {
-        Destination destination = Destination.builder().partitionId(tenantInfo.getDataPartitionId())
-                .namespace(new Namespace(tenantInfo.getName()))
-                .kind(RECORD_KIND).build();
-        return destination;
+        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
+                .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
     }
 
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
-
         if (recordsMetadata != null) {
             for (RecordMetadata recordMetadata : recordsMetadata) {
-                try {
-                    context.upsert(recordMetadata, getDestination());
-                } catch (TranslatorException e) {
-                    log.throwing(this.getClass().getName(), "createOrUpdate", e);
-                    throw new RuntimeException("OSM TranslatorException", e);
-                }
+                context.upsert(recordMetadata, getDestination());
             }
         }
         return recordsMetadata;
     }
 
-
     @Override
     public void delete(String id) {
-        try {
-            context.deleteById(RecordMetadata.class, getDestination(), id);
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "delete", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
+        context.deleteById(RecordMetadata.class, getDestination(), id);
     }
 
     @Override
     public RecordMetadata get(String id) {
-        Query osmQuery = Query.builder(RecordMetadata.class).destination(getDestination()).where(eq("id", id)).build();
-        try {
-            return (RecordMetadata) context.getResultsAsList(osmQuery).stream().findFirst().orElse(null);
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "get", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
+        Query<RecordMetadata> osmQuery = Query.builder(RecordMetadata.class).destination(getDestination()).where(eq("id", id)).build();
+        return context.getResultsAsList(osmQuery).stream().findFirst().orElse(null);
     }
 
     @Override
@@ -113,23 +92,13 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
         Query.QueryBuilder builder = Query.builder(RecordMetadata.class).destination(getDestination());
 
         if (status == null) {
-            builder.where(eq(String.format("%s.%s", LEGAL, LEGAL_TAGS), legalTagName));
+            builder.where(eq(LEGAL_TAGS, legalTagName));
         } else {
-            builder.where(and(
-                    eq(String.format("%s.%s", LEGAL, LEGAL_TAGS), legalTagName),
-                    eq(String.format("%s.%s", LEGAL, LEGAL_COMPLIANCE), status.name())
-            ));
+            builder.where(and(eq(LEGAL_TAGS, legalTagName), eq(LEGAL_COMPLIANCE, status.name())));
         }
 
-        try {
-            Outcome<RecordMetadata> out = context.getResults(builder.build(), null, limit, null).outcome();
-            return new AbstractMap.SimpleEntry<>(out.getPointer(), out.getList());
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "queryByLegal", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
-
-
+        Outcome<RecordMetadata> out = context.getResults(builder.build(), null, limit, null).outcome();
+        return new AbstractMap.SimpleEntry<>(out.getPointer(), out.getList());
     }
 
     @Override
@@ -147,6 +116,4 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, String cursor) {
         return queryByLegal(legalTagName, null, limit);
     }
-
-
 }

@@ -52,9 +52,8 @@ public class OsmQueryRepository implements IQueryRepository {
     private final TenantInfo tenantInfo;
 
     private Destination getDestination() {
-        Destination destination = Destination.builder().partitionId(tenantInfo.getDataPartitionId())
+        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
                 .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
-        return destination;
     }
 
     @Override
@@ -62,14 +61,9 @@ public class OsmQueryRepository implements IQueryRepository {
 
         Query q = Query.builder(RecordMetadata.class).destination(getDestination())
                 .where(eq(STATUS, RecordState.active)).orderBy(OrderBy.builder().addAsc(KIND).build()).build();
-        try {
-            Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList(KIND), true, cursor).outcome();
-            List<String> kinds = out.getList().stream().map(e -> (String) e.get(KIND)).collect(Collectors.toList());
-            return new DatastoreQueryResult(out.getPointer(), kinds);
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "getAllKinds", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
+        Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList(KIND), true, cursor).outcome();
+        List<String> kinds = out.getList().stream().map(e -> (String) e.get(KIND)).collect(Collectors.toList());
+        return new DatastoreQueryResult(out.getPointer(), kinds);
     }
 
     @Override
@@ -77,17 +71,11 @@ public class OsmQueryRepository implements IQueryRepository {
 
         Query<RecordMetadata> q = Query.builder(RecordMetadata.class).destination(getDestination())
                 .where(and(eq(KIND, kind), eq(STATUS, RecordState.active))).build();
-        try {
             Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList("id"), false, cursor).outcome();
             return new DatastoreQueryResult(out.getPointer(), out.getList().stream().map(e -> (String) e.get("id")).collect(Collectors.toList()));
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "getAllKinds", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
     }
 
     private int getLimitTuned(Integer limit) {
-        int numRecords = limit == null ? PAGE_SIZE : (limit > 0 ? limit : PAGE_SIZE);
-        return numRecords;
+        return limit == null ? PAGE_SIZE : (limit > 0 ? limit : PAGE_SIZE);
     }
 }

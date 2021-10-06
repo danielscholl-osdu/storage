@@ -23,13 +23,10 @@ import org.opengroup.osdu.core.gcp.osm.model.Namespace;
 import org.opengroup.osdu.core.gcp.osm.model.Query;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.service.Transaction;
-import org.opengroup.osdu.core.gcp.osm.translate.TranslatorException;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
 
 import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
@@ -45,10 +42,8 @@ public class OsmSchemaRepository implements ISchemaRepository {
     private final TenantInfo tenantInfo;
 
     private Destination getDestination() {
-        Destination destination = Destination.builder().partitionId(tenantInfo.getDataPartitionId())
-                .namespace(new Namespace(tenantInfo.getName()))
-                .kind(OsmRecordsMetadataRepository.SCHEMA_KIND).build();
-        return destination;
+        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
+                .namespace(new Namespace(tenantInfo.getName())).kind(OsmRecordsMetadataRepository.SCHEMA_KIND).build();
     }
 
     @Override
@@ -67,9 +62,6 @@ public class OsmSchemaRepository implements ISchemaRepository {
                 context.create(schema, getDestination());
                 txn.commitIfActive();
             }
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "add", e);
-            throw new RuntimeException("OSM TranslatorException", e);
         } finally {
             if (txn != null) txn.rollbackIfActive();
         }
@@ -77,22 +69,12 @@ public class OsmSchemaRepository implements ISchemaRepository {
 
     @Override
     public Schema get(String kind) {
-        try {
-            Query<Schema> q = Query.builder(Schema.class).destination(getDestination()).where(eq("kind", kind)).build();
-            return context.getResultsAsList(q).stream().findFirst().orElse(null);
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "get", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
+        Query<Schema> q = Query.builder(Schema.class).destination(getDestination()).where(eq("kind", kind)).build();
+        return context.getResultsAsList(q).stream().findFirst().orElse(null);
     }
 
     @Override
     public void delete(String kind) {
-        try {
-            context.deleteById(Schema.class, getDestination(), kind);
-        } catch (TranslatorException e) {
-            log.throwing(this.getClass().getName(), "delete", e);
-            throw new RuntimeException("OSM TranslatorException", e);
-        }
+        context.deleteById(Schema.class, getDestination(), kind);
     }
 }
