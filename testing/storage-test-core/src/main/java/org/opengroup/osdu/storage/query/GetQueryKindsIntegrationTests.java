@@ -41,7 +41,7 @@ public abstract class GetQueryKindsIntegrationTests extends TestBase {
 
 	@Test
 	public void should_return400ErrorResult_when_givingAnInvalidCursorParameter() throws Exception {
-		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 					"?cursor=badCursorString");
 			assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
@@ -54,7 +54,7 @@ public abstract class GetQueryKindsIntegrationTests extends TestBase {
 
 	@Test
 	public void should_return2Results_when_requesting2Items() throws Exception {
-			if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
+			if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2");
 			assertEquals(HttpStatus.SC_OK, response.getStatus());
 

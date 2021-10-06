@@ -48,7 +48,7 @@ public abstract class StorageSchemaNegativeTest extends TestBase {
 
 	@Test
 	public void should_notCreateSchema_when_schemaAlreadyExists() throws Exception {
-		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			JsonElement jsonInputRecord = createSchemaPayload(this.kind);
 			ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					jsonInputRecord.toString(), "");
@@ -71,7 +71,7 @@ public abstract class StorageSchemaNegativeTest extends TestBase {
 
 	@Test
 	public void should_notGetSchemaDetails_when_thereIsNoSchemaExist() throws Exception {
-		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			JsonElement jsonInputRecord = createSchemaPayload(this.kind);
 			ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					jsonInputRecord.toString(), "");
@@ -93,7 +93,7 @@ public abstract class StorageSchemaNegativeTest extends TestBase {
 
 	@Test
 	public void should_notDeleteSchemaByUsingKind_when_no_schemaExist() throws Exception {
-			if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
+			if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			JsonElement jsonInputRecord = createSchemaPayload(this.kind);
 			ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					jsonInputRecord.toString(), "");

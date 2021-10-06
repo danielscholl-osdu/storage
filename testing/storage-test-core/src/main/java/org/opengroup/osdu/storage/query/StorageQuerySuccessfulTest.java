@@ -53,7 +53,7 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 	
 	@Test
 	public void should_retrieveAllKinds_when_toCursorIdIsGiven() throws Exception {
-		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) { {
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			ClientResponse recordResponse = TestUtils.send("query/kinds?limit=10", HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					"", "");
 			GetCursorValue getCursorValue = TestUtils.getResult(recordResponse, HttpStatus.SC_OK, GetCursorValue.class);
