@@ -195,7 +195,48 @@ paths:
       security:
       - datalake_auth:
         - "email"
-      - Bearer: []  
+      - Bearer: []
+  "/records/delete":
+    post:
+      tags:
+        - records
+      summary: Soft delete of multiple records
+      description: "The API performs a soft deletion of the given list of records. Required roles: 'users.datalake.editors' or
+        'users.datalake.admins'."
+      operationId: Delete records
+      parameters:
+        - name: data-partition-id
+          in: header
+          description: This value should be the desired data partition id.
+          required: true
+          schema:
+            type: string
+            default: common
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "204":
+          description: All records deleted successfully.
+        "207":
+          description: Some of the records weren't deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeleteRecordsException"
+        "400":
+          description: "Invalid id format"
+          schema:
+            $ref: "#/definitions/AppError"
+      security:
+        - bearer: []
+        - appkey: []
   /records/{id}:
     get:
       tags:
@@ -700,6 +741,18 @@ definitions:
       - "tenant1:wellLog:654abc987"
       attributes:
       - "data.msg"
+  DeleteRecordsException:
+    type: object
+    properties:
+      notDeletedRecordId:
+        type: string
+        example: common:welldb:123456
+        description: Record id which wasn't deleted successfully.
+      message:
+        type: string
+        example: Record with id 'common:welldb:123456' not found
+        description: Brief description of the cause why record wasn't delete
+    description: Delete Records Response Body
   RecordData:
     type: "object"
     properties:

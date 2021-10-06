@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2021, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.service;
+package org.opengroup.osdu.storage.exception;
 
 import java.util.List;
 
-public interface RecordService {
+import org.apache.commons.lang3.tuple.Pair;
 
-	void purgeRecord(String recordId);
+public class DeleteRecordsException extends RuntimeException {
 
-	void deleteRecord(String recordId, String user);
+  private final List<Pair<String, String>> notDeletedRecords;
 
-	void bulkDeleteRecords(List<String> records, String user);
+  public DeleteRecordsException(List<Pair<String, String>>  notDeletedRecords) {
+    this.notDeletedRecords = notDeletedRecords;
+  }
+
+  public List<Pair<String, String>> getNotDeletedRecords() {
+    return notDeletedRecords;
+  }
 }
