@@ -20,10 +20,10 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 @Component
 @Scope(SCOPE_SINGLETON)
-@ConditionalOnProperty(name = "osmDriver", havingValue = "datastore")
-public class DsTypeMapperImpl extends TypeMapper {
+@ConditionalOnProperty(name = "osmDriver")
+public class TypeMapperImpl extends TypeMapper {
 
-    public DsTypeMapperImpl() {
+    public TypeMapperImpl() {
         super(Arrays.asList(
                 new Instrumentation<>(RecordMetadata.class,
                         new HashMap<String, String>() {{

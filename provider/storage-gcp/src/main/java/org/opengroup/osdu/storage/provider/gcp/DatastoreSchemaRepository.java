@@ -39,7 +39,7 @@ import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import io.jsonwebtoken.lang.Collections;
 
 @Repository
-@ConditionalOnProperty(name = "osmDriver", havingValue = "legacy", matchIfMissing = true)
+@ConditionalOnProperty(name = "osmDriver", havingValue = "false", matchIfMissing = true)
 public class DatastoreSchemaRepository implements ISchemaRepository {
 
 	@Autowired

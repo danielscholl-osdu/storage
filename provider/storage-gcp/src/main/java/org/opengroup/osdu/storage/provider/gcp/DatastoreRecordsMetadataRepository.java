@@ -57,7 +57,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@ConditionalOnProperty(name = "osmDriver", havingValue = "legacy", matchIfMissing = true)
+@ConditionalOnProperty(name = "osmDriver", havingValue = "false", matchIfMissing = true)
 @Log
 public class DatastoreRecordsMetadataRepository implements IRecordsMetadataRepository<Cursor> {
 

@@ -29,12 +29,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 @Repository
 @Scope(SCOPE_SINGLETON)
-@ConditionalOnProperty(name = "osmDriver", havingValue = "datastore")
+@ConditionalOnProperty(name = "osmDriver")
 @Log
 @RequiredArgsConstructor
 public class OsmSchemaRepository implements ISchemaRepository {
@@ -52,10 +54,11 @@ public class OsmSchemaRepository implements ISchemaRepository {
     @Override
     public void add(Schema schema, String user) {
 
-        Transaction txn = context.getTransaction();
+        Transaction txn = null;
 
         Query q = Query.builder(Schema.class).destination(getDestination()).where(eq("kind", schema.getKind())).build();
         try {
+            txn = context.beginTransaction(getDestination());
             if (context.findOne(q).isPresent()) {
                 txn.rollbackIfActive();
                 throw new IllegalArgumentException("A schema for the specified kind has already been registered.");
@@ -68,7 +71,7 @@ public class OsmSchemaRepository implements ISchemaRepository {
             log.throwing(this.getClass().getName(), "add", e);
             throw new RuntimeException("OSM TranslatorException", e);
         } finally {
-            txn.rollbackIfActive();
+            if (txn != null) txn.rollbackIfActive();
         }
     }
 
@@ -86,8 +89,7 @@ public class OsmSchemaRepository implements ISchemaRepository {
     @Override
     public void delete(String kind) {
         try {
-            Query<Schema> q = Query.builder(Schema.class).destination(getDestination()).where(eq("kind", kind)).build();
-            context.delete(q);
+            context.deleteById(Schema.class, getDestination(), kind);
         } catch (TranslatorException e) {
             log.throwing(this.getClass().getName(), "delete", e);
             throw new RuntimeException("OSM TranslatorException", e);

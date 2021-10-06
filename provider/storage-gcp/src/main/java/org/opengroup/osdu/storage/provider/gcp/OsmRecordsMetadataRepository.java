@@ -27,7 +27,7 @@ import org.opengroup.osdu.core.gcp.osm.model.Kind;
 import org.opengroup.osdu.core.gcp.osm.model.Namespace;
 import org.opengroup.osdu.core.gcp.osm.model.Query;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
-import org.opengroup.osdu.core.gcp.osm.service.Outcome;
+import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.core.gcp.osm.translate.TranslatorException;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
@@ -35,10 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opengroup.osdu.core.gcp.osm.model.where.condition.And.and;
 import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
@@ -46,7 +43,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 @Repository
 @Scope(SCOPE_SINGLETON)
-@ConditionalOnProperty(name = "osmDriver", havingValue = "datastore")
+@ConditionalOnProperty(name = "osmDriver")
 @Log
 @RequiredArgsConstructor
 public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<String> {
@@ -77,12 +74,8 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
 
         if (recordsMetadata != null) {
             for (RecordMetadata recordMetadata : recordsMetadata) {
-
-                Query osmQuery = Query
-                        .builder(recordMetadata).destination(getDestination()).build();
-
                 try {
-                    context.update(osmQuery);
+                    context.update(recordMetadata, getDestination());
                 } catch (TranslatorException e) {
                     log.throwing(this.getClass().getName(), "createOrUpdate", e);
                     throw new RuntimeException("OSM TranslatorException", e);
@@ -95,11 +88,8 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
 
     @Override
     public void delete(String id) {
-        Query osmQuery = Query
-                .builder(RecordMetadata.class).destination(getDestination())
-                .where(eq("id", id)).build();
         try {
-            context.delete(osmQuery);
+            context.deleteById(RecordMetadata.class, getDestination(), id);
         } catch (TranslatorException e) {
             log.throwing(this.getClass().getName(), "delete", e);
             throw new RuntimeException("OSM TranslatorException", e);
@@ -108,9 +98,7 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
 
     @Override
     public RecordMetadata get(String id) {
-        Query osmQuery = Query
-                .builder(RecordMetadata.class).destination(getDestination())
-                .where(eq("id", id)).build();
+        Query osmQuery = Query.builder(RecordMetadata.class).destination(getDestination()).where(eq("id", id)).build();
         try {
             return (RecordMetadata) context.getResultsAsList(osmQuery).stream().findFirst().orElse(null);
         } catch (TranslatorException e) {
@@ -149,7 +137,7 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
 
         Map<String, RecordMetadata> output = new HashMap<>();
         for (String id : ids) {
-            output.put(id, get(id));
+            Optional.ofNullable(get(id)).ifPresent(r -> output.put(id, r));
         }
         return output;
     }

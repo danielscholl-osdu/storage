@@ -20,6 +20,7 @@ import java.util.List;
 import org.opengroup.osdu.core.gcp.multitenancy.IDatastoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import com.google.common.base.Strings;
@@ -37,7 +38,7 @@ import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 
 @Repository
-@ConditionalOnProperty(name = "osmDriver", havingValue = "legacy", matchIfMissing = true)
+@ConditionalOnProperty(name = "osmDriver", havingValue = "false", matchIfMissing = true)
 public class DatastoreQueryRepository implements IQueryRepository {
 
 	@Autowired
