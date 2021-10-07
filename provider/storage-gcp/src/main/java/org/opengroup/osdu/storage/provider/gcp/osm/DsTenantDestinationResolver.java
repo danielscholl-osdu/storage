@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 /**
+ * Resolves Destination.partitionId into info needed by Datastore to address requests to a relevant GCP data project.
+ *
  * @author Rostislav_Dublin
  * @since 15.09.2021
  */
@@ -24,6 +26,12 @@ public class DsTenantDestinationResolver implements DsDestinationResolver {
 
     private final ITenantFactory tenantInfoFactory;
 
+    /**
+     * Takes provided Destination with partitionId set to needed tenantId, returns its TenantInfo.projectId.
+     *
+     * @param destination to resolve
+     * @return resolution results
+     */
     @Override
     public DsDestinationResolution resolve(Destination destination) {
         TenantInfo ti = tenantInfoFactory.getTenantInfo(destination.getPartitionId());

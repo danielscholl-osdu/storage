@@ -18,6 +18,10 @@ import java.util.HashMap;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
+/**
+ * All Entity classes used in translation should be registered here even if don't need custom settings.
+ * Each class is represented as Instrumentation object. At least class objects and rules for Identity translation should be provided.oi
+ */
 @Component
 @Scope(SCOPE_SINGLETON)
 @ConditionalOnProperty(name = "osmDriver")
@@ -25,6 +29,7 @@ public class TypeMapperImpl extends TypeMapper {
 
     public TypeMapperImpl() {
         super(Arrays.asList(
+                //RecordMetadata: needs for two fields names and types custom settings. Id column is "id".
                 new Instrumentation<>(RecordMetadata.class,
                         new HashMap<String, String>() {{
                             put("user", "createUser");
@@ -40,6 +45,7 @@ public class TypeMapperImpl extends TypeMapper {
                         ),
                         Collections.singletonList("id")
                 ),
+                //Schema: needs for one field name and type custom settings. Id column is "kind".
                 new Instrumentation<>(Schema.class,
                         new HashMap<String, String>() {{
                             put("ext", "extension");
