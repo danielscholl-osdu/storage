@@ -20,7 +20,7 @@ import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.gcp.osm.model.Destination;
 import org.opengroup.osdu.core.gcp.osm.model.Namespace;
-import org.opengroup.osdu.core.gcp.osm.model.Query;
+import org.opengroup.osdu.core.gcp.osm.model.query.GetQuery;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.service.Transaction;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
@@ -51,7 +51,7 @@ public class OsmSchemaRepository implements ISchemaRepository {
 
         Transaction txn = null;
 
-        Query q = Query.builder(Schema.class).destination(getDestination()).where(eq("kind", schema.getKind())).build();
+        GetQuery q = new GetQuery(Schema.class, getDestination(), eq("kind", schema.getKind()));
         try {
             txn = context.beginTransaction(getDestination());
             if (context.findOne(q).isPresent()) {
@@ -69,7 +69,7 @@ public class OsmSchemaRepository implements ISchemaRepository {
 
     @Override
     public Schema get(String kind) {
-        Query<Schema> q = Query.builder(Schema.class).destination(getDestination()).where(eq("kind", kind)).build();
+        GetQuery<Schema> q = new GetQuery<>(Schema.class, getDestination(), eq("kind", kind));
         return context.getResultsAsList(q).stream().findFirst().orElse(null);
     }
 

@@ -22,11 +22,10 @@ import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.gcp.osm.model.Destination;
 import org.opengroup.osdu.core.gcp.osm.model.Namespace;
-import org.opengroup.osdu.core.gcp.osm.model.Query;
 import org.opengroup.osdu.core.gcp.osm.model.order.OrderBy;
+import org.opengroup.osdu.core.gcp.osm.model.query.GetQuery;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
-import org.opengroup.osdu.core.gcp.osm.translate.TranslatorException;
 import org.opengroup.osdu.core.gcp.osm.translate.ViewResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,8 +58,8 @@ public class OsmQueryRepository implements IQueryRepository {
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
 
-        Query q = Query.builder(RecordMetadata.class).destination(getDestination())
-                .where(eq(STATUS, RecordState.active)).orderBy(OrderBy.builder().addAsc(KIND).build()).build();
+        GetQuery q = new GetQuery(RecordMetadata.class, getDestination(),
+                eq(STATUS, RecordState.active), OrderBy.builder().addAsc(KIND).build());
         Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList(KIND), true, cursor).outcome();
         List<String> kinds = out.getList().stream().map(e -> (String) e.get(KIND)).collect(Collectors.toList());
         return new DatastoreQueryResult(out.getPointer(), kinds);
@@ -69,10 +68,9 @@ public class OsmQueryRepository implements IQueryRepository {
     @Override
     public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
 
-        Query<RecordMetadata> q = Query.builder(RecordMetadata.class).destination(getDestination())
-                .where(and(eq(KIND, kind), eq(STATUS, RecordState.active))).build();
-            Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList("id"), false, cursor).outcome();
-            return new DatastoreQueryResult(out.getPointer(), out.getList().stream().map(e -> (String) e.get("id")).collect(Collectors.toList()));
+        GetQuery<RecordMetadata> q = new GetQuery(RecordMetadata.class, getDestination(), and(eq(KIND, kind), eq(STATUS, RecordState.active)));
+        Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList("id"), false, cursor).outcome();
+        return new DatastoreQueryResult(out.getPointer(), out.getList().stream().map(e -> (String) e.get("id")).collect(Collectors.toList()));
     }
 
     private int getLimitTuned(Integer limit) {

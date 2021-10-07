@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.gcp.osm.model.Destination;
-import org.opengroup.osdu.core.gcp.osm.model.Query;
 import org.opengroup.osdu.core.gcp.osm.translate.datastore.DsDestinationResolution;
 import org.opengroup.osdu.core.gcp.osm.translate.datastore.DsDestinationResolver;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

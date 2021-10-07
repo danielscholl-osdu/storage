@@ -25,7 +25,7 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.gcp.osm.model.Destination;
 import org.opengroup.osdu.core.gcp.osm.model.Kind;
 import org.opengroup.osdu.core.gcp.osm.model.Namespace;
-import org.opengroup.osdu.core.gcp.osm.model.Query;
+import org.opengroup.osdu.core.gcp.osm.model.query.GetQuery;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -82,15 +82,14 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
 
     @Override
     public RecordMetadata get(String id) {
-        Query<RecordMetadata> osmQuery = Query.builder(RecordMetadata.class).destination(getDestination()).where(eq("id", id)).build();
+        GetQuery<RecordMetadata> osmQuery = new GetQuery<>(RecordMetadata.class, getDestination(), eq("id", id));
         return context.getResultsAsList(osmQuery).stream().findFirst().orElse(null);
     }
 
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
 
-        Query.QueryBuilder builder = Query.builder(RecordMetadata.class).destination(getDestination());
-
+        GetQuery.GetQueryBuilder builder = new GetQuery(RecordMetadata.class, getDestination()).toBuilder();
         if (status == null) {
             builder.where(eq(LEGAL_TAGS, legalTagName));
         } else {
