@@ -84,21 +84,14 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 cursor = results.getKey();
                 List<RecordMetadata> recordsMetadata = results.getValue();
                 PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-
-                if (lt.getChangedTagStatus() == incompliantName){
-                    for(RecordMetadata rmd : recordsMetadata){
-                        this.recordsMetadataRepository.delete(rmd.getId());
-                    }
-                } else {
-                    this.recordsMetadataRepository.createOrUpdate(recordsMetadata);
-                }
+                this.recordsMetadataRepository.createOrUpdate(recordsMetadata);
 
                 StringBuilder recordsId = new StringBuilder();
                 for (RecordMetadata recordMetadata : recordsMetadata) {
                     recordsId.append(", ").append(recordMetadata.getId());
                 }
                 this.auditLogger.updateRecordsComplianceStateSuccess(
-                        singletonList("[" + recordsId.toString().substring(2) + "]"));
+                        singletonList("[" + recordsId.toString() + "]"));
 
                 this.storageMessageBus.publishMessage(headers, pubsubInfos);
             } while (cursor != null);
