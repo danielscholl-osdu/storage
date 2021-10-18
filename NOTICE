@@ -676,9 +676,14 @@ The following software have components provided under the terms of this license:
 - Apache Commons Logging (from http://commons.apache.org/proper/commons-logging/)
 - Apache Geronimo JMS Spec 2.0 (from http://geronimo.apache.org/maven/${siteId}/${version})
 - Apache HttpAsyncClient (from http://hc.apache.org/httpcomponents-asyncclient)
+- Apache HttpClient (from http://hc.apache.org/httpcomponents-client)
+- Apache HttpClient (from http://hc.apache.org/httpcomponents-client)
 - Apache HttpClient Cache (from http://hc.apache.org/httpcomponents-client)
 - Apache HttpClient Cache (from http://hc.apache.org/httpcomponents-client)
 - Apache HttpClient Mime (from http://hc.apache.org/httpcomponents-client)
+- Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
+- Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
+- Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
 - Apache HttpCore NIO (from http://hc.apache.org/httpcomponents-core-ga)
 - Apache HttpCore NIO (from http://hc.apache.org/httpcomponents-core-ga)
 - Apache Log4j API (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api)
@@ -748,11 +753,6 @@ The following software have components provided under the terms of this license:
 - HTTP functionality for the Reactor Netty library (from https://github.com/reactor/reactor-netty)
 - Hibernate Validator Engine (from https://repo1.maven.org/maven2/org/hibernate/validator/hibernate-validator)
 - Hibernate Validator Engine (from https://repo1.maven.org/maven2/org/hibernate/validator/hibernate-validator)
-- HttpClient (from http://hc.apache.org/httpcomponents-client)
-- HttpClient (from http://hc.apache.org/httpcomponents-client)
-- HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
-- HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
-- HttpCore (from http://hc.apache.org/httpcomponents-core-ga)
 - IBM COS Java SDK for Amazon S3 (from https://github.com/ibm/ibm-cos-sdk-java)
 - IBM COS Java SDK for COS KMS (from https://github.com/ibm/ibm-cos-sdk-java)
 - IBM COS SDK For Java (from https://github.com/ibm/ibm-cos-sdk-java)
@@ -940,6 +940,7 @@ The following software have components provided under the terms of this license:
 - Spring AOP (from https://github.com/spring-projects/spring-framework)
 - Spring Beans (from https://github.com/spring-projects/spring-framework)
 - Spring Beans (from https://github.com/spring-projects/spring-framework)
+- Spring Boot Log4j 2 Starter (from https://projects.spring.io/spring-boot/)
 - Spring Boot Test Starter (from https://projects.spring.io/spring-boot/#/spring-boot-parent/spring-boot-starters/spring-boot-starter-test)
 - Spring Boot Test Starter (from https://projects.spring.io/spring-boot/#/spring-boot-parent/spring-boot-starters/spring-boot-starter-test)
 - Spring Boot Test Starter (from https://projects.spring.io/spring-boot/#/spring-boot-parent/spring-boot-starters/spring-boot-starter-test)
@@ -980,7 +981,6 @@ The following software have components provided under the terms of this license:
 - aalto-xml (from )
 - aggs-matrix-stats (from https://github.com/elastic/elasticsearch)
 - aggs-matrix-stats (from https://github.com/elastic/elasticsearch)
-- asm (from http://asm.ow2.io/)
 - aws-ssm-java-caching-client (from https://github.com/awslabs/aws-ssm-java-caching-client)
 - compiler (from http://github.com/spullara/mustache.java)
 - compiler (from http://github.com/spullara/mustache.java)
@@ -1018,8 +1018,8 @@ The following software have components provided under the terms of this license:
 - java-cloudant (from https://cloudant.com)
 - java-cloudant (from https://cloudant.com)
 - javatuples (from http://www.javatuples.org)
-- javax.inject (from https://repo1.maven.org/maven2/org/glassfish/hk2/external/javax.inject)
 - javax.inject (from http://code.google.com/p/atinject/)
+- javax.inject (from https://repo1.maven.org/maven2/org/glassfish/hk2/external/javax.inject)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - jersey-repackaged-guava (from https://repo1.maven.org/maven2/org/glassfish/jersey/bundles/repackaged/jersey-guava)
@@ -1058,11 +1058,10 @@ The following software have components provided under the terms of this license:
 - proto-google-iam-v1 (from https://github.com/googleapis/java-iam/proto-google-iam-v1)
 - rank-eval (from https://github.com/elastic/elasticsearch)
 - rank-eval (from https://github.com/elastic/elasticsearch)
-- resilience4j (from https://github.com/resilience4j/resilience4j)
 - resilience4j (from https://resilience4j.readme.io)
 - resilience4j (from https://github.com/resilience4j/resilience4j)
 - resilience4j (from https://github.com/resilience4j/resilience4j)
-- resilience4j (from https://resilience4j.readme.io)
+- resilience4j (from https://github.com/resilience4j/resilience4j)
 - resilience4j (from https://resilience4j.readme.io)
 - resilience4j (from https://resilience4j.readme.io)
 - resilience4j (from https://resilience4j.readme.io)
@@ -1087,7 +1086,6 @@ The following software have components provided under the terms of this license:
 - spring-boot-starter-data-mongodb (from https://spring.io/projects/spring-boot)
 - spring-boot-starter-json (from https://spring.io/projects/spring-boot)
 - spring-boot-starter-json (from https://spring.io/projects/spring-boot)
-- spring-boot-starter-log4j2 (from https://spring.io/projects/spring-boot)
 - spring-boot-starter-logging (from https://spring.io/projects/spring-boot)
 - spring-boot-starter-logging (from https://spring.io/projects/spring-boot)
 - spring-boot-starter-reactor-netty (from https://spring.io/projects/spring-boot)
@@ -1142,7 +1140,7 @@ BSD-2-Clause
 The following software have components provided under the terms of this license:
 
 - API Common (from https://github.com/googleapis/api-common-java)
-- GAX (Google Api eXtensions) (from https://github.com/googleapis)
+- GAX (Google Api eXtensions) for Java (from https://github.com/googleapis/gax-java)
 - GAX (Google Api eXtensions) for Java (from https://github.com/googleapis/gax-java)
 - GAX (Google Api eXtensions) for Java (from https://github.com/googleapis/gax-java)
 - Hamcrest (from http://hamcrest.org/JavaHamcrest/)
@@ -1150,8 +1148,6 @@ The following software have components provided under the terms of this license:
 - HdrHistogram (from http://hdrhistogram.github.io/HdrHistogram/)
 - Lucene Common Analyzers (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-analyzers-common)
 - Lucene Common Analyzers (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-analyzers-common)
-- Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
-- Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
 - Reflections (from http://github.com/ronmamo/reflections)
 - Stax2 API (from http://github.com/FasterXML/stax2-api)
 - ThreeTen backport (from https://www.threeten.org/threetenbp)
@@ -1164,7 +1160,7 @@ The following software have components provided under the terms of this license:
 - API Common (from https://github.com/googleapis/api-common-java)
 - Apache Commons Codec (from https://commons.apache.org/proper/commons-codec/)
 - Apache Commons Codec (from https://commons.apache.org/proper/commons-codec/)
-- GAX (Google Api eXtensions) (from https://github.com/googleapis)
+- GAX (Google Api eXtensions) for Java (from https://github.com/googleapis/gax-java)
 - GAX (Google Api eXtensions) for Java (from https://github.com/googleapis/gax-java)
 - GAX (Google Api eXtensions) for Java (from https://github.com/googleapis/gax-java)
 - Google APIs Client Library for Java (from https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
@@ -1263,15 +1259,6 @@ CPL-1.0
 The following software have components provided under the terms of this license:
 
 - JUnit (from http://junit.org)
-
-========================================================================
-DOC
-========================================================================
-The following software have components provided under the terms of this license:
-
-- Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
-- Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
-- Woodstox (from https://github.com/FasterXML/woodstox)
 
 ========================================================================
 EPL-1.0
@@ -1377,14 +1364,6 @@ The following software have components provided under the terms of this license:
 - Project Lombok (from https://projectlombok.org)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
-
-========================================================================
-ImageMagick
-========================================================================
-The following software have components provided under the terms of this license:
-
-- Stax2 API (from http://github.com/FasterXML/stax2-api)
-- Woodstox (from https://github.com/FasterXML/woodstox)
 
 ========================================================================
 JSON
@@ -1567,26 +1546,11 @@ The following software have components provided under the terms of this license:
 - Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
 
 ========================================================================
-TCL
-========================================================================
-The following software have components provided under the terms of this license:
-
-- HK2 API module (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-api)
-
-========================================================================
 WTFPL
 ========================================================================
 The following software have components provided under the terms of this license:
 
 - Reflections (from http://github.com/ronmamo/reflections)
-
-========================================================================
-X11
-========================================================================
-The following software have components provided under the terms of this license:
-
-- Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
-- Lucene Core (from https://repo1.maven.org/maven2/org/apache/lucene/lucene-core)
 
 ========================================================================
 public-domain
@@ -1626,12 +1590,10 @@ unknown
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- "Java Concurrency in Practice" book annotations (from http://jcip.net/)
 - Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Checker Qual (from https://checkerframework.org)
 - JSON in Java (from https://github.com/douglascrockford/JSON-java)
-- JUnit (from http://junit.org)
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
 - JUnit Jupiter API (from https://junit.org/junit5/)
 - JUnit Jupiter Engine (from https://junit.org/junit5/)
