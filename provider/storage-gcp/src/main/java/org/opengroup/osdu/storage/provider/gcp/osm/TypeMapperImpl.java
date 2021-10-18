@@ -5,7 +5,7 @@ import com.google.cloud.datastore.Blob;
 import com.google.cloud.datastore.Key;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.Schema;
-import org.opengroup.osdu.core.gcp.osm.persistence.Identity;
+import org.opengroup.osdu.core.gcp.osm.persistence.IdentityTranslator;
 import org.opengroup.osdu.core.gcp.osm.translate.Instrumentation;
 import org.opengroup.osdu.core.gcp.osm.translate.TypeMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,7 +39,7 @@ public class TypeMapperImpl extends TypeMapper {
                             put("createTime", Timestamp.class);
                             put("modifyTime", Timestamp.class);
                         }},
-                        new Identity<>(
+                        new IdentityTranslator<>(
                                 RecordMetadata::getId,
                                 (r, o) -> r.setId(((Key) o).getName())
                         ),
@@ -54,7 +54,7 @@ public class TypeMapperImpl extends TypeMapper {
                             put("schema", Blob.class);
                             put("ext", Blob.class);
                         }},
-                        new Identity<>(
+                        new IdentityTranslator<>(
                                 Schema::getKind,
                                 (r, o) -> r.setKind(((Key) o).getName())
                         ),
