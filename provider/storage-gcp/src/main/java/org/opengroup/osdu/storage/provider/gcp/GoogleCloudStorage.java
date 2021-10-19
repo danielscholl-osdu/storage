@@ -39,6 +39,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -55,6 +56,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 @Repository
+@ConditionalOnProperty(name = "obmDriver", havingValue = "false", matchIfMissing = true)
 public class GoogleCloudStorage implements ICloudStorage {
 
 	private static final String RECORD_WRITING_ERROR_REASON = "Error on writing record";
