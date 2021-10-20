@@ -28,6 +28,7 @@ import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.util.Crc32c;
@@ -37,6 +38,7 @@ import org.opengroup.osdu.core.gcp.obm.driver.S3CompatibleErrors;
 import org.opengroup.osdu.core.gcp.obm.model.Blob;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.service.DataAuthorizationService;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -55,37 +57,22 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 @Repository
-@ConditionalOnProperty(name = "osmDriver")
+@ConditionalOnProperty(name = "obmDriver")
 @RequiredArgsConstructor
-public class ObmGoogleCloudStorage implements ICloudStorage {
+public class ObmStorage implements ICloudStorage {
 
     private static final String RECORD_WRITING_ERROR_REASON = "Error on writing record";
     private static final String RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG = "Record %s does not have versions available";
     private static final String ERROR_ON_WRITING_THE_RECORD_HAS_OCCURRED_MSG = "An unexpected error on writing the record has occurred";
 
     private final Driver storage;
-
-//	@Value("${PUBSUB_SEARCH_TOPIC}")
-//	public String pubsubSearchTopic;
-
-//	@Value("${GOOGLE_AUDIENCES}")
-//	public String googleAudiences;
-
-//	@Value("${STORAGE_HOSTNAME}")
-//	public String storageHostname;
-
-
-//	@Autowired
-//	private StorageConfigProperties properties;
+    private final DataAuthorizationService dataAuthorizationService;
 
     @Autowired
     private DpsHeaders headers;
 
     @Autowired
     private TenantInfo tenant;
-
-//	@Autowired
-//	private IStorageFactory storageFactory;
 
     @Autowired
     private IRecordsMetadataRepository<?> recordRepository;
@@ -218,10 +205,16 @@ public class ObmGoogleCloudStorage implements ICloudStorage {
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
 
+        if (!this.dataAuthorizationService.validateViewerOrOwnerAccess(record, OperationType.view)) {
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
+        }
+
         try {
             String path = record.getVersionPath(version);
 
             byte[] blob = storage.getBlobContent(getBucketName(this.tenant), path);
+
+
             return new String(blob, UTF_8);
 
         } catch (DriverRuntimeException e) {
@@ -292,7 +285,6 @@ public class ObmGoogleCloudStorage implements ICloudStorage {
             return;
         }
 
-        boolean mustSubmit = false;
         String bucket = getBucketName(this.tenant);
         try {
             Blob blob = storage.getBlob(bucket, record.getVersionPath(record.getLatestVersion()));
@@ -306,7 +298,6 @@ public class ObmGoogleCloudStorage implements ICloudStorage {
 
             for (String path : versionFiles) {
                 storage.deleteBlobs(bucket, versionFiles);
-                mustSubmit = true;
             }
 
         } catch (DriverRuntimeException e) {
