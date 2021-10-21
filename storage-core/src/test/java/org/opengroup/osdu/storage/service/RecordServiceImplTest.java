@@ -14,8 +14,12 @@
 
 package org.opengroup.osdu.storage.service;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -31,6 +35,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
+import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -48,12 +53,21 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RecordServiceImplTest {
 
     private static final String RECORD_ID = "tenant1:record:anyId";
     private static final String TENANT_NAME = "TENANT1";
+
+    private static final String RECORD_ID_1 = "tenant1:record1:version";
+
+    private static final String USER_NAME = "testUserName";
+    private static final String KIND = "testKind";
+
+    private static final String[] OWNERS = new String[]{"owner1@slb.com", "owner2@slb.com"};
+    private static final String[] VIEWERS = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
 
     @Mock
     private IRecordsMetadataRepository recordRepository;
@@ -78,6 +92,9 @@ public class RecordServiceImplTest {
 
     @Mock
     private ITenantFactory tenantFactory;
+
+    @Mock
+    private RecordUtil recordUtil;
 
     @InjectMocks
     private RecordServiceImpl sut;
@@ -346,5 +363,146 @@ public class RecordServiceImplTest {
         } catch (Exception e) {
             fail("Should not get different exception");
         }
+    }
+
+    @Test
+    public void shouldDeleteRecords_successfully() {
+        RecordMetadata record = buildRecordMetadata();
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>(){{
+            put(RECORD_ID, record);
+        }};
+
+        when(recordRepository.get(singletonList(RECORD_ID))).thenReturn(expectedRecordMetadataMap);
+        when(dataAuthorizationService.hasAccess(record, OperationType.delete)).thenReturn(true);
+
+        sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME);
+
+        verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
+        verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
+        verify(recordRepository, times(1)).createOrUpdate(singletonList(record));
+        verify(auditLogger, only()).deleteRecordSuccess(singletonList(RECORD_ID));
+        verifyPubSubPublished();
+
+        assertEquals(RecordState.deleted, record.getStatus());
+        assertEquals(USER_NAME, record.getModifyUser());
+        assertNotNull(record.getModifyTime());
+        assertTrue(record.getModifyTime() != 0);
+    }
+
+    @Test
+    public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhichUserDoesNotHaveAccessTo() {
+        RecordMetadata record = buildRecordMetadata();
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>(){{
+            put(RECORD_ID, record);
+        }};
+
+        when(recordRepository.get(singletonList(RECORD_ID))).thenReturn(expectedRecordMetadataMap);
+        when(dataAuthorizationService.hasAccess(record, OperationType.delete)).thenReturn(false);
+
+        try {
+            sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME);
+
+            fail("Should not succeed!");
+        } catch (DeleteRecordsException e) {
+            String errorMsg = String
+                .format("The user is not authorized to perform delete record with id %s", RECORD_ID);
+            verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
+            verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
+            verify(recordRepository, never()).createOrUpdate(any());
+            verify(auditLogger, only()).deleteRecordFail(singletonList(errorMsg));
+            verifyZeroInteractions(pubSubClient);
+
+
+            assertEquals(1, e.getNotDeletedRecords().size());
+            assertEquals(RECORD_ID, e.getNotDeletedRecords().get(0).getKey());
+            assertEquals(errorMsg, e.getNotDeletedRecords().get(0).getValue());
+
+            assertEquals(RecordState.active, record.getStatus());
+            assertNull(record.getModifyUser());
+        } catch (Exception e) {
+            fail("Should not get different exception");
+        }
+    }
+
+    @Test
+    public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhenRecordNotFound() {
+        RecordMetadata record = buildRecordMetadata();
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>(){{
+            put(RECORD_ID, record);
+        }};
+
+        when(recordRepository.get(asList(RECORD_ID, RECORD_ID_1))).thenReturn(expectedRecordMetadataMap);
+        when(dataAuthorizationService.hasAccess(record, OperationType.delete)).thenReturn(true);
+
+        try {
+            sut.bulkDeleteRecords(asList(RECORD_ID, RECORD_ID_1), USER_NAME);
+
+            fail("Should not succeed!");
+        } catch (DeleteRecordsException e) {
+            String expectedErrorMessage = "Record with id '" + RECORD_ID_1 + "' not found";
+            verify(recordRepository, times(1)).get(asList(RECORD_ID, RECORD_ID_1));
+            verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
+            verify(recordRepository, times(1)).createOrUpdate(singletonList(record));
+            verify(auditLogger, times(1)).deleteRecordSuccess(singletonList(RECORD_ID));
+            verify(auditLogger, times(1)).deleteRecordFail(singletonList(expectedErrorMessage));
+            verifyPubSubPublished();
+
+            assertEquals(RecordState.deleted, record.getStatus());
+            assertEquals(USER_NAME, record.getModifyUser());
+            assertNotNull(record.getModifyTime());
+
+            assertEquals(1, e.getNotDeletedRecords().size());
+            assertEquals(RECORD_ID_1, e.getNotDeletedRecords().get(0).getKey());
+            assertEquals(expectedErrorMessage, e.getNotDeletedRecords().get(0).getValue());
+        } catch (Exception e) {
+            fail("Should not get different exception");
+        }
+    }
+
+    @Test
+    public void shouldThrowAppException_when_tryingToDeleteRecordsForInvalidIds() {
+        String errorMsg = String.format("The record '%s' does not follow the naming convention: the first id component must be '%s'",
+            RECORD_ID, TENANT_NAME);
+        try {
+            doThrow(new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", errorMsg))
+                .when(recordUtil).validateRecordIds(singletonList(RECORD_ID));
+
+            sut.bulkDeleteRecords(asList(RECORD_ID), USER_NAME);
+
+            fail("Should not succeed!");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
+            assertEquals("Invalid record id", e.getError().getReason());
+            assertEquals(errorMsg, e.getError().getMessage());
+
+            verifyZeroInteractions(recordRepository, entitlementsAndCacheService, auditLogger,pubSubClient);
+        } catch (Exception e) {
+            fail("Should not get different exception");
+        }
+    }
+
+    private void verifyPubSubPublished() {
+        ArgumentCaptor<PubSubInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubInfo.class);
+
+        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
+
+        PubSubInfo capturedMessage = pubsubMessageCaptor.getValue();
+        assertEquals(RECORD_ID, capturedMessage.getId());
+        assertEquals(KIND, capturedMessage.getKind());
+        assertEquals(OperationType.delete, capturedMessage.getOp());
+    }
+
+    private RecordMetadata buildRecordMetadata() {
+        Acl acl = new Acl();
+        acl.setViewers(VIEWERS);
+        acl.setOwners(OWNERS);
+
+        RecordMetadata record = new RecordMetadata();
+        record.setKind(KIND);
+        record.setAcl(acl);
+        record.setId(RECORD_ID);
+        record.setStatus(RecordState.active);
+        record.setGcsVersionPaths(asList("path/1", "path/2", "path/3"));
+        return  record;
     }
 }

@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.api;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -86,7 +87,7 @@ public class RecordApiTest {
     @Test
     public void should_returnsHttp201_when_creatingOrUpdatingRecordsSuccessfully() {
         TransferInfo transfer = new TransferInfo();
-        transfer.setSkippedRecords(Collections.singletonList("ID1"));
+        transfer.setSkippedRecords(singletonList("ID1"));
         transfer.setVersion(System.currentTimeMillis() * 1000L + (new Random()).nextInt(1000) + 1);
 
         Record r1 = new Record();
@@ -190,6 +191,13 @@ public class RecordApiTest {
     }
 
     @Test
+    public void should_returnHttp204_when_bulkDeleteRecordsSuccessfully() {
+        ResponseEntity response = this.sut.bulkDeleteRecords(singletonList(RECORD_ID));
+
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
     public void should_allowAccessToCreateOrUpdateRecords_when_userBelongsToCreatorOrAdminGroups() throws Exception {
 
         Method method = this.sut.getClass().getMethod("createOrUpdateRecords", boolean.class, List.class);
@@ -225,6 +233,16 @@ public class RecordApiTest {
     @Test
     public void should_allowAccessToDeleteRecord_when_userBelongsToCreatorOrAdminGroups() throws Exception {
 
+        Method method = this.sut.getClass().getMethod("deleteRecord", String.class);
+        PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
+
+        assertFalse(annotation.value().contains(StorageRole.VIEWER));
+        assertTrue(annotation.value().contains(StorageRole.CREATOR));
+        assertTrue(annotation.value().contains(StorageRole.ADMIN));
+    }
+
+    @Test
+    public void should_allowAccessToBulkDeleteRecords_when_userBelongsToCreatorOrAdminGroups() throws Exception {
         Method method = this.sut.getClass().getMethod("deleteRecord", String.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 

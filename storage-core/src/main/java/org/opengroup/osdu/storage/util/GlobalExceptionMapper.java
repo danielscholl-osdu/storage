@@ -14,14 +14,21 @@
 
 package org.opengroup.osdu.storage.util;
 
+import static org.apache.http.HttpStatus.SC_MULTI_STATUS;
+
 import javax.validation.ValidationException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
 import javassist.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -90,6 +97,21 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
             return this.getErrorResponse(
                     new AppException(HttpStatus.SERVICE_UNAVAILABLE.value(), "Unknown error", e.getMessage(), e));
         }
+    }
+
+    @ExceptionHandler(DeleteRecordsException.class)
+    protected ResponseEntity<Object> handleDeleteRecordsException(DeleteRecordsException e) {
+        JsonArray responseArray = new JsonArray();
+
+        e.getNotDeletedRecords().stream()
+                .map(pair -> {
+                    JsonObject jsonObject = new JsonObject();
+                    jsonObject.add("notDeletedRecordId", new JsonPrimitive(pair.getKey()));
+                    jsonObject.add("message", new JsonPrimitive(pair.getValue()));
+                    return jsonObject;
+                })
+                .forEach(responseArray::add);
+        return ResponseEntity.status(SC_MULTI_STATUS).body(responseArray.toString());
     }
 
     @Override
