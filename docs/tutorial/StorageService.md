@@ -33,6 +33,7 @@
   - [Get record <a name="Retrieve-latest-record-version"></a>](#get-record)
     - [Parameters <a name="parameters"></a>](#parameters-2)
   - [Delete record <a name="Delete-record"></a>](#delete-record)
+  - [Delete records <a name="Delete-records"></a>](#delete-records)
 - [Patch api <a name="patch-api"></a>](#patch-api)
   - [Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>](#patch-api-metadata-bulk-replace)
   - [Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>](#patch-api-metadata-bulk-add)
@@ -453,6 +454,29 @@ curl --request POST \
    --header 'authorization: Bearer <JWT>' \
    --header 'content-type: application/json'\
    --header 'Data-Partition-Id: common'
+```
+</details>
+
+### Delete records <a name="Delete-records"></a>
+The API performs a logical deletion of batch of record (max size of a batch is 500 records). This operation can be reverted later by ingesting record with the same id one more time. The deleted (inactive) records will be removed from the index, and therefore will not be returned to the search result.
+```
+POST /api/storage/v2/records/delete
+```
+
+<details><summary>curl</summary>
+
+```
+curl --request POST \
+   --url '/api/storage/v2/records/delete' \
+   --header 'accept: application/json' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'content-type: application/json'\
+   --header 'Data-Partition-Id: common'
+   --data-raw '[
+          "tenant:type:unique-identifier",
+          "tenant:type:unique-identifier",
+          "tenant:type:unique-identifier"
+     ]'     
 ```
 </details>
 
