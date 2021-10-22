@@ -30,7 +30,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.iam.IAMConfig;
-import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
@@ -69,12 +68,12 @@ public class UserAccessService {
     @Value("${aws.region}")
     @Getter()
     @Setter(AccessLevel.PROTECTED)
-
+    private String amazonRegion;
     @Value("${aws.environment}")
     @Getter()
     @Setter(AccessLevel.PROTECTED)
     private String environment;
-    private String amazonRegion;
+
     @PostConstruct
     public void init() {
 
