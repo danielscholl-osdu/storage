@@ -44,7 +44,3 @@ analyze:
     type: mvn
     target: provider/storage-reference/pom.xml
     path: .
-  - name: Compliance Trigger Function
-    type: mvn
-    target: pom.xml
-    path: provider/storage-aws/src/main/ComplianceTrigger/ComplianceTriggerFunction/ComplianceTriggerFunction
