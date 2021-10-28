@@ -146,8 +146,6 @@ public class LegalComplianceChangeServiceAWSImplTest {
         Map<String, LegalCompliance> output = service.updateComplianceOnRecords(legalTagsChanged, headers);
 
         // assert
-        // that delete is called on the record returned for incompliant
-        Mockito.verify(repo, Mockito.times(1)).delete(incompliantRecordId);
         // that create is called on the record returned for compliant
         Mockito.verify(repo, Mockito.times(1)).createOrUpdate(compliantRecordMetaDatas);
 
