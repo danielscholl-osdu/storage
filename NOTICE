@@ -669,7 +669,7 @@ The following software have components provided under the terms of this license:
 - Proton-J (from https://repo1.maven.org/maven2/org/apache/qpid/proton-j)
 - QpidJMS Client (from https://repo1.maven.org/maven2/org/apache/qpid/qpid-jms-client)
 - RabbitMQ Java Client (from http://www.rabbitmq.com)
-- Reactive Streams Netty driver (from https://github.com/reactor/reactor-netty)
+- Reactor Netty with all modules (from https://github.com/reactor/reactor-netty)
 - Retrofit (from https://repo1.maven.org/maven2/com/squareup/retrofit2/retrofit)
 - Simple XML (safe) (from https://github.com/dweiss/simplexml)
 - SnakeYAML (from http://www.snakeyaml.org)
@@ -758,8 +758,8 @@ The following software have components provided under the terms of this license:
 - java-cloudant (from https://cloudant.com)
 - java-cloudant (from https://cloudant.com)
 - javatuples (from http://www.javatuples.org)
-- javax.inject (from http://code.google.com/p/atinject/)
 - javax.inject (from https://repo1.maven.org/maven2/org/glassfish/hk2/external/javax.inject)
+- javax.inject (from http://code.google.com/p/atinject/)
 - javax.ws.rs-api (from http://jax-rs-spec.java.net)
 - jersey-repackaged-guava (from https://repo1.maven.org/maven2/org/glassfish/jersey/bundles/repackaged/jersey-guava)
 - jose4j (from https://bitbucket.org/b_c/jose4j/)
@@ -788,13 +788,13 @@ The following software have components provided under the terms of this license:
 - proto-google-common-protos (from https://github.com/googleapis/java-iam/proto-google-common-protos)
 - proto-google-iam-v1 (from https://github.com/googleapis/java-iam/proto-google-iam-v1)
 - rank-eval (from https://github.com/elastic/elasticsearch)
+- resilience4j (from https://github.com/resilience4j/resilience4j)
+- resilience4j (from https://github.com/resilience4j/resilience4j)
+- resilience4j (from https://github.com/resilience4j/resilience4j)
+- resilience4j (from https://github.com/resilience4j/resilience4j)
+- resilience4j (from https://github.com/resilience4j/resilience4j)
 - resilience4j (from https://resilience4j.readme.io)
-- resilience4j (from https://github.com/resilience4j/resilience4j)
-- resilience4j (from https://github.com/resilience4j/resilience4j)
-- resilience4j (from https://github.com/resilience4j/resilience4j)
 - resilience4j (from https://resilience4j.readme.io)
-- resilience4j (from https://github.com/resilience4j/resilience4j)
-- resilience4j (from https://github.com/resilience4j/resilience4j)
 - resilience4j (from https://github.com/resilience4j/resilience4j)
 - rest (from https://github.com/elastic/elasticsearch)
 - rest-high-level (from https://github.com/elastic/elasticsearch)
@@ -958,7 +958,7 @@ EPL-1.0
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- AspectJ weaver (from http://www.aspectj.org)
+- AspectJ Weaver (from https://www.eclipse.org/aspectj/)
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
 - JUnit Jupiter Params (from https://junit.org/junit5/)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
@@ -1262,3 +1262,5 @@ The following software have components provided under the terms of this license:
 - org.junit.jupiter:junit-jupiter-engine (from http://junit.org/junit5/)
 - org.junit.platform:junit-platform-commons (from http://junit.org/junit5/)
 - org.junit.platform:junit-platform-engine (from http://junit.org/junit5/)
+
+
