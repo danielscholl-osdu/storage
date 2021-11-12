@@ -135,7 +135,6 @@ public class ObmStorage implements ICloudStorage {
     @Override
     public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
         String bucket = getBucketName(this.tenant);
-        //Storage storage = this.storageFactory.getStorage(this.headers.getUserEmail(), tenant.getServiceAccount(), tenant.getProjectId(), tenant.getName(), properties.isEnableImpersonalization());
         Map<String, Acl> originalAcls = new HashMap<>();
         Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
 
@@ -179,6 +178,15 @@ public class ObmStorage implements ICloudStorage {
 
         String bucket = getBucketName(this.tenant);
         for (RecordMetadata record : records) {
+
+            try {
+                validateMetadata(record);
+            } catch (AppException e) {
+                if (e.getError().getReason().equals(RECORD_WRITING_ERROR_REASON))
+                    throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
+                else throw e;
+            }
+
             if (!record.getStatus().equals(RecordState.active)) {
                 continue;
             }
