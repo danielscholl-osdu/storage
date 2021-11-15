@@ -62,18 +62,18 @@ public class DpsConversionService {
 
         if (!conversionStatuses.isEmpty()) {
             RecordsAndStatuses crsConversionResult = null;
+            List<ConversionRecord> conversionRecords = new ArrayList<>();
             if (!recordsWithGeoJsonBlock.isEmpty()) {
                 crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
-                List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
-                allRecords.addAll(conversionRecords);
+                conversionRecords = this.getConversionRecords(crsConversionResult);
             }
             if (!recordsWithMetaBlock.isEmpty()) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
-                List<ConversionRecord> conversionRecords = this.getConversionRecords(crsConversionResult);
-                this.unitConversionService.convertUnitsToSI(conversionRecords);
-                this.datesConversionService.convertDatesToISO(conversionRecords);
-                allRecords.addAll(conversionRecords);
+                conversionRecords = this.getConversionRecords(crsConversionResult);
             }
+            this.unitConversionService.convertUnitsToSI(conversionRecords);
+            this.datesConversionService.convertDatesToISO(conversionRecords);
+            allRecords.addAll(conversionRecords);
         }
         this.checkMismatchAndLogMissing(originalRecords, allRecords);
 
