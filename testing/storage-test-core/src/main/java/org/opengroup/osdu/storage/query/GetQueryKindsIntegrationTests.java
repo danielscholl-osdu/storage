@@ -29,32 +29,38 @@ public abstract class GetQueryKindsIntegrationTests extends TestBase {
 
 	@Test
 	public void should_returnMax1000Results_when_settingLimitToAValueLessThan1() throws Exception {
-		ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=0");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
+			ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=0");
+			assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-		DummyRecordsHelper.QueryResultMock responseObject = RECORD_HELPER.getQueryResultMockFromResponse(response);
+			DummyRecordsHelper.QueryResultMock responseObject = RECORD_HELPER.getQueryResultMockFromResponse(response);
 
-		assertTrue(responseObject.results.length > 1 && responseObject.results.length <= 1000);
+			assertTrue(responseObject.results.length > 1 && responseObject.results.length <= 1000);
+		}
 	}
 
 	@Test
 	public void should_return400ErrorResult_when_givingAnInvalidCursorParameter() throws Exception {
-		ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
-				"?cursor=badCursorString");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
+			ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+					"?cursor=badCursorString");
+			assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
 
-		assertEquals(
-				"{\"code\":400,\"reason\":\"Cursor invalid\",\"message\":\"The requested cursor does not exist or is invalid\"}",
-				response.getEntity(String.class));
+			assertEquals(
+					"{\"code\":400,\"reason\":\"Cursor invalid\",\"message\":\"The requested cursor does not exist or is invalid\"}",
+					response.getEntity(String.class));
+		}
 	}
 
 	@Test
 	public void should_return2Results_when_requesting2Items() throws Exception {
-		ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+			if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
+			ClientResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2");
+			assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-		DummyRecordsHelper.QueryResultMock responseObject = RECORD_HELPER.getQueryResultMockFromResponse(response);
+			DummyRecordsHelper.QueryResultMock responseObject = RECORD_HELPER.getQueryResultMockFromResponse(response);
 
-		assertEquals(2, responseObject.results.length);
+			assertEquals(2, responseObject.results.length);
+		}
 	}
 }
