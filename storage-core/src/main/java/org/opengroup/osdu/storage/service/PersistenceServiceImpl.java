@@ -128,8 +128,6 @@ public class PersistenceServiceImpl implements IPersistenceService {
 	private void commitDatastoreTransaction(List<RecordMetadata> recordsMetadata) {
 		try {
 			this.recordRepository.createOrUpdate(recordsMetadata);
-		} catch (AppException appException) {
-			throw appException;
 		} catch (Exception e) {
 			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
 					"The server could not process your request at the moment.", e);
