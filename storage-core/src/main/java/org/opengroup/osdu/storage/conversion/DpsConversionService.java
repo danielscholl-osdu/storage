@@ -50,7 +50,7 @@ public class DpsConversionService {
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
-    private static final List<String> validAttributes = Arrays.asList("SpatialLocation","ProjectedBottomHoleLocation","GeographicBottomHoleLocation","SpatialArea","SpatialPoint","ABCDBinGridSpatialLocation","FirstLocation","LastLocation","LiveTraceOutline");
+    private static final List<String> validAttributes = Arrays.asList("SpatialLocation", "ProjectedBottomHoleLocation", "GeographicBottomHoleLocation", "SpatialArea", "SpatialPoint", "ABCDBinGridSpatialLocation", "FirstLocation", "LastLocation", "LiveTraceOutline");
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -70,9 +70,9 @@ public class DpsConversionService {
             if (!recordsWithMetaBlock.isEmpty()) {
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 conversionRecords = this.getConversionRecords(crsConversionResult);
+                this.unitConversionService.convertUnitsToSI(conversionRecords);
+                this.datesConversionService.convertDatesToISO(conversionRecords);
             }
-            this.unitConversionService.convertUnitsToSI(conversionRecords);
-            this.datesConversionService.convertDatesToISO(conversionRecords);
             allRecords.addAll(conversionRecords);
         }
         this.checkMismatchAndLogMissing(originalRecords, allRecords);
@@ -85,11 +85,16 @@ public class DpsConversionService {
         for (JsonObject recordJsonObject : originalRecords) {
             String recordId = this.getRecordId(recordJsonObject);
             List<String> validationErrors = new ArrayList<>();
-            if (this.isAsIngestedCoordinatesPresent(recordJsonObject, validationErrors)) {
-                recordsWithGeoJsonBlock.add(recordJsonObject);
-                conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
-            } else if (this.isMetaBlockPresent(recordJsonObject, validationErrors)) {
-                recordsWithMetaBlock.add(recordJsonObject);
+            boolean asIngestedCoordinateConversionRequired = this.isAsIngestedCoordinatesPresent(recordJsonObject, validationErrors);
+            boolean metaBlockConversionRequired = this.isMetaBlockPresent(recordJsonObject, validationErrors);
+            if (asIngestedCoordinateConversionRequired || metaBlockConversionRequired) {
+                if (asIngestedCoordinateConversionRequired) {
+                    recordsWithGeoJsonBlock.add(recordJsonObject);
+                }
+
+                if (metaBlockConversionRequired) {
+                    recordsWithMetaBlock.add(recordJsonObject);
+                }
                 conversionStatuses.add(ConversionStatus.builder().id(recordId).status(ConvertStatus.SUCCESS.toString()));
             } else {
                 ConversionRecord conversionRecord = new ConversionRecord();
@@ -113,8 +118,8 @@ public class DpsConversionService {
             return false;
         }
         JsonArray metaBlock = record.getAsJsonArray(Constants.META);
-        for (JsonElement block: metaBlock){
-            if(!block.isJsonNull()){
+        for (JsonElement block : metaBlock) {
+            if (!block.isJsonNull()) {
                 return true;
             }
         }
@@ -187,7 +192,7 @@ public class DpsConversionService {
 
         for (JsonObject originalRecord : originalRecords) {
             String originalId = this.getRecordId(originalRecord);
-            if (!convertedIds.contains(originalId) ) {
+            if (!convertedIds.contains(originalId)) {
                 this.logger.warning("Missing record after conversion: " + originalId);
             }
         }
