@@ -37,52 +37,54 @@ public abstract class CreateSchemaIntegrationTests extends TestBase {
 	@Test
 	public void should_createSchema_and_returnHttp409IfTryToCreateItAgain_and_getSchema_and_deleteSchema_when_providingValidSchemaInfo()
 			throws Exception {
-		String body = this.validPostBody(this.schema);
+		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
+			String body = this.validPostBody(this.schema);
 
-		// Create schema
-		ClientResponse response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-		assertEquals("", response.getEntity(String.class));
+			// Create schema
+			ClientResponse response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+			assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+			assertEquals("", response.getEntity(String.class));
 
-		// Try to create again
-		response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		assertEquals(HttpStatus.SC_CONFLICT, response.getStatus());
-		assertEquals(
-				"{\"code\":409,\"reason\":\"Schema already registered\",\"message\":\"The schema information for the given kind already exists.\"}",
-				response.getEntity(String.class));
+			// Try to create again
+			response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+			assertEquals(HttpStatus.SC_CONFLICT, response.getStatus());
+			assertEquals(
+					"{\"code\":409,\"reason\":\"Schema already registered\",\"message\":\"The schema information for the given kind already exists.\"}",
+					response.getEntity(String.class));
 
-		// Get the schema
-		response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+			// Get the schema
+			response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-		JsonParser parser = new JsonParser();
-		JsonObject json = parser.parse(response.getEntity(String.class)).getAsJsonObject();
+			JsonParser parser = new JsonParser();
+			JsonObject json = parser.parse(response.getEntity(String.class)).getAsJsonObject();
 
-		assertEquals(this.schema, json.get("kind").getAsString());
-		assertEquals(2, json.get("schema").getAsJsonArray().size());
-		assertEquals("name", json.get("schema").getAsJsonArray().get(0).getAsJsonObject().get("path").getAsString());
-		assertEquals("string", json.get("schema").getAsJsonArray().get(0).getAsJsonObject().get("kind").getAsString());
-		assertEquals("call911", json.get("schema").getAsJsonArray().get(0).getAsJsonObject().get("ext")
-				.getAsJsonObject().get("indexerTip").getAsString());
+			assertEquals(this.schema, json.get("kind").getAsString());
+			assertEquals(2, json.get("schema").getAsJsonArray().size());
+			assertEquals("name", json.get("schema").getAsJsonArray().get(0).getAsJsonObject().get("path").getAsString());
+			assertEquals("string", json.get("schema").getAsJsonArray().get(0).getAsJsonObject().get("kind").getAsString());
+			assertEquals("call911", json.get("schema").getAsJsonArray().get(0).getAsJsonObject().get("ext")
+					.getAsJsonObject().get("indexerTip").getAsString());
 
-		assertEquals("age", json.get("schema").getAsJsonArray().get(1).getAsJsonObject().get("path").getAsString());
-		assertEquals("int", json.get("schema").getAsJsonArray().get(1).getAsJsonObject().get("kind").getAsString());
+			assertEquals("age", json.get("schema").getAsJsonArray().get(1).getAsJsonObject().get("path").getAsString());
+			assertEquals("int", json.get("schema").getAsJsonArray().get(1).getAsJsonObject().get("kind").getAsString());
 
-		assertEquals(2, json.get("ext").getAsJsonObject().size());
-		assertEquals("this is a weird string", json.get("ext").getAsJsonObject().get("address.city").getAsString());
-		assertEquals("country with two letters",
-				json.get("ext").getAsJsonObject().get("address.country").getAsString());
+			assertEquals(2, json.get("ext").getAsJsonObject().size());
+			assertEquals("this is a weird string", json.get("ext").getAsJsonObject().get("address.city").getAsString());
+			assertEquals("country with two letters",
+					json.get("ext").getAsJsonObject().get("address.country").getAsString());
 
-		// get schema by a user belonging to another tenant, make sure DpsHeader/Tenant is per request rather than singleton
-		response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders("common", testUtils.getToken()), "", "");
-		assertTrue(HttpStatus.SC_FORBIDDEN == response.getStatus() || HttpStatus.SC_UNAUTHORIZED == response.getStatus());
+			// get schema by a user belonging to another tenant, make sure DpsHeader/Tenant is per request rather than singleton
+			response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders("common", testUtils.getToken()), "", "");
+			assertTrue(HttpStatus.SC_FORBIDDEN == response.getStatus() || HttpStatus.SC_UNAUTHORIZED == response.getStatus());
 
-		// Delete schema
-		response = TestUtils.send("schemas/" + this.schema, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+			// Delete schema
+			response = TestUtils.send("schemas/" + this.schema, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
 
-		response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+			response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+		}
 	}
 
 	protected String validPostBody(String kind) {
