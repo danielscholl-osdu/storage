@@ -96,6 +96,39 @@ fossa-check-notice:
     - if: $FOSSA_API_KEY
 
   script:
+    # Check to see if a newer commit exists for the pipeline's branch, and if it does, use that NOTICE instead of this one's
+    - |
+      if [ "$CI_COMMIT_BRANCH" != "" ]; then
+        colorCmd="\e[32;1m"
+        colorReset="\e[0m"
+        function echoCmd() {
+      		echo -e "${colorCmd}>" "$@" "${colorReset}"
+        }
+
+        echoCmd git fetch
+        git fetch
+
+        echoCmd git diff --name-only HEAD origin/$CI_COMMIT_BRANCH
+        branchDiffs="$(git diff --name-only HEAD origin/$CI_COMMIT_BRANCH)"
+        echo $branchDiffs
+        echo "--------------------"
+
+        if [ "$branchDiffs" == "NOTICE" ]; then
+          echo "The branch associated with this pipeline ($CI_COMMIT_BRANCH) has been changed, but the only changes are the NOTICE file"
+          echo "I will use the NOTICE file from origin/$CI_COMMIT_BRANCH ($(git rev-parse --short origin/$CI_COMMIT_BRANCH)) as the basis for comparison"
+          echoCmd git checkout origin/$CI_COMMIT_BRANCH -- NOTICE
+          git checkout origin/$CI_COMMIT_BRANCH -- NOTICE
+
+        elif [ "$branchDiffs" == "" ]; then
+          echo "The branch associated with this pipeline ($CI_COMMIT_BRANCH) has not been changed since the commit that spawned this pipeline"
+          echo "I will use the NOTICE file from the pipeline's commit ($CI_COMMIT_SHORT_SHA) as the basis for comparison"
+
+        else
+          echo "The branch associated with this pipeline ($CI_COMMIT_BRANCH) has been changed, but the changes include more than just the NOTICE file"
+          echo "I will use the NOTICE file from the pipeline's commit ($CI_COMMIT_SHORT_SHA) as the basis for comparison"
+        fi
+      fi
+
     # Use a cached NOTICE if available, otherwise use a generated one
     - |
       if [ -e fossa-output/cached-NOTICE ]; then
@@ -121,7 +154,7 @@ fossa-check-notice:
         echo "There are differences in the NOTICE file"
         echo "Please review these differences, and if they look appropriate based on your"
         echo "changes, update the committed NOTICE file"
-        echo "--------------------
+        echo "--------------------"
         echo "If you make changes to the NOTICE file (and only the NOTICE file), you can"
         echo "re-run this single stage of the pipeline alone rather than the whole pipeline"
         echo "One way to achieve this:"
