@@ -18,7 +18,7 @@
     <parent>
         <artifactId>os-storage-testing</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.12.0-SNAPSHOT</version>
+        <version>0.13.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -26,7 +26,7 @@
 
     <groupId>org.opengroup.osdu.storage</groupId>
     <artifactId>storage-test-ibm</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -35,14 +35,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
         <MY_TENANT>opendes</MY_TENANT>
-        <os-core-lib-ibm.version>0.7.0</os-core-lib-ibm.version>
+        <os-core-lib-ibm.version>0.12.0</os-core-lib-ibm.version>
     </properties>
     <dependencies>
         <!-- Internal packages -->
         <dependency>
             <groupId>org.opengroup.osdu.storage</groupId>
             <artifactId>storage-test-core</artifactId>
-            <version>0.12.0-SNAPSHOT</version>
+            <version>0.13.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>

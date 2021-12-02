@@ -14,9 +14,13 @@
 
 package org.opengroup.osdu.storage.service;
 
+import java.util.List;
+
 public interface RecordService {
 
 	void purgeRecord(String recordId);
 
 	void deleteRecord(String recordId, String user);
+
+	void bulkDeleteRecords(List<String> records, String user);
 }
