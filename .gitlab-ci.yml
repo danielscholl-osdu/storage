@@ -51,6 +51,41 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "build/maven.yml"
 
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/aws-global.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/aws-maven.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/ibm.yml"
+
+  - project: 'osdu/platform/ci-cd-pipelines'
+    file: "cloud-providers/osdu-gcp-gke.yml"
+
+  - project: 'osdu/platform/ci-cd-pipelines'
+    file: 'publishing/pages.yml'
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "scanners/gitlab-ultimate.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/azure.yml"
+
+  - project: 'osdu/platform/ci-cd-pipelines'
+    file: 'cloud-providers/aws-mongodb.yml'
+
+# disable the eslint scanner
+# I think this is being generated from the presence of an HTML file, but there
+# is no javascript to scan, so the job isn't helpful and just gets in the way
+eslint-sast:
+  rules:
+    - when: never
+
+# --------------------------------------------------------------------------------
+# Experimental FOSSA jobs. These will be promoted to the standard ci-cd-pipelines after
+# they've had some testing in a real project
+
 fossa-analyze:
   extends: .maven
   image: $CI_REGISTRY/divido/fossa-with-cache/incremental:latest
