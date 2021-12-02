@@ -133,7 +133,8 @@ fossa-check-notice:
   artifacts:
     when: on_failure
     paths:
-      - public
+      - fossa-output/cached-NOTICE
+      - fossa-output/generated-clean-NOTICE
     expire_in: 2 days
 
   script:
