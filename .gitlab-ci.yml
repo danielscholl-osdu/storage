@@ -95,6 +95,12 @@ fossa-check-notice:
   rules:
     - if: $FOSSA_API_KEY
 
+  artifacts:
+    when: on_failure
+    paths:
+      - public
+    expire_in: 2 days
+
   script:
     # Check to see if a newer commit exists for the pipeline's branch, and if it does, use that NOTICE instead of this one's
     - |
@@ -102,7 +108,7 @@ fossa-check-notice:
         colorCmd="\e[32;1m"
         colorReset="\e[0m"
         function echoCmd() {
-      		echo -e "${colorCmd}>" "$@" "${colorReset}"
+          echo -e "${colorCmd}>" "$@" "${colorReset}"
         }
 
         echoCmd git fetch
@@ -159,6 +165,7 @@ fossa-check-notice:
         echo "re-run this single stage of the pipeline alone rather than the whole pipeline"
         echo "One way to achieve this:"
         echo "$ wget -O NOTICE '${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/${fossaGeneratedNotice}?inline=false'"
+        echo "$ git add NOTICE"
         echo "$ git commit -m 'Updating NOTICE'"
         echo "$ git push -o ci.skip"
         echo "Then retry this job"
