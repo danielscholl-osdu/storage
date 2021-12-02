@@ -1,0 +1,4 @@
+This file isn't used.
+I created it to make a change to the repository that wouldn't change dependencies, so that I could test fossa-with-cache.
+
+If it was forgotten, you can safely delete it.
