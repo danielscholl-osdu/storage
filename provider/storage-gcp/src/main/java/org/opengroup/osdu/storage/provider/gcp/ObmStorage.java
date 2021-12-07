@@ -40,7 +40,6 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.service.DataAuthorizationService;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
 
@@ -55,7 +54,6 @@ import java.util.stream.Collectors;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Repository
-@ConditionalOnProperty(name = "obmDriver")
 @RequiredArgsConstructor
 public class ObmStorage implements ICloudStorage {
 
@@ -300,7 +298,7 @@ public class ObmStorage implements ICloudStorage {
                 throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found", msg);
             }
 
-            String[] versionFiles = record.getGcsVersionPaths().toArray(new String[record.getGcsVersionPaths().size()]);
+            String[] versionFiles = record.getGcsVersionPaths().toArray(new String[0]);
 
             for (String path : versionFiles) {
                 storage.deleteBlobs(bucket, versionFiles);
@@ -329,7 +327,6 @@ public class ObmStorage implements ICloudStorage {
                 this.log.warning(String.format("Record with id '%s' does not exist, unable to purge version: %s", record.getId(), version));
             }
             storage.deleteBlob(bucket, record.getVersionPath(version));
-            mustSubmit = true;
 
         } catch (DriverRuntimeException e) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);

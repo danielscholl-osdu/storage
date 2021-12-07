@@ -28,7 +28,6 @@ import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.core.gcp.osm.translate.ViewResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
@@ -43,7 +42,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 @Repository
 @Scope(SCOPE_SINGLETON)
-@ConditionalOnProperty(name = "osmDriver")
 @Log
 @RequiredArgsConstructor
 public class OsmQueryRepository implements IQueryRepository {
@@ -59,7 +57,7 @@ public class OsmQueryRepository implements IQueryRepository {
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
 
-        GetQuery q = new GetQuery(RecordMetadata.class, getDestination(),
+        GetQuery<RecordMetadata> q = new GetQuery<>(RecordMetadata.class, getDestination(),
                 eq(STATUS, RecordState.active), OrderBy.builder().addAsc(KIND).build());
         Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList(KIND), true, cursor).outcome();
         List<String> kinds = out.getList().stream().map(e -> (String) e.get(KIND)).collect(Collectors.toList());
@@ -69,7 +67,7 @@ public class OsmQueryRepository implements IQueryRepository {
     @Override
     public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
 
-        GetQuery<RecordMetadata> q = new GetQuery(RecordMetadata.class, getDestination(), and(eq(KIND, kind), eq(STATUS, RecordState.active)));
+        GetQuery<RecordMetadata> q = new GetQuery<>(RecordMetadata.class, getDestination(), and(eq(KIND, kind), eq(STATUS, RecordState.active)));
         Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList("id"), false, cursor).outcome();
         return new DatastoreQueryResult(out.getPointer(), out.getList().stream().map(e -> (String) e.get("id")).collect(Collectors.toList()));
     }

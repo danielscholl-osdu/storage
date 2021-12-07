@@ -31,7 +31,6 @@ import org.opengroup.osdu.core.gcp.osm.service.Transaction;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
@@ -43,7 +42,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 @Repository
 @Scope(SCOPE_SINGLETON)
-@ConditionalOnProperty(name = "osmDriver")
 @Log
 @RequiredArgsConstructor
 public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<String> {
@@ -96,7 +94,7 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
 
-        GetQuery.GetQueryBuilder builder = new GetQuery(RecordMetadata.class, getDestination()).toBuilder();
+        GetQuery<RecordMetadata>.GetQueryBuilder<RecordMetadata> builder = new GetQuery<>(RecordMetadata.class, getDestination()).toBuilder();
         if (status == null) {
             builder.where(eq(LEGAL_TAGS, legalTagName));
         } else {

@@ -24,7 +24,6 @@ import org.opengroup.osdu.core.gcp.osm.model.query.GetQuery;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.service.Transaction;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
@@ -33,7 +32,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 @Repository
 @Scope(SCOPE_SINGLETON)
-@ConditionalOnProperty(name = "osmDriver")
 @Log
 @RequiredArgsConstructor
 public class OsmSchemaRepository implements ISchemaRepository {
@@ -51,7 +49,7 @@ public class OsmSchemaRepository implements ISchemaRepository {
 
         Transaction txn = null;
 
-        GetQuery q = new GetQuery(Schema.class, getDestination(), eq("kind", schema.getKind()));
+        GetQuery<Schema> q = new GetQuery<>(Schema.class, getDestination(), eq("kind", schema.getKind()));
         try {
             txn = context.beginTransaction(getDestination());
             if (context.findOne(q).isPresent()) {
