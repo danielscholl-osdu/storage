@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.gcp.osm.model.Kind;
 import org.opengroup.osdu.core.gcp.osm.model.Namespace;
 import org.opengroup.osdu.core.gcp.osm.model.query.GetQuery;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
+import org.opengroup.osdu.core.gcp.osm.service.Transaction;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
@@ -68,8 +69,14 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
         if (recordsMetadata != null) {
-            for (RecordMetadata recordMetadata : recordsMetadata) {
-                context.upsert(recordMetadata, getDestination());
+            Transaction txn = context.beginTransaction(getDestination());
+            try {
+                for (RecordMetadata recordMetadata : recordsMetadata) {
+                    context.upsert(recordMetadata, getDestination());
+                }
+                txn.commitIfActive();
+            } finally {
+                txn.rollbackIfActive();
             }
         }
         return recordsMetadata;

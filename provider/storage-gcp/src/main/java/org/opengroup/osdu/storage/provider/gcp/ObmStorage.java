@@ -31,7 +31,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.core.gcp.obm.driver.Driver;
 import org.opengroup.osdu.core.gcp.obm.driver.DriverRuntimeException;
 import org.opengroup.osdu.core.gcp.obm.driver.S3CompatibleErrors;
@@ -54,7 +53,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 @Repository
 @ConditionalOnProperty(name = "obmDriver")
@@ -279,7 +277,7 @@ public class ObmStorage implements ICloudStorage {
 
         for (RecordMetadata rm : records) {
             Blob blob = blobs.iterator().next();
-            String hash = blob == null ? "" : blob.getEtag();
+            String hash = blob == null ? "" : blob.getChecksum();
             hashes.put(rm.getId(), hash);
         }
 
@@ -341,16 +339,13 @@ public class ObmStorage implements ICloudStorage {
     @Override
     public boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap, Map.Entry<RecordMetadata, RecordData> kv) {
         Gson gson = new Gson();
-        Crc32c checksumGenerator = new Crc32c();
         RecordMetadata updatedRecordMetadata = kv.getKey();
         RecordData recordData = kv.getValue();
         String recordHash = hashMap.get(updatedRecordMetadata.getId());
 
         String newRecordStr = gson.toJson(recordData);
         byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
-        checksumGenerator.update(bytes, 0, bytes.length);
-        bytes = checksumGenerator.getValueAsBytes();
-        String newHash = new String(encodeBase64(bytes));
+        String newHash = storage.getCalculatedChecksum(bytes);
 
         if (newHash.equals(recordHash)) {
             transfer.getSkippedRecords().add(updatedRecordMetadata.getId());

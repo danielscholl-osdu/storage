@@ -4,6 +4,18 @@ storage-gcp is a [Spring Boot](https://spring.io/projects/spring-boot) service t
 ## Getting Started
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
+# Features of implementation
+This is a universal solution created using EPAM OSM, OBM and OQM mappers technology.
+It allows you to work with various implementations of KV stores, Blob stores and message brokers.
+
+## Limitations of the current version
+
+In the current version, the mappers are equipped with several drivers to the stores and the message broker:
+
+- OSM (mapper for KV-data): Google Datastore; Postgres
+- OBM (mapper to Blob stores): Google Cloud Storage (GCS); MinIO
+- OQM (mapper to message brokers): Google PubSub; RabbitMQ
+
 ### Prerequisites
 Pre-requisites
 
@@ -124,24 +136,24 @@ cd provider/storage-gcp/ && mvn spring-boot:run
  
  You will need to have the following environment variables defined.
  
- | name | value | description | sensitive? | source |
- | ---  | ---   | ---         | ---        | ---    |
- | `INTEGRATION_TEST_AUDIENCE` | `*****.apps.googleusercontent.com` | client application ID | yes | https://console.cloud.google.com/apis/credentials |
- | `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
- | `DOMAIN` | ex`opendes-gcp.projects.com` | OSDU R2 to run tests under | no | - |
- | `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
- | `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
- | `NO_DATA_ACCESS_TESTER` | `********` | Service account base64 encoded string without data access | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
- | `PUBSUB_TOKEN` | `****` | ? | no | - |
- | `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
- | `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
+| name | value | description | sensitive? | source |
+| ---  | ---   | ---         | ---        | ---    |
+| `INTEGRATION_TEST_AUDIENCE` | `*****.apps.googleusercontent.com` | client application ID | yes | https://console.cloud.google.com/apis/credentials |
+| `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
+| `DOMAIN` | ex`opendes-gcp.projects.com` | OSDU R2 to run tests under | no | - |
+| `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
+| `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
+| `NO_DATA_ACCESS_TESTER` | `********` | Service account base64 encoded string without data access | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
+| `PUBSUB_TOKEN` | `****` | ? | no | - |
+| `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
+| `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
  
  **Entitlements configuration for integration accounts**
  
- | INTEGRATION_TESTER | NO_DATA_ACCESS_TESTER | 
- | ---  | ---   |
- | users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin |
- 
+| INTEGRATION_TESTER | NO_DATA_ACCESS_TESTER | 
+| ---  | ---   |
+| users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin |
+
  Execute following command to build code and run all the integration tests:
  
  ```bash

@@ -1,4 +1,4 @@
-package org.opengroup.osdu.storage.provider.gcp.osm;
+package org.opengroup.osdu.storage.provider.gcp.mappers.osm;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.Blob;
@@ -25,9 +25,9 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 @Component
 @Scope(SCOPE_SINGLETON)
 @ConditionalOnProperty(name = "osmDriver")
-public class TypeMapperImpl extends TypeMapper {
+public class OsmTypeMapperImpl extends TypeMapper {
 
-    public TypeMapperImpl() {
+    public OsmTypeMapperImpl() {
         super(Arrays.asList(
                 //RecordMetadata: needs for two fields names and types custom settings. Id column is "id".
                 new Instrumentation<>(RecordMetadata.class,
