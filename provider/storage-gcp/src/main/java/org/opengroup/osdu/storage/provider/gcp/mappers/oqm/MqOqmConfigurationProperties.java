@@ -18,6 +18,6 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class MqOqmConfigurationProperties {
 
-    private String partitionPropertiesPrefix = "storage.oqm.rabbitmq";
+    private String partitionPropertiesPrefix = "oqm.rabbitmq";
 
 }
