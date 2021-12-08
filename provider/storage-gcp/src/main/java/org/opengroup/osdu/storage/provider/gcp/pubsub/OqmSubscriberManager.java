@@ -125,7 +125,7 @@ public class OqmSubscriberManager {
         OqmSubscriber subscriber = OqmSubscriber.builder().subscription(subscription).messageReceiver(receiver).build();
         driver.subscribe(subscriber, destination);
         log.info("Just subscribed at topic {} subscription {} for tenant {}",
-                subscription.getTopics().get(0), subscription.getName(), tenantInfo.getDataPartitionId());
+                subscription.getTopics().get(0).getName(), subscription.getName(), tenantInfo.getDataPartitionId());
     }
 
     private OqmDestination getDestination(TenantInfo tenantInfo) {
