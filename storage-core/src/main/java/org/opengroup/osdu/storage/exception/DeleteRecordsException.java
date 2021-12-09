@@ -1,4 +1,4 @@
-// Copyright © 2020 Amazon Web Services
+// Copyright 2017-2021, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package compliance;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+package org.opengroup.osdu.storage.exception;
 
 import java.util.List;
 
-public class SNSRequest {
-    @JsonProperty("Records")
-    public List<SNSRecord> records;
+import org.apache.commons.lang3.tuple.Pair;
+
+public class DeleteRecordsException extends RuntimeException {
+
+  private final List<Pair<String, String>> notDeletedRecords;
+
+  public DeleteRecordsException(List<Pair<String, String>>  notDeletedRecords) {
+    this.notDeletedRecords = notDeletedRecords;
+  }
+
+  public List<Pair<String, String>> getNotDeletedRecords() {
+    return notDeletedRecords;
+  }
 }

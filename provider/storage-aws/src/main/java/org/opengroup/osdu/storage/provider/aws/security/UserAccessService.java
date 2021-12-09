@@ -20,8 +20,10 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.cache.ICache;
+
+import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
@@ -51,13 +53,16 @@ public class UserAccessService {
 
     @Inject
     IServiceAccountJwtClient serviceAccountClient;
-
     private static final String ACCESS_DENIED_REASON = "Access denied";
     private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
-
+    private static final String servicePrincipalID = "";
     @PostConstruct
     public void init() {
+
         cacheHelper = new CacheHelper();
+
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        provider.getParameterAsStringOrDefault(servicePrincipalID, "serviceprincipal@testing.com");
     }
 
     /**
@@ -113,10 +118,11 @@ public class UserAccessService {
     {
         DpsHeaders newHeaders = DpsHeaders.createFromMap(headers.getHeaders());
         newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
+        //TODO: Refactor this, use either from SSM or use Istio service account and stop using hard code.
+
+        newHeaders.put(DpsHeaders.USER_ID, servicePrincipalID);
         Groups groups = this.entitlementsExtensions.getGroups(newHeaders);
         return groups.getGroupNames();
     }
-
-
 
 }

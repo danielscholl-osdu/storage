@@ -105,6 +105,13 @@ public class RecordApi {
 		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
 	}
 
+	@PostMapping(value = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
+	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+	public ResponseEntity<Void> bulkDeleteRecords(@RequestBody @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<String> recordIs) {
+		this.recordService.bulkDeleteRecords(recordIs, this.headers.getUserEmail());
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+	}
+
 	@GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<String> getLatestRecordVersion(

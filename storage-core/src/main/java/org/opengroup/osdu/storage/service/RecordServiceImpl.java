@@ -15,8 +15,10 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -25,17 +27,23 @@ import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 
 @Service
 public class RecordServiceImpl implements RecordService {
@@ -60,6 +68,9 @@ public class RecordServiceImpl implements RecordService {
 
     @Autowired
     private DataAuthorizationService dataAuthorizationService;
+
+    @Autowired
+    private RecordUtil recordUtil;
 
     @Override
     public void purgeRecord(String recordId) {
@@ -116,6 +127,47 @@ public class RecordServiceImpl implements RecordService {
         this.pubSubClient.publishMessage(this.headers, pubSubInfo);
     }
 
+    @Override
+    public void bulkDeleteRecords(List<String> records, String user) {
+        recordUtil.validateRecordIds(records);
+        List<Pair<String, String>> notDeletedRecords = new ArrayList<>();
+
+        List<RecordMetadata> recordsMetadata = getRecordsMetadata(records, notDeletedRecords);
+        this.validateAccess(recordsMetadata, notDeletedRecords);
+
+        Date modifyTime = new Date();
+        recordsMetadata.forEach(recordMetadata -> {
+                recordMetadata.setStatus(RecordState.deleted);
+                recordMetadata.setModifyTime(modifyTime.getTime());
+                recordMetadata.setModifyUser(user);
+            }
+        );
+        if (notDeletedRecords.isEmpty()) {
+            this.recordRepository.createOrUpdate(recordsMetadata);
+            this.auditLogger.deleteRecordSuccess(records);
+            publishDeletedRecords(recordsMetadata);
+        } else {
+            List<String> deletedRecords = new ArrayList<>(records);
+            List<String> notDeletedRecordIds = notDeletedRecords.stream()
+                .map(Pair::getKey)
+                .collect(toList());
+            deletedRecords.removeAll(notDeletedRecordIds);
+            if(!deletedRecords.isEmpty()) {
+                this.recordRepository.createOrUpdate(recordsMetadata);
+                this.auditLogger.deleteRecordSuccess(deletedRecords);
+                publishDeletedRecords(recordsMetadata);
+            }
+            throw new DeleteRecordsException(notDeletedRecords);
+        }
+    }
+
+    private void publishDeletedRecords(List<RecordMetadata> records) {
+        List<PubSubInfo> messages = records.stream()
+            .map(recordMetadata -> new PubSubInfo(recordMetadata.getId(), recordMetadata.getKind(), OperationType.delete))
+            .collect(Collectors.toList());
+        pubSubClient.publishMessage(headers, messages.toArray(new PubSubInfo[messages.size()]));
+    }
+
     private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest) {
 
         String tenantName = tenant.getName();
@@ -137,10 +189,36 @@ public class RecordServiceImpl implements RecordService {
         return record;
     }
 
+    private List<RecordMetadata> getRecordsMetadata(List<String> recordIds, List<Pair<String, String>> notDeletedRecords) {
+        Map<String, RecordMetadata> result = this.recordRepository.get(recordIds);
+
+        recordIds.stream()
+            .filter(recordId -> result.get(recordId) == null)
+            .forEach(recordId -> {
+                String msg = String.format("Record with id '%s' not found", recordId);
+                notDeletedRecords.add(new ImmutablePair<>(recordId, msg));
+                auditLogger.deleteRecordFail(singletonList(msg));
+            });
+
+        return result.entrySet().stream().map(Map.Entry::getValue).collect(toList());
+    }
+
     private void validateDeleteAllowed(RecordMetadata recordMetadata) {
         if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.delete)) {
             this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform this action");
         }
+    }
+
+    private void validateAccess(List<RecordMetadata> recordsMetadata, List<Pair<String, String>> notDeletedRecords) {
+        new ArrayList<>(recordsMetadata).forEach(recordMetadata -> {
+            if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.delete)) {
+                String msg = String
+                    .format("The user is not authorized to perform delete record with id %s", recordMetadata.getId());
+                this.auditLogger.deleteRecordFail(singletonList(msg));
+                notDeletedRecords.add(new ImmutablePair<>(recordMetadata.getId(), msg));
+                recordsMetadata.remove(recordMetadata);
+            }
+        });
     }
 }
