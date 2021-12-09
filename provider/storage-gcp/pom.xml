@@ -98,28 +98,11 @@
             <artifactId>oqm</artifactId>
             <version>0.13.0-SNAPSHOT</version>
         </dependency>
-        <!--MinIO-->
-<!--        <dependency>-->
-<!--            <groupId>com.squareup.okio</groupId>-->
-<!--            <artifactId>okio</artifactId>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.squareup.okhttp3</groupId>-->
-<!--            <artifactId>okhttp</artifactId>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.minio</groupId>-->
-<!--            <artifactId>minio</artifactId>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>obm</artifactId>
             <version>0.13.0-SNAPSHOT</version>
         </dependency>
-
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
@@ -131,7 +114,6 @@
             <artifactId>storage-core</artifactId>
             <version>0.13.0-SNAPSHOT</version>
         </dependency>
-
         <dependency>
             <groupId>ch.qos.logback.contrib</groupId>
             <artifactId>logback-json-classic</artifactId>
