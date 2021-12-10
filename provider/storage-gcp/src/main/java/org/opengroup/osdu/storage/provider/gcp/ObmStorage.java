@@ -31,7 +31,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.gcp.obm.driver.Driver;
 import org.opengroup.osdu.core.gcp.obm.driver.ObmDriverRuntimeException;
 import org.opengroup.osdu.core.gcp.obm.driver.S3CompatibleErrors;
@@ -126,9 +125,8 @@ public class ObmStorage implements ICloudStorage {
                 }
             }
             validMetadata.add(recordMetadata);
-            Blob blob = storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
+            storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
             originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
-            //blob.update();
         }
 
         return originalAcls;
@@ -139,8 +137,7 @@ public class ObmStorage implements ICloudStorage {
         String bucket = getBucketName(this.tenantInfo);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
-            Blob blob = storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
-            //blob.update();
+            storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
         }
     }
 
@@ -225,9 +222,7 @@ public class ObmStorage implements ICloudStorage {
         List<Callable<Boolean>> tasks = new ArrayList<>();
 
         for (Map.Entry<String, String> object : objects.entrySet()) {
-            //have to pass these values separately because of multithreading scenario. 'dpsHeaders' and 'tenant' objects are request scoped (autowired) and
-            //children threads lose their context down the stream, we get a bean creation exception
-            tasks.add(() -> this.readBlobThread(dataPartitionId, object.getValue(), bucketName, map, object.getKey()));
+            tasks.add(() -> this.readBlobThread(dataPartitionId, object.getValue(), bucketName, map));
         }
 
         try {
@@ -276,9 +271,7 @@ public class ObmStorage implements ICloudStorage {
 
             String[] versionFiles = record.getGcsVersionPaths().toArray(new String[0]);
 
-            for (String path : versionFiles) {
-                storage.deleteBlobs(bucket, getDestination(), versionFiles);
-            }
+            storage.deleteBlobs(bucket, getDestination(), versionFiles);
 
         } catch (ObmDriverRuntimeException e) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
@@ -289,7 +282,6 @@ public class ObmStorage implements ICloudStorage {
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
 
-        boolean mustSubmit = false;
         String bucket = getBucketName(this.tenantInfo);
 
         try {
@@ -379,7 +371,7 @@ public class ObmStorage implements ICloudStorage {
         }
     }
 
-    private boolean readBlobThread(String dataPartitionId, String object, String bucket, Map<String, String> map, String recordId) {
+    private boolean readBlobThread(String dataPartitionId, String object, String bucket, Map<String, String> map) {
         String[] tokens = object.split("/");
         String key = tokens[tokens.length - 2];
 
