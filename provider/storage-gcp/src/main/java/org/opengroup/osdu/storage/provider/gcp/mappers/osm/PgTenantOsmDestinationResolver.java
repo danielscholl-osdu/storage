@@ -68,50 +68,46 @@ public class PgTenantOsmDestinationResolver implements PgDestinationResolver {
 
         String partitionId = destination.getPartitionId();
 
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (partitionId) {
-            default:
-                DataSource dataSource = dataSourceCache.get(partitionId);
+        DataSource dataSource = dataSourceCache.get(partitionId);
+        if (dataSource == null || (dataSource instanceof HikariDataSource && ((HikariDataSource) dataSource).isClosed())) {
+            synchronized (dataSourceCache) {
+                dataSource = dataSourceCache.get(partitionId);
                 if (dataSource == null || (dataSource instanceof HikariDataSource && ((HikariDataSource) dataSource).isClosed())) {
-                    synchronized (dataSourceCache) {
-                        dataSource = dataSourceCache.get(partitionId);
-                        if (dataSource == null || (dataSource instanceof HikariDataSource && ((HikariDataSource) dataSource).isClosed())) {
 
-                            PartitionInfo partitionInfo;
-                            try {
-                                partitionInfo = partitionProvider.get(destination.getPartitionId());
-                            } catch (PartitionException e) {
-                                throw new TranslatorRuntimeException(e, "Partition '%s' destination resolution issue", destination.getPartitionId());
-                            }
-                            Map<String, Property> partitionProperties = partitionInfo.getProperties();
-
-                            String url = getPartitionProperty(partitionId, partitionProperties, URL);
-                            String username = getPartitionProperty(partitionId, partitionProperties, USERNAME);
-                            String password = getPartitionProperty(partitionId, partitionProperties, PASSWORD);
-
-                            dataSource = DataSourceBuilder.create()
-                                    .driverClassName(DRIVER_CLASS_NAME)
-                                    .url(url)
-                                    .username(username)
-                                    .password(password)
-                                    .build();
-
-                            HikariDataSource hikariDataSource = (HikariDataSource) dataSource;
-                            hikariDataSource.setMaximumPoolSize(properties.getMaximumPoolSize());
-                            hikariDataSource.setMinimumIdle(properties.getMinimumIdle());
-                            hikariDataSource.setIdleTimeout(properties.getIdleTimeout());
-                            hikariDataSource.setMaxLifetime(properties.getMaxLifetime());
-                            hikariDataSource.setConnectionTimeout(properties.getConnectionTimeout());
-
-                            dataSourceCache.put(partitionId, dataSource);
-                        }
+                    PartitionInfo partitionInfo;
+                    try {
+                        partitionInfo = partitionProvider.get(destination.getPartitionId());
+                    } catch (PartitionException e) {
+                        throw new TranslatorRuntimeException(e, "Partition '%s' destination resolution issue", destination.getPartitionId());
                     }
-                }
+                    Map<String, Property> partitionProperties = partitionInfo.getProperties();
 
-                return PgDestinationResolution.builder()
-                        .datasource(dataSource)
-                        .build();
+                    String url = getPartitionProperty(partitionId, partitionProperties, URL);
+                    String username = getPartitionProperty(partitionId, partitionProperties, USERNAME);
+                    String password = getPartitionProperty(partitionId, partitionProperties, PASSWORD);
+
+                    dataSource = DataSourceBuilder.create()
+                            .driverClassName(DRIVER_CLASS_NAME)
+                            .url(url)
+                            .username(username)
+                            .password(password)
+                            .build();
+
+                    HikariDataSource hikariDataSource = (HikariDataSource) dataSource;
+                    hikariDataSource.setMaximumPoolSize(properties.getMaximumPoolSize());
+                    hikariDataSource.setMinimumIdle(properties.getMinimumIdle());
+                    hikariDataSource.setIdleTimeout(properties.getIdleTimeout());
+                    hikariDataSource.setMaxLifetime(properties.getMaxLifetime());
+                    hikariDataSource.setConnectionTimeout(properties.getConnectionTimeout());
+
+                    dataSourceCache.put(partitionId, dataSource);
+                }
+            }
         }
+
+        return PgDestinationResolution.builder()
+                .datasource(dataSource)
+                .build();
     }
 
     @PreDestroy

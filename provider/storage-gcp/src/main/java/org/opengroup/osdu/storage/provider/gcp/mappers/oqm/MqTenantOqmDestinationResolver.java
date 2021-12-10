@@ -84,73 +84,68 @@ public class MqTenantOqmDestinationResolver implements org.opengroup.osdu.core.g
 
         String partitionId = destination.getPartitionId();
 
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (partitionId) {
-            default:
+        String virtualHost = "/";
 
-                String virtualHost = "/";
+        ConnectionFactory amqpFactory = amqpConnectionFactoryCache.get(partitionId);
+        Client httpClient = httpClientCache.get(partitionId);
 
-                ConnectionFactory amqpFactory = amqpConnectionFactoryCache.get(partitionId);
-                Client httpClient = httpClientCache.get(partitionId);
+        if (amqpFactory == null || httpClient == null) {
 
-                if (amqpFactory == null || httpClient == null) {
+            PartitionInfo partitionInfo;
+            try {
+                partitionInfo = partitionProvider.get(partitionId);
+            } catch (PartitionException e) {
+                throw new TranslatorRuntimeException(e, "Partition '%s' destination resolution issue", destination.getPartitionId());
+            }
+            Map<String, Property> partitionProperties = partitionInfo.getProperties();
 
-                    PartitionInfo partitionInfo;
-                    try {
-                        partitionInfo = partitionProvider.get(partitionId);
-                    } catch (PartitionException e) {
-                        throw new TranslatorRuntimeException(e, "Partition '%s' destination resolution issue", destination.getPartitionId());
-                    }
-                    Map<String, Property> partitionProperties = partitionInfo.getProperties();
+            if (amqpFactory == null) {
 
-                    if (amqpFactory == null) {
+                String amqpHost = getPartitionProperty(partitionId, partitionProperties, AMQP_HOST);
+                String amqpPort = getPartitionProperty(partitionId, partitionProperties, AMQP_PORT);
+                String amqpPath = getPartitionProperty(partitionId, partitionProperties, AMQP_PATH);
+                String amqpUser = getPartitionProperty(partitionId, partitionProperties, AMQP_USERNAME);
+                String amqpPass = getPartitionProperty(partitionId, partitionProperties, AMQP_PASSWORD);
 
-                        String amqpHost = getPartitionProperty(partitionId, partitionProperties, AMQP_HOST);
-                        String amqpPort = getPartitionProperty(partitionId, partitionProperties, AMQP_PORT);
-                        String amqpPath = getPartitionProperty(partitionId, partitionProperties, AMQP_PATH);
-                        String amqpUser = getPartitionProperty(partitionId, partitionProperties, AMQP_USERNAME);
-                        String amqpPass = getPartitionProperty(partitionId, partitionProperties, AMQP_PASSWORD);
+                URI amqpUri;
+                try {
+                    amqpUri = new URI("amqp", amqpUser + ":" + amqpPass, amqpHost, Integer.parseInt(amqpPort), amqpPath, null, null);
+                    amqpFactory = new ConnectionFactory();
+                    amqpFactory.setUri(amqpUri);
+                    amqpConnectionFactoryCache.put(partitionId, amqpFactory);
 
-                        URI amqpUri;
-                        try {
-                            amqpUri = new URI("amqp", amqpUser + ":" + amqpPass, amqpHost, Integer.parseInt(amqpPort), amqpPath, null, null);
-                            amqpFactory = new ConnectionFactory();
-                            amqpFactory.setUri(amqpUri);
-                            amqpConnectionFactoryCache.put(partitionId, amqpFactory);
-
-                        } catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
-                            throw new OqmDriverRuntimeException("RabbitMQ amqp URI and ConnectionFactory", e);
-                        }
-                    }
-
-                    if (httpClient == null) {
-
-                        String adminSchm = getPartitionProperty(partitionId, partitionProperties, ADMIN_SCHEMA);
-                        String adminHost = getPartitionProperty(partitionId, partitionProperties, ADMIN_HOST);
-                        String adminPort = getPartitionProperty(partitionId, partitionProperties, ADMIN_PORT);
-                        String adminPath = getPartitionProperty(partitionId, partitionProperties, ADMIN_PATH);
-                        String adminUser = getPartitionProperty(partitionId, partitionProperties, ADMIN_USERNAME);
-                        String adminPass = getPartitionProperty(partitionId, partitionProperties, ADMIN_PASSWORD);
-
-                        try {
-                            URI httpUrl = new URI(adminSchm, null, adminHost, Integer.parseInt(adminPort), adminPath, null, null);
-                            ClientParameters clientParameters = new ClientParameters().url(httpUrl.toURL())
-                                    .username(adminUser).password(adminPass);
-
-                            httpClient = new Client(clientParameters);
-                            httpClientCache.put(partitionId, httpClient);
-
-                        } catch (URISyntaxException | MalformedURLException e) {
-                            throw new OqmDriverRuntimeException("RabbitMQ http(api) URI and Client", e);
-                        }
-                    }
+                } catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
+                    throw new OqmDriverRuntimeException("RabbitMQ amqp URI and ConnectionFactory", e);
                 }
-                return MqOqmDestinationResolution.builder()
-                        .amqpFactory(amqpFactory)
-                        .adminClient(httpClient)
-                        .virtualHost(virtualHost)
-                        .build();
+            }
+
+            if (httpClient == null) {
+
+                String adminSchm = getPartitionProperty(partitionId, partitionProperties, ADMIN_SCHEMA);
+                String adminHost = getPartitionProperty(partitionId, partitionProperties, ADMIN_HOST);
+                String adminPort = getPartitionProperty(partitionId, partitionProperties, ADMIN_PORT);
+                String adminPath = getPartitionProperty(partitionId, partitionProperties, ADMIN_PATH);
+                String adminUser = getPartitionProperty(partitionId, partitionProperties, ADMIN_USERNAME);
+                String adminPass = getPartitionProperty(partitionId, partitionProperties, ADMIN_PASSWORD);
+
+                try {
+                    URI httpUrl = new URI(adminSchm, null, adminHost, Integer.parseInt(adminPort), adminPath, null, null);
+                    ClientParameters clientParameters = new ClientParameters().url(httpUrl.toURL())
+                            .username(adminUser).password(adminPass);
+
+                    httpClient = new Client(clientParameters);
+                    httpClientCache.put(partitionId, httpClient);
+
+                } catch (URISyntaxException | MalformedURLException e) {
+                    throw new OqmDriverRuntimeException("RabbitMQ http(api) URI and Client", e);
+                }
+            }
         }
+        return MqOqmDestinationResolution.builder()
+                .amqpFactory(amqpFactory)
+                .adminClient(httpClient)
+                .virtualHost(virtualHost)
+                .build();
     }
 
     private String getPartitionProperty(String partitionId, Map<String, Property> partitionProperties, String propertyName) {

@@ -63,36 +63,32 @@ public class DsTenantOsmDestinationResolver implements DsDestinationResolver {
     public DsDestinationResolution resolve(Destination destination) {
         String partitionId = destination.getPartitionId();
 
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (partitionId) {
-            default:
-                TenantInfo ti = tenantInfoFactory.getTenantInfo(partitionId);
-                String projectId = ti.getProjectId();
-                Datastore datastore = datastoreCache.get(partitionId);
+        TenantInfo ti = tenantInfoFactory.getTenantInfo(partitionId);
+        String projectId = ti.getProjectId();
+        Datastore datastore = datastoreCache.get(partitionId);
+        if (datastore == null) {
+            synchronized (datastoreCache) {
+                datastore = datastoreCache.get(partitionId);
                 if (datastore == null) {
-                    synchronized (datastoreCache) {
-                        datastore = datastoreCache.get(partitionId);
-                        if (datastore == null) {
-                            datastore = DatastoreOptions.newBuilder()
-                                    .setRetrySettings(RETRY_SETTINGS)
-                                    .setTransportOptions(TRANSPORT_OPTIONS)
-                                    .setProjectId(projectId)
-                                    .setNamespace(destination.getNamespace().getName()).build()
-                                    .getService();
-                            datastoreCache.put(partitionId, datastore);
-                        }
-                    }
+                    datastore = DatastoreOptions.newBuilder()
+                            .setRetrySettings(RETRY_SETTINGS)
+                            .setTransportOptions(TRANSPORT_OPTIONS)
+                            .setProjectId(projectId)
+                            .setNamespace(destination.getNamespace().getName()).build()
+                            .getService();
+                    datastoreCache.put(partitionId, datastore);
                 }
-
-                return DsDestinationResolution.builder()
-                        .projectId(datastore.getOptions().getProjectId())
-                        .datastore(datastore)
-                        .build();
+            }
         }
+
+        return DsDestinationResolution.builder()
+                .projectId(datastore.getOptions().getProjectId())
+                .datastore(datastore)
+                .build();
     }
 
     @Override
     public void close() throws IOException {
-        
+
     }
 }

@@ -55,7 +55,6 @@ public class PsTenantOqmDestinationResolver implements PsOqmDestinationResolver 
     private Map<OqmDestination, SubscriptionAdminClient> subscriptionClientCache = new HashMap<>();
 
     private final ITenantFactory tenantInfoFactory;
-    private final GcpAppServiceConfig config;
 
     private static final RetrySettings RETRY_SETTINGS = RetrySettings.newBuilder()
             .setTotalTimeout(Duration.ofSeconds(10))
@@ -72,40 +71,36 @@ public class PsTenantOqmDestinationResolver implements PsOqmDestinationResolver 
         TenantInfo ti = tenantInfoFactory.getTenantInfo(destination.getPartitionId());
         String partitionId = destination.getPartitionId();
 
-        //noinspection SwitchStatementWithTooFewBranches
-        switch (partitionId) {
-            default:
-                String topicProjectId = ti.getProjectId();
-                String subscriptionProjectId = ti.getProjectId();
+        String topicProjectId = ti.getProjectId();
+        String subscriptionProjectId = ti.getProjectId();
 
-                TopicAdminClient tac = topicClientCache.get(destination);
-                if (tac == null) {
-                    try {
-                        TopicAdminSettings tas = TopicAdminSettings.newBuilder().build();
-                        tac = TopicAdminClient.create(tas);
-                        topicClientCache.put(destination, tac);
-                    } catch (IOException e) {
-                        throw new OqmDriverRuntimeException("PsOqmDestinationResolution#resolve TopicAdminClient", e);
-                    }
-                }
-
-                SubscriptionAdminClient sac = subscriptionClientCache.get(destination);
-                if (sac == null) {
-                    try {
-                        sac = SubscriptionAdminClient.create();
-                        subscriptionClientCache.put(destination, sac);
-                    } catch (IOException e) {
-                        throw new OqmDriverRuntimeException("PsOqmDestinationResolution#resolve SubscriptionAdminClient", e);
-                    }
-                }
-
-                return PsOqmDestinationResolution.builder()
-                        .servicesProjectId(topicProjectId)
-                        .dataProjectId(subscriptionProjectId)
-                        .topicAdminClient(tac)
-                        .subscriptionAdminClient(sac)
-                        .build();
+        TopicAdminClient tac = topicClientCache.get(destination);
+        if (tac == null) {
+            try {
+                TopicAdminSettings tas = TopicAdminSettings.newBuilder().build();
+                tac = TopicAdminClient.create(tas);
+                topicClientCache.put(destination, tac);
+            } catch (IOException e) {
+                throw new OqmDriverRuntimeException("PsOqmDestinationResolution#resolve TopicAdminClient", e);
+            }
         }
+
+        SubscriptionAdminClient sac = subscriptionClientCache.get(destination);
+        if (sac == null) {
+            try {
+                sac = SubscriptionAdminClient.create();
+                subscriptionClientCache.put(destination, sac);
+            } catch (IOException e) {
+                throw new OqmDriverRuntimeException("PsOqmDestinationResolution#resolve SubscriptionAdminClient", e);
+            }
+        }
+
+        return PsOqmDestinationResolution.builder()
+                .servicesProjectId(topicProjectId)
+                .dataProjectId(subscriptionProjectId)
+                .topicAdminClient(tac)
+                .subscriptionAdminClient(sac)
+                .build();
     }
 
     @PreDestroy

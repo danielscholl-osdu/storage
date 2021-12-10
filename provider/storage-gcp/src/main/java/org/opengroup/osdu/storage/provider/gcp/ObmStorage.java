@@ -31,15 +31,16 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.gcp.obm.driver.Driver;
-import org.opengroup.osdu.core.gcp.obm.driver.DriverRuntimeException;
+import org.opengroup.osdu.core.gcp.obm.driver.ObmDriverRuntimeException;
 import org.opengroup.osdu.core.gcp.obm.driver.S3CompatibleErrors;
 import org.opengroup.osdu.core.gcp.obm.model.Blob;
+import org.opengroup.osdu.core.gcp.obm.persistence.ObmDestination;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.service.DataAuthorizationService;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
 
@@ -63,50 +64,28 @@ public class ObmStorage implements ICloudStorage {
 
     private final Driver storage;
     private final DataAuthorizationService dataAuthorizationService;
-
-    @Autowired
-    private DpsHeaders headers;
-
-    @Autowired
-    private TenantInfo tenant;
-
-    @Autowired
-    private IRecordsMetadataRepository<?> recordRepository;
-
-    @Autowired
-    private IEntitlementsExtensionService entitlementsService;
-
-    @Autowired
-    private ExecutorService threadPool;
-
-    @Autowired
-    private JaxRsDpsLog log;
-
-//	@Autowired
-//	public void setProperties(StorageConfigProperties properties){
-//		this.properties = properties;
-//	}
+    private final DpsHeaders headers;
+    private final TenantInfo tenantInfo;
+    private final IRecordsMetadataRepository<?> recordRepository;
+    private final IEntitlementsExtensionService entitlementsService;
+    private final ExecutorService threadPool;
+    private final JaxRsDpsLog log;
 
     @Override
     public void write(RecordProcessing... records) {
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
+        String dataPartitionId = tenantInfo.getDataPartitionId();
 
         ObjectMapper mapper = new ObjectMapper();
 
         List<Callable<Boolean>> tasks = new ArrayList<>();
 
         for (RecordProcessing record : records) {
-            //have to pass these values separately because of multithreading scenario. 'dpsHeaders' and 'tenant' objects are request scoped (autowired) and
-            //children threads lose their context down the stream, we get a bean creation exception
-            String email = this.headers.getUserEmail();
-            String serviceAccount = this.tenant.getServiceAccount();
-            String projectId = this.tenant.getProjectId();
-            String tenantName = this.tenant.getName();
 
             RecordMetadata metadata = record.getRecordMetadata();
             validateMetadata(metadata);
 
-            tasks.add(() -> this.writeBlobThread(email, serviceAccount, projectId, tenantName, record, mapper, bucket));
+            tasks.add(() -> this.writeBlobThread(dataPartitionId, record, mapper, bucket));
         }
 
         try {
@@ -130,7 +109,7 @@ public class ObmStorage implements ICloudStorage {
 
     @Override
     public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
         Map<String, Acl> originalAcls = new HashMap<>();
         Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
 
@@ -147,7 +126,7 @@ public class ObmStorage implements ICloudStorage {
                 }
             }
             validMetadata.add(recordMetadata);
-            Blob blob = storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+            Blob blob = storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
             originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
             //blob.update();
         }
@@ -157,10 +136,10 @@ public class ObmStorage implements ICloudStorage {
 
     @Override
     public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls) {
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
-            Blob blob = storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+            Blob blob = storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
             //blob.update();
         }
     }
@@ -172,7 +151,7 @@ public class ObmStorage implements ICloudStorage {
             return true;
         }
 
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
         for (RecordMetadata record : records) {
 
             try {
@@ -194,11 +173,11 @@ public class ObmStorage implements ICloudStorage {
 
             try {
                 String path = record.getVersionPath(record.getLatestVersion());
-                Blob blob = storage.getBlob(bucket, path);
+                Blob blob = storage.getBlob(bucket, path, getDestination());
                 if (blob == null) {
-                    throw new DriverRuntimeException(S3CompatibleErrors.NO_SUCH_KEY_CODE, new RuntimeException(String.format("'%s' not found", path)));
+                    throw new ObmDriverRuntimeException(S3CompatibleErrors.NO_SUCH_KEY_CODE, new RuntimeException(String.format("'%s' not found", path)));
                 }
-            } catch (DriverRuntimeException exception) {
+            } catch (ObmDriverRuntimeException exception) {
                 throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, exception);
             }
         }
@@ -216,12 +195,12 @@ public class ObmStorage implements ICloudStorage {
         try {
             String path = record.getVersionPath(version);
 
-            byte[] blob = storage.getBlobContent(getBucketName(this.tenant), path);
+            byte[] blob = storage.getBlobContent(getBucketName(this.tenantInfo), path, getDestination());
 
 
             return new String(blob, UTF_8);
 
-        } catch (DriverRuntimeException e) {
+        } catch (ObmDriverRuntimeException e) {
             if (e.getError().getHttpStatusCode() == HttpStatus.SC_FORBIDDEN) {
                 //exception should be generic, logging can be informative
                 throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
@@ -238,7 +217,8 @@ public class ObmStorage implements ICloudStorage {
     @Override
     public Map<String, String> read(Map<String, String> objects) {
 
-        String bucketName = getBucketName(this.tenant);
+        String bucketName = getBucketName(this.tenantInfo);
+        String dataPartitionId = tenantInfo.getDataPartitionId();
 
         Map<String, String> map = new HashMap<>();
 
@@ -247,11 +227,7 @@ public class ObmStorage implements ICloudStorage {
         for (Map.Entry<String, String> object : objects.entrySet()) {
             //have to pass these values separately because of multithreading scenario. 'dpsHeaders' and 'tenant' objects are request scoped (autowired) and
             //children threads lose their context down the stream, we get a bean creation exception
-            String email = this.headers.getUserEmail();
-            String serviceAccount = this.tenant.getServiceAccount();
-            String projectId = this.tenant.getProjectId();
-            String tenantName = this.tenant.getName();
-            tasks.add(() -> this.readBlobThread(email, serviceAccount, projectId, tenantName, object.getValue(), bucketName, map, object.getKey()));
+            tasks.add(() -> this.readBlobThread(dataPartitionId, object.getValue(), bucketName, map, object.getKey()));
         }
 
         try {
@@ -266,10 +242,10 @@ public class ObmStorage implements ICloudStorage {
     @Override
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
 
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
 
         String[] blobIds = records.stream().map(rm -> rm.getVersionPath(rm.getLatestVersion())).toArray(String[]::new);
-        Iterable<Blob> blobs = storage.listBlobsByName(bucket, blobIds);
+        Iterable<Blob> blobs = storage.listBlobsByName(bucket, getDestination(), blobIds);
 
         Map<String, String> hashes = new HashMap<>();
 
@@ -289,9 +265,9 @@ public class ObmStorage implements ICloudStorage {
             return;
         }
 
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
         try {
-            Blob blob = storage.getBlob(bucket, record.getVersionPath(record.getLatestVersion()));
+            Blob blob = storage.getBlob(bucket, record.getVersionPath(record.getLatestVersion()), getDestination());
 
             if (blob == null) {
                 String msg = String.format("Record with id '%s' does not exist", record.getId());
@@ -301,10 +277,10 @@ public class ObmStorage implements ICloudStorage {
             String[] versionFiles = record.getGcsVersionPaths().toArray(new String[0]);
 
             for (String path : versionFiles) {
-                storage.deleteBlobs(bucket, versionFiles);
+                storage.deleteBlobs(bucket, getDestination(), versionFiles);
             }
 
-        } catch (DriverRuntimeException e) {
+        } catch (ObmDriverRuntimeException e) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
         }
 
@@ -314,21 +290,21 @@ public class ObmStorage implements ICloudStorage {
     public void deleteVersion(RecordMetadata record, Long version) {
 
         boolean mustSubmit = false;
-        String bucket = getBucketName(this.tenant);
+        String bucket = getBucketName(this.tenantInfo);
 
         try {
             if (!record.hasVersion()) {
                 this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
             }
 
-            Blob blob = storage.getBlob(bucket, record.getVersionPath(version));
+            Blob blob = storage.getBlob(bucket, record.getVersionPath(version), getDestination());
 
             if (blob == null) {
                 this.log.warning(String.format("Record with id '%s' does not exist, unable to purge version: %s", record.getId(), version));
             }
-            storage.deleteBlob(bucket, record.getVersionPath(version));
+            storage.deleteBlob(bucket, record.getVersionPath(version), getDestination());
 
-        } catch (DriverRuntimeException e) {
+        } catch (ObmDriverRuntimeException e) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
         }
     }
@@ -352,7 +328,7 @@ public class ObmStorage implements ICloudStorage {
         }
     }
 
-    private boolean writeBlobThread(String userId, String serviceAccount, String projectId, String tenantName, RecordProcessing processing, ObjectMapper mapper, String bucket) {
+    private boolean writeBlobThread(String dataPartitionId, RecordProcessing processing, ObjectMapper mapper, String bucket) {
 
         RecordMetadata metadata = processing.getRecordMetadata();
         String objectPath = metadata.getVersionPath(metadata.getLatestVersion());
@@ -361,8 +337,8 @@ public class ObmStorage implements ICloudStorage {
 
         try {
             String content = mapper.writeValueAsString(processing.getRecordData());
-            storage.createAndGetBlob(blob, content.getBytes(UTF_8));
-        } catch (DriverRuntimeException e) {
+            storage.createAndGetBlob(blob, content.getBytes(UTF_8), getDestination(dataPartitionId));
+        } catch (ObmDriverRuntimeException e) {
             if (e.getError().getHttpStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 throw new AppException(HttpStatus.SC_BAD_REQUEST, RECORD_WRITING_ERROR_REASON, e.getMessage(), e);
             }
@@ -403,14 +379,14 @@ public class ObmStorage implements ICloudStorage {
         }
     }
 
-    private boolean readBlobThread(String userId, String serviceAccount, String projectId, String tenantName, String object, String bucket, Map<String, String> map, String recordId) {
+    private boolean readBlobThread(String dataPartitionId, String object, String bucket, Map<String, String> map, String recordId) {
         String[] tokens = object.split("/");
         String key = tokens[tokens.length - 2];
 
         try {
-            String value = new String(storage.getBlobContent(bucket, object), UTF_8);
+            String value = new String(storage.getBlobContent(bucket, object, getDestination(dataPartitionId)), UTF_8);
             map.put(key, value);
-        } catch (DriverRuntimeException e) {
+        } catch (ObmDriverRuntimeException e) {
             map.put(key, null);
         }
 
@@ -419,5 +395,13 @@ public class ObmStorage implements ICloudStorage {
 
     private static String getBucketName(TenantInfo tenant) {
         return String.format("%s-records", tenant.getProjectId());
+    }
+
+    private ObmDestination getDestination() {
+        return getDestination(tenantInfo.getDataPartitionId());
+    }
+
+    private ObmDestination getDestination(String dataPartitionId) {
+        return ObmDestination.builder().partitionId(dataPartitionId).build();
     }
 }
