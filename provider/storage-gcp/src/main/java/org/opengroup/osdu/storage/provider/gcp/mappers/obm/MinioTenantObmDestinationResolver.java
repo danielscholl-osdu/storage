@@ -52,9 +52,9 @@ public class MinioTenantObmDestinationResolver implements MinioObmDestinationRes
 
     private final MinioObmConfigurationProperties properties;
 
-    private static final String ENDPOINT = "endpoint";
-    private static final String ACCESS_KEY = "accessKey";
-    private static final String SECRET_KEY = "secretKey";
+    private static final String ENDPOINT = ".endpoint";
+    private static final String ACCESS_KEY = ".accessKey";
+    private static final String SECRET_KEY = ".secretKey";
 
     private final IPartitionProvider partitionProvider;
 
