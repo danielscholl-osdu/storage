@@ -50,11 +50,10 @@ public class OsmSchemaRepository implements ISchemaRepository {
     @Override
     public void add(Schema schema, String user) {
 
-        Transaction txn = null;
 
         GetQuery<Schema> q = new GetQuery<>(Schema.class, getDestination(), eq("kind", schema.getKind()));
+        Transaction txn = context.beginTransaction(getDestination());
         try {
-            txn = context.beginTransaction(getDestination());
             if (context.findOne(q).isPresent()) {
                 txn.rollbackIfActive();
                 throw new IllegalArgumentException("A schema for the specified kind has already been registered.");

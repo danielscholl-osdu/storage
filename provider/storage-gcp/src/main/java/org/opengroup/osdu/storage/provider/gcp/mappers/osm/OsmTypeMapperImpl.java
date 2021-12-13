@@ -45,7 +45,6 @@ public class OsmTypeMapperImpl extends TypeMapper {
 
     public OsmTypeMapperImpl() {
         super(Arrays.asList(
-                //RecordMetadata: needs for two fields names and types custom settings. Id column is "id".
                 new Instrumentation<>(RecordMetadata.class,
                         new HashMap<String, String>() {{
                             put("user", "createUser");
@@ -61,7 +60,6 @@ public class OsmTypeMapperImpl extends TypeMapper {
                         ),
                         Collections.singletonList("id")
                 ),
-                //Schema: needs for one field name and type custom settings. Id column is "kind".
                 new Instrumentation<>(Schema.class,
                         new HashMap<String, String>() {{
                             put("ext", "extension");
