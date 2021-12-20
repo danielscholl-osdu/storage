@@ -29,10 +29,21 @@
         <osm.version>0.13.0-SNAPSHOT</osm.version>
         <obm.version>0.13.1-SNAPSHOT</obm.version>
         <oqm.version>0.13.0-SNAPSHOT</oqm.version>
+		<log4j.version>2.17.0</log4j.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-to-slf4j</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
