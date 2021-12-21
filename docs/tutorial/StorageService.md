@@ -324,8 +324,16 @@ The API fetches multiple records(maximum 20) from storage service at once, it al
 Currently only "none" and "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;" are valid values for the header {frame-of-reference}. 
 
 
-As for now, we only support conversion for units and crs. Dates, elevation and azimuth will be available later. Returned records could be either original value or converted(units=SI;crs=wgs84) value depending on users' requests and conversion status, original value will be returned when users not request the conversion or the conversion is requested but failed.
-In addition to records user requests, if conversion is requested, a list of conversion status of each record would be included in the response, indicating whether the conversion was successful or not, it not, what were the errors happened.
+As of now, we only support conversion for units and crs. For Unit conversion, we only support conversions of arrays of values and properties of arrays of objects when the array element is the root object. For example, below Object/Array types are supported for unit conversion:
+`VerticalMeasurement[].Measurements.VerticalMeasurement,
+VerticalMeasurements[].VerticalMeasurement,
+VerticalMeasurements.VerticalMeasurement`
+
+However, below is not supported
+`VerticalMeasurement.Measurements[].VerticalMeasurement`
+`VerticalMeasurements[].Measurements[].VerticalMeasurement` (array element can not be nested inside) 
+
+For Datetime conversion, Object and Array types are not supported yet. Elevation and Azimuth will be available later. Returned records could be either original value or converted(units=SI;crs=wgs84) value depending on users' requests and conversion status, original value will be returned when users not request the conversion or the conversion is requested but failed. In addition to records user requests, if conversion is requested, a list of conversion status of each record would be included in the response, indicating whether the conversion was successful or not, it not, what were the errors happened
 
 
 ```
