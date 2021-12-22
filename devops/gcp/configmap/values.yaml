@@ -3,18 +3,16 @@
 # Declare variables to be passed into your templates.
 
 data:
-  authorize_api: "http://entitlements/api/entitlements/v2/"
-  partition_api: "http://partition/api/partition/v1/"
+  entitlements_host: "http://entitlements"
+  partition_host: "http://partition"
+  legaltag_host: "http://legal"
+  crs_converter_host: "http://crs-converter"
   log_level: "INFO"
-  legaltag_api: "http://legal/api/legal/v1/"
   google_audiences: ""
   redis_group_host: ""
   redis_storage_host: ""
   default_data_country: "US"
-  crs_api: ""
 
 conf:
-  ent_name: ""
-  legal_name: ""
   configmap: "storage-config"
   app_name: "storage"

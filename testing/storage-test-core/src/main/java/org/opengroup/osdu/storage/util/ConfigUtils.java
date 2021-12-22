@@ -38,4 +38,8 @@ public class ConfigUtils {
         String propValue = properties.getProperty(propertyName, defaultValue);
         return Boolean.parseBoolean(propValue);
     }
+
+    public boolean getIsSchemaEndpointsEnabled() {
+        return getBooleanProperty("schema.endpoints.disabled", "false");
+    }
 }

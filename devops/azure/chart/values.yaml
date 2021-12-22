@@ -28,4 +28,4 @@ policy:
 schemaEndpoints:
   disabled: false
 
-istioDnsHost: "" 
+istioDnsHost: "contoso.com"

@@ -38,12 +38,31 @@
 		<module>storage-test-ibm</module>
 	</modules>
 
+	<properties>
+		<log4j.version>2.17.0</log4j.version>
+	</properties>
+
 	<repositories>
 		<repository>
 			<id>${repo.releases.id}</id>
 			<url>${repo.releases.url}</url>
 		</repository>
 	</repositories>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-to-slf4j</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<distributionManagement>
 		<repository>
