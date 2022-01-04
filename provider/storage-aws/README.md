@@ -38,6 +38,7 @@ In order to run the service locally or remotely, you will need to have the follo
 | `CACHE_CLUSTER_ENDPOINT` | `true` | no | Redis endpoint uri. Either set this or DISABLE_CACHE | no | 
 | `CACHE_CLUSTER_PORT` | `6379` | no | Redis port. Either set this or DISABLE_CACHE | no | 
 | `CACHE_CLUSTER_KEY` | `xxxxxx` | no | Redis auth key. Either set this or DISABLE_CACHE | no | 
+| `storage-sns-topic-arn` | `sns-topic-name` | yes | The SNS topic that storage events are published to | no |
 
 ### Run Locally
 Check that maven is installed:
@@ -83,7 +84,7 @@ java -jar provider/storage-aws/target/storage-aws-*.*.*-SNAPSHOT-spring-boot.jar
  
  You will need to have the following environment variables defined.
  
- | name | example value | description | sensitive?
+ | name | example value | description | sensitive? |
  | ---  | ---   | ---         | ---        |
  | `AWS_ACCESS_KEY_ID` | `ASIAXXXXXXXXXXXXXX` | The AWS Access Key for a user with access to Backend Resources required by the service | yes |
  | `AWS_SECRET_ACCESS_KEY` | `super-secret-key==` | The AWS Secret Key for a user with access to Backend Resources required by the service | yes |
