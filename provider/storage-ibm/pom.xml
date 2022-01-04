@@ -26,7 +26,7 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<os-core-lib-ibm.version>0.12.0</os-core-lib-ibm.version>
+		<os-core-lib-ibm.version>0.13.0-rc6</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 	</properties>
 
@@ -36,14 +36,30 @@
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>storage-core</artifactId>
 			<version>0.13.0-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-lib-ibm</artifactId>
 			<version>${os-core-lib-ibm.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-codec</artifactId>
+			<version>4.1.68.Final</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -69,6 +85,11 @@
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-core</artifactId>
+			<version>9.0.54</version>
 		</dependency>
 	</dependencies>
 
