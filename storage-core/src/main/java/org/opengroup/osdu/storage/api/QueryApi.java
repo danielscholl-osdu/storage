@@ -69,18 +69,13 @@ public class QueryApi {
 	}
 
 	// This endpoint is deprecated as of M6, replaced by schema service. In M7 this endpoint will be deleted
-	@Deprecated
 	@GetMapping(value = "/kinds", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getKinds(@RequestParam(required = false) String cursor,
 			@RequestParam(required = false) Integer limit) {
-        if (!this.schemaEndpointsConfig.isDisabled()) {
 			DatastoreQueryResult result = this.batchService.getAllKinds(encodeDecode.deserializeCursor(cursor), limit);
             result.setCursor(encodeDecode.serializeCursor(result.getCursor()));
             return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
-        } else {
-			throw new AppException(org.apache.http.HttpStatus.SC_NOT_FOUND,"This API has been deprecated","Unable to perform action");
-        }
 	}
 
 	@GetMapping(value = "/records", produces = MediaType.APPLICATION_JSON_VALUE)

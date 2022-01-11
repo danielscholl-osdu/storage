@@ -120,19 +120,18 @@ public class QueryApiTest {
     }
 
     @Test
-    public void should_returnHttp404_when_schemaApiIsDisabled_and_gettingAllKinds() {
+    public void should_returnHttp200_when_gettingAllKinds() {
         final String CURSOR = "any cursor";
         final String ENCODED_CURSOR = Base64.getEncoder().encodeToString("any cursor".getBytes());
         final int LIMIT = 10;
+        List<String> kinds = new ArrayList<String>();
+        DatastoreQueryResult allKinds = new DatastoreQueryResult();
+        allKinds.setCursor("new cursor");
+        allKinds.setResults(kinds);
         when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
-
-        try {
-            ResponseEntity response = this.sut.getKinds(ENCODED_CURSOR, LIMIT);
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
-            assertEquals("This API has been deprecated", e.getError().getReason());
-        }
+        when(this.batchService.getAllKinds(CURSOR, LIMIT)).thenReturn(allKinds);
+        ResponseEntity response = this.sut.getKinds(ENCODED_CURSOR, LIMIT);
+        assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
     }
 
     @Test
