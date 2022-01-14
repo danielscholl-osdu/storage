@@ -107,25 +107,6 @@ public class RecordUtilImplTest {
   }
 
   @Test
-  public void mapRecordsAndVersions_shouldCreateMap_whenVersionLengthNotEqualFour() {
-    String id = "id:1:2";
-
-    Map<String, String> resultMap = recordUtil.mapRecordsAndVersions(singletonList(id));
-
-    assertEquals(id, resultMap.get(id));
-  }
-
-  @Test
-  public void mapRecordsAndVersions_shouldCreateMap_whenVersionLengthEqualFour() {
-    String inputId = "id:1:2:3";
-    String expectedKey = "id:1:2";
-
-    Map<String, String> resultMap = recordUtil.mapRecordsAndVersions(singletonList(inputId));
-
-    assertEquals(inputId, resultMap.get(expectedKey));
-  }
-
-  @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForTags_withReplaceOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
     PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, PATCH_OPERATION_REPLACE,
