@@ -282,7 +282,6 @@ public class CloudStorageImpl implements ICloudStorage {
         for (String recordId : recordIds) {
             RecordMetadata recordMetadata = recordsMetadata.get(recordId);
             if (!hasViewerAccessToRecord(recordMetadata)) {
-                map.put(recordId, null);
                 continue;
             }
             String path = objects.get(recordId);
