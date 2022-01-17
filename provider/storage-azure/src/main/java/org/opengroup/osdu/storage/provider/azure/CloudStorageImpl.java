@@ -38,10 +38,7 @@ import org.springframework.stereotype.Repository;
 import javax.inject.Named;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -275,7 +272,7 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public Map<String, String> read(Map<String, String> objects) {
         List<Callable<Boolean>> tasks = new ArrayList<>();
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> map = new ConcurrentHashMap<>();
 
         List<String> recordIds = new ArrayList<>(objects.keySet());
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
