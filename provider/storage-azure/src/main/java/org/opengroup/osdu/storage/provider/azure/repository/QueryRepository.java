@@ -130,27 +130,44 @@ public class QueryRepository implements IQueryRepository {
         DatastoreQueryResult dqr = new DatastoreQueryResult();
         List<String> ids = new ArrayList<>();
         Iterable<RecordMetadataDoc> docs;
+        String continuation = cursor;
+        int iteration = 1;
+        int preferredPageSize;
 
         try {
             if (paginated) {
-                final Page<RecordMetadataDoc> docPage = record.findIdsByMetadata_kindAndMetadata_status(kind, status,
-                        CosmosStorePageRequest.of(0, numRecords, cursor));
-                Pageable pageable = docPage.getPageable();
-                String continuation = null;
-                if (pageable instanceof CosmosStorePageRequest) {
-                    continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
-                }
+                do {
+                    preferredPageSize = numRecords - ids.size();
+                    // Fetch records and set ids
+                    Page<RecordMetadataDoc> docPage = record.findIdsByMetadata_kindAndMetadata_status(kind, status,
+                            CosmosStorePageRequest.of(0, preferredPageSize, continuation));
+                    docs = docPage.getContent();
+                    docs.forEach(d -> ids.add(d.getId()));
+                    this.logger.info(String.format("Iteration count of query on cosmosDb: %d, page size returned: %d", iteration, docPage.getContent().size()));
 
+                    // set continuationToken by fetching it from the response
+                    continuation = null;
+                    Pageable pageable = docPage.getPageable();
+                    if (pageable instanceof CosmosStorePageRequest) {
+                        continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
+                    }
+                    iteration++;
+
+                } while (!Strings.isNullOrEmpty(continuation) && ids.size() < numRecords);
+
+
+                // Hash the continuationToken
                 if (!Strings.isNullOrEmpty(continuation)) {
                     String hashedCursor = Crc32c.hashToBase64EncodedString(continuation);
                     this.cursorCache.put(hashedCursor, continuation);
                     dqr.setCursor(hashedCursor);
                 }
-                docs = docPage.getContent();
+
             } else {
                 docs = record.findIdsByMetadata_kindAndMetadata_status(kind, status);
+                docs.forEach(d -> ids.add(d.getId()));
             }
-            docs.forEach(d -> ids.add(d.getId()));
+
             dqr.setResults(ids);
         } catch (CosmosException e) {
             if (e.getStatusCode() == HttpStatus.SC_BAD_REQUEST && e.getMessage().contains("INVALID JSON in continuation token"))
