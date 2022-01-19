@@ -14,20 +14,21 @@
 
 package org.opengroup.osdu.storage.conversion;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
-import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
-import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
+import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
+import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +77,10 @@ public class ConversionServiceTest {
     private static final String ANY_CRS_GEOMETRY_COLLECTION_CONVERTED_RECORD = "{\"id\":\"geo-json-geometry-collection-test\",\"kind\":\"geo-json-geometry-collection:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"type\":\"AnyCrsGeometryCollection\",\"bbox\":null,\"geometries\":[{\"type\":\"Point\",\"bbox\":null,\"coordinates\":[500000.0,7000000.0]},{\"type\":\"LineString\",\"bbox\":null,\"coordinates\":[[501000.0,7001000.0],[502000.0,7002000.0]]}]},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"Wgs84Coordinates\":{\"type\":\"FeatureCollection\",\"bbox\":null,\"features\":[{\"type\":\"Feature\",\"bbox\":null,\"geometry\":{\"type\":\"GeometryCollection\",\"geometries\":[{\"type\":\"Point\",\"coordinates\":[8.998433675254244,63.1274769068748]},{\"type\":\"LineString\",\"coordinates\":[[9.018268130018686,63.136450807807265],[9.0381148358597,63.145421923557194]]}]},\"properties\":{}}],\"properties\":{},\"persistableReferenceCrs\":null,\"persistableReferenceUnitZ\":\"reference\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}}";
     private static final String INVALID_COORDINATES_ANY_CRS_RECORD = "{\"id\":\"geo-json-multi-polygon-test\",\"kind\":\"geo-json-multi-polygon:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"coordinates\":[[[[30,20],[45,40],[10,40],[30,20]]],[[15,5],[40,10],[10,20],[5,10],[15,5]]],\"bbox\":null,\"type\":\"AnyCrsMultiPolygon\"},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}}";
     private static final String ERRONEOUS_ANY_CRS_RECORD_1 = "{\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"Type\":\"AnyCrsFeatureCollection\",\"CoordinateReferenceSystemID\":\"NAD27\",\"VerticalCoordinateReferenceSystemID\":null,\"PersistableReferenceCrs\":null,\"PersistableReferenceVerticalCrs\":null,\"PersistableReferenceUnitZ\":null,\"Features\":[{\"Type\":\"AnyCrsFeature\",\"Properties\":null,\"Geometry\":{\"Coordinates\":[30.8793048,-87.7801454],\"Type\":\"AnyCrsPoint\",\"Bbox\":null}}],\"Bbox\":null},\"Wgs84Coordinates\":null}}}";
+
+    private static final String COMBINED_ANY_CRS_META_FOR_RECORD = "{\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpudDate\":\"03/28/2012\",\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"bbox\":null,\"type\":\"AnyCrsPoint\"},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}},\"meta\":[{\"propertyValues\":[\"MM/dd/yyyy\"],\"persistableReference\":\"{\\\"type\\\": \\\"DAT\\\", \\\"format\\\": \\\"MM/dd/yyyy\\\"}\",\"uncertainty\":0,\"kind\":\"DateTime\",\"propertyNames\":[\"SpudDate\"]}]}";
+    private static final String COMBINED_ANY_CRS_CONVERTED_RECORD = "{\"acl\":{\"owners\":[\"owners@unittest.com\"],\"viewers\":[\"viewers@unittest.com\"]},\"data\":{\"SpudDate\":\"03/28/2012\",\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"type\":\"AnyCrsPoint\"},\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"Wgs84Coordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[5.7500000010406245,59.000000000399105,1.9999999999999998],\"type\":\"Point\"},\"properties\":{},\"type\":\"Feature\"}],\"persistableReferenceCrs\":null,\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"FeatureCollection\"},\"X\":16,\"Y\":10,\"Z\":0}},\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"meta\":[{\"propertyValues\":[\"MM/dd/yyyy\"],\"persistableReference\":\"{\\\"type\\\": \\\"DAT\\\", \\\"format\\\": \\\"MM/dd/yyyy\\\"}\",\"uncertainty\":0,\"kind\":\"DateTime\",\"propertyNames\":[\"SpudDate\"]}]}";
+    private static final String COMBINED_ANY_CRS_META_FOR_CONVERTED_RECORD = "{\"acl\":{\"owners\":[\"owners@unittest.com\"],\"viewers\":[\"viewers@unittest.com\"]},\"data\":{\"SpudDate\":\"2012-03-28\",\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"type\":\"AnyCrsPoint\"},\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"Wgs84Coordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[5.7500000010406245,59.000000000399105,1.9999999999999998],\"type\":\"Point\"},\"properties\":{},\"type\":\"Feature\"}],\"persistableReferenceCrs\":null,\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"FeatureCollection\"},\"X\":16,\"Y\":10,\"Z\":0}},\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"meta\":[{\"propertyValues\":[\"MM/dd/yyyy\"],\"persistableReference\":\"{\\\"format\\\":\\\"yyyy-MM-dd\\\",\\\"type\\\":\\\"DAT\\\"}\",\"uncertainty\":0,\"kind\":\"DateTime\",\"propertyNames\":[\"SpudDate\"]}]}";
 
     @Test
     public void should_returnOriginalRecordsAndStatusesAsNoMetaBlock_whenProvidedRecordsWithoutMetaBlock() {
@@ -192,7 +197,7 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, resultRecords.size());
         JsonObject resultRecord = resultRecords.get(0);
         JsonElement data = resultRecord.get("data");
-        double  actualMDValue = data.getAsJsonObject().get("MD").getAsDouble();
+        double actualMDValue = data.getAsJsonObject().get("MD").getAsDouble();
         Assert.assertEquals(3.048, actualMDValue, 0.00001);
     }
 
@@ -233,7 +238,7 @@ public class ConversionServiceTest {
         Assert.assertTrue(resultStatuses.get(1).getErrors().size() == 0);
         JsonObject resultRecord = resultRecords.get(1);
         JsonElement data = resultRecord.get("data");
-        double  actualMDValue = data.getAsJsonObject().get("MD").getAsDouble();
+        double actualMDValue = data.getAsJsonObject().get("MD").getAsDouble();
         Assert.assertEquals(3.048, actualMDValue, 0.00001);
     }
 
@@ -513,5 +518,28 @@ public class ConversionServiceTest {
         Assert.assertEquals(ConvertStatus.ERROR.toString(), result.getConversionStatuses().get(0).getStatus());
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertEquals(INVALID_COORDINATES, result.getConversionStatuses().get(0).getErrors().get(0));
+    }
+
+    @Test
+    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesAndMetaFoRAttribute() throws JsonProcessingException {
+        this.originalRecords.add(this.jsonParser.parse(COMBINED_ANY_CRS_META_FOR_RECORD).getAsJsonObject());
+
+        List<JsonObject> convertedRecords = new ArrayList<>();
+        convertedRecords.add(this.jsonParser.parse(COMBINED_ANY_CRS_CONVERTED_RECORD).getAsJsonObject());
+        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        ConversionStatus conversionStatus = new ConversionStatus();
+        conversionStatus.setStatus(ConvertStatus.SUCCESS.toString());
+        conversionStatus.setId("geo-json-point-test");
+        conversionStatuses.add(conversionStatus);
+        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
+        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setRecords(convertedRecords);
+
+        when(this.crsConversionService.doCrsConversion(any(), any())).thenReturn(crsConversionResult);
+        when(this.crsConversionService.doCrsGeoJsonConversion(any(), any())).thenReturn(crsConversionResult);
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertEquals(result.getRecords().get(0), this.jsonParser.parse(COMBINED_ANY_CRS_META_FOR_CONVERTED_RECORD));
     }
 }
