@@ -25,6 +25,7 @@ variables:
   OSDU_GCP_HELM_PACKAGE_CHARTS: "devops/gcp/deploy devops/gcp/configmap"
   # --- osdu specific variables for GKE ---
   OSDU_GCP_HELM_CONFIG_SERVICE_VARS: "--set data.google_audiences=$GOOGLE_AUDIENCE --set data.redis_group_host=$REDIS_GROUP_HOST --set data.redis_storage_host=$REDIS_STORAGE_HOST --set data.storage_hostname=$OSDU_GCP_SERVICE"
+  OSDU_GCP_HELM_CONFIG_SERVICE_VARS_DEV2: "--set data.google_audiences=$GOOGLE_AUDIENCE --set data.redis_group_host=$REDIS_GROUP_HOST --set data.redis_storage_host=$REDIS_STORAGE_HOST --set data.storage_hostname=$OSDU_GCP_SERVICE"
   OSDU_GCP_HELM_DEPLOYMENT_SERVICE_VARS: "--set data.image=$CI_REGISTRY_IMAGE/osdu-gcp:$CI_COMMIT_SHORT_SHA --set data.serviceAccountName=$OSDU_GCP_SERVICE-k8s --set data.limits_cpu=1.5 --set data.limits_memory=2048M"
   OSDU_GCP_HELM_CONFIG_SERVICE: storage-config
   OSDU_GCP_HELM_DEPLOYMENT_SERVICE: storage-deploy
