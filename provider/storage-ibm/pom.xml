@@ -28,6 +28,9 @@
 	<properties>
 		<os-core-lib-ibm.version>0.13.0-rc6</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
+		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
+		<spring-security-core.version>5.6.1</spring-security-core.version>
+		<tomcat-embed-core.version>9.0.54</tomcat-embed-core.version>
 	</properties>
 
 	<dependencies>
@@ -41,9 +44,17 @@
 					<groupId>io.netty</groupId>
 					<artifactId>netty-codec</artifactId>
 				</exclusion>
+				<!-- <exclusion>
+					<groupId>org.springframework.security</groupId>
+					<artifactId>spring-security-core</artifactId>
+				</exclusion> -->
 			</exclusions>
 		</dependency>
-
+		<!-- <dependency>
+		    <groupId>org.springframework.security</groupId>
+		    <artifactId>spring-security-core</artifactId>
+		    <version>${spring-security-core.version}</version>
+		</dependency> -->
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-lib-ibm</artifactId>
@@ -53,7 +64,16 @@
 					<groupId>io.netty</groupId>
 					<artifactId>netty-codec</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.dataformat</groupId>
+					<artifactId>jackson-dataformat-cbor</artifactId>
+				</exclusion>
 			</exclusions>
+		</dependency>
+		<dependency>
+		    <groupId>com.fasterxml.jackson.dataformat</groupId>
+		    <artifactId>jackson-dataformat-cbor</artifactId>
+		    <version>${jackson-dataformat-cbor.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
@@ -85,11 +105,17 @@
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
+			<!-- <exclusions>
+				<exclusion>
+					<groupId>org.springframework.security</groupId>
+					<artifactId>spring-security-core</artifactId>
+				</exclusion>
+			</exclusions> -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tomcat.embed</groupId>
 			<artifactId>tomcat-embed-core</artifactId>
-			<version>9.0.54</version>
+			<version>${tomcat-embed-core.version}</version>
 		</dependency>
 	</dependencies>
 
