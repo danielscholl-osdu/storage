@@ -34,12 +34,7 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<springfox-version>2.7.0</springfox-version>
-<<<<<<< HEAD
-		<log4j2.version>2.17.0</log4j2.version>
-		<os-core-common.version>0.12.3</os-core-common.version>
-=======
 		<os-core-common.version>0.13.0-rc6</os-core-common.version>
->>>>>>> master
 		<!--
 		<springfox-version>2.9.2</springfox-version>
 		-->
