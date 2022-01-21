@@ -36,7 +36,6 @@
         <deployment.environment>dev</deployment.environment>
         <version.number>0.13.0-SNAPSHOT</version.number>
         <os-core-common.version>0.13.0-rc3</os-core-common.version>
-        <log4j2.version>2.16.0</log4j2.version>
     </properties>
 
     <dependencyManagement>
@@ -52,20 +51,6 @@
                 <groupId>org.opengroup.osdu</groupId>
                 <artifactId>os-core-common</artifactId>
                 <version>${os-core-common.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-to-slf4j</artifactId>
-                <version>${log4j2.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j2.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
