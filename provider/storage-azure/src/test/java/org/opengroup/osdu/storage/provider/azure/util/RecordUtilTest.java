@@ -1,5 +1,6 @@
 package org.opengroup.osdu.storage.provider.azure.util;
 
+import org.apache.http.HttpStatus;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Before;
@@ -76,7 +77,7 @@ public class RecordUtilTest {
         RecordMetadata record = buildRecordMetadata();
 
         exceptionRule.expect(AppException.class);
-        exceptionRule.expect(buildAppExceptionMatcher(errorMessage, errorReason, 500));
+        exceptionRule.expect(buildAppExceptionMatcher(errorMessage, errorReason, HttpStatus.SC_NOT_FOUND));
 
         recordUtil.getKindForVersion(record, WRONG_VERSION);
     }
