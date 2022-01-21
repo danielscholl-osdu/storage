@@ -159,7 +159,6 @@ public class QueryRepository implements IQueryRepository {
 
                 } while (!Strings.isNullOrEmpty(continuation) && ids.size() < numRecords);
 
-
                 // Hash the continuationToken
                 if (!Strings.isNullOrEmpty(continuation)) {
                     String hashedCursor = Crc32c.hashToBase64EncodedString(continuation);
