@@ -24,8 +24,6 @@ public interface RecordUtil {
 
     void validateRecordIds(List<String> recordIds);
 
-    Map<String, String> mapRecordsAndVersions(List<String> recordIds);
-
     RecordMetadata updateRecordMetaDataForPatchOperations(RecordMetadata recordMetadata, List<PatchOperation> ops, String user, long timestamp);
 
     boolean hasVersionPath(List<String> gcsVersionPaths, Long version);

@@ -35,8 +35,10 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 
 @Service
@@ -89,8 +91,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         this.patchOperationValidator.validateAcls(bulkUpdateOps);
         this.patchOperationValidator.validateTags(bulkUpdateOps);
 
-        //<idWithoutVersion, idWithVersion>
-        Map<String, String> idMap = recordUtil.mapRecordsAndVersions(ids);
+        Map<String, String> idMap = ids.stream().collect(Collectors.toMap(identity(), identity()));
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
         Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion);
         List<String> notFoundRecordIds = new ArrayList<>();
