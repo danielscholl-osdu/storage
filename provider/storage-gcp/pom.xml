@@ -29,7 +29,7 @@
         <osm.version>0.13.0-SNAPSHOT</osm.version>
         <obm.version>0.13.1-SNAPSHOT</obm.version>
         <oqm.version>0.13.0-SNAPSHOT</oqm.version>
-		<log4j.version>2.17.0</log4j.version>
+		<log4j.version>2.17.1</log4j.version>
     </properties>
 
     <dependencyManagement>
