@@ -66,7 +66,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>0.13.0-rc6</version>
+            <version>0.13.0-rc7</version>
         </dependency>
 
         <!-- Testing packages -->
