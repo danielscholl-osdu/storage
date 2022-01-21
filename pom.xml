@@ -34,7 +34,7 @@
 		<commons-codec.version>1.14</commons-codec.version>
 		<nimbusds.version>7.9</nimbusds.version>
 		<woodstox-core.version>6.2.3</woodstox-core.version>
-		<log4j2.version>2.17.0</log4j2.version>
+		<log4j2.version>2.17.1</log4j2.version>
 		<springfox.version>3.0.0</springfox.version>
 	</properties>
 
