@@ -143,7 +143,11 @@ public class QueryRepository implements IQueryRepository {
                             CosmosStorePageRequest.of(0, preferredPageSize, continuation));
                     docs = docPage.getContent();
                     docs.forEach(d -> ids.add(d.getId()));
-                    this.logger.info(String.format("Iteration count of query on cosmosDb: %d, page size returned: %d", iteration, docPage.getContent().size()));
+
+                    if (iteration > 1) {
+                        // cosmosDb did not return the preferredPageSize in previous iteration, so it was queried again.
+                        this.logger.info(String.format("Iteration count of query on cosmosDb: %d, page size returned: %d, remaining page size: %d", iteration, docPage.getContent().size(), numRecords- ids.size()));
+                    }
 
                     // set continuationToken by fetching it from the response
                     continuation = null;
