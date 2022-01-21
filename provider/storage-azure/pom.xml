@@ -105,20 +105,6 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>elasticsearch</artifactId>
-                    <groupId>org.elasticsearch</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>elasticsearch-rest-client</artifactId>
-                    <groupId>org.elasticsearch.client</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>elasticsearch-rest-high-level-client</artifactId>
-                    <groupId>org.elasticsearch.client</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>

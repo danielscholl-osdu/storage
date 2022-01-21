@@ -34,8 +34,12 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<springfox-version>2.7.0</springfox-version>
+<<<<<<< HEAD
 		<log4j2.version>2.17.0</log4j2.version>
 		<os-core-common.version>0.12.3</os-core-common.version>
+=======
+		<os-core-common.version>0.13.0-rc6</os-core-common.version>
+>>>>>>> master
 		<!--
 		<springfox-version>2.9.2</springfox-version>
 		-->
@@ -77,20 +81,6 @@
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-common</artifactId>
 			<version>${os-core-common.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>elasticsearch</artifactId>
-					<groupId>org.elasticsearch</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>elasticsearch-rest-client</artifactId>
-					<groupId>org.elasticsearch.client</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>elasticsearch-rest-high-level-client</artifactId>
-					<groupId>org.elasticsearch.client</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -171,17 +161,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- swagger dependencies -->
-		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger2</artifactId>
-			<version>${springfox-version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger-ui</artifactId>
-			<version>${springfox-version}</version>
-		</dependency>
     </dependencies>
 
 	<build>
