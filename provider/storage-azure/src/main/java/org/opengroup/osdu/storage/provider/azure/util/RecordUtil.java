@@ -38,6 +38,6 @@ public class RecordUtil {
 
     private AppException throwVersionNotFound(String id, String version) {
         String errorMessage = String.format("The version %s can't be found for record %s", version, id);
-        throw new AppException(500, "Version not found", errorMessage);
+        throw new AppException(HttpStatus.SC_NOT_FOUND, "Version not found", errorMessage);
     }
 }
