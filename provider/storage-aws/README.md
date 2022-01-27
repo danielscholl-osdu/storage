@@ -23,7 +23,7 @@ In order to run the service locally or remotely, you will need to have the follo
 | `APPLICATION_PORT` | `8080` | yes | The port the service will be hosted on. | no |
 | `AWS_REGION` | `us-east-1` | yes | The region where resources needed by the service are deployed | no |
 | `AWS_ACCESS_KEY_ID` | `ASIAXXXXXXXXXXXXXX` | yes | The AWS Access Key for a user with access to Backend Resources required by the service | yes |
-| `AWS_SECRET_ACCESS_KEY` | `super-secret-key==` | yes | The AWS Secret Key for a user with access to Backend Resources required by the service | yes |
+| `AWS_SECRET_ACCESS_KEY` | `abcde` | yes | The AWS Secret Key for a user with access to Backend Resources required by the service | yes |
 | `AWS_SESSION_TOKEN` | `session-token-xxxxxxxxxx` | no | AWS Session token needed if using an SSO user session to authenticate | yes |
 | `ENVIRONMENT` | `osdu-prefix` | yes | The Resource Prefix defined during deployment | no |
 | `LOG_LEVEL` | `DEBUG` | yes | The Log Level severity to use (https://www.tutorialspoint.com/log4j/log4j_logging_levels.htm) | no |
@@ -87,7 +87,7 @@ java -jar provider/storage-aws/target/storage-aws-*.*.*-SNAPSHOT-spring-boot.jar
  | name | example value | description | sensitive? |
  | ---  | ---   | ---         | ---        |
  | `AWS_ACCESS_KEY_ID` | `ASIAXXXXXXXXXXXXXX` | The AWS Access Key for a user with access to Backend Resources required by the service | yes |
- | `AWS_SECRET_ACCESS_KEY` | `super-secret-key==` | The AWS Secret Key for a user with access to Backend Resources required by the service | yes |
+ | `AWS_SECRET_ACCESS_KEY` | `abcde` | The AWS Secret Key for a user with access to Backend Resources required by the service | yes |
  | `AWS_SESSION_TOKEN` | `session-token-xxxxxxxxx` | AWS Session token needed if using an SSO user session to authenticate | yes |
  | `AWS_COGNITO_USER_POOL_ID` | `us-east-1_xxxxxxxx` | User Pool Id for the reference cognito | no |
  | `AWS_COGNITO_CLIENT_ID` | `xxxxxxxxxxxx` | Client ID for the Auth Flow integrated with the Cognito User Pool | no |
