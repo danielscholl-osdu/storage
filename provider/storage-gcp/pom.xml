@@ -184,27 +184,6 @@
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
-            <!--<plugin>-->
-            <!--<groupId>com.spotify</groupId>-->
-            <!--<artifactId>dockerfile-maven-plugin</artifactId>-->
-            <!--<version>1.4.10</version>-->
-            <!--<configuration>-->
-            <!--<repository>${docker.image.prefix}/${project.artifactId}</repository>-->
-            <!--<buildArgs>-->
-            <!--<JAR_FILE>./target/storage-gcp-0.0.1-SNAPSHOT-spring-boot.jar</JAR_FILE>-->
-            <!--</buildArgs>-->
-            <!--<dockerfile>docker/Dockerfile</dockerfile>-->
-            <!--</configuration>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>build-image</id>-->
-            <!--<phase>package</phase>-->
-            <!--<goals>-->
-            <!--<goal>build</goal>-->
-            <!--</goals>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
