@@ -42,15 +42,8 @@ public class OsmSchemaRepository implements ISchemaRepository {
     private final Context context;
     private final TenantInfo tenantInfo;
 
-    private Destination getDestination() {
-        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
-                .namespace(new Namespace(tenantInfo.getName())).kind(OsmRecordsMetadataRepository.SCHEMA_KIND).build();
-    }
-
     @Override
     public void add(Schema schema, String user) {
-
-
         GetQuery<Schema> q = new GetQuery<>(Schema.class, getDestination(), eq("kind", schema.getKind()));
         Transaction txn = context.beginTransaction(getDestination());
         try {
@@ -75,5 +68,13 @@ public class OsmSchemaRepository implements ISchemaRepository {
     @Override
     public void delete(String kind) {
         context.deleteById(Schema.class, getDestination(), kind);
+    }
+
+    private Destination getDestination() {
+        return Destination.builder()
+            .partitionId(tenantInfo.getDataPartitionId())
+            .namespace(new Namespace(tenantInfo.getName()))
+            .kind(OsmRecordsMetadataRepository.SCHEMA_KIND)
+            .build();
     }
 }

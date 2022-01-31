@@ -52,17 +52,10 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     public static final Kind RECORD_KIND = new Kind("StorageRecord");
     public static final Kind SCHEMA_KIND = new Kind(ISchemaRepository.SCHEMA_KIND);
 
-
     public static final String KIND = "kind";
     public static final String LEGAL_TAGS = "legal.legaltags";
     public static final String LEGAL_COMPLIANCE = "legal.status";
     public static final String STATUS = "status";
-
-
-    private Destination getDestination() {
-        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
-                .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
-    }
 
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
@@ -119,5 +112,10 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, String cursor) {
         return queryByLegal(legalTagName, null, limit);
+    }
+
+    private Destination getDestination() {
+        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
+            .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
     }
 }
