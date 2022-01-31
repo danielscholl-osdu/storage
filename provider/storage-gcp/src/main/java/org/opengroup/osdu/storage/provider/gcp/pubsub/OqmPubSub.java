@@ -26,7 +26,7 @@ import org.opengroup.osdu.core.gcp.oqm.driver.OqmDriver;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmDestination;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmMessage;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmTopic;
-import org.opengroup.osdu.storage.provider.gcp.util.GcpAppServiceConfig;
+import org.opengroup.osdu.storage.provider.gcp.config.GcpAppServiceConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.stereotype.Repository;
 
@@ -71,7 +71,6 @@ public class OqmPubSub implements IMessageBus {
             OqmMessage oqmMessage = OqmMessage.builder().data(json).attributes(attributes).build();
 
             driver.publish(oqmMessage, oqmTopic, oqmDestination);
-
         }
     }
 }

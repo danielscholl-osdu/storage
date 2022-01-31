@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp;
+package org.opengroup.osdu.storage.provider.gcp.repository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.core.gcp.osm.model.where.condition.And.and;
 import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
-import static org.opengroup.osdu.storage.provider.gcp.OsmRecordsMetadataRepository.*;
+import static org.opengroup.osdu.storage.provider.gcp.repository.OsmRecordsMetadataRepository.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 @Repository
