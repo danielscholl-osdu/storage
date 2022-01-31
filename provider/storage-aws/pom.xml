@@ -35,6 +35,7 @@
         <aws.version>1.11.1018</aws.version>
         <deployment.environment>dev</deployment.environment>
         <version.number>0.13.0-SNAPSHOT</version.number>
+        <os-core-common.version>0.13.0-rc3</os-core-common.version>
     </properties>
 
     <dependencyManagement>
@@ -43,6 +44,13 @@
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-bom</artifactId>
                 <version>${aws.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.opengroup.osdu</groupId>
+                <artifactId>os-core-common</artifactId>
+                <version>${os-core-common.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -104,7 +112,6 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
-            <version>2.1.10.RELEASE</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
