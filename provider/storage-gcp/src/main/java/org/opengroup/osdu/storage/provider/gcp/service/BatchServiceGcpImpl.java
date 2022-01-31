@@ -36,7 +36,6 @@ public class BatchServiceGcpImpl extends BatchServiceImpl {
     @Autowired
     private IQueryRepository queryRepository;
 
-
     @Override
     public DatastoreQueryResult getAllKinds(String cursor, Integer limit) {
         try {
@@ -66,6 +65,7 @@ public class BatchServiceGcpImpl extends BatchServiceImpl {
             }
             return result;
         } catch (DatastoreException e) {
+            // TODO: Replace with OSM mapper exception
             // Is invalid cursor (code = 3) exception?
             if (e.getCode() == 3) {
                 throw this.getInvalidCursorException();

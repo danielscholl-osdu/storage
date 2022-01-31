@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp;
+package org.opengroup.osdu.storage.provider.gcp.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
