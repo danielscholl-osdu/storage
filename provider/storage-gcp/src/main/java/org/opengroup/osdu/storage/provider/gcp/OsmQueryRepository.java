@@ -51,12 +51,6 @@ public class OsmQueryRepository implements IQueryRepository {
     private final Context context;
     private final TenantInfo tenantInfo;
 
-    //queries addressed to tenant specific GCP project and namespace and to a certain kind.
-    private Destination getDestination() {
-        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
-                .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
-    }
-
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
 
@@ -77,5 +71,10 @@ public class OsmQueryRepository implements IQueryRepository {
 
     private int getLimitTuned(Integer limit) {
         return limit == null ? PAGE_SIZE : (limit > 0 ? limit : PAGE_SIZE);
+    }
+
+    private Destination getDestination() {
+        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
+            .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
     }
 }
