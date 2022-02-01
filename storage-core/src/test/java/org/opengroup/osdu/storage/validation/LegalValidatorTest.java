@@ -58,7 +58,7 @@ public class LegalValidatorTest {
     @Test
     public void should_returnFalse_when_parentRecordIdDoesNotFollowRecordVersionNamingConvetion() {
 
-        final String EXPECTED_MSG = "Invalid parent record format: 'record:without:version'. The following format is expected: {record-id}:{record-version}";
+        final String EXPECTED_MSG = "Invalid parent record version: 'record:without:version'. Record version must be a numeric value";
 
         when(this.context.buildConstraintViolationWithTemplate(EXPECTED_MSG)).thenReturn(this.constraintBuilder);
 
