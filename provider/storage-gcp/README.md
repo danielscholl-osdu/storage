@@ -11,6 +11,7 @@ entire metadata life-cycle such as ingestion (persistence), modification, deleti
 * [Testing](#Testing)
 * [Deployment](#Deployment)
 * [Tutorial](#Tutorial)
+* [Entitlements groups](#Entitlements-groups)
 * [Licence](#License)
 
 ## Getting started
@@ -187,6 +188,10 @@ Storage Service is compatible with App Engine Flexible Environment and Cloud Run
 - [Storage OpenAPI specification ](../../docs/api/storage_openapi.yaml)
 - [Policy Service integration ](../../docs/tutorial/PolicyService-Integration.md)
 - [Storage Service tutorial ](../../docs/tutorial/StorageService.md)
+
+## Entitlements groups
+Storage service account should have entitlements groups listed below:
+- service.entitlements.user
 
 ## License
 
