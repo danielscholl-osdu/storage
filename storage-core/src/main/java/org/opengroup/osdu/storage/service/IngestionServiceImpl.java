@@ -31,7 +31,10 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
+import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
@@ -74,10 +77,10 @@ public class IngestionServiceImpl implements IngestionService {
 	private IEntitlementsAndCacheService entitlementsAndCacheService;
 
 	@Autowired
-	private DataAuthorizationService dataAuthorizationService;
+	private PartitionPolicyStatusService partitionPolicyStatusService;
 
-	@Autowired(required = false)
-	private IPolicyService policyService;
+	@Autowired
+	private IOPAService opaService;
 
 	@Autowired
 	private RecordUtil recordUtil;
@@ -167,7 +170,7 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		if(this.dataAuthorizationService.policyEnabled()) {
+		if(this.partitionPolicyStatusService.policyEnabled(this.headers.getPartitionId())) {
 		    this.validateUserAccessAndCompliancePolicyConstraints(inputRecords, existingRecords, recordParentMap);
 		} else {
 			this.validateUserAccessAndComplianceConstraints(inputRecords, existingRecords, recordParentMap);
@@ -386,19 +389,12 @@ public class IngestionServiceImpl implements IngestionService {
 	private void validateUserAccessAndCompliancePolicyConstraints(
 			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<RecordIdWithVersion>> recordParentMap) {
 		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
-		for (Record record : inputRecords) {
-			RecordMetadata recordMetadata;
-			OperationType operationType;
-			if (existingRecords.containsKey(record.getId())) {
-				recordMetadata = existingRecords.get(record.getId());
-				operationType = OperationType.update;
-			} else {
-				recordMetadata = new RecordMetadata(record);
-				operationType = OperationType.create;
-			}
-			if (!this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType)) {
-				throw new AppException(HttpStatus.SC_FORBIDDEN,
-						"User Unauthorized", "User is not authorized to create or update records.", String.format("User does not have required access to record %s", record.getId()));
+		List<ValidationOutputRecord> outputRecords = this.opaService.validateRecordsCreationOrUpdate(inputRecords, existingRecords);
+		for (ValidationOutputRecord outputRecord : outputRecords) {
+			if (!outputRecord.getErrors().isEmpty()) {
+				logger.error(String.format("Data authorization failure for record %s: %s", outputRecord.getId(), outputRecord.getErrors().toString()));
+				throw new AppException(HttpStatus.SC_UNAUTHORIZED,
+						"User Unauthorized", "User is not authorized to create or update records.");
 			}
 		}
 	}
