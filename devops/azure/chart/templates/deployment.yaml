@@ -139,3 +139,5 @@ spec:
           value: "200"
         - name: SPRING_CONFIG_NAME
           value: "common,application"
+        - name: opa_endpoint
+          value: http://opa:8181
