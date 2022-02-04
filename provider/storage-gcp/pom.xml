@@ -18,7 +18,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>storage-gcp</artifactId>
-	<version>0.13.0-SNAPSHOT</version>
+	<version>0.14.0-SNAPSHOT</version>
 	<description>Google cloud related implementation staff.</description>
 	<packaging>jar</packaging>
 
@@ -59,6 +59,7 @@
                 <scope>import</scope>
             </dependency>
             <!--for MinIO-->
+            <!--TODO: move next 4 dependencies to core-lib-gcp. Related to mappers-->
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib</artifactId>
@@ -89,7 +90,7 @@
 	<parent>
 		<groupId>org.opengroup.osdu</groupId>
 		<artifactId>os-storage</artifactId>
-		<version>0.13.0-SNAPSHOT</version>
+		<version>0.14.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 
@@ -101,7 +102,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-gcp</artifactId>
-            <version>0.13.0</version>
+            <version>0.14.0-rc1</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -127,7 +128,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>0.14.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback.contrib</groupId>
@@ -202,27 +203,6 @@
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
-            <!--<plugin>-->
-            <!--<groupId>com.spotify</groupId>-->
-            <!--<artifactId>dockerfile-maven-plugin</artifactId>-->
-            <!--<version>1.4.10</version>-->
-            <!--<configuration>-->
-            <!--<repository>${docker.image.prefix}/${project.artifactId}</repository>-->
-            <!--<buildArgs>-->
-            <!--<JAR_FILE>./target/storage-gcp-0.0.1-SNAPSHOT-spring-boot.jar</JAR_FILE>-->
-            <!--</buildArgs>-->
-            <!--<dockerfile>docker/Dockerfile</dockerfile>-->
-            <!--</configuration>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>build-image</id>-->
-            <!--<phase>package</phase>-->
-            <!--<goals>-->
-            <!--<goal>build</goal>-->
-            <!--</goals>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
