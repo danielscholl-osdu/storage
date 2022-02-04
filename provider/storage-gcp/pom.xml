@@ -26,6 +26,9 @@
         <java.version>1.8</java.version>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
+        <osm.version>0.13.0</osm.version>
+        <obm.version>0.13.0</obm.version>
+        <oqm.version>0.13.0</oqm.version>
 		<log4j.version>2.17.1</log4j.version>
     </properties>
 
@@ -100,6 +103,21 @@
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-gcp</artifactId>
             <version>0.14.0-rc1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opengroup.osdu</groupId>
+            <artifactId>osm</artifactId>
+            <version>${osm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opengroup.osdu</groupId>
+            <artifactId>oqm</artifactId>
+            <version>${oqm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opengroup.osdu</groupId>
+            <artifactId>obm</artifactId>
+            <version>${obm.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
