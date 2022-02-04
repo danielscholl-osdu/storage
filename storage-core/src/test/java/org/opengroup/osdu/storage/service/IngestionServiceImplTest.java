@@ -50,6 +50,7 @@ import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 
@@ -625,7 +626,7 @@ public class IngestionServiceImplTest {
 
     @Test
     public void should_return401_when_updatingARecordThatFailDataAuthorizationCheck_IntegrateOPA() {
-        when(this.partitionPolicyStatusService.policyEnabled(any())).thenReturn(true);
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -664,7 +665,7 @@ public class IngestionServiceImplTest {
     @Test
     @SuppressWarnings("unchecked")
     public void should_updateTwoRecords_when_twoRecordIDsAreAlreadyPresentInDataLake_integrateOPA() {
-        when(this.partitionPolicyStatusService.policyEnabled(any())).thenReturn(true);
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
