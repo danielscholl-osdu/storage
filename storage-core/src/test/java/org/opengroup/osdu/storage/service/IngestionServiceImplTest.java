@@ -102,9 +102,6 @@ public class IngestionServiceImplTest {
     private RecordUtil recordUtil;
 
     @Mock
-    private PartitionPolicyStatusService partitionPolicyStatusService;
-
-    @Mock
     private IOPAService opaService;
 
     @InjectMocks
@@ -171,7 +168,6 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
         when(this.entitlementsFactory.create(headers)).thenReturn(entitlementsService);
         when(this.entitlementsService.getGroups()).thenReturn(groups);
-        when(this.partitionPolicyStatusService.policyEnabled(any())).thenReturn(false);
     }
 
     @Test
