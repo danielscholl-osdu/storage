@@ -39,6 +39,7 @@ import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -84,6 +85,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Autowired
 	private RecordUtil recordUtil;
+
+	@Value("${opa.enabled}")
+	private boolean isOpaEnabled;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -170,7 +174,7 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		if(this.partitionPolicyStatusService.policyEnabled(this.headers.getPartitionId())) {
+		if(isOpaEnabled) {
 		    this.validateUserAccessAndCompliancePolicyConstraints(inputRecords, existingRecords, recordParentMap);
 		} else {
 			this.validateUserAccessAndComplianceConstraints(inputRecords, existingRecords, recordParentMap);
