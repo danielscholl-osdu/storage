@@ -12,6 +12,8 @@ data:
   redis_group_host: ""
   redis_storage_host: ""
   default_data_country: "US"
+  token_provider: "GCP"
+  partition_auth_enabled: "true"
 
 conf:
   configmap: "storage-config"
