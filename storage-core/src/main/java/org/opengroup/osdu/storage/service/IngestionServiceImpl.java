@@ -78,9 +78,6 @@ public class IngestionServiceImpl implements IngestionService {
 	private IEntitlementsAndCacheService entitlementsAndCacheService;
 
 	@Autowired
-	private PartitionPolicyStatusService partitionPolicyStatusService;
-
-	@Autowired
 	private IOPAService opaService;
 
 	@Autowired
