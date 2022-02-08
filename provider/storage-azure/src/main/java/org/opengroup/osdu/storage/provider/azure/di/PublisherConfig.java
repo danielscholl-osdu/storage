@@ -16,28 +16,14 @@ package org.opengroup.osdu.storage.provider.azure.di;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
 @Configuration
-@ConfigurationProperties(prefix = "azure.pubsub")
 @Getter
-public class PubSubConfig {
-    @Value("${executor-n-threads}")
-    private String sbExecutorThreadPoolSize;
+public class PublisherConfig {
 
-    @Value("${max-concurrent-calls}")
-    private String maxConcurrentCalls;
-
-    @Value("${max-lock-renew}")
-    private String maxLockRenewDurationInSeconds;
-
-    @Value("${azure.servicebus.topic-name}")
-    private String serviceBusTopic;
-
-    @Value("${azure.legal.servicebus.topic-name}")
-    private String legalServiceBusTopic;
-
-    @Value("${azure.legal.servicebus.topic-subscription}")
-    private String legalServiceBusTopicSubscription;
-
+    // The Event Grid Event can be a maximum of 1MB. The batch size manipulation will impact the costing.
+    // https://docs.microsoft.com/en-us/azure/event-grid/event-schema#:~:text=Event%20sources%20send%20events%20to,is%20limited%20to%201%20MB.
+    @Value("${azure.publisher.batchsize}")
+    private String pubSubBatchSize;
 }

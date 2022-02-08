@@ -20,17 +20,23 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Getter
-public class EventGridConfig {
-    @Value("${azure.eventgrid.event-data-version}")
-    private String eventDataVersion;
+public class ServiceBusConfig {
+    @Value("${azure.servicebus.executor-n-threads}")
+    private String sbExecutorThreadPoolSize;
 
-    @Value("${azure.eventgrid.topic-name}")
-    private String eventGridTopic;
+    @Value("${azure.servicebus.max-concurrent-calls}")
+    private String maxConcurrentCalls;
 
-    @Value("${azure.eventgrid.event-subject}")
-    private String eventSubject;
+    @Value("${azure.servicebus.max-lock-renew}")
+    private String maxLockRenewDurationInSeconds;
 
-    @Value("${azure.eventgrid.event-type}")
-    private String eventType;
+    @Value("${azure.servicebus.topic-name}")
+    private String serviceBusTopic;
+
+    @Value("${azure.legal.servicebus.topic-name}")
+    private String legalServiceBusTopic;
+
+    @Value("${azure.legal.servicebus.topic-subscription}")
+    private String legalServiceBusTopicSubscription;
 
 }
