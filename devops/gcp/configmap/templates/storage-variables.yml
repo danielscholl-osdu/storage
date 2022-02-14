@@ -16,3 +16,5 @@ data:
   REDIS_GROUP_HOST: "{{ .Values.data.redis_group_host }}"
   REDIS_STORAGE_HOST: "{{ .Values.data.redis_storage_host }}"
   DEFAULT_DATA_COUNTRY: "{{ .Values.data.default_data_country }}"
+  SERVICE_TOKEN_PROVIDER: "{{ .Values.data.token_provider }}"
+  PARTITION_AUTH_ENABLED: "{{ .Values.data.partition_auth_enabled }}"

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp;
+package org.opengroup.osdu.storage.provider.gcp.repository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.core.gcp.osm.model.where.condition.And.and;
 import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
-import static org.opengroup.osdu.storage.provider.gcp.OsmRecordsMetadataRepository.*;
+import static org.opengroup.osdu.storage.provider.gcp.repository.OsmRecordsMetadataRepository.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 @Repository
@@ -50,12 +50,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 public class OsmQueryRepository implements IQueryRepository {
     private final Context context;
     private final TenantInfo tenantInfo;
-
-    //queries addressed to tenant specific GCP project and namespace and to a certain kind.
-    private Destination getDestination() {
-        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
-                .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
-    }
 
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
@@ -77,5 +71,10 @@ public class OsmQueryRepository implements IQueryRepository {
 
     private int getLimitTuned(Integer limit) {
         return limit == null ? PAGE_SIZE : (limit > 0 ? limit : PAGE_SIZE);
+    }
+
+    private Destination getDestination() {
+        return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
+            .namespace(new Namespace(tenantInfo.getName())).kind(RECORD_KIND).build();
     }
 }
