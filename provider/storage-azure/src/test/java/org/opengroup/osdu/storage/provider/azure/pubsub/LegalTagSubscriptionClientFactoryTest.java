@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.servicebus.ISubscriptionClientFactory;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
-import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
+import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,7 +30,7 @@ public class LegalTagSubscriptionClientFactoryTest {
     private AzureBootstrapConfig azureBootstrapConfig;
 
     @Mock
-    private PubSubConfig pubSubConfig;
+    private ServiceBusConfig serviceBusConfig;
 
     private static final String sbTopic = "testTopic";
     private static final String sbSubscription = "testSubscription";

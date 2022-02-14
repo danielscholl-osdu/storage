@@ -9,6 +9,12 @@ Instructions for running the Azure implementation locally can be found [here](./
 
 All documentation for the GCP implementation of Storage service lives [here](./provider/storage-gcp/README.md)
 
+## AWS
+
+Instructions for running and testing this service can be found [here](./provider/storage-aws/README.md)
+
+
+
 ### Other platforms
 
 1. Navigate to the module of the cloud of interest, for example, ```storage-azure```. Configure ```application.properties``` and optionally ```logback-spring.xml```. Intead of changing these files in the source, you can also provide external files at run time. 
@@ -131,52 +137,7 @@ Instructions for running the GCP integration tests can be found [here](./provide
 
 ### AWS
 
-Navigate to ```testing\storage-integration-tests\```.
-1. Create gradle.properties
-Before you can run the tests, you must first create a ```gradle.properties``` file which contains all properties in the ```test``` section of ```build.gradle```.  Place this file in the same folder of ```build.gradle```, or [other folders that gradle will search for](https://docs.gradle.org/current/userguide/build_environment.html#sec:gradle_configuration_properties).  
-
-It's important to note that even for the properties you don't use, you must provide a dummy string. Setting it to empty string or not setting it at all breaks the build.
-
-```bash
-INT_TEST_VENDOR=aws
-PROJECT_ID=1
-DOMAIN=common
-DEPLOY_ENV=dev
-STORAGE_URL=http://localhost:8080/api/storage/v2/
-LEGAL_URL=http://localhost:8181/api/legal/v1/
-ENTITLEMENT_URL=broken
-INTEGRATION_TESTER=BarclayWalsh
-NO_DATA_ACCESS_TESTER=Barclay
-MY_TENANT=common
-CLIENT_TENANT=common
-MY_TENANT_PROJECT=common
-CLIENT_TENANT_PROJECT=common
-INTEGRATION_TEST_AUDIENCE=me
-TESTER_SERVICEPRINCIPAL_SECRET=notused
-NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET=notused
-AZURE_AD_TENANT_ID=notused
-AZURE_AD_APP_RESOURCE_ID=notused
-PUBSUB_TOKEN=token
-TENANT_GCP=notused
-TENANT_NAME=opendes
-AZURE_LEGAL_STORAGE_ACCOUNT=notused
-AZURE_LEGAL_STORAGE_KEY=notused
-AZURE_LEGAL_SERVICEBUS=notused
-AZURE_LEGAL_TOPICNAME=notused
-AWS_ACCESS_KEY=shouldntbeneededanymore
-AWS_SECRET_KEY=shouldntbeneededanymore
-AWS_S3_ENDPOINT=s3.us-east-1.amazonaws.com
-AWS_S3_REGION=us-east-1
-```
-
-2. Run AWS integration tests locally in IntelliJ
-    1. Import a gradle project from the directory `$STORAGE_ROOT\testing\storage-integration-tests`.
-    2. Create a `Gradle` configuration in `Run/Debug Configurations` with default settings. 
-    Now you can run and debug the tests in IntelliJ. 
-
-3. Run AWS integration tests locally in command line
-    1. Navigate to the directory `$STORAGE_ROOT\testing\storage-integration-tests`.
-    2. Run `gradle clean build`.
+Instructions for running the AWS integration tests can be found [here](./provider/storage-aws/README.md).
 
 ## License
 Copyright 2017-2019, Schlumberger

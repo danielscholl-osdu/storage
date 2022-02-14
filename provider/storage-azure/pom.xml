@@ -20,25 +20,26 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.14.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
     <properties>
         <azure.appservice.resourcegroup />
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.13.0-rc6</osdu.corelibazure.version>
-        <osdu.storage-core.version>0.13.0-SNAPSHOT</osdu.storage-core.version>
+        <osdu.corelibazure.version>0.13.1-SNAPSHOT</osdu.corelibazure.version>
+        <osdu.storage-core.version>0.14.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <powermock.version>2.0.2</powermock.version>
         <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
+        <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
     </properties>
 
     <dependencyManagement>
@@ -50,6 +51,37 @@
                 <version>${osdu.corelibazure.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.azure</groupId>
+                        <artifactId>azure-storage-blob</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-to-slf4j</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-jul</artifactId>
+                <version>${log4j2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -101,24 +133,16 @@
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-azure</artifactId>
             <version>${osdu.corelibazure.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.azure</groupId>
+                    <artifactId>azure-storage-blob</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>elasticsearch</artifactId>
-                    <groupId>org.elasticsearch</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>elasticsearch-rest-client</artifactId>
-                    <groupId>org.elasticsearch.client</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>elasticsearch-rest-high-level-client</artifactId>
-                    <groupId>org.elasticsearch.client</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -138,7 +162,7 @@
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure-eventgrid</artifactId>
-            <version>1.2.0</version>
+            <version>1.4.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -171,6 +195,11 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+            <version>${azure-storage-blob.version}</version>
         </dependency>
     </dependencies>
 
