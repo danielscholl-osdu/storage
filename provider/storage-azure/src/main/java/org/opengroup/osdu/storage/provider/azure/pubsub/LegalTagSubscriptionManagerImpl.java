@@ -20,7 +20,7 @@ import com.microsoft.azure.servicebus.primitives.ServiceBusException;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
-import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
+import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.interfaces.ILegalTagSubscriptionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
     @Autowired
     private LegalComplianceChangeUpdate legalComplianceChangeUpdate;
     @Autowired
-    private PubSubConfig pubSubConfig;
+    private ServiceBusConfig serviceBusConfig;
     @Autowired
     private AzureBootstrapConfig azureBootstrapConfig;
     @Autowired
@@ -56,12 +56,12 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
         List<String> tenantList = tenantFactory.listTenantInfo().stream().map(TenantInfo::getDataPartitionId)
                 .collect(Collectors.toList());
         ExecutorService executorService = Executors
-                .newFixedThreadPool(Integer.parseUnsignedInt(pubSubConfig.getSbExecutorThreadPoolSize()));
+                .newFixedThreadPool(Integer.parseUnsignedInt(serviceBusConfig.getSbExecutorThreadPoolSize()));
         for (String partition : tenantList) {
             try {
                 SubscriptionClient subscriptionClient = this
                         .legalTagSubscriptionClientFactory
-                        .getSubscriptionClient(partition, pubSubConfig.getLegalServiceBusTopic(), pubSubConfig.getLegalServiceBusTopicSubscription());
+                        .getSubscriptionClient(partition, serviceBusConfig.getLegalServiceBusTopic(), serviceBusConfig.getLegalServiceBusTopicSubscription());
                 registerMessageHandler(subscriptionClient, executorService);
             } catch (InterruptedException | ServiceBusException e) {
                 LOGGER.error("Error while creating or registering subscription client {}", e.getMessage(), e);
@@ -75,9 +75,9 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
         LegalTagSubscriptionMessageHandler messageHandler = new LegalTagSubscriptionMessageHandler(subscriptionClient, legalComplianceChangeUpdate);
         subscriptionClient.registerMessageHandler(
                 messageHandler,
-                new MessageHandlerOptions(Integer.parseUnsignedInt(pubSubConfig.getMaxConcurrentCalls()),
+                new MessageHandlerOptions(Integer.parseUnsignedInt(serviceBusConfig.getMaxConcurrentCalls()),
                         false,
-                        Duration.ofSeconds(Integer.parseUnsignedInt(pubSubConfig.getMaxLockRenewDurationInSeconds())),
+                        Duration.ofSeconds(Integer.parseUnsignedInt(serviceBusConfig.getMaxLockRenewDurationInSeconds())),
                         Duration.ofSeconds(1)
                 ),
                 executorService);

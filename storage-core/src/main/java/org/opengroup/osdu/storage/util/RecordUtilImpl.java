@@ -70,21 +70,6 @@ public class RecordUtilImpl implements RecordUtil {
     }
 
     @Override
-    public Map<String, String> mapRecordsAndVersions(List<String> recordIds) {
-        Map<String, String> idMap = new HashMap<>();
-        for (String id : recordIds) {
-            String[] idParts = id.split(":");
-            if (idParts.length == 4) {
-                String idWithoutVersion = id.substring(0, id.length() - idParts[3].length() - 1);
-                idMap.put(idWithoutVersion, id);
-            } else {
-                idMap.put(id, id);
-            }
-        }
-        return idMap;
-    }
-
-    @Override
     public RecordMetadata updateRecordMetaDataForPatchOperations(RecordMetadata recordMetadata, List<PatchOperation> ops,
                                                                  String user, long timestamp) {
         List<PatchOperation> tagOperation = ops.stream()

@@ -6,12 +6,14 @@ data:
   entitlements_host: "http://entitlements"
   partition_host: "http://partition"
   legaltag_host: "http://legal"
-  crs_converter_host: "http://crs-converter"
+  crs_converter_host: "http://crs-conversion"
   log_level: "INFO"
   google_audiences: ""
   redis_group_host: ""
   redis_storage_host: ""
   default_data_country: "US"
+  token_provider: "GCP"
+  partition_auth_enabled: "true"
 
 conf:
   configmap: "storage-config"

@@ -18,7 +18,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>os-storage-testing</artifactId>
-	<version>0.13.0-SNAPSHOT</version>
+	<version>0.14.0-SNAPSHOT</version>
 	<description>Root Storage Service project</description>
 	<packaging>pom</packaging>
 
@@ -39,7 +39,7 @@
 	</modules>
 
 	<properties>
-		<log4j.version>2.17.0</log4j.version>
+		<log4j.version>2.17.1</log4j.version>
 	</properties>
 
 	<repositories>

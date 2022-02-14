@@ -198,7 +198,6 @@ public class BulkUpdateRecordServiceImplTest {
                              List<PatchOperation> patchOperations,
                              boolean hasOwnerAccess,
                              boolean isLockedRecord) {
-        when(recordUtil.mapRecordsAndVersions(TEST_IDS)).thenReturn(IDS_VERSION_MAP);
         when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
         when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
                 .thenReturn(isLockedRecord ? new ArrayList<>(singletonList(TEST_ID)) : emptyList());
