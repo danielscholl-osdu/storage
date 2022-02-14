@@ -14,123 +14,66 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
-import com.microsoft.azure.eventgrid.models.EventGridEvent;
-import com.microsoft.azure.servicebus.TopicClient;
 import com.microsoft.azure.servicebus.primitives.ServiceBusException;
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opengroup.osdu.azure.eventgrid.EventGridTopicStore;
-import org.opengroup.osdu.azure.servicebus.ITopicClientFactory;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
+import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
+import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @ExtendWith(MockitoExtension.class)
 public class MessageBusImplTest {
-
-    private static final String DATA_PARTITION_WITH_FALLBACK_ACCOUNT_ID = "data-partition-account-id";
-    private static final String CORRELATION_ID = "correlation-id";
-    private static final String PARTITION_ID = "partition-id";
-
+    private static final String TOPIC_NAME = "recordstopic";
+    private final static String RECORDS_CHANGED_EVENT_SUBJECT = "RecordsChanged";
+    private final static String RECORDS_CHANGED_EVENT_TYPE = "RecordsChanged";
+    private final static String RECORDS_CHANGED_EVENT_DATA_VERSION = "1.0";
     @Mock
-    private ITopicClientFactory topicClientFactory;
-
+    private MessagePublisher messagePublisher;
     @Mock
-    private TopicClient topicClient;
-
-    @Mock
-    private EventGridTopicStore eventGridTopicStore;
-
+    private ServiceBusConfig serviceBusConfig;
     @Mock
     private EventGridConfig eventGridConfig;
-
+    @Mock
+    private PublisherConfig publisherConfig;
     @Mock
     private DpsHeaders dpsHeaders;
-
-    @Mock
-    private JaxRsDpsLog logger;
-
     @InjectMocks
     private MessageBusImpl sut;
 
     @Before
     public void init() throws ServiceBusException, InterruptedException {
         initMocks(this);
-
-        doReturn(DATA_PARTITION_WITH_FALLBACK_ACCOUNT_ID).when(dpsHeaders).getPartitionIdWithFallbackToAccountId();
-        doReturn(PARTITION_ID).when(dpsHeaders).getPartitionId();
-        doReturn(CORRELATION_ID).when(dpsHeaders).getCorrelationId();
-        doReturn(topicClient).when(topicClientFactory).getClient(eq(PARTITION_ID), any());
+        doReturn("10").when(publisherConfig).getPubSubBatchSize();
+        doReturn(TOPIC_NAME).when(eventGridConfig).getEventGridTopic();
+        doReturn(TOPIC_NAME).when(serviceBusConfig).getServiceBusTopic();
+        doReturn(RECORDS_CHANGED_EVENT_SUBJECT).when(eventGridConfig).getEventSubject();
+        doReturn(RECORDS_CHANGED_EVENT_DATA_VERSION).when(eventGridConfig).getEventDataVersion();
+        doReturn(RECORDS_CHANGED_EVENT_TYPE).when(eventGridConfig).getEventType();
     }
 
     @Test
-    public void should_publishToEventGrid_WhenFlagIsSet() {
+    public void should_publishToMessagePublisher() {
         // Set Up
         String[] ids = {"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11"};
         String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5", "kind6", "kind7", "kind8", "kind9", "kind10", "kind11"};
+        doNothing().when(messagePublisher).publishMessage(eq(dpsHeaders), any());
 
         PubSubInfo[] pubSubInfo = new PubSubInfo[11];
         for (int i = 0; i < ids.length; ++i) {
             pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
         }
-
-        ArgumentCaptor<String> partitionNameCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> topicNameArgumentCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<List<EventGridEvent>> listEventGridEventArgumentCaptor = ArgumentCaptor.forClass(List.class);
-        doNothing().when(this.eventGridTopicStore).publishToEventGridTopic(
-                partitionNameCaptor.capture(), topicNameArgumentCaptor.capture(), listEventGridEventArgumentCaptor.capture()
-        );
-        when(this.eventGridConfig.isPublishingToEventGridEnabled()).thenReturn(true);
-        when(this.eventGridConfig.getEventGridBatchSize()).thenReturn(5);
-        when(this.eventGridConfig.getTopicName()).thenReturn("recordstopic");
-
-        // Act
-        sut.publishMessage(this.dpsHeaders, pubSubInfo);
-
-        // Asset
-        verify(this.eventGridTopicStore, times(3)).publishToEventGridTopic(any(), any(), anyList());
-
-        // The number of events that are being published is verified here.
-        assertEquals(1, listEventGridEventArgumentCaptor.getValue().size());
-        assertEquals(topicNameArgumentCaptor.getValue(), "recordstopic");
-        assertEquals(partitionNameCaptor.getValue(), PARTITION_ID);
-
-        // Validate all records are preserved.
-        List<String> observedIds = getListOfId(listEventGridEventArgumentCaptor.getAllValues());
-        assertTrue(observedIds.containsAll(Arrays.asList(ids)) && Arrays.asList(ids).containsAll(observedIds));
-    }
-
-    private List<String> getListOfId(List<List<EventGridEvent>> value) {
-        List<String> ids = new ArrayList<>();
-        for (List<EventGridEvent> list: value) {
-            for (EventGridEvent event : list) {
-                HashMap<String, Object> map = (HashMap<String, Object>) event.data();
-                PubSubInfo[] pubSubInfos = (PubSubInfo[]) map.get("data");
-                for (PubSubInfo p : pubSubInfos) {
-                    ids.add(p.getId());
-                }
-            }
-        }
-        return ids;
+        sut.publishMessage(dpsHeaders, pubSubInfo);
     }
 
     private PubSubInfo getPubsInfo(String id, String kind) {
