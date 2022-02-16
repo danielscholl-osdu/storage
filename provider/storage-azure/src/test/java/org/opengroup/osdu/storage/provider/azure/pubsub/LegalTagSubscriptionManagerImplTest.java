@@ -11,8 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
-import org.opengroup.osdu.storage.provider.azure.di.PubSubConfig;
-import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
+import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 
 import java.util.Collections;
 
@@ -37,7 +36,7 @@ public class LegalTagSubscriptionManagerImplTest {
     private AzureBootstrapConfig azureBootstrapConfig;
 
     @Mock
-    private PubSubConfig pubSubConfig;
+    private ServiceBusConfig serviceBusConfig;
 
     @Mock
     private SubscriptionClient subscriptionClient;
@@ -52,9 +51,9 @@ public class LegalTagSubscriptionManagerImplTest {
         TenantInfo tenantInfo = new TenantInfo();
         tenantInfo.setDataPartitionId(dataPartition);
 
-        when(pubSubConfig.getMaxConcurrentCalls()).thenReturn(maxConcurrentCalls);
-        when(pubSubConfig.getSbExecutorThreadPoolSize()).thenReturn(nThreads);
-        when(pubSubConfig.getMaxConcurrentCalls()).thenReturn(maxLockRenewDuration);
+        when(serviceBusConfig.getMaxConcurrentCalls()).thenReturn(maxConcurrentCalls);
+        when(serviceBusConfig.getSbExecutorThreadPoolSize()).thenReturn(nThreads);
+        when(serviceBusConfig.getMaxLockRenewDurationInSeconds()).thenReturn(maxLockRenewDuration);
         when(tenantFactory.listTenantInfo()).thenReturn(Collections.singletonList(tenantInfo));
     }
 
@@ -62,13 +61,13 @@ public class LegalTagSubscriptionManagerImplTest {
     public void shouldSuccessfullyRegisterMessageHandler() throws ServiceBusException, InterruptedException {
 
         doNothing().when(subscriptionClient).registerMessageHandler(any(), any(), any());
-        when(subscriptionClientFactory.getSubscriptionClient(dataPartition, pubSubConfig.getLegalServiceBusTopic(), pubSubConfig.getLegalServiceBusTopicSubscription())).thenReturn(subscriptionClient);
+        when(subscriptionClientFactory.getSubscriptionClient(dataPartition, serviceBusConfig.getLegalServiceBusTopic(), serviceBusConfig.getLegalServiceBusTopicSubscription())).thenReturn(subscriptionClient);
 
         subscriptionManager.subscribeLegalTagsChangeEvent();
 
-        verify(pubSubConfig, times(1)).getMaxConcurrentCalls();
-        verify(pubSubConfig, times(1)).getSbExecutorThreadPoolSize();
-        verify(pubSubConfig, times(1)).getMaxLockRenewDurationInSeconds();
+        verify(serviceBusConfig, times(1)).getMaxConcurrentCalls();
+        verify(serviceBusConfig, times(1)).getSbExecutorThreadPoolSize();
+        verify(serviceBusConfig, times(1)).getMaxLockRenewDurationInSeconds();
     }
 
 
@@ -77,13 +76,13 @@ public class LegalTagSubscriptionManagerImplTest {
     public void shouldThrowExceptionIfErrorWhileRegisteringMessageHandler() throws ServiceBusException, InterruptedException {
 
         doThrow(new InterruptedException(errorMessage)).when(subscriptionClient).registerMessageHandler(any(), any(), any());
-        when(subscriptionClientFactory.getSubscriptionClient(dataPartition, pubSubConfig.getLegalServiceBusTopic(), pubSubConfig.getLegalServiceBusTopicSubscription())).thenReturn(subscriptionClient);
+        when(subscriptionClientFactory.getSubscriptionClient(dataPartition, serviceBusConfig.getLegalServiceBusTopic(), serviceBusConfig.getLegalServiceBusTopicSubscription())).thenReturn(subscriptionClient);
 
         subscriptionManager.subscribeLegalTagsChangeEvent();
 
-        verify(pubSubConfig, times(1)).getMaxConcurrentCalls();
-        verify(pubSubConfig, times(1)).getSbExecutorThreadPoolSize();
-        verify(pubSubConfig, times(1)).getMaxLockRenewDurationInSeconds();
+        verify(serviceBusConfig, times(1)).getMaxConcurrentCalls();
+        verify(serviceBusConfig, times(1)).getSbExecutorThreadPoolSize();
+        verify(serviceBusConfig, times(1)).getMaxLockRenewDurationInSeconds();
     }
 
 

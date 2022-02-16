@@ -26,9 +26,9 @@
         <java.version>1.8</java.version>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
-        <osm.version>0.13.0-rc1</osm.version>
-        <obm.version>0.13.0-rc1</obm.version>
-        <oqm.version>0.13.0-rc1</oqm.version>
+        <osm.version>0.13.0</osm.version>
+        <obm.version>0.13.0</obm.version>
+        <oqm.version>0.13.0</oqm.version>
 		<log4j.version>2.17.1</log4j.version>
     </properties>
 
@@ -59,6 +59,7 @@
                 <scope>import</scope>
             </dependency>
             <!--for MinIO-->
+            <!--TODO: move next 4 dependencies to core-lib-gcp. Related to mappers-->
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib</artifactId>
@@ -101,7 +102,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-gcp</artifactId>
-            <version>0.13.0-rc5</version>
+            <version>0.14.0-rc1</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -202,27 +203,6 @@
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
-            <!--<plugin>-->
-            <!--<groupId>com.spotify</groupId>-->
-            <!--<artifactId>dockerfile-maven-plugin</artifactId>-->
-            <!--<version>1.4.10</version>-->
-            <!--<configuration>-->
-            <!--<repository>${docker.image.prefix}/${project.artifactId}</repository>-->
-            <!--<buildArgs>-->
-            <!--<JAR_FILE>./target/storage-gcp-0.0.1-SNAPSHOT-spring-boot.jar</JAR_FILE>-->
-            <!--</buildArgs>-->
-            <!--<dockerfile>docker/Dockerfile</dockerfile>-->
-            <!--</configuration>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>build-image</id>-->
-            <!--<phase>package</phase>-->
-            <!--<goals>-->
-            <!--<goal>build</goal>-->
-            <!--</goals>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
