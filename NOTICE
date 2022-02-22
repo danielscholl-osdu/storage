@@ -24,7 +24,7 @@ The following software have components provided under the terms of this license:
 - Apache Commons Lang (from http://commons.apache.org/proper/commons-lang/)
 - Apache Commons Logging (from http://commons.apache.org/logging/, http://commons.apache.org/proper/commons-logging/)
 - Apache Geronimo JMS Spec 2.0 (from http://geronimo.apache.org/maven/${siteId}/${version})
-- Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga, http://hc.apache.org/httpcomponents-core-ga/, http://hc.apache.org/httpcomponents-core/)
+- Apache HttpCore (from http://hc.apache.org/httpcomponents-core-ga, http://hc.apache.org/httpcomponents-core-ga/)
 - AssertJ fluent assertions (from https://repo1.maven.org/maven2/org/assertj/assertj-core)
 - BSON (from http://bsonspec.org, https://bsonspec.org)
 - Bean Validation API (from http://beanvalidation.org)
