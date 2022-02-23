@@ -55,7 +55,7 @@ public class UserAccessService {
     IServiceAccountJwtClient serviceAccountClient;
     private static final String ACCESS_DENIED_REASON = "Access denied";
     private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
-    private static final String servicePrincipalID = "";
+    private static final String servicePrincipalID = "service-principal-user";
     @PostConstruct
     public void init() {
 
