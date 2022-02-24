@@ -55,14 +55,13 @@ public class UserAccessService {
     IServiceAccountJwtClient serviceAccountClient;
     private static final String ACCESS_DENIED_REASON = "Access denied";
     private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
-    private static final String servicePrincipalID = "service-principal-user";
+    private static final String servicePrincipalID = "";
     @PostConstruct
     public void init() {
 
         cacheHelper = new CacheHelper();
 
         K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        provider.getParameterAsStringOrDefault(servicePrincipalID, "serviceprincipal@testing.com");
     }
 
     /**
