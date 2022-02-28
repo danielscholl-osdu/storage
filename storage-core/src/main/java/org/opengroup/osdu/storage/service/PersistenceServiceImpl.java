@@ -119,7 +119,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
 		for (int i = 0; i < recordMetadata.size(); i++) {
 			RecordMetadata metadata = recordMetadata.get(i);
-			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.create);
+			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
 		}
 		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
 		return lockedRecords;
