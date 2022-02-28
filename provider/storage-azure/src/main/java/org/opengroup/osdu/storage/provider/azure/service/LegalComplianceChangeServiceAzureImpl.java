@@ -102,7 +102,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
         ComplianceChangeInfo output = null;
 
         if (lt.getChangedTagStatus().equalsIgnoreCase("compliant")) {
-            output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.create, RecordState.active);
+            output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.update, RecordState.active);
         } else if (lt.getChangedTagStatus().equalsIgnoreCase("incompliant")) {
             this.legalTagCache.delete(lt.getChangedTagName());
             output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
