@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.azure.service;
 
+import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -30,10 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import static java.util.Collections.singletonList;
 
 @Component
@@ -64,17 +64,21 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                 AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = recordsRepo
                         .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
                 cursor = results.getKey();
+                List<String> recordIds = new ArrayList<>();
                 if (results.getValue() != null && !results.getValue().isEmpty()) {
                     List<RecordMetadata> recordsMetadata = results.getValue();
                     PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-                    this.recordsRepo.createOrUpdate(recordsMetadata);
-                    StringBuilder recordsId = new StringBuilder();
-                    for (RecordMetadata recordMetadata : recordsMetadata) {
-                        recordsId.append(", ").append(recordMetadata.getId());
+                    try {
+                        this.recordsRepo.createOrUpdate(recordsMetadata);
+                    } catch (Exception e) {
+                        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error updating records upon legaltag changed.",
+                                "The server could not process your request at the moment.", e);
                     }
-                    LOGGER.debug("Record Updated Successfully {}",recordsId.substring(2));
-
+                    for (RecordMetadata recordMetadata : recordsMetadata) {
+                        recordIds.add(recordMetadata.getId());
+                    }
                     this.pubSubclient.publishMessage(headers, pubsubInfos);
+                    LOGGER.info("{} Records updated successfully {}",recordIds.size(),Arrays.toString(recordIds.toArray()));
                 }
             } while (cursor != null);
         }
