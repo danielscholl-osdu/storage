@@ -327,7 +327,7 @@ public class PersistenceServiceImplTest {
             PubSubInfo pubSubInfo = pubsubList.get(i);
             assertEquals("anyKind", pubSubInfo.getKind());
             assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, pubSubInfo.getOp());
-            assertNull(pubSubInfo.getPriorKind());
+            assertNull(pubSubInfo.getPreviousVersionKind());
             assertTrue(pubSubInfo.getId().startsWith("ID"));
         }
     }
