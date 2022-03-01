@@ -69,8 +69,8 @@ public class PersistenceServiceImpl implements IPersistenceService {
 				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.create).build();
 			} else {
 				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.update).build();
-				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPriorKind())) {
-					pubsubInfo[i].setPriorKind(processing.getRecordMetadata().getPriorKind());
+				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
+					pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
 				}
 			}
 		}

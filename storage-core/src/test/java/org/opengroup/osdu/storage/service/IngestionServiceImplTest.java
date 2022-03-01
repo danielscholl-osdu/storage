@@ -425,7 +425,7 @@ public class IngestionServiceImplTest {
 
         for (RecordProcessing rp : input.getRecords()) {
             assertEquals(OperationType.update, rp.getOperationType());
-            assertEquals(KIND_1, rp.getRecordMetadata().getPriorKind());
+            assertEquals(KIND_1, rp.getRecordMetadata().getPreviousVersionKind());
         }
     }
 
