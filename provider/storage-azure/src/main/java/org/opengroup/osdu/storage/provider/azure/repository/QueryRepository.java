@@ -77,13 +77,6 @@ public class QueryRepository implements IQueryRepository {
         List<String> docs = new ArrayList();
         try {
             /* TODO: PAGINATION REIMPLEMENTATION NEEDED*/
-
-            if (limit != null) {
-                throw this.getLimitException();
-            }
-            if (cursor != null) {
-                throw this.getCursorException();
-            }
             docs = getDistinctKind();
             dqr.setResults(docs);
         } catch (CosmosException e) {
@@ -179,18 +172,6 @@ public class QueryRepository implements IQueryRepository {
         SqlQuerySpec query = new SqlQuerySpec(queryText);
         docs = cosmosStore.queryItems(dpsHeaders.getPartitionId(), cosmosDBName, storageRecordContainer, query, storageOptions, String.class);
         return docs;
-    }
-
-    @Contract(" -> new")
-    @NotNull
-    private AppException getLimitException() {
-        throw new AppException(HttpStatus.SC_BAD_REQUEST, "Limit not supported", "The limit is invalid");
-    }
-
-    @Contract(" -> new")
-    @NotNull
-    private AppException getCursorException() {
-        throw new AppException(HttpStatus.SC_BAD_REQUEST, "Cursor not supported", "The cursor is invalid");
     }
 
     private AppException getInvalidCursorException() {
