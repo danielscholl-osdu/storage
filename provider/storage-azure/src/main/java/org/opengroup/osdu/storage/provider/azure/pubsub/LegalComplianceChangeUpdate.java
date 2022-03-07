@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.microsoft.azure.servicebus.IMessage;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
@@ -72,15 +73,16 @@ public class LegalComplianceChangeUpdate{
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
             complianceMessagePullReceiver.receiveMessage(tags, headers);
-        }catch (NullPointerException ex){
+        } catch (AppException e) {
+            LOGGER.error(String.format("Error occurred while updating compliance on records: %s", e.getMessage()), e);
+            throw e;
+        } catch (NullPointerException ex){
             LOGGER.error("Invalid format for message with id: {}", message.getMessageId(), ex);
             throw new NullPointerException(ex.toString());
-        }
-        catch (Exception ex){
+        } catch (Exception ex){
             LOGGER.error(String.format("Error occurred while updating compliance on records: %s", ex.getMessage()), ex);
             throw new Exception(ex.toString());
-        }
-        finally {
+        } finally {
             ThreadScopeContextHolder.getContext().clear();
             MDC.clear();
         }
