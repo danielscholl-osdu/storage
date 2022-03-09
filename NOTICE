@@ -55,7 +55,7 @@ The following software have components provided under the terms of this license:
 - Jackson-dataformat-YAML (from http://wiki.fasterxml.com/JacksonExtensionYAML, https://github.com/FasterXML/jackson, https://github.com/FasterXML/jackson-dataformats-text)
 - Jackson-module-parameter-names (from https://repo1.maven.org/maven2/com/fasterxml/jackson/module/jackson-module-parameter-names)
 - Jakarta Bean Validation API (from https://beanvalidation.org)
-- Java Native Access (from https://github.com/java-native-access/jna, https://github.com/twall/jna)
+- Java Native Access (from https://github.com/java-native-access/jna, https://github.com/twall/jna, https://repo1.maven.org/maven2/net/java/dev/jna/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Java UUID Generator (from http://wiki.fasterxml.com/JugHome)
 - Javassist (from http://www.javassist.org/)
@@ -280,7 +280,7 @@ LGPL-2.1-only
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- Java Native Access (from https://github.com/java-native-access/jna, https://github.com/twall/jna)
+- Java Native Access (from https://github.com/java-native-access/jna, https://github.com/twall/jna, https://repo1.maven.org/maven2/net/java/dev/jna/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Javassist (from http://www.javassist.org/)
 - Logback Classic Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-classic)
