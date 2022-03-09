@@ -387,6 +387,50 @@ public class IngestionServiceImplTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void should_includePriorKind_when_kindUpdated() {
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.record1.setKind(KIND_2);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(this.acl);
+        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
+
+        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
+
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, Collections.singletonList(this.record1), USER);
+        assertEquals(USER, transferInfo.getUser());
+        assertEquals(new Integer(1), transferInfo.getRecordCount());
+        assertNotNull(transferInfo.getVersion());
+
+        ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
+
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture());
+        verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
+
+        TransferBatch input = transfer.getValue();
+
+        for (RecordProcessing rp : input.getRecords()) {
+            assertEquals(OperationType.update, rp.getOperationType());
+            assertEquals(KIND_1, rp.getRecordMetadata().getPreviousVersionKind());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void should_disregardUpdateRecord_when_skipDupesAndSameRecordContent() {
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
         this.records.remove(1);
