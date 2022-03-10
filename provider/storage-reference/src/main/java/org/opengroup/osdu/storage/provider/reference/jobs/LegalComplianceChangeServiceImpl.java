@@ -126,7 +126,7 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
     ComplianceChangeInfo output = null;
 
     if (lt.getChangedTagStatus().equalsIgnoreCase("compliant")) {
-      output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.create,
+      output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.update,
           RecordState.active);
     } else if (lt.getChangedTagStatus().equalsIgnoreCase("incompliant")) {
       this.legalTagCache.delete(lt.getChangedTagName());
