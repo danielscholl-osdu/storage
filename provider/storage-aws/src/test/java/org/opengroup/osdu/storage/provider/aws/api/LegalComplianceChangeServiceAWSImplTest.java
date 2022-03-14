@@ -124,7 +124,7 @@ public class LegalComplianceChangeServiceAWSImplTest {
         // compliant pub sub info
         PubSubInfo compliantPubSubInfo = new PubSubInfo();
         compliantPubSubInfo.setId(compliantRecordId);
-        compliantPubSubInfo.setOp(OperationType.create);
+        compliantPubSubInfo.setOp(OperationType.update);
         PubSubInfo[] compliantPubSubInfos = new PubSubInfo[1];
         compliantPubSubInfos[0] = compliantPubSubInfo;
 
