@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
@@ -156,9 +157,9 @@ public class RecordServiceImplTest {
 
         verify(this.cloudStorage).delete(record);
 
-        PubSubInfo pubsubMsg = new PubSubInfo(RECORD_ID, "any kind", OperationType.delete);
+        PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(RECORD_ID, "any kind", DeletionType.hard);
 
-        verify(this.pubSubClient).publishMessage(this.headers, pubsubMsg);
+        verify(this.pubSubClient).publishMessage(this.headers, pubSubDeleteInfo);
     }
 
 
@@ -307,14 +308,15 @@ public class RecordServiceImplTest {
         assertNotNull(capturedRecord.getModifyTime());
         assertEquals("anyUserName", capturedRecord.getModifyUser());
 
-        ArgumentCaptor<PubSubInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubInfo.class);
+        ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
         verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
 
-        PubSubInfo capturedMessage = pubsubMessageCaptor.getValue();
+        PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
         assertEquals("any kind", capturedMessage.getKind());
         assertEquals(OperationType.delete, capturedMessage.getOp());
+        assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
     }
 
     @Test
@@ -482,14 +484,15 @@ public class RecordServiceImplTest {
     }
 
     private void verifyPubSubPublished() {
-        ArgumentCaptor<PubSubInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubInfo.class);
+        ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
         verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
 
-        PubSubInfo capturedMessage = pubsubMessageCaptor.getValue();
+        PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
         assertEquals(KIND, capturedMessage.getKind());
         assertEquals(OperationType.delete, capturedMessage.getOp());
+        assertEquals(DeletionType.hard, capturedMessage.getDeletionType());
     }
 
     private RecordMetadata buildRecordMetadata() {
