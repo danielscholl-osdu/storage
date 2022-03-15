@@ -24,6 +24,7 @@ import org.opengroup.osdu.core.common.http.HttpResponse;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.opa.model.CreateOrUpdateValidationInput;
@@ -98,6 +99,36 @@ public class OPAServiceImpl implements IOPAService {
         List<ValidationOutputRecord> result = new ArrayList<>();
         result.addAll(createResponse.getResult());
         result.addAll(updateResponse.getResult());
+        return result;
+    }
+
+    @Override
+    public List<ValidationOutputRecord> validateUserAccessToRecords(List<RecordMetadata> recordsMetadata, OperationType operationType) {
+        List<ValidationInputRecord> recordsTobeValidated = new ArrayList<>();
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            ValidationInputRecord validationInputRecord = ValidationInputRecord.builder()
+                    .id(recordMetadata.getId())
+                    .kind(recordMetadata.getKind())
+                    .legal(recordMetadata.getLegal())
+                    .acls(recordMetadata.getAcl()).build();
+
+            recordsTobeValidated.add(validationInputRecord);
+        }
+
+        String token = headers.getAuthorization().replace("Bearer ", "");
+        CreateOrUpdateValidationInput dataAuthzInput = CreateOrUpdateValidationInput.builder()
+                .datapartitionid(headers.getPartitionId())
+                .token(token)
+                .xuserid(headers.getUserId())
+                .operation(operationType.getValue())
+                .records(recordsTobeValidated).build();
+
+        CreateOrUpdateValidationRequest dataAuthzValidationRequest = CreateOrUpdateValidationRequest.builder().input(dataAuthzInput).build();
+
+        CreateOrUpdateValidationResponse dataAuthzValidationResponse = evaluateDataAuthorizationPolicy(dataAuthzValidationRequest);
+
+        List<ValidationOutputRecord> result = new ArrayList<>();
+        result.addAll(dataAuthzValidationResponse.getResult());
         return result;
     }
 
