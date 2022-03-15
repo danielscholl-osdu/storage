@@ -192,6 +192,9 @@ public class IngestionServiceImpl implements IngestionService {
 			} else {
 				RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
+				if(!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {
+					updatedRecordMetadata.setPreviousVersionKind(existingRecordMetadata.getKind());
+				}
 
 				List<String> versions = new ArrayList<>();
 				versions.addAll(existingRecordMetadata.getGcsVersionPaths());

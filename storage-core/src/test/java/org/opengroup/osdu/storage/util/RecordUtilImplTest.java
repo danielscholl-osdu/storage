@@ -134,6 +134,19 @@ public class RecordUtilImplTest {
   }
 
   @Test
+  public void updateRecordMetaDataForPatchOperations_shouldUpdateForTags_withAddOperation_whenTagsAreNull() {
+    RecordMetadata recordMetadata = buildRecordMetadataWithNullTags();
+    PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, PATCH_OPERATION_ADD,
+            TAG_KEY_NEW + ":" + TAG_VALUE_NEW);
+
+    RecordMetadata updatedMetadata = recordUtil
+            .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+                    TIMESTAMP);
+
+    assertEquals(TAG_VALUE_NEW, updatedMetadata.getTags().get(TAG_KEY_NEW));
+  }
+
+  @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForTags_withRemoveOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
     PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, PATCH_OPERATION_REMOVE,TAG_KEY);
@@ -351,22 +364,36 @@ public class RecordUtilImplTest {
   }
 
   private RecordMetadata buildRecordMetadata() {
+    RecordMetadata recordMetadata = new RecordMetadata();
+    recordMetadata.setAcl(setTestAcl());
+    recordMetadata.setLegal(setTestLegal());
+    recordMetadata.getTags().put(TAG_KEY, TAG_VALUE);
+    return recordMetadata;
+  }
+
+  private RecordMetadata buildRecordMetadataWithNullTags() {
+    RecordMetadata recordMetadata = new RecordMetadata();
+    recordMetadata.setAcl(setTestAcl());
+    recordMetadata.setLegal(setTestLegal());
+    recordMetadata.setTags(null);
+    return recordMetadata;
+  }
+
+  private Acl setTestAcl() {
     Acl acl = new Acl();
     String[] viewers = new String[]{ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2};
     acl.setViewers(viewers);
     String[] owners = new String[]{ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2};
     acl.setOwners(owners);
+    return acl;
+  }
 
+  private Legal setTestLegal() {
     Legal legal = new Legal();
     Set<String> legalTags = new HashSet<>();
     legalTags.add(LEGAL_LEGALTAG_EXISTED1);
     legalTags.add(LEGAL_LEGALTAG_EXISTED2);
     legal.setLegaltags(legalTags);
-
-    RecordMetadata recordMetadata = new RecordMetadata();
-    recordMetadata.setAcl(acl);
-    recordMetadata.setLegal(legal);
-    recordMetadata.getTags().put(TAG_KEY, TAG_VALUE);
-    return recordMetadata;
+    return legal;
   }
 }
