@@ -15,6 +15,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -178,7 +179,7 @@ public class OPAServiceImplTest {
     }
 
     @Test
-    public void shouldReturnListOfValidationOutputRecords_whenOpaDataAuthorizationCheckCompletesSuccessfully() {
+    public void shouldReturnListOfValidationOutputRecords_whenOpaDataAuthorizationCheckForCreateOrUpdateRecordsCompletesSuccessfully() {
         this.record1.setId(RECORD_ID1);
         this.record2.setId(RECORD_ID2);
 
@@ -218,6 +219,40 @@ public class OPAServiceImplTest {
         expectedValidationOutputRecords.add(validationOutputRecord2);
 
         List<ValidationOutputRecord> response = this.sut.validateRecordsCreationOrUpdate(records, existingRecords);
+        assertEquals(expectedValidationOutputRecords, response);
+    }
+
+    @Test
+    public void shouldReturnListOfValidationOutputRecords_whenOpaDataAuthorizationCheckCompletesSuccessfully() {
+        RecordMetadata recordMetadata1 = new RecordMetadata();
+        recordMetadata1.setUser(NEW_USER);
+        recordMetadata1.setKind(KIND_1);
+        recordMetadata1.setStatus(RecordState.active);
+        recordMetadata1.setAcl(this.acl);
+
+        RecordMetadata recordMetadata2 = new RecordMetadata();
+        recordMetadata2.setUser(NEW_USER);
+        recordMetadata2.setKind(KIND_2);
+        recordMetadata2.setStatus(RecordState.active);
+        recordMetadata2.setAcl(this.acl);
+
+        List<RecordMetadata> recordsMetadata = new ArrayList<>();
+        recordsMetadata.add(recordMetadata1);
+        recordsMetadata.add(recordMetadata2);
+
+        when(httpResponse.isSuccessCode()).thenReturn(true);
+        when(httpResponse.getResponseCode()).thenReturn(200);
+        when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [\"You must be a viewer or an owner to access a record\"],\"id\": \"tenant1:crazy:record2\"}]}");
+
+        List<String> errors2 = new ArrayList<>();
+        errors2.add("You must be a viewer or an owner to access a record");
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(Collections.EMPTY_LIST).build();
+        ValidationOutputRecord validationOutputRecord2 = ValidationOutputRecord.builder().id(RECORD_ID2).errors(errors2).build();
+        List<ValidationOutputRecord> expectedValidationOutputRecords = new ArrayList<>();
+        expectedValidationOutputRecords.add(validationOutputRecord1);
+        expectedValidationOutputRecords.add(validationOutputRecord2);
+
+        List<ValidationOutputRecord> response = this.sut.validateUserAccessToRecords(recordsMetadata, OperationType.view);
         assertEquals(expectedValidationOutputRecords, response);
     }
 
