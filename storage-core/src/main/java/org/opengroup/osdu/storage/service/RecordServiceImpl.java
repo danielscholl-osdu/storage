@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
@@ -23,7 +22,10 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.core.common.model.storage.PubSubDeleteInfo;
+import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
@@ -151,7 +153,7 @@ public class RecordServiceImpl implements RecordService {
                     .map(Pair::getKey)
                     .collect(toList());
             deletedRecords.removeAll(notDeletedRecordIds);
-            if(!deletedRecords.isEmpty()) {
+            if (!deletedRecords.isEmpty()) {
                 this.recordRepository.createOrUpdate(recordsMetadata);
                 this.auditLogger.deleteRecordSuccess(deletedRecords);
                 publishDeletedRecords(recordsMetadata);
