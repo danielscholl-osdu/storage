@@ -133,12 +133,16 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
                 .lockedRecordIds(lockedRecordsId)
                 .recordCount(ids.size()).build();
 
-        auditCreateOrUpdateRecordsFails(recordsResponse);
+        auditCreateOrUpdateRecords(recordsResponse);
 
         return recordsResponse;
     }
 
-    private void auditCreateOrUpdateRecordsFails(BulkUpdateRecordsResponse recordsResponse) {
+    private void auditCreateOrUpdateRecords(BulkUpdateRecordsResponse recordsResponse) {
+        List<String> successfulUpdates = recordsResponse.getRecordIds();
+        if (!successfulUpdates.isEmpty()) {
+            auditLogger.createOrUpdateRecordsSuccess(successfulUpdates);
+        }
         List<String> failedUpdates =
                 Stream.of(recordsResponse.getNotFoundRecordIds(), recordsResponse.getUnAuthorizedRecordIds(),
                         recordsResponse.getLockedRecordIds()).flatMap(List::stream).collect(toList());

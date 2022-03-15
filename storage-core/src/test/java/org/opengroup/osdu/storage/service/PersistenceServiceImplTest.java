@@ -323,9 +323,11 @@ public class PersistenceServiceImplTest {
 
         assertEquals(successfullRecords, pubsubList.size());
 
-        for (PubSubInfo pubSubInfo : pubsubList) {
+        for (int i = 0; i < pubsubList.size(); i++) {
+            PubSubInfo pubSubInfo = pubsubList.get(i);
             assertEquals("anyKind", pubSubInfo.getKind());
-            assertEquals(OperationType.create, pubSubInfo.getOp());
+            assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, pubSubInfo.getOp());
+            assertNull(pubSubInfo.getPreviousVersionKind());
             assertTrue(pubSubInfo.getId().startsWith("ID"));
         }
     }
