@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -15,9 +16,11 @@ import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
 import org.opengroup.osdu.core.common.model.policy.Result;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 
@@ -40,6 +43,10 @@ public class DataAuthorizationServiceTest {
     private IEntitlementsExtensionService entitlementsService;
     @Mock
     private ICloudStorage cloudStorage;
+    @Mock
+    private IOPAService opaService;
+    @Mock
+    private JaxRsDpsLog logger;
     @InjectMocks
     private DataAuthorizationService sut;
 
@@ -82,12 +89,28 @@ public class DataAuthorizationServiceTest {
     }
 
     @Test
+    public void should_callOpaService_when_OpaIsEnabled() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update);
+
+        verify(this.opaService, times(1)).validateUserAccessToRecords(any(), any());
+    }
+
+    @Test
     public void should_callEntitlementService_when_policyServiceDisabled() {
         when(this.statusService.policyEnabled(this.headers.getPartitionId())).thenReturn(false);
 
         this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
         verify(this.entitlementsService, times(1)).hasOwnerAccess(any(), any());
+    }
+
+    @Test
+    public void should_callEntitlementService_when_opaIsDisabled() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update);
+
+        verify(this.entitlementsService, times(1)).hasValidAccess(any(), any());
     }
 
     private RecordMetadata getRecordMetadata() {
