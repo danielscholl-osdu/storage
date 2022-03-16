@@ -690,7 +690,7 @@ public class IngestionServiceImplTest {
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateRecordsCreationOrUpdate(any(), any())).thenReturn(validationOutputRecords);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
         try {
             this.sut.createUpdateRecords(false, this.records, USER);
@@ -737,7 +737,7 @@ public class IngestionServiceImplTest {
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
         validationOutputRecords.add(validationOutputRecord2);
-        when(this.opaService.validateRecordsCreationOrUpdate(any(), any())).thenReturn(validationOutputRecords);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
         assertEquals(USER, transferInfo.getUser());

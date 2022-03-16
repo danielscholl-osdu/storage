@@ -20,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
@@ -28,10 +29,13 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -89,6 +93,10 @@ public class BulkUpdateRecordServiceImplTest {
     private Clock clock;
     @Mock
     private DataAuthorizationService dataAuthorizationService;
+    @Mock
+    private JaxRsDpsLog logger;
+    @Mock
+    private IOPAService opaService;
     @InjectMocks
     private BulkUpdateRecordServiceImpl service;
 
@@ -160,6 +168,138 @@ public class BulkUpdateRecordServiceImplTest {
 
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
         commonSetup(recordMetadataMap, param.getOps(), true, true);
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+
+        verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
+        verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
+
+        assertEquals(TEST_ID, actualResponse.getLockedRecordIds().get(0));
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+    }
+
+    @Test
+    public void should_bulkUpdateRecordsWithOpaEnabled_successfully() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
+
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
+        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
+                .thenReturn(emptyList());
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+
+        List<String> errors = new ArrayList<>();
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+
+        commonVerify(singletonList(TEST_ID), param.getOps());
+        verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
+        verify(auditLogger, only()).createOrUpdateRecordsSuccess(TEST_IDS);
+
+        assertEquals(TEST_ID, actualResponse.getRecordIds().get(0));
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+    }
+
+    @Test
+    public void should_bulkUpdateRecordsWithOpaEnabled_successfully_when_recordMetadataNotFound() {
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
+        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
+                .thenReturn(emptyList());
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+
+        List<String> errors = new ArrayList<>();
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+
+        verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
+        verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
+
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+        assertEquals(TEST_ID, actualResponse.getNotFoundRecordIds().get(0));
+    }
+
+    @Test
+    public void should_bulkUpdateRecordsWithOpaEnabled_successfully_when_recordUserDonHaveOwnerAccess() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
+
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
+        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
+                .thenReturn(emptyList());
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+
+        List<String> errors = new ArrayList<>();
+        errors.add("You must be an owner to update a record");
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
+
+        verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
+
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertEquals(TEST_ID, actualResponse.getUnAuthorizedRecordIds().get(0));
+    }
+
+    @Test
+    public void should_bulkUpdateRecordsWithOpaEnabled_successfully_when_recordIsLocked() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
+
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS)).thenReturn(recordMetadataMap);
+        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP))
+                .thenReturn(new ArrayList<>(singletonList(TEST_ID)));
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+
+        List<String> errors = new ArrayList<>();
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
 
         BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER);
 

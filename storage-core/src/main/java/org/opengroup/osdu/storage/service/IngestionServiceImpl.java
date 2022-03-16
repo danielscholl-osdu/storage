@@ -31,6 +31,7 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.ValidationInputRecord;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
@@ -392,9 +393,30 @@ public class IngestionServiceImpl implements IngestionService {
 
 	private void validateUserAccessAndCompliancePolicyConstraints(
 			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<RecordIdWithVersion>> recordParentMap) {
+
 		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
-		List<ValidationOutputRecord> outputRecords = this.opaService.validateRecordsCreationOrUpdate(inputRecords, existingRecords);
-		for (ValidationOutputRecord outputRecord : outputRecords) {
+
+		List<RecordMetadata> createRecordsMetadata = new ArrayList<>();
+		List<RecordMetadata> updateRecordsMetadata = new ArrayList<>();
+		for (Record record : inputRecords) {
+			String id = record.getId();
+			if (existingRecords.containsKey(id)) {
+				updateRecordsMetadata.add(existingRecords.get(id));
+			} else {
+				RecordMetadata recordMetadata = new RecordMetadata();
+				recordMetadata.setAcl(record.getAcl());
+				recordMetadata.setLegal(record.getLegal());
+				recordMetadata.setId(id);
+				recordMetadata.setKind(record.getKind());
+
+				createRecordsMetadata.add(recordMetadata);
+			}
+		}
+		List<ValidationOutputRecord> outputCreateRecords = this.opaService.validateUserAccessToRecords(createRecordsMetadata, OperationType.create);
+		List<ValidationOutputRecord> outputUpdateRecords = this.opaService.validateUserAccessToRecords(createRecordsMetadata, OperationType.update);
+		outputCreateRecords.addAll(outputUpdateRecords);
+
+		for (ValidationOutputRecord outputRecord : outputCreateRecords) {
 			if (!outputRecord.getErrors().isEmpty()) {
 				logger.error(String.format("Data authorization failure for record %s: %s", outputRecord.getId(), outputRecord.getErrors().toString()));
 				throw new AppException(HttpStatus.SC_UNAUTHORIZED,
