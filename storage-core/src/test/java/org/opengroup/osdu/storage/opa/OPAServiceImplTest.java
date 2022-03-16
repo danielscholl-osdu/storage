@@ -98,37 +98,28 @@ public class OPAServiceImplTest {
 
     @Test
     public void shouldThrowAppException_whenOpaDataAuthorizationCheckCallFails() {
-        this.record1.setId(RECORD_ID1);
-        this.record2.setId(RECORD_ID2);
-
-        this.records = new ArrayList<>();
-        this.records.add(this.record1);
-        this.records.add(this.record2);
-
         RecordMetadata existingRecordMetadata1 = new RecordMetadata();
         existingRecordMetadata1.setUser(NEW_USER);
         existingRecordMetadata1.setKind(KIND_1);
         existingRecordMetadata1.setStatus(RecordState.active);
         existingRecordMetadata1.setAcl(this.acl);
-        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
 
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
         existingRecordMetadata2.setKind(KIND_2);
         existingRecordMetadata2.setStatus(RecordState.active);
         existingRecordMetadata2.setAcl(this.acl);
-        existingRecordMetadata2.setGcsVersionPaths(Lists.newArrayList("path/4", "path/5"));
 
-        Map<String, RecordMetadata> existingRecords = new HashMap<>();
-        existingRecords.put(RECORD_ID1, existingRecordMetadata1);
-        existingRecords.put(RECORD_ID2, existingRecordMetadata2);
+        List<RecordMetadata> recordsMetadata = new ArrayList<>();
+        recordsMetadata.add(existingRecordMetadata1);
+        recordsMetadata.add(existingRecordMetadata2);
 
         when(httpResponse.isSuccessCode()).thenReturn(false);
         when(httpResponse.getResponseCode()).thenReturn(400);
         when(httpResponse.getBody()).thenReturn("response body");
 
         try {
-            List<ValidationOutputRecord> response = this.sut.validateRecordsCreationOrUpdate(records, existingRecords);
+            List<ValidationOutputRecord> response = this.sut.validateUserAccessToRecords(recordsMetadata, OperationType.update);
             fail("should not proceed.");
         } catch (AppException ex) {
             verify(logger, times(1)).warning("Failure when calling OPA with response code 400, response body: response body");
@@ -139,37 +130,28 @@ public class OPAServiceImplTest {
 
     @Test
     public void shouldThrowAppException_whenOpaDataAuthorizationPolicyIsUndefined() {
-        this.record1.setId(RECORD_ID1);
-        this.record2.setId(RECORD_ID2);
-
-        this.records = new ArrayList<>();
-        this.records.add(this.record1);
-        this.records.add(this.record2);
-
         RecordMetadata existingRecordMetadata1 = new RecordMetadata();
         existingRecordMetadata1.setUser(NEW_USER);
         existingRecordMetadata1.setKind(KIND_1);
         existingRecordMetadata1.setStatus(RecordState.active);
         existingRecordMetadata1.setAcl(this.acl);
-        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
 
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
         existingRecordMetadata2.setKind(KIND_2);
         existingRecordMetadata2.setStatus(RecordState.active);
         existingRecordMetadata2.setAcl(this.acl);
-        existingRecordMetadata2.setGcsVersionPaths(Lists.newArrayList("path/4", "path/5"));
 
-        Map<String, RecordMetadata> existingRecords = new HashMap<>();
-        existingRecords.put(RECORD_ID1, existingRecordMetadata1);
-        existingRecords.put(RECORD_ID2, existingRecordMetadata2);
+        List<RecordMetadata> recordsMetadata = new ArrayList<>();
+        recordsMetadata.add(existingRecordMetadata1);
+        recordsMetadata.add(existingRecordMetadata2);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{}");
 
         try {
-            List<ValidationOutputRecord> response = this.sut.validateRecordsCreationOrUpdate(records, existingRecords);
+            List<ValidationOutputRecord> response = this.sut.validateUserAccessToRecords(recordsMetadata, OperationType.update);
             fail("should not proceed.");
         } catch (AppException ex) {
             verify(logger, times(1)).warning("Data Authorization Policy is undefined.");
@@ -180,30 +162,21 @@ public class OPAServiceImplTest {
 
     @Test
     public void shouldReturnListOfValidationOutputRecords_whenOpaDataAuthorizationCheckForCreateOrUpdateRecordsCompletesSuccessfully() {
-        this.record1.setId(RECORD_ID1);
-        this.record2.setId(RECORD_ID2);
-
-        this.records = new ArrayList<>();
-        this.records.add(this.record1);
-        this.records.add(this.record2);
-
         RecordMetadata existingRecordMetadata1 = new RecordMetadata();
         existingRecordMetadata1.setUser(NEW_USER);
         existingRecordMetadata1.setKind(KIND_1);
         existingRecordMetadata1.setStatus(RecordState.active);
         existingRecordMetadata1.setAcl(this.acl);
-        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
 
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
         existingRecordMetadata2.setKind(KIND_2);
         existingRecordMetadata2.setStatus(RecordState.active);
         existingRecordMetadata2.setAcl(this.acl);
-        existingRecordMetadata2.setGcsVersionPaths(Lists.newArrayList("path/4", "path/5"));
 
-        Map<String, RecordMetadata> existingRecords = new HashMap<>();
-        existingRecords.put(RECORD_ID1, existingRecordMetadata1);
-        existingRecords.put(RECORD_ID2, existingRecordMetadata2);
+        List<RecordMetadata> recordsMetadata = new ArrayList<>();
+        recordsMetadata.add(existingRecordMetadata1);
+        recordsMetadata.add(existingRecordMetadata2);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getResponseCode()).thenReturn(200);
@@ -218,7 +191,7 @@ public class OPAServiceImplTest {
         expectedValidationOutputRecords.add(validationOutputRecord1);
         expectedValidationOutputRecords.add(validationOutputRecord2);
 
-        List<ValidationOutputRecord> response = this.sut.validateRecordsCreationOrUpdate(records, existingRecords);
+        List<ValidationOutputRecord> response = this.sut.validateUserAccessToRecords(recordsMetadata, OperationType.update);
         assertEquals(expectedValidationOutputRecords, response);
     }
 

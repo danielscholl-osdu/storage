@@ -58,51 +58,6 @@ public class OPAServiceImpl implements IOPAService {
     private Gson gson = new Gson();
 
     @Override
-    public List<ValidationOutputRecord> validateRecordsCreationOrUpdate(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
-        List<ValidationInputRecord> createRecords = new ArrayList<>();
-        List<ValidationInputRecord> updateRecords = new ArrayList<>();
-        for (Record record : inputRecords) {
-            ValidationInputRecord validationInputRecord = ValidationInputRecord.builder()
-                    .id(record.getId())
-                    .kind(record.getKind())
-                    .legal(record.getLegal())
-                    .acls(record.getAcl()).build();
-
-            if (!existingRecords.containsKey(record.getId())) {
-                createRecords.add(validationInputRecord);
-            } else {
-                updateRecords.add(validationInputRecord);
-            }
-        }
-
-        String token = headers.getAuthorization().replace("Bearer ", "");
-        CreateOrUpdateValidationInput createInput = CreateOrUpdateValidationInput.builder()
-                .datapartitionid(headers.getPartitionId())
-                .token(token)
-                .xuserid(headers.getUserId())
-                .operation("create")
-                .records(createRecords).build();
-        CreateOrUpdateValidationInput updateInput = CreateOrUpdateValidationInput.builder()
-                .datapartitionid(headers.getPartitionId())
-                .token(token)
-                .xuserid(headers.getUserId())
-                .operation("update")
-                .records(updateRecords).build();
-
-        CreateOrUpdateValidationRequest createValidationRequest = CreateOrUpdateValidationRequest.builder().input(createInput).build();
-        CreateOrUpdateValidationRequest updateValidationRequest = CreateOrUpdateValidationRequest.builder().input(updateInput).build();
-
-
-        CreateOrUpdateValidationResponse createResponse = evaluateDataAuthorizationPolicy(createValidationRequest);
-        CreateOrUpdateValidationResponse updateResponse = evaluateDataAuthorizationPolicy(updateValidationRequest);
-
-        List<ValidationOutputRecord> result = new ArrayList<>();
-        result.addAll(createResponse.getResult());
-        result.addAll(updateResponse.getResult());
-        return result;
-    }
-
-    @Override
     public List<ValidationOutputRecord> validateUserAccessToRecords(List<RecordMetadata> recordsMetadata, OperationType operationType) {
         List<ValidationInputRecord> recordsTobeValidated = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {

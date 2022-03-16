@@ -22,6 +22,5 @@ import java.util.List;
 import java.util.Map;
 
 public interface IOPAService {
-    List<ValidationOutputRecord> validateRecordsCreationOrUpdate(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords);
     List<ValidationOutputRecord> validateUserAccessToRecords(List<RecordMetadata> recordsMetadata, OperationType operationType);
 }
