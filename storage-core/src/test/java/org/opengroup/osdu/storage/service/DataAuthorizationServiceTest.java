@@ -64,52 +64,38 @@ public class DataAuthorizationServiceTest {
     }
 
     @Test
-    public void should_callPolicyService_when_policyServiceEnabled() {
-        when(this.statusService.policyEnabled(this.headers.getPartitionId())).thenReturn(true);
-
-        Result result = new Result();
-        result.setAllow(true);
-        PolicyResponse response = new PolicyResponse();
-        response.setResult(result);
-        when(this.policyService.evaluatePolicy(any())).thenReturn(response);
-
-        Groups groups = new Groups();
-        List<GroupInfo> groupInfos = new ArrayList<>();
-        GroupInfo groupInfo = new GroupInfo();
-        groupInfo.setName("data.owner1@devint.osdu.com");
-        groupInfo.setEmail("data.owner1@devint.osdu.com");
-        groupInfos.add(groupInfo);
-        groups.setGroups(groupInfos);
-
-        when(this.entitlementsService.getGroups(any())).thenReturn(groups);
-
+    public void should_callOpaServiceInOwnerAccessValidation_when_opaIsEnabled() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
+        verify(this.opaService, times(1)).validateUserAccessToRecords(any(), any());
         verify(this.entitlementsService, times(0)).hasOwnerAccess(any(), any());
     }
 
     @Test
-    public void should_callOpaService_when_OpaIsEnabled() {
+    public void should_callOpaServiceInViewerOrOwnerAccessValidation_when_OpaIsEnabled() {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
         verify(this.opaService, times(1)).validateUserAccessToRecords(any(), any());
+        verify(this.entitlementsService, times(0)).hasOwnerAccess(any(), any());
     }
 
     @Test
     public void should_callEntitlementService_when_policyServiceDisabled() {
-        when(this.statusService.policyEnabled(this.headers.getPartitionId())).thenReturn(false);
-
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
+        verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
         verify(this.entitlementsService, times(1)).hasOwnerAccess(any(), any());
     }
 
     @Test
-    public void should_callEntitlementService_when_opaIsDisabled() {
+    public void should_callEntitlementServiceInViewerOrOwnerAccessValidation_when_opaIsDisabled() {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
+        verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
         verify(this.entitlementsService, times(1)).hasValidAccess(any(), any());
     }
 

@@ -18,6 +18,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
@@ -62,8 +63,8 @@ public class DataAuthorizationService {
     private ICloudStorage cloudStorage;
 
     public boolean validateOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
-        if (this.policyEnabled()) {
-            return this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
+        if (isOpaEnabled) {
+            return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
         return this.entitlementsService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
@@ -71,10 +72,7 @@ public class DataAuthorizationService {
 
     public boolean validateViewerOrOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
         if (isOpaEnabled) {
-            List<RecordMetadata> recordsMetadata = new ArrayList<>();
-            recordsMetadata.add(recordMetadata);
-
-            return doesUserHasAccessToData(recordsMetadata, operationType);
+            return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
         List<RecordMetadata> postAclCheck = this.entitlementsService.hasValidAccess(Collections.singletonList(recordMetadata), this.headers);
@@ -82,8 +80,16 @@ public class DataAuthorizationService {
     }
 
     public boolean hasAccess(RecordMetadata recordMetadata, OperationType operationType) {
-        if (this.policyEnabled()) {
-            return this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
+        if (isOpaEnabled) {
+            if (!recordMetadata.getStatus().equals(RecordState.active)) {
+                return false;
+            }
+
+            if (!recordMetadata.hasVersion()) {
+                return false;
+            }
+
+            return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
         return this.cloudStorage.hasAccess(recordMetadata);
