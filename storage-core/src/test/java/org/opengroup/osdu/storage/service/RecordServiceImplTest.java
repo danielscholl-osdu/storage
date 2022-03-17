@@ -491,7 +491,7 @@ public class RecordServiceImplTest {
         assertEquals(RECORD_ID, capturedMessage.getId());
         assertEquals(KIND, capturedMessage.getKind());
         assertEquals(OperationType.delete, capturedMessage.getOp());
-        assertEquals(DeletionType.hard, capturedMessage.getDeletionType());
+        assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
     }
 
     private RecordMetadata buildRecordMetadata() {
