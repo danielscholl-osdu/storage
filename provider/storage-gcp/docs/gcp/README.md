@@ -6,7 +6,7 @@
 * [For Mappers to activate drivers](#For-Mappers-to-activate-drivers)
 * [Datastore configuration](#Datastore-configuration)
 * [Pubsub configuration](#Pubsub-configuration)
-* [GCS configuration](#GCS-configuration)
+* [GCS configuration](#ObjectStoreConfig)
 * [Google cloud service account configuration](#Google-cloud-service-account-configuration)
 
 ## Environment variables
@@ -78,22 +78,30 @@ It can be overridden by:
 - through the Spring Boot property `pubsub-search-topic`
 - environment variable `PUBSUB_SEARCH_TOPIC`
 
-## GCS configuration
+<!-- Yay, no errors, warnings, or alerts! -->
 
-At Google cloud storage should be created bucket:
 
-**name:** `<tenant name>-storage-service-configuration`
+## GCS configuration <a name="ObjectStoreConfig"></a>
+### Per-tenant buckets configuration
 
-It can be overridden by:
+These buckets must be defined in tenants’ “data” GCP projects that names are pointed in tenants’ PartitionInfo registration objects’ “projectId” property at the Partition service.
 
-- through the Spring Boot property `enable-full-bucket-name`
-- environment variable `ENABLE_FULL_BUCKET_NAME`
 
-If `enable-full-bucket-name=true` then bucket name will be:
+<table>
+  <tr>
+   <td>Bucket Naming template 
+   </td>
+   <td>Permissions required
+   </td>
+  </tr>
+  <tr>
+   <td>&lt;PartitionInfo.projectId><strong>-records</strong>
+   </td>
+   <td>ListObjects, CRUDObject
+   </td>
+  </tr>
+</table>
 
-**name:** `<project id>-<tenant name>-storage-service-configuration`
-
-This bucket should contain `Storage_COO.json` configuration file.
 
 ## Google cloud service account configuration
 TBD

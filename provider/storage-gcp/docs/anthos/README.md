@@ -9,7 +9,7 @@
   * [For OSM Postgres](#For-OSM-Postgres)
     * [Postgres schema configuration](#Postgres-schema-configuration)
   * [For OBM MinIO](#For-OBM-MinIO)
-    * [Bucket configuration](#Bucket-configuration)
+    * [Object store configuration](#ObjectStoreConfig)
   * [For OQM RabbitMQ](#For-OQM-RabbitMQ)
     * [Exchanges and queues configuration](#Exchanges-and-queues-configuration)
 * [Interaction with message brokers](#Interaction-with-message-brokers)
@@ -271,22 +271,34 @@ curl -L -X PATCH 'https:///api/partition/v1/partitions/opendes' -H 'data-partiti
 
 </details>
 
-#### Bucket configuration
+### Object store configuration <a name="ObjectStoreConfig"></a>
 
-At Minio should be created bucket:
+#### Used Technology
 
-**name:** `<tenant name>-legal-service-configuration`
+MinIO (or any other supported by OBM)
 
-It can be overridden by:
+#### Per-tenant buckets configuration
 
-- through the Spring Boot property `enable-full-bucket-name`
-- environment variable `ENABLE_FULL_BUCKET_NAME`
+These buckets must be defined in tenants’ dedicated object store servers. 
+OBM connection properties of these servers (url, etc.) are defined as specific properties in tenants’ PartitionInfo registration objects at the Partition service as described in accordant sections of this document.
 
-If `enable-full-bucket-name=true` then bucket name will be:
 
-**name:** `<project id>-<tenant name>-legal-service-configuration`
+<table>
+  <tr>
+   <td>Bucket Naming template 
+   </td>
+   <td>Permissions required
+   </td>
+  </tr>
+  <tr>
+   <td>&lt;PartitionInfo.projectId><strong>-records</strong>
+   </td>
+   <td>ListObjects, CRUDObject
+   </td>
+  </tr>
+</table>
 
-This bucket should contain `Legal_COO.json` configuration file.
+
 
 ### For OQM RabbitMQ
 
