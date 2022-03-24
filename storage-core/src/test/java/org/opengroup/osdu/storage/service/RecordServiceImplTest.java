@@ -16,29 +16,12 @@ package org.opengroup.osdu.storage.service;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-import java.util.*;
-
 import com.google.common.collect.Lists;
-
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
-import org.opengroup.osdu.storage.exception.DeleteRecordsException;
-import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
-import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
-import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,13 +30,30 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
+import org.opengroup.osdu.core.common.model.indexer.DeletionType;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.storage.PubSubDeleteInfo;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-
-import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
+import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
+import org.opengroup.osdu.storage.exception.DeleteRecordsException;
+import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RecordServiceImplTest {
@@ -156,9 +156,9 @@ public class RecordServiceImplTest {
 
         verify(this.cloudStorage).delete(record);
 
-        PubSubInfo pubsubMsg = new PubSubInfo(RECORD_ID, "any kind", OperationType.delete);
+        PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(RECORD_ID, "any kind", DeletionType.hard);
 
-        verify(this.pubSubClient).publishMessage(this.headers, pubsubMsg);
+        verify(this.pubSubClient).publishMessage(this.headers, pubSubDeleteInfo);
     }
 
 
@@ -307,14 +307,15 @@ public class RecordServiceImplTest {
         assertNotNull(capturedRecord.getModifyTime());
         assertEquals("anyUserName", capturedRecord.getModifyUser());
 
-        ArgumentCaptor<PubSubInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubInfo.class);
+        ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
         verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
 
-        PubSubInfo capturedMessage = pubsubMessageCaptor.getValue();
+        PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
         assertEquals("any kind", capturedMessage.getKind());
         assertEquals(OperationType.delete, capturedMessage.getOp());
+        assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
     }
 
     @Test
@@ -368,7 +369,7 @@ public class RecordServiceImplTest {
     @Test
     public void shouldDeleteRecords_successfully() {
         RecordMetadata record = buildRecordMetadata();
-        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>(){{
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
             put(RECORD_ID, record);
         }};
 
@@ -392,7 +393,7 @@ public class RecordServiceImplTest {
     @Test
     public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhichUserDoesNotHaveAccessTo() {
         RecordMetadata record = buildRecordMetadata();
-        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>(){{
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
             put(RECORD_ID, record);
         }};
 
@@ -405,7 +406,7 @@ public class RecordServiceImplTest {
             fail("Should not succeed!");
         } catch (DeleteRecordsException e) {
             String errorMsg = String
-                .format("The user is not authorized to perform delete record with id %s", RECORD_ID);
+                    .format("The user is not authorized to perform delete record with id %s", RECORD_ID);
             verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
             verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
             verify(recordRepository, never()).createOrUpdate(any());
@@ -427,7 +428,7 @@ public class RecordServiceImplTest {
     @Test
     public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhenRecordNotFound() {
         RecordMetadata record = buildRecordMetadata();
-        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>(){{
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
             put(RECORD_ID, record);
         }};
 
@@ -462,10 +463,10 @@ public class RecordServiceImplTest {
     @Test
     public void shouldThrowAppException_when_tryingToDeleteRecordsForInvalidIds() {
         String errorMsg = String.format("The record '%s' does not follow the naming convention: the first id component must be '%s'",
-            RECORD_ID, TENANT_NAME);
+                RECORD_ID, TENANT_NAME);
         try {
             doThrow(new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", errorMsg))
-                .when(recordUtil).validateRecordIds(singletonList(RECORD_ID));
+                    .when(recordUtil).validateRecordIds(singletonList(RECORD_ID));
 
             sut.bulkDeleteRecords(asList(RECORD_ID), USER_NAME);
 
@@ -475,21 +476,22 @@ public class RecordServiceImplTest {
             assertEquals("Invalid record id", e.getError().getReason());
             assertEquals(errorMsg, e.getError().getMessage());
 
-            verifyZeroInteractions(recordRepository, entitlementsAndCacheService, auditLogger,pubSubClient);
+            verifyZeroInteractions(recordRepository, entitlementsAndCacheService, auditLogger, pubSubClient);
         } catch (Exception e) {
             fail("Should not get different exception");
         }
     }
 
     private void verifyPubSubPublished() {
-        ArgumentCaptor<PubSubInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubInfo.class);
+        ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
         verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
 
-        PubSubInfo capturedMessage = pubsubMessageCaptor.getValue();
+        PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
         assertEquals(KIND, capturedMessage.getKind());
         assertEquals(OperationType.delete, capturedMessage.getOp());
+        assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
     }
 
     private RecordMetadata buildRecordMetadata() {
@@ -503,6 +505,6 @@ public class RecordServiceImplTest {
         record.setId(RECORD_ID);
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(asList("path/1", "path/2", "path/3"));
-        return  record;
+        return record;
     }
 }
