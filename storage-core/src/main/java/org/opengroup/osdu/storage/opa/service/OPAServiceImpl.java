@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.opa.model.ValidationInputRecord;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
@@ -43,9 +44,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@ConfigurationProperties(prefix = "opa")
 public class OPAServiceImpl implements IOPAService {
 
-    @Value("${OPA_API}")
     private String opaEndpoint;
 
     @Autowired
