@@ -22,5 +22,11 @@ import java.util.List;
 import java.util.Map;
 
 public interface IOPAService {
+    /**
+     * This method is to call opa service to get the result of data authorization.
+     * @param recordsMetadata contains id, acl, legal information in it.
+     * @param operationType specifies the type of operation, i.e. view, update, delete, etc.
+     * @return a list of ValidationOutputRecord with record id and authorization errors in it.
+     */
     List<ValidationOutputRecord> validateUserAccessToRecords(List<RecordMetadata> recordsMetadata, OperationType operationType);
 }
