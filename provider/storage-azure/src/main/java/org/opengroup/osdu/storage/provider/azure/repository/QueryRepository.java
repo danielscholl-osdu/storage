@@ -37,6 +37,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -77,7 +78,38 @@ public class QueryRepository implements IQueryRepository {
         List<String> docs = new ArrayList();
         try {
             /* TODO: PAGINATION REIMPLEMENTATION NEEDED*/
-            docs = getDistinctKind();
+            List<String>allDocs = getDistinctKind();
+
+            if(limit!=null)
+            {
+             if(cursor==null)
+             {
+                 for(int i=0;i<limit&&i<allDocs.size();i++)
+                 {
+                     docs.add(allDocs.get(i));
+                 }
+                 String continuationToken="start";
+                 cursorCache.put(continuationToken,Integer.toString(limit));
+                 dqr.setCursor(continuationToken);
+             }
+             else {
+                 Integer startIndex=Integer.parseInt(cursorCache.get(cursor));
+                 Integer endIndex=startIndex+limit;
+                 for(int i=startIndex;i<endIndex&& i<allDocs.size();i++)
+                 {
+                     docs.add(allDocs.get(i));
+                 }
+                 if(endIndex<allDocs.size()) {
+                     String continuationToken = "start" + Integer.toString(endIndex);
+                     cursorCache.put(continuationToken, Integer.toString(endIndex));
+                     dqr.setCursor(continuationToken);
+                 }
+             }
+            }
+            else
+            {
+                docs=allDocs;
+            }
             dqr.setResults(docs);
         } catch (CosmosException e) {
             throw e;
