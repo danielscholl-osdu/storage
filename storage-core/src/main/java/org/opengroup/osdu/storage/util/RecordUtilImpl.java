@@ -34,6 +34,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Component
 public class RecordUtilImpl implements RecordUtil {
@@ -223,7 +224,11 @@ public class RecordUtilImpl implements RecordUtil {
                             return new ImmutablePair<>(tagsPair[0], tagsPair[1]);
                         })
                         .collect(toMap(ImmutablePair::getKey, ImmutablePair::getValue));
-                recordMetadata.getTags().putAll(newTags);
+                if(CollectionUtils.isEmpty(recordMetadata.getTags())) {
+                    recordMetadata.setTags(newTags);
+                } else {
+                    recordMetadata.getTags().putAll(newTags);
+                }
             } else if (PATCH_OPERATION_REMOVE.equals((operation.getOp()))) {
                 Stream.of(operation.getValue())
                         .forEach(recordMetadata.getTags()::remove);

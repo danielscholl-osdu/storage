@@ -14,21 +14,6 @@
 
 package org.opengroup.osdu.storage.service;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.only;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -47,6 +32,18 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
+
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BulkUpdateRecordServiceImplTest {
@@ -109,7 +106,7 @@ public class BulkUpdateRecordServiceImplTest {
 
         commonVerify(singletonList(TEST_ID), param.getOps());
         verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP);
-        verifyZeroInteractions(auditLogger);
+        verify(auditLogger, only()).createOrUpdateRecordsSuccess(TEST_IDS);
 
         assertEquals(TEST_ID, actualResponse.getRecordIds().get(0));
         assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());

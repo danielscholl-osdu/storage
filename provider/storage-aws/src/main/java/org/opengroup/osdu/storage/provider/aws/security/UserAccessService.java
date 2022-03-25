@@ -62,7 +62,6 @@ public class UserAccessService {
         cacheHelper = new CacheHelper();
 
         K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        provider.getParameterAsStringOrDefault(servicePrincipalID, "serviceprincipal@testing.com");
     }
 
     /**

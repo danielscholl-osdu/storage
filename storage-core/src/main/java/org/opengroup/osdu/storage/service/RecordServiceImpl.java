@@ -15,14 +15,14 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.core.common.model.storage.PubSubDeleteInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
@@ -103,7 +103,8 @@ public class RecordServiceImpl implements RecordService {
 
         this.auditLogger.purgeRecordSuccess(singletonList(recordId));
         this.pubSubClient.publishMessage(this.headers,
-                new PubSubInfo(recordId, recordMetadata.getKind(), OperationType.delete));
+                new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.hard));
+
     }
 
     @Override
@@ -123,8 +124,8 @@ public class RecordServiceImpl implements RecordService {
         this.recordRepository.createOrUpdate(recordsMetadata);
         this.auditLogger.deleteRecordSuccess(singletonList(recordId));
 
-        PubSubInfo pubSubInfo = new PubSubInfo(recordId, recordMetadata.getKind(), OperationType.delete);
-        this.pubSubClient.publishMessage(this.headers, pubSubInfo);
+        PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.soft);
+        this.pubSubClient.publishMessage(this.headers, pubSubDeleteInfo);
     }
 
     @Override
@@ -137,10 +138,10 @@ public class RecordServiceImpl implements RecordService {
 
         Date modifyTime = new Date();
         recordsMetadata.forEach(recordMetadata -> {
-                recordMetadata.setStatus(RecordState.deleted);
-                recordMetadata.setModifyTime(modifyTime.getTime());
-                recordMetadata.setModifyUser(user);
-            }
+                    recordMetadata.setStatus(RecordState.deleted);
+                    recordMetadata.setModifyTime(modifyTime.getTime());
+                    recordMetadata.setModifyUser(user);
+                }
         );
         if (notDeletedRecords.isEmpty()) {
             this.recordRepository.createOrUpdate(recordsMetadata);
@@ -149,10 +150,10 @@ public class RecordServiceImpl implements RecordService {
         } else {
             List<String> deletedRecords = new ArrayList<>(records);
             List<String> notDeletedRecordIds = notDeletedRecords.stream()
-                .map(Pair::getKey)
-                .collect(toList());
+                    .map(Pair::getKey)
+                    .collect(toList());
             deletedRecords.removeAll(notDeletedRecordIds);
-            if(!deletedRecords.isEmpty()) {
+            if (!deletedRecords.isEmpty()) {
                 this.recordRepository.createOrUpdate(recordsMetadata);
                 this.auditLogger.deleteRecordSuccess(deletedRecords);
                 publishDeletedRecords(recordsMetadata);
@@ -162,10 +163,10 @@ public class RecordServiceImpl implements RecordService {
     }
 
     private void publishDeletedRecords(List<RecordMetadata> records) {
-        List<PubSubInfo> messages = records.stream()
-            .map(recordMetadata -> new PubSubInfo(recordMetadata.getId(), recordMetadata.getKind(), OperationType.delete))
-            .collect(Collectors.toList());
-        pubSubClient.publishMessage(headers, messages.toArray(new PubSubInfo[messages.size()]));
+        List<PubSubDeleteInfo> messages = records.stream()
+                .map(recordMetadata -> new PubSubDeleteInfo(recordMetadata.getId(), recordMetadata.getKind(), DeletionType.soft))
+                .collect(Collectors.toList());
+        pubSubClient.publishMessage(headers, messages.toArray(new PubSubDeleteInfo[messages.size()]));
     }
 
     private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest) {
@@ -193,12 +194,12 @@ public class RecordServiceImpl implements RecordService {
         Map<String, RecordMetadata> result = this.recordRepository.get(recordIds);
 
         recordIds.stream()
-            .filter(recordId -> result.get(recordId) == null)
-            .forEach(recordId -> {
-                String msg = String.format("Record with id '%s' not found", recordId);
-                notDeletedRecords.add(new ImmutablePair<>(recordId, msg));
-                auditLogger.deleteRecordFail(singletonList(msg));
-            });
+                .filter(recordId -> result.get(recordId) == null)
+                .forEach(recordId -> {
+                    String msg = String.format("Record with id '%s' not found", recordId);
+                    notDeletedRecords.add(new ImmutablePair<>(recordId, msg));
+                    auditLogger.deleteRecordFail(singletonList(msg));
+                });
 
         return result.entrySet().stream().map(Map.Entry::getValue).collect(toList());
     }
@@ -214,7 +215,7 @@ public class RecordServiceImpl implements RecordService {
         new ArrayList<>(recordsMetadata).forEach(recordMetadata -> {
             if (!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.delete)) {
                 String msg = String
-                    .format("The user is not authorized to perform delete record with id %s", recordMetadata.getId());
+                        .format("The user is not authorized to perform delete record with id %s", recordMetadata.getId());
                 this.auditLogger.deleteRecordFail(singletonList(msg));
                 notDeletedRecords.add(new ImmutablePair<>(recordMetadata.getId(), msg));
                 recordsMetadata.remove(recordMetadata);

@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -64,7 +65,14 @@ public class PersistenceServiceImpl implements IPersistenceService {
 			RecordProcessing processing = recordsProcessing.get(i);
 			RecordMetadata recordMetadata = processing.getRecordMetadata();
 			recordsMetadata.add(recordMetadata);
-			pubsubInfo[i] = new PubSubInfo(recordMetadata.getId(), recordMetadata.getKind(), OperationType.create);
+			if(processing.getOperationType() == OperationType.create) {
+				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.create).build();
+			} else {
+				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.update).build();
+				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
+					pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
+				}
+			}
 		}
 
 		this.commitBatch(recordsProcessing, recordsMetadata);
@@ -111,7 +119,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
 		for (int i = 0; i < recordMetadata.size(); i++) {
 			RecordMetadata metadata = recordMetadata.get(i);
-			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.create);
+			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
 		}
 		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
 		return lockedRecords;
