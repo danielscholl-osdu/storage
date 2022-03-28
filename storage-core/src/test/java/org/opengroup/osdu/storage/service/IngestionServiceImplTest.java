@@ -41,12 +41,16 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
+import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 
@@ -86,9 +90,6 @@ public class IngestionServiceImplTest {
     private IEntitlementsAndCacheService authService;
 
     @Mock
-    private DataAuthorizationService dataAuthorizationService;
-
-    @Mock
     private IEntitlementsFactory entitlementsFactory;
 
     @Mock
@@ -99,6 +100,9 @@ public class IngestionServiceImplTest {
 
     @Mock
     private RecordUtil recordUtil;
+
+    @Mock
+    private IOPAService opaService;
 
     @InjectMocks
     private IngestionServiceImpl sut;
@@ -164,7 +168,6 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
         when(this.entitlementsFactory.create(headers)).thenReturn(entitlementsService);
         when(this.entitlementsService.getGroups()).thenReturn(groups);
-        when(this.dataAuthorizationService.policyEnabled()).thenReturn(false);
     }
 
     @Test
@@ -366,8 +369,6 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
 
-        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
-
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(2), transferInfo.getRecordCount());
@@ -467,8 +468,6 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.getHash(any())).thenReturn(hashMap);
         when(this.cloudStorage.isDuplicateRecord(any(), eq(hashMap), any())).thenReturn(true);
 
-        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
-
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
@@ -520,7 +519,6 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
         when(this.cloudStorage.read(existingRecordMetadata, 123456L, false)).thenReturn(recordFromStorage);
-        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
         assertEquals(USER, transferInfo.getUser());
@@ -578,7 +576,6 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(output);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
-        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.createUpdateRecords(false, this.records, USER);
 
@@ -664,6 +661,98 @@ public class IngestionServiceImplTest {
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
             assertEquals("RecordMetadata version not found", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_return401_when_updatingARecordThatFailDataAuthorizationCheck_IntegrateOPA() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(this.acl);
+        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        List<String> errors = new ArrayList<>();
+        errors.add("Invalid ACL");
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+        try {
+            this.sut.createUpdateRecords(false, this.records, USER);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_UNAUTHORIZED, e.getError().getCode());
+            assertEquals("User Unauthorized", e.getError().getReason());
+            assertEquals("User is not authorized to create or update records.", e.getError().getMessage());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void should_updateTwoRecords_when_twoRecordIDsAreAlreadyPresentInDataLake_integrateOPA() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.record2.setId(RECORD_ID2);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(this.acl);
+        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
+
+        RecordMetadata existingRecordMetadata2 = new RecordMetadata();
+        existingRecordMetadata2.setUser(NEW_USER);
+        existingRecordMetadata2.setKind(KIND_2);
+        existingRecordMetadata2.setStatus(RecordState.active);
+        existingRecordMetadata2.setAcl(this.acl);
+        existingRecordMetadata2.setGcsVersionPaths(Lists.newArrayList("path/4", "path/5"));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+        output.put(RECORD_ID2, existingRecordMetadata2);
+        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(Collections.EMPTY_LIST).build();
+        ValidationOutputRecord validationOutputRecord2 = ValidationOutputRecord.builder().id(RECORD_ID2).errors(Collections.EMPTY_LIST).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        validationOutputRecords.add(validationOutputRecord2);
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
+        assertEquals(USER, transferInfo.getUser());
+        assertEquals(new Integer(2), transferInfo.getRecordCount());
+        assertNotNull(transferInfo.getVersion());
+
+        ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
+
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture());
+        verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
+
+        TransferBatch input = transfer.getValue();
+
+        for (RecordProcessing rp : input.getRecords()) {
+            assertEquals(OperationType.update, rp.getOperationType());
         }
     }
 }

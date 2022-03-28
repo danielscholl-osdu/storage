@@ -33,15 +33,19 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
 
 import com.google.common.base.Strings;
 import org.opengroup.osdu.storage.conversion.DpsConversionService;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 
 public abstract class BatchServiceImpl implements BatchService {
@@ -73,6 +77,12 @@ public abstract class BatchServiceImpl implements BatchService {
 
     @Autowired
     private IEntitlementsAndCacheService entitlementsAndCacheService;
+
+    @Autowired
+    private IOPAService opaService;
+
+    @Value("${opa.enabled}")
+    private boolean isOpaEnabled;
 
     @Override
     public MultiRecordInfo getMultipleRecords(MultiRecordIds ids) {
@@ -245,13 +255,25 @@ public abstract class BatchServiceImpl implements BatchService {
             recordMetadataList.add(recordMetadata);
         }
 
-        List<RecordMetadata> passAclCheckRecordsMetadata = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.headers);
-        for (RecordMetadata metadata : passAclCheckRecordsMetadata) {
-            String recordId = metadata.getId();
-            String recordData = recordsPreAclMap.get(recordId);
+        if (isOpaEnabled) {
+            List<ValidationOutputRecord> dataAuthzResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.view);
+            for (ValidationOutputRecord outputRecord : dataAuthzResult) {
+                if (outputRecord.getErrors().isEmpty()) {
+                    String recordId = outputRecord.getId();
+                    String recordData = recordsPreAclMap.get(recordId);
+                    recordsMap.put(recordId, recordData);                }
+            }
+        } else {
 
-            recordsMap.put(recordId, recordData);
+            List<RecordMetadata> passAclCheckRecordsMetadata = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.headers);
+            for (RecordMetadata metadata : passAclCheckRecordsMetadata) {
+                String recordId = metadata.getId();
+                String recordData = recordsPreAclMap.get(recordId);
+
+                recordsMap.put(recordId, recordData);
+            }
         }
+
         return recordsMap;
     }
 

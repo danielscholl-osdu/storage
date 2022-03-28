@@ -14,16 +14,23 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,21 +49,30 @@ public class DataAuthorizationService {
     @Autowired
     private IEntitlementsExtensionService entitlementsService;
 
+    @Autowired
+    private JaxRsDpsLog logger;
+
+    @Autowired
+    private IOPAService opaService;
+
+    @Value("${opa.enabled}")
+    private boolean isOpaEnabled;
+
     @Lazy
     @Autowired
     private ICloudStorage cloudStorage;
 
     public boolean validateOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
-        if (this.policyEnabled()) {
-            return this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
+        if (isOpaEnabled) {
+            return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
         return this.entitlementsService.hasOwnerAccess(this.headers, recordMetadata.getAcl().getOwners());
     }
 
     public boolean validateViewerOrOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
-        if (this.policyEnabled()) {
-            return this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
+        if (isOpaEnabled) {
+            return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
         List<RecordMetadata> postAclCheck = this.entitlementsService.hasValidAccess(Collections.singletonList(recordMetadata), this.headers);
@@ -64,8 +80,16 @@ public class DataAuthorizationService {
     }
 
     public boolean hasAccess(RecordMetadata recordMetadata, OperationType operationType) {
-        if (this.policyEnabled()) {
-            return this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType);
+        if (isOpaEnabled) {
+            if (!recordMetadata.getStatus().equals(RecordState.active)) {
+                return false;
+            }
+
+            if (!recordMetadata.hasVersion()) {
+                return false;
+            }
+
+            return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
         return this.cloudStorage.hasAccess(recordMetadata);
@@ -73,5 +97,16 @@ public class DataAuthorizationService {
 
     public boolean policyEnabled() {
         return this.policyService != null && this.statusService.policyEnabled(this.headers.getPartitionId());
+    }
+
+    public boolean doesUserHasAccessToData(List<RecordMetadata> recordsMetadata, OperationType operationType) {
+        List<ValidationOutputRecord> dataAuthzResult = this.opaService.validateUserAccessToRecords(recordsMetadata, operationType);
+        for (ValidationOutputRecord outputRecord : dataAuthzResult) {
+            if (!outputRecord.getErrors().isEmpty()) {
+                logger.error(String.format("Data authorization failure for record %s: %s", outputRecord.getId(), outputRecord.getErrors().toString()));
+                return false;
+            }
+        }
+        return true;
     }
 }
