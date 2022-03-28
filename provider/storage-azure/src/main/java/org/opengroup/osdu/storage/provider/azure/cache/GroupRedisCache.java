@@ -14,7 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.azure.cache;
 
-import org.opengroup.osdu.core.common.cache.RedisCache;
+import org.opengroup.osdu.azure.cache.RedisAzureCache;
+import org.opengroup.osdu.azure.di.RedisAzureConfiguration;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,15 +25,14 @@ import javax.inject.Named;
 
 @Component
 @ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
-public class GroupRedisCache extends RedisCache<String, Groups> {
+public class GroupRedisCache extends RedisAzureCache<String, Groups> {
 
     public GroupRedisCache(
-            final @Named("REDIS_HOST") String host,
             final @Named("REDIS_PORT") int port,
-            final @Named("REDIS_PASSWORD") String password,
             final @Named("GROUP_REDIS_TTL") int timeout,
+            final @Named("REDIS_EXPIRATION") int expiration,
             @Value("${redis.database}") final int database)
     {
-        super(host, port, password, timeout, database, String.class, Groups.class);
+        super(String.class, Groups.class, new RedisAzureConfiguration(database, expiration, port, timeout));
     }
 }
