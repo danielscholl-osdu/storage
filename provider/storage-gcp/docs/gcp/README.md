@@ -67,9 +67,9 @@ Example:
 
 ![Screenshot](./pics/namespace.PNG)
 
-## Pubsub configuration
+## PubSub configuration
 
-At Pubsub should be created topic with name:
+At PubSub should be created topic with name:
 
 **name:** `record_changed`
 
