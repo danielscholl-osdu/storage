@@ -31,11 +31,16 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.ValidationInputRecord;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
+import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -74,13 +79,13 @@ public class IngestionServiceImpl implements IngestionService {
 	private IEntitlementsAndCacheService entitlementsAndCacheService;
 
 	@Autowired
-	private DataAuthorizationService dataAuthorizationService;
-
-	@Autowired(required = false)
-	private IPolicyService policyService;
+	private IOPAService opaService;
 
 	@Autowired
 	private RecordUtil recordUtil;
+
+	@Value("${opa.enabled}")
+	private boolean isOpaEnabled;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
@@ -167,7 +172,7 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		if(this.dataAuthorizationService.policyEnabled()) {
+		if(isOpaEnabled) {
 		    this.validateUserAccessAndCompliancePolicyConstraints(inputRecords, existingRecords, recordParentMap);
 		} else {
 			this.validateUserAccessAndComplianceConstraints(inputRecords, existingRecords, recordParentMap);
@@ -388,20 +393,34 @@ public class IngestionServiceImpl implements IngestionService {
 
 	private void validateUserAccessAndCompliancePolicyConstraints(
 			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<RecordIdWithVersion>> recordParentMap) {
+
 		this.populateLegalInfoFromParents(inputRecords, existingRecords, recordParentMap);
+
+		List<RecordMetadata> createRecordsMetadata = new ArrayList<>();
+		List<RecordMetadata> updateRecordsMetadata = new ArrayList<>();
 		for (Record record : inputRecords) {
-			RecordMetadata recordMetadata;
-			OperationType operationType;
-			if (existingRecords.containsKey(record.getId())) {
-				recordMetadata = existingRecords.get(record.getId());
-				operationType = OperationType.update;
+			String id = record.getId();
+			if (existingRecords.containsKey(id)) {
+				updateRecordsMetadata.add(existingRecords.get(id));
 			} else {
-				recordMetadata = new RecordMetadata(record);
-				operationType = OperationType.create;
+				RecordMetadata recordMetadata = new RecordMetadata();
+				recordMetadata.setAcl(record.getAcl());
+				recordMetadata.setLegal(record.getLegal());
+				recordMetadata.setId(id);
+				recordMetadata.setKind(record.getKind());
+
+				createRecordsMetadata.add(recordMetadata);
 			}
-			if (!this.policyService.evaluateStorageDataAuthorizationPolicy(recordMetadata, operationType)) {
-				throw new AppException(HttpStatus.SC_FORBIDDEN,
-						"User Unauthorized", "User is not authorized to create or update records.", String.format("User does not have required access to record %s", record.getId()));
+		}
+		List<ValidationOutputRecord> outputCreateRecords = this.opaService.validateUserAccessToRecords(createRecordsMetadata, OperationType.create);
+		List<ValidationOutputRecord> outputUpdateRecords = this.opaService.validateUserAccessToRecords(createRecordsMetadata, OperationType.update);
+		outputCreateRecords.addAll(outputUpdateRecords);
+
+		for (ValidationOutputRecord outputRecord : outputCreateRecords) {
+			if (!outputRecord.getErrors().isEmpty()) {
+				logger.error(String.format("Data authorization failure for record %s: %s", outputRecord.getId(), outputRecord.getErrors().toString()));
+				throw new AppException(HttpStatus.SC_UNAUTHORIZED,
+						"User Unauthorized", "User is not authorized to create or update records.");
 			}
 		}
 	}

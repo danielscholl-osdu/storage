@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
@@ -23,12 +24,15 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -74,6 +78,15 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     @Autowired(required = false)
     private IPolicyService policyService;
 
+    @Autowired
+    private JaxRsDpsLog logger;
+
+    @Autowired
+    private IOPAService opaService;
+
+    @Value("${opa.enabled}")
+    private boolean isOpaEnabled;
+
     @Override
     public BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user) {
         List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
@@ -95,7 +108,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
         Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion);
         List<String> notFoundRecordIds = new ArrayList<>();
-        List<String> unauthorizedRecordIds= this.dataAuthorizationService.policyEnabled()
+        List<String> unauthorizedRecordIds= isOpaEnabled
                 ? this.validateUserAccessAndCompliancePolicyConstraints(bulkUpdateOps, idMap, existingRecords, user)
                 : this.validateUserAccessAndComplianceConstraints(bulkUpdateOps, idMap, existingRecords);
 
@@ -179,18 +192,26 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
             List<PatchOperation> bulkUpdateOps, Map<String, String> idMap, Map<String, RecordMetadata> existingRecords, String user) {
         List<String> unauthorizedRecordIds = new ArrayList<>();
         final long currentTimestamp = clock.millis();
+        List<RecordMetadata> updatedRecordsMetadata = new ArrayList<>();
         for (String id : idMap.keySet()) {
             String idWithVersion = idMap.get(id);
             RecordMetadata metadata = existingRecords.get(id);
-
             if (metadata == null) continue;
 
             metadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, bulkUpdateOps, user, currentTimestamp);
+            updatedRecordsMetadata.add(metadata);
+        }
 
-            if (!this.policyService.evaluateStorageDataAuthorizationPolicy(metadata, OperationType.update)) {
-                unauthorizedRecordIds.add(idWithVersion);
+        if (!updatedRecordsMetadata.isEmpty()) {
+            List<ValidationOutputRecord> dataAuthzResult = this.opaService.validateUserAccessToRecords(updatedRecordsMetadata, OperationType.update);
+            for (ValidationOutputRecord outputRecord : dataAuthzResult) {
+                if (!outputRecord.getErrors().isEmpty()) {
+                    String idWithVersion = idMap.get(outputRecord.getId());
+                    unauthorizedRecordIds.add(idWithVersion);
+                }
             }
         }
+
         return unauthorizedRecordIds;
     }
 }
