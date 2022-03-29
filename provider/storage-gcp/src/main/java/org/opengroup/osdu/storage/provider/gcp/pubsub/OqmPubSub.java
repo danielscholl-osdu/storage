@@ -63,6 +63,7 @@ public class OqmPubSub implements IMessageBus {
             String json = new Gson().toJson(batch);
 
             Map<String, String> attributes = new HashMap<>();
+            attributes.put(DpsHeaders.USER_EMAIL, headers.getUserEmail());
             attributes.put(DpsHeaders.ACCOUNT_ID, this.tenant.getName());
             attributes.put(DpsHeaders.DATA_PARTITION_ID, headers.getPartitionIdWithFallbackToAccountId());
             headers.addCorrelationIdIfMissing();
