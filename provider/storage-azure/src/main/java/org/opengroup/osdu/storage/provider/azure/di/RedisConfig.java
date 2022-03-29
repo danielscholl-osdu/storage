@@ -1,7 +1,5 @@
 package org.opengroup.osdu.storage.provider.azure.di;
 
-import com.azure.security.keyvault.secrets.SecretClient;
-import org.opengroup.osdu.azure.KeyVaultFacade;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +20,9 @@ public class RedisConfig {
 
     @Value("${redis.cursor.ttl:90}")
     public int cursorRedisTtl;
+
+    @Value("${redis.expiration:3600}")
+    public int redisExpiration;
 
     @Bean
     @Named("REDIS_PORT")
@@ -44,12 +45,6 @@ public class RedisConfig {
     public int getCursorRedisTtl() { return cursorRedisTtl; }
 
     @Bean
-    @Named("REDIS_HOST")
-    public String redisHost(SecretClient kv) {
-        return KeyVaultFacade.getSecretWithValidation(kv, "redis-hostname");
-    }
-
-    @Bean
-    @Named("REDIS_PASSWORD")
-    public String redisPassword(SecretClient kv) { return KeyVaultFacade.getSecretWithValidation(kv, "redis-password"); }
+    @Named("REDIS_EXPIRATION")
+    public int getRedisExpiration() { return redisExpiration; }
 }
