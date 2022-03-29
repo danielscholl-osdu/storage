@@ -5,7 +5,7 @@
   * [Common properties for all environments](#Common-properties-for-all-environments)
   * [For Mappers to activate drivers](#For-Mappers-to-activate-drivers)
 * [Requirements for requests](#Requirements-for-requests)
-* [Configuring mappers Datasources](#Configuring-mappers-Datasources)
+* [Configuring mappers Datasources](#Configuring-mappers-DataSources)
   * [For OSM Postgres](#For-OSM-Postgres)
     * [Postgres schema configuration](#Postgres-schema-configuration)
   * [For OBM MinIO](#For-OBM-MinIO)
@@ -98,7 +98,7 @@ work-product-component--WellboreMarkerSet:3D%20Kirchhoff%20DepthMigration" (with
 you should url-encode it and request
 "osdu%3Awork-product-component--WellboreMarkerSet%3A3D%2520Kirchhoff%2520DepthMigration" instead.
 
-## Configuring mappers Datasources
+## Configuring mappers DataSources
 
 When using non-Google-Cloud-native technologies, property sets must be defined on the Partition service as part of
 PartitionInfo for each Tenant.
@@ -121,7 +121,7 @@ For example, this is how **Datastore** OSM driver contains records for "RecordsC
 | record              | `<multiple kind records>`        |
 | columns             | acl; bucket; kind; legal; etc... |
 
-And this is how **Postges** OSM driver does. Notice, the above hierarchy is kept, but Postgres uses alternative entities
+And this is how **Postgres** OSM driver does. Notice, the above hierarchy is kept, but Postgres uses alternative entities
 for it.
 
 | Datastore hierarchy level |     | Postgres alternative used  |
@@ -137,7 +137,7 @@ Datastore, which segments data into multiple physical columns, Postgres organise
 column. It allows provisioning new data registers easily not taking care about specifics of certain registers structure.
 In the current OSM version (as on December'21) the Postgres OSM driver is not able to create new tables in runtime.
 
-So this is a responsibility of DevOps / CICD to provision all required SQL tables (for all required data kinds) when on new
+So this is a responsibility of DevOps / CI/CD to provision all required SQL tables (for all required data kinds) when on new
 environment or tenant provisioning when using Postgres. Detailed instructions (with examples) for creating new tables is
 in the **OSM module Postgres driver README.md** `org/opengroup/osdu/core/gcp/osm/translate/postgresql/README.md`
 
@@ -159,7 +159,7 @@ It can be overridden by:
 - through the Spring Boot property `osm.postgres.partition-properties-prefix`
 - environment variable `OSM_POSTGRES_PARTITION_PROPERTIES_PREFIX`
 
-**Propertyset:**
+**PropertySet:**
 
 | Property | Description |
 | --- | --- |
@@ -238,7 +238,7 @@ It can be overridden by:
 - through the Spring Boot property `osm.postgres.partition-properties-prefix`
 - environment variable `OBM_MINIO_PARTITION_PROPERTIES_PREFIX`
 
-**Propertyset:**
+**PropertySet:**
 
 | Property            | Description            |
 |---------------------|------------------------|
@@ -308,11 +308,11 @@ It can be overridden by:
 - through the Spring Boot property `oqm.rabbitmq.partition-properties-prefix`
 - environment variable `OQM_RABBITMQ_PARTITION_PROPERTIES_PREFIX``
 
-**Propertyset** (for two types of connection: messaging and admin operations):
+**PropertySet** (for two types of connection: messaging and admin operations):
 
 | Property | Description |
 | --- | --- |
-| oqm.rabbitmq.amqp.host | messaging hostnameorIP |
+| oqm.rabbitmq.amqp.host | messaging hostname or IP |
 | oqm.rabbitmq.amqp.port | - port |
 | oqm.rabbitmq.amqp.path | - path |
 | oqm.rabbitmq.amqp.username | - username |
