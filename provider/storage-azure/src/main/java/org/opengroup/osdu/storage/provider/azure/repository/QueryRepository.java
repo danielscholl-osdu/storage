@@ -85,7 +85,7 @@ public class QueryRepository implements IQueryRepository {
                     for (int i = 0; i < limit && i < allDocs.size(); i++) {
                         docs.add(allDocs.get(i));
                     }
-                    String continuationToken = "start";
+                    String continuationToken = "start" + Integer.toString(limit);
                     cursorCache.put(continuationToken, Integer.toString(limit));
                     dqr.setCursor(continuationToken);
                 } else {
@@ -95,7 +95,7 @@ public class QueryRepository implements IQueryRepository {
                         docs.add(allDocs.get(i));
                     }
                     if (endIndex < allDocs.size()) {
-                        String continuationToken = "start" + Integer.toString(endIndex);
+                        String continuationToken = "start" + Integer.toString(endIndex) + Integer.toString(limit);
                         cursorCache.put(continuationToken, Integer.toString(endIndex));
                         dqr.setCursor(continuationToken);
                     }
