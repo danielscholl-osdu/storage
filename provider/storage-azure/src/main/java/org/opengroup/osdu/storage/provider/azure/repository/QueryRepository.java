@@ -78,37 +78,30 @@ public class QueryRepository implements IQueryRepository {
         List<String> docs = new ArrayList();
         try {
             /* TODO: PAGINATION REIMPLEMENTATION NEEDED*/
-            List<String>allDocs = getDistinctKind();
+            List<String> allDocs = getDistinctKind();
 
-            if(limit!=null)
-            {
-             if(cursor==null)
-             {
-                 for(int i=0;i<limit&&i<allDocs.size();i++)
-                 {
-                     docs.add(allDocs.get(i));
-                 }
-                 String continuationToken="start";
-                 cursorCache.put(continuationToken,Integer.toString(limit));
-                 dqr.setCursor(continuationToken);
-             }
-             else {
-                 Integer startIndex=Integer.parseInt(cursorCache.get(cursor));
-                 Integer endIndex=startIndex+limit;
-                 for(int i=startIndex;i<endIndex&& i<allDocs.size();i++)
-                 {
-                     docs.add(allDocs.get(i));
-                 }
-                 if(endIndex<allDocs.size()) {
-                     String continuationToken = "start" + Integer.toString(endIndex);
-                     cursorCache.put(continuationToken, Integer.toString(endIndex));
-                     dqr.setCursor(continuationToken);
-                 }
-             }
-            }
-            else
-            {
-                docs=allDocs;
+            if (limit != null) {
+                if (cursor == null) {
+                    for (int i = 0; i < limit && i < allDocs.size(); i++) {
+                        docs.add(allDocs.get(i));
+                    }
+                    String continuationToken = "start";
+                    cursorCache.put(continuationToken, Integer.toString(limit));
+                    dqr.setCursor(continuationToken);
+                } else {
+                    Integer startIndex = Integer.parseInt(cursorCache.get(cursor));
+                    Integer endIndex = startIndex + limit;
+                    for (int i = startIndex; i < endIndex && i < allDocs.size(); i++) {
+                        docs.add(allDocs.get(i));
+                    }
+                    if (endIndex < allDocs.size()) {
+                        String continuationToken = "start" + Integer.toString(endIndex);
+                        cursorCache.put(continuationToken, Integer.toString(endIndex));
+                        dqr.setCursor(continuationToken);
+                    }
+                }
+            } else {
+                docs = allDocs;
             }
             dqr.setResults(docs);
         } catch (CosmosException e) {
