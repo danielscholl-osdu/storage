@@ -68,6 +68,7 @@ public class MessageBusImplTest {
         String[] ids = {"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11"};
         String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5", "kind6", "kind7", "kind8", "kind9", "kind10", "kind11"};
         doNothing().when(messagePublisher).publishMessage(eq(dpsHeaders), any());
+        doReturn("id").when(dpsHeaders).getCorrelationId();
 
         PubSubInfo[] pubSubInfo = new PubSubInfo[11];
         for (int i = 0; i < ids.length; ++i) {
