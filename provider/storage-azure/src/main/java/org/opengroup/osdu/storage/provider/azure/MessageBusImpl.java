@@ -46,6 +46,7 @@ public class MessageBusImpl implements IMessageBus {
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for (int i = 0; i < messages.length; i += BATCH_SIZE) {
+            String messageId = String.format("%s-%d",headers.getCorrelationId(), i);
             PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
             PublisherInfo publisherInfo = PublisherInfo.builder()
                     .batch(batch)
@@ -54,7 +55,9 @@ public class MessageBusImpl implements IMessageBus {
                     .eventGridEventType(eventGridConfig.getEventType())
                     .eventGridEventDataVersion(eventGridConfig.getEventDataVersion())
                     .serviceBusTopicName(serviceBusConfig.getServiceBusTopic())
+                    .messageId(messageId)
                     .build();
+
             messagePublisher.publishMessage(headers, publisherInfo);
         }
     }
