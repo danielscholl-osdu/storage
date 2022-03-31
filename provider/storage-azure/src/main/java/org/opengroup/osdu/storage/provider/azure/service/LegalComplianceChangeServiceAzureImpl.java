@@ -38,6 +38,8 @@ import static java.util.Collections.singletonList;
 
 @Component
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {
+    private static final String LEGAL_STATUS_INVALID = "Invalid";
+
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeServiceAzureImpl.class);
     @Autowired
     private IRecordsMetadataRepository recordsRepo;
@@ -71,7 +73,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     try {
                         this.recordsRepo.createOrUpdate(recordsMetadata);
                     } catch (Exception e) {
-                        LOGGER.error("Failed to delete records cause of error {}", e.getMessage());
+                        logOnFailedUpdateRecords(lt, e);
                         throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error updating records upon legaltag changed.",
                                 "The server could not process your request at the moment.", e);
                     }
@@ -79,7 +81,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                         recordIds.add(recordMetadata.getId());
                     }
                     this.pubSubclient.publishMessage(headers, pubsubInfos);
-                    LOGGER.info("{} Records deleted successfully {}", recordIds.size(),Arrays.toString(recordIds.toArray()));
+                    logOnSucceedUpdateRecords(lt, recordIds);
                 }
             } while (cursor != null);
         }
@@ -116,6 +118,22 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     lt.getChangedTagStatus(), lt.getChangedTagName()));
         }
         return output;
+    }
+
+    private void logOnSucceedUpdateRecords(LegalTagChanged lt, List<String> recordIds) {
+        if (LEGAL_STATUS_INVALID.equalsIgnoreCase(lt.getChangedTagStatus())) {
+            LOGGER.info("{} Records deleted successfully {} for legal tag {}", recordIds.size(), Arrays.toString(recordIds.toArray()), lt.getChangedTagName());
+        } else {
+            LOGGER.info("{} Records updated successfully {} for legal tag {}", recordIds.size(), Arrays.toString(recordIds.toArray()), lt.getChangedTagName());
+        }
+    }
+
+    private void logOnFailedUpdateRecords(LegalTagChanged lt, Exception e) {
+        if (LEGAL_STATUS_INVALID.equalsIgnoreCase(lt.getChangedTagStatus())) {
+            LOGGER.error("Failed to delete records cause of error {} for legaltag {}", e.getMessage(), lt.getChangedTagName());
+        } else {
+            LOGGER.error("Failed to update records cause of error {} for legaltag {}", e.getMessage(), lt.getChangedTagName());
+        }
     }
 
 }
