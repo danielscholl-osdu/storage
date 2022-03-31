@@ -71,6 +71,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     try {
                         this.recordsRepo.createOrUpdate(recordsMetadata);
                     } catch (Exception e) {
+                        LOGGER.error("Failed to delete records cause of error {}", e.getMessage());
                         throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error updating records upon legaltag changed.",
                                 "The server could not process your request at the moment.", e);
                     }
@@ -78,7 +79,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                         recordIds.add(recordMetadata.getId());
                     }
                     this.pubSubclient.publishMessage(headers, pubsubInfos);
-                    LOGGER.info("{} Records updated successfully {}",recordIds.size(),Arrays.toString(recordIds.toArray()));
+                    LOGGER.info("{} Records deleted successfully {}", recordIds.size(),Arrays.toString(recordIds.toArray()));
                 }
             } while (cursor != null);
         }
