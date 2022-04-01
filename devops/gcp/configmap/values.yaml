@@ -3,17 +3,19 @@
 # Declare variables to be passed into your templates.
 
 data:
-  entitlements_host: "http://entitlements"
-  partition_host: "http://partition"
-  legaltag_host: "http://legal"
+  # common
   crs_converter_host: "http://crs-conversion"
+  default_data_country: "US"  
+  entitlements_host: "http://entitlements"
+  legaltag_host: "http://legal"
   log_level: "INFO"
-  google_audiences: ""
+  partition_host: "http://partition"
   redis_group_host: ""
   redis_storage_host: ""
-  default_data_country: "US"
   spring_profiles_active: "gcp"
-
+  # gcp
+  google_audiences: ""
 conf:
-  configmap: "storage-config"
   app_name: "storage"
+  configmap: "storage-config"
+  on_prem_enabled: false
