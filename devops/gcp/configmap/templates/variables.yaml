@@ -6,14 +6,15 @@ metadata:
   name: "{{ .Values.conf.configmap }}"
   namespace: "{{ .Release.Namespace }}"
 data:
-  ENTITLEMENTS_HOST: "{{ .Values.data.entitlements_host }}"
-  PARTITION_HOST: "{{ .Values.data.partition_host }}"
-  LEGALTAG_HOST: "{{ .Values.data.legaltag_host }}"
   CRS_CONVERTER_HOST: "{{ .Values.data.crs_converter_host }}"
+  DEFAULT_DATA_COUNTRY: "{{ .Values.data.default_data_country }}"
+  ENTITLEMENTS_HOST: "{{ .Values.data.entitlements_host }}"  
+  LEGALTAG_HOST: "{{ .Values.data.legaltag_host }}"
   LOG_LEVEL: "{{ .Values.data.log_level }}"
-  GOOGLE_AUDIENCES: "{{ .Values.data.google_audiences }}"
-  STORAGE_HOSTNAME: "{{ .Values.conf.app_name }}"
+  PARTITION_HOST: "{{ .Values.data.partition_host }}"
   REDIS_GROUP_HOST: "{{ .Values.data.redis_group_host }}"
   REDIS_STORAGE_HOST: "{{ .Values.data.redis_storage_host }}"
-  DEFAULT_DATA_COUNTRY: "{{ .Values.data.default_data_country }}"
   SPRING_PROFILES_ACTIVE: "{{ .Values.data.spring_profiles_active }}"
+  {{- if not .Values.conf.on_prem_enabled }}
+  GOOGLE_AUDIENCES: "{{ .Values.data.google_audiences }}"
+  {{- end }}
