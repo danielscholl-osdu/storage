@@ -18,6 +18,7 @@ The following software have components provided under the terms of this license:
 - ASM based accessors helper used by json-smart (from https://urielch.github.io/)
 - AWS SDK For Java (from https://aws.amazon.com/sdkforjava)
 - AWS SDK for Java - BOM (from https://aws.amazon.com/sdkforjava)
+- AWS SDK for Java - Models (from https://aws.amazon.com/sdkforjava)
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/, https://commons.apache.org/proper/commons-codec/)
 - Apache Commons Collections (from http://commons.apache.org/proper/commons-collections/)
 - Apache Commons IO (from http://commons.apache.org/io/, https://commons.apache.org/proper/commons-io/, https://repo1.maven.org/maven2/commons-io/commons-io)
