@@ -168,6 +168,8 @@ public class CrsConversionService {
                         if (statusBuilder.getErrors().isEmpty()) {
                             ConvertGeoJsonResponse response = crsConverterService.convertGeoJson(request);
                             GeoJsonFeatureCollection wgs84Coordinates = response.getFeatureCollection();
+                            wgs84Coordinates.setCoordinateReferenceSystemID(null);
+                            wgs84Coordinates.setVerticalUnitID(null);
                             this.appendObjectInRecord(recordJsonObject, attributeName, wgs84Coordinates);
                         }
                     } catch (CrsConverterException crsEx) {
