@@ -40,6 +40,6 @@ public class ConfigUtils {
     }
 
     public boolean getIsSchemaEndpointsEnabled() {
-        return getBooleanProperty("schema.endpoints.enabled", "false");
+        return !getBooleanProperty("schema.endpoints.disabled", "true");
     }
 }
