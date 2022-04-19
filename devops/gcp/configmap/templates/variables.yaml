@@ -14,6 +14,7 @@ data:
   PARTITION_HOST: "{{ .Values.data.partition_host }}"
   REDIS_GROUP_HOST: "{{ .Values.data.redis_group_host }}"
   REDIS_STORAGE_HOST: "{{ .Values.data.redis_storage_host }}"
+  STORAGE_SERVICE_ACCOUNT_EMAIL: "{{ .Values.data.storage_service_account_email }}"
   SPRING_PROFILES_ACTIVE: "{{ .Values.data.spring_profiles_active }}"
   {{- if not .Values.conf.on_prem_enabled }}
   GOOGLE_AUDIENCES: "{{ .Values.data.google_audiences }}"
