@@ -87,7 +87,7 @@ Another important concept in the Data Ecosystem Storage Service is __schema__. S
 
 > It is important to note that __only__ fields with schema information associated with are indexed by the [Search Service](/solutions/dataecosystem/tutorials/searchservice). For this reason, the DELFI developer __must__ create the respective schema for his/her records kind __before__ start ingesting records into the Data Ecosystem.
 
-Schemas and records are tied together by the __kind__ attribute. On top of that, a given __kind__ can have zero or exactly one schema associated with. Having that concept in mind, the DELFI developer can make use of [schema service](https://community.opengroup.org/osdu/platform/system/schema-service) APIs for schema management
+Schemas and records are tied together by the __kind__ attribute. On top of that, a given __kind__ can have zero or exactly one schema associated with. Having that concept in mind, the DELFI developer can make use of [schema service](https://community.opengroup.org/osdu/platform/system/schema-service) APIs for schema management.
 
 > Note that all schema apis in Storage service are now deprecated, schema service is now used to manage schemas.
 
@@ -125,7 +125,7 @@ Please refer to [Entitlements Service](/solutions/dataecosystem/tutorials/entitl
 
 
 ### Creating the schema <a name="Creating-the-schema"></a>
-The schema creation is done via the `schema` [service](https://community.opengroup.org/osdu/platform/system/schema-service).
+The schema creation is done via the [schema service](https://community.opengroup.org/osdu/platform/system/schema-service).
 
 The schema is basically composed by a list of path/kinds pairs where the record fields are related to their data type. For more information about the supported schema data types, please refer to the [Schema service documentation](https://community.opengroup.org/osdu/platform/system/schema-service/-/blob/master/docs/SchemaService-OSDU.md).
 
