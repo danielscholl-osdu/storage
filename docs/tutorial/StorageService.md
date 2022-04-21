@@ -93,6 +93,7 @@ Schemas and records are tied together by the __kind__ attribute. On top of that,
 POST /api/storage/v2/schemas
 GET /api/storage/v2/schemas/{kind}
 ```
+> Note that all schema apis in Storage service are now deprecated, schema service is not used to manage schemas.
 
 [Back to table of contents](#TOC)
 
@@ -110,7 +111,7 @@ In summary, to execute the above workflow, the DELFI developer needs to perform 
 3. Create and/or assign users to a existing partition data group;
 4. Agree on the __kind__ attribute which will represent the developer's wells. Let's assume it to be ``common:welldb:wellbore:1.0.0``;
 5. Create the __legal tag__ that represents the legal constraints for the metadata to be ingested;
-6. Create a schema for the kind ``common:welldb:wellbore:1.0.0`` via the ``POST /api/storage/v2/schemas`` API;
+6. Create a schema for the kind ``common:welldb:wellbore:1.0.0`` via the `schema` [service](https://community.opengroup.org/osdu/platform/system/schema-service);
 7. Create and ingest records via the ``PUT /api/storage/v2/records`` API.
 
 
@@ -128,46 +129,9 @@ Please refer to [Entitlements Service](/solutions/dataecosystem/tutorials/entitl
 
 
 ### Creating the schema <a name="Creating-the-schema"></a>
-The schema creation is done via the ``POST /api/storage/v2/schemas`` API. For the sample workflow in question, the schema could be created as follows:
+The schema creation is done via the `schema` [service](https://community.opengroup.org/osdu/platform/system/schema-service).
 
-<details><summary>curl</summary>
-
-```
-curl --request POST \
-  --url '/api/storage/v2/schemas' \
-  --header 'accept: application/json' \
-  --header 'authorization: Bearer <JWT>' \
-  --header 'content-type: application/json' \
-  --header 'Data-Partition-Id: common' \
-  --data '{
-      "kind": "common:welldb:wellbore:1.0.0",
-      "schema": [
-        {
-          "path": "name",
-          "kind": "string"
-        },
-        {
-          "path": "company",
-          "kind": "string"
-        },
-        {
-          "path": "drillingYear",
-          "kind": "int"
-        },
-        {
-          "path": "depth",
-          "kind": "float"
-        },
-        {
-          "path": "location",
-          "kind": "core:dl:geopoint:1.0.0"
-        }
-      ]
-}'
-```
-</details>
-
-The schema is basically composed by a list of path/kinds pairs where the record fields are related to their data type. For more information about the supported schema data types, please refer to the [Schema API documentation](/solutions/dataecosystem/apis/p4d-data-ecosystem-storage-service).
+The schema is basically composed by a list of path/kinds pairs where the record fields are related to their data type. For more information about the supported schema data types, please refer to the [Schema service documentation](https://community.opengroup.org/osdu/platform/system/schema-service/-/blob/master/docs/SchemaService-OSDU.md).
 
 ### Creating the legal tag <a name="Creating-the-legal-tag"></a>
 Please refer to [Compliance Service](/solutions/dataecosystem/tutorials/complianceservice) for legal tag creation. For this example, let's assume a legal tag called ``delfi-well-legal`` is created already.
@@ -266,30 +230,6 @@ curl --request PUT \
 
 ## Storage service APIs <a name="Storage-APIs"></a>
 The Data Ecosystem Storage service has three different categories of API's 1.Schemas (deprecated now) 2.Records 3.Query for schema and record management.
-
-## Schemas <a name="schemas"></a>
-Note: All schema apis are now deprecated
-### Create Schema <a name="Create-schema"></a>
-Schema creation is explained at [Creating the schema](#Creating-the-schema) section.
-
-### Get Schema <a name="Get-schema"></a>
-The schema for a given 'kind' can be retrieved using the Get Schema API.
-```
-GET /api/storage/v2/schemas/{kind}
-```
-
-<details><summary>curl</summary>
-
-``` 
-
-curl --request GET \
-   --url '/api/storage/v2/schemas/{kind}' \
-   --header 'accept: application/json' \
-   --header 'authorization: Bearer <JWT>' \
-   --header 'content-type: application/json' \
-   --header 'Data-Partition-Id: common' 
-``` 
-</details>
 
 ## Query <a name="query"></a>
 
