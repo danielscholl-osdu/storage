@@ -265,9 +265,10 @@ curl --request PUT \
 [Back to table of contents](#TOC)
 
 ## Storage service APIs <a name="Storage-APIs"></a>
-The Data Ecosystem Storage service has three different categories of API's 1.Schemas 2.Records 3.Query for schema and record management.
+The Data Ecosystem Storage service has three different categories of API's 1.Schemas (deprecated now) 2.Records 3.Query for schema and record management.
 
 ## Schemas <a name="schemas"></a>
+Note: All schema apis are now deprecated
 ### Create Schema <a name="Create-schema"></a>
 Schema creation is explained at [Creating the schema](#Creating-the-schema) section.
 
