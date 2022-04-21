@@ -33,6 +33,7 @@ Must have:
 | `<MINIO_SECRETKEY_ENV_VARIABLE_NAME>` | ex `MINIO_SECRET_OSDU` | Minio secret env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service| yes | - |
 | `<AMQP_PASSWORD_ENV_VARIABLE_NAME>` | ex `AMQP_PASS_OSDU` | Amqp password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes | - |
 | `<AMQP_ADMIN_PASSWORD_ENV_VARIABLE_NAME>` | ex `AMQP_ADMIN_PASS_OSDU` | Amqp admin password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes | - |
+| `STORAGE_SERVICE_ACCOUNT_EMAIL` | `workload-storage@keycloak.com` |  Storage service account email, used during OQM events processing |no| - |
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
