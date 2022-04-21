@@ -192,6 +192,7 @@ Storage Service is compatible with App Engine Flexible Environment and Cloud Run
 ## Entitlements groups
 Storage service account should have entitlements groups listed below:
 - service.entitlements.user
+- service.legal.user
 
 ## License
 
