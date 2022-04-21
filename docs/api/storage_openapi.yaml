@@ -530,7 +530,7 @@ paths:
       summary: "Get schema"
       description: "The API returns the schema specified byt the given kind, which\
         \ must follow the naming convention {OSDU-Account-Id}:{dataset}:{type}:{version}.\
-        \ Allowed roles: service.storage.viewer, service.storage.creator and service.storage.admin. Note that all schema apis are now deprecated"
+        \ Allowed roles: service.storage.viewer, service.storage.creator and service.storage.admin."
       deprecated: true
       operationId: "Get schema"
       consumes:
@@ -573,7 +573,7 @@ paths:
       - "schemas"
       summary: "Delete a schema"
       description: "Allowed roles: service.storage.admin. Delete a schema by kind\
-        \ in {OSDU-Account-Id}:{dataset}:{type}:{version} format. Note that all schema apis are now deprecated"
+        \ in {OSDU-Account-Id}:{dataset}:{type}:{version} format."
       deprecated: true
       operationId: "Delete a schema"
       consumes:
@@ -615,7 +615,7 @@ paths:
       - "schemas"
       summary: "Create schema"
       description: "The API allows the creation of a new schema for the given kind.\
-        \ Allowed roles: service.storage.creator and service.storage.admin. Note that all schema apis are now deprecated"
+        \ Allowed roles: service.storage.creator and service.storage.admin."
       deprecated: true
       operationId: "Create schema"
       consumes:
