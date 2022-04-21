@@ -225,7 +225,7 @@ curl --request PUT \
 [Back to table of contents](#TOC)
 
 ## Storage service APIs <a name="Storage-APIs"></a>
-The Data Ecosystem Storage service has three different categories of API's 1.Schemas (deprecated now) 2.Records 3.Query for schema and record management.
+The Data Platform Storage service has two different categories of API's 1.Records 2.Query for schema and record management.
 
 ## Query <a name="query"></a>
 
