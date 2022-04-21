@@ -87,13 +87,9 @@ Another important concept in the Data Ecosystem Storage Service is __schema__. S
 
 > It is important to note that __only__ fields with schema information associated with are indexed by the [Search Service](/solutions/dataecosystem/tutorials/searchservice). For this reason, the DELFI developer __must__ create the respective schema for his/her records kind __before__ start ingesting records into the Data Ecosystem.
 
-Schemas and records are tied together by the __kind__ attribute. On top of that, a given __kind__ can have zero or exactly one schema associated with. Having that concept in mind, the DELFI developer can make use of two APIs for schema management provided by the Data Ecosystem Storage Service:
+Schemas and records are tied together by the __kind__ attribute. On top of that, a given __kind__ can have zero or exactly one schema associated with. Having that concept in mind, the DELFI developer can make use of [schema service](https://community.opengroup.org/osdu/platform/system/schema-service) APIs for schema management
 
-```
-POST /api/storage/v2/schemas
-GET /api/storage/v2/schemas/{kind}
-```
-> Note that all schema apis in Storage service are now deprecated, schema service is not used to manage schemas.
+> Note that all schema apis in Storage service are now deprecated, schema service is now used to manage schemas.
 
 [Back to table of contents](#TOC)
 
@@ -111,7 +107,7 @@ In summary, to execute the above workflow, the DELFI developer needs to perform 
 3. Create and/or assign users to a existing partition data group;
 4. Agree on the __kind__ attribute which will represent the developer's wells. Let's assume it to be ``common:welldb:wellbore:1.0.0``;
 5. Create the __legal tag__ that represents the legal constraints for the metadata to be ingested;
-6. Create a schema for the kind ``common:welldb:wellbore:1.0.0`` via the `schema` [service](https://community.opengroup.org/osdu/platform/system/schema-service);
+6. Create a schema for the kind ``common:welldb:wellbore:1.0.0`` via the [schema service](https://community.opengroup.org/osdu/platform/system/schema-service);
 7. Create and ingest records via the ``PUT /api/storage/v2/records`` API.
 
 
