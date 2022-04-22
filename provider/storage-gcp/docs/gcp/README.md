@@ -96,7 +96,7 @@ These buckets must be defined in tenants’ “data” GCP projects that names a
    </td>
   </tr>
   <tr>
-   <td>&lt;PartitionInfo.projectId><strong>-records</strong>
+   <td>&lt;PartitionInfo.projectId-PartitionInfo.name><strong>-records</strong>
    </td>
    <td>ListObjects, CRUDObject
    </td>

@@ -397,7 +397,7 @@ public class ObmStorage implements ICloudStorage {
     }
 
     private static String getBucketName(TenantInfo tenant) {
-        return String.format("%s-records", tenant.getProjectId());
+        return String.format("%s-%s-records", tenant.getProjectId(), tenant.getName());
     }
 
     private ObmDestination getDestination() {
