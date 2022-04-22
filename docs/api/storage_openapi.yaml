@@ -70,6 +70,61 @@ paths:
       - datalake_auth:
         - "email"
       - Bearer: []  
+  /query/records:batch:
+    post:
+      tags:
+        - "query"
+      summary: Fetch multiple records
+      description: "The API fetches multiple records at once in the specific
+        {data-partition-id}. The value of {frame-of-reference} indicates
+        whether normalization is applied. Required roles:
+        'users.datalake.viewers' or 'users.datalake.editors' or
+        'users.datalake.admins'."
+      operationId: Fetch multiple records
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+        - name: "OSDU-Account-Id"
+          in: "header"
+          description: "Account ID is the active OSDU account (OSDU account or customer's\
+          \ account) which the users choose to use with the Search API."
+          required: true
+          type: "string"
+          default: "osdu"
+        - name: frame-of-reference
+          in: header
+          description: This value indicates whether normalization applies, should be either
+            'none' or 'units=SI;crs=wgs84;elevation=msl;azimuth=true
+            north;dates=utc;'
+          required: true
+          type: string
+          default: units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/MultiRecordIds"
+      responses:
+        "200":
+          description: OK.
+        "401":
+          description: Unauthorized
+          schema:
+                 $ref: "#/definitions/AppError"
+        "400":
+          description: Bad request.
+          schema:
+             $ref: "#/definitions/AppError"
+        "500":
+          description: Unknown error.
+          schema:
+            $ref: "#/definitions/AppError"
+      security:
+      - datalake_auth:
+        - "email"
+      - Bearer: []   
   /query/records:
     get:
       tags:
@@ -157,7 +212,7 @@ paths:
       security:
       - datalake_auth:
         - "email"
-      - Bearer: []  
+      - Bearer: [] 
   /records/{id}:delete:
     post:
       tags:
@@ -209,13 +264,12 @@ paths:
           in: header
           description: This value should be the desired data partition id.
           required: true
+          type: string
+          default: common
+        - in: "body"
+          name: "body"
+          required: false
           schema:
-            type: string
-            default: common
-      requestBody:
-        content:
-          application/json:
-            schema:
               type: array
               items:
                 type: string
@@ -224,19 +278,18 @@ paths:
           description: All records deleted successfully.
         "207":
           description: Some of the records weren't deleted successfully.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DeleteRecordsException"
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/DeleteRecordsException"
         "400":
           description: "Invalid id format"
           schema:
             $ref: "#/definitions/AppError"
       security:
-        - bearer: []
-        - appkey: []
+      - datalake_auth:
+        - "email"
+      - Bearer: []
   /records/{id}:
     get:
       tags:
@@ -488,13 +541,6 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - in: "body"
-        name: "body"
-        required: false
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/RecordBulkUpdateParam"
       - name: "OSDU-Account-Id"
         in: "header"
         description: "Account ID is the active OSDU account (OSDU account or customer's\
@@ -502,6 +548,13 @@ paths:
         required: true
         type: "string"
         default: "tenant1"
+      - in: "body"
+        name: "body"
+        required: false
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/RecordBulkUpdateParam"  
       responses:
         200:
           description: "Records updated successfully."
@@ -730,7 +783,6 @@ definitions:
         example: "data.wellName"
         description: "Filter attributes to restrict the returned fields of the record.\
           \ Usage: data.{record-data-field-name}."
-        allowEmptyValue: true
         items:
           type: "string"
     description: "Multiple storage record ids and filter attributes."
@@ -848,7 +900,6 @@ definitions:
           type: "object"
       history:
         description: "Record ancestry information."
-        allowEmptyValue: true
         $ref: "#/definitions/RecordHistory"
     description: "Storage record"
     example:
@@ -875,7 +926,6 @@ definitions:
       parents:
         type: "array"
         description: "List of parent records. Must follow the naming convention: {parent-record-id}:{parent-record-version}."
-        allowEmptyValue: true
         uniqueItems: true
         items:
           type: "string"
@@ -956,12 +1006,10 @@ definitions:
     properties:
       query:
         description: "Patch update query information"
-        allowEmptyValue: false
         $ref: "#/definitions/RecordQuery"
       ops:
         type: "array"
         description: "List of operations for records pathc update"
-        allowEmptyValue: false
         items:
           $ref: "#/definitions/PatchOperation"
     description: "Patch update input information"
@@ -996,6 +1044,8 @@ definitions:
       ids:
         type: "array"
         description: "Records ids for whom patch operations going to be applied"
+        items:
+          type: "string"
     description: "Patch api query specific information"
   PatchOperation:
     type: "object"
