@@ -292,7 +292,7 @@ OBM connection properties of these servers (url, etc.) are defined as specific p
    </td>
   </tr>
   <tr>
-   <td>&lt;PartitionInfo.projectId><strong>-records</strong>
+   <td>&lt;PartitionInfo.projectId-PartitionInfo.name><strong>-records</strong>
    </td>
    <td>ListObjects, CRUDObject
    </td>

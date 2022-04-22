@@ -39,7 +39,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagWithReason;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -147,7 +146,7 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     }
 
     @Test
-    public void testSingle() throws ComplianceUpdateStoppedException, InterruptedException {
+    public void testMultithreadingMessageProcessingWithDifferentTenants() throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(numberOfTenantRuns);
         for (int i = 0; i < numberOfTenantRuns; i++) {
             int finalI = i;
