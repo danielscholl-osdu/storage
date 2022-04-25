@@ -28,7 +28,8 @@
 		<docker.image.prefix>opendes</docker.image.prefix>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<os-core-common.version>0.15.0-SNAPSHOT</os-core-common.version>
-		<jackson.version>2.11.2</jackson.version>
+		<jackson-databind.version>2.13.2.2</jackson-databind.version>
+		<jackson.version>2.13.2</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
 		<snakeyaml.version>1.26</snakeyaml.version>
 		<commons-codec.version>1.14</commons-codec.version>
@@ -88,6 +89,11 @@
 			<dependency>
 				<groupId>com.fasterxml.jackson.core</groupId>
 				<artifactId>jackson-databind</artifactId>
+				<version>${jackson-databind.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-annotations</artifactId>
 				<version>${jackson.version}</version>
 			</dependency>
 			<dependency>
