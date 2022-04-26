@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.query;
 import org.junit.After;
 import org.junit.Before;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
+import org.opengroup.osdu.storage.util.ConfigUtils;
 
 public class TestGetQueryKindsIntegration extends GetQueryKindsIntegrationTests {
 
@@ -24,11 +25,13 @@ public class TestGetQueryKindsIntegration extends GetQueryKindsIntegrationTests 
     @Override
     public void setup() throws Exception {
         this.testUtils = new AzureTestUtils();
+        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
     @Override
     public void tearDown() throws Exception {
         this.testUtils = null;
+        this.configUtils = null;
 	}
 }
