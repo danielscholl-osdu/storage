@@ -12,7 +12,7 @@ data:
   partition_host: "http://partition"
   redis_group_host: ""
   redis_storage_host: ""
-  storage_service_account_email: "workload-storage-gcp@nice-etching-277309.iam.gserviceaccount.com"
+  storage_service_account_email: ""
   spring_profiles_active: "gcp"
   # gcp
   google_audiences: ""
