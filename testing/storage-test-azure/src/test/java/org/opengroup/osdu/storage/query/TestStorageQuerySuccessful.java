@@ -19,6 +19,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
+import org.opengroup.osdu.storage.util.ConfigUtils;
 
 public class TestStorageQuerySuccessful extends StorageQuerySuccessfulTest {
 
@@ -38,11 +39,13 @@ public class TestStorageQuerySuccessful extends StorageQuerySuccessfulTest {
     @Override
     public void setup() throws Exception {
         this.testUtils = new AzureTestUtils();
+        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
     @Override
     public void tearDown() throws Exception {
         this.testUtils = null;
+        this.configUtils = null;
 	}
 }
