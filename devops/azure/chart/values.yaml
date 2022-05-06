@@ -26,6 +26,6 @@ policy:
   enabled: true 
 
 schemaEndpoints:
-  disabled: false
+  disabled: true
 
 istioDnsHost: "contoso.com"
