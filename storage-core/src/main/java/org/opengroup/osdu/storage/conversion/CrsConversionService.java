@@ -145,6 +145,8 @@ public class CrsConversionService {
                     if (asIngestedCoordinates.has(Constants.TYPE) && (!asIngestedCoordinates.get(Constants.TYPE).isJsonNull())) fc.setType(asIngestedCoordinates.get(Constants.TYPE).getAsString());
                     if (asIngestedCoordinates.has(Constants.PROPERTIES) && (!asIngestedCoordinates.get(Constants.PROPERTIES).isJsonNull())) fc.setProperties(asIngestedCoordinates.getAsJsonObject(Constants.PROPERTIES));
                     if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_CRS) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull())) fc.setPersistableReferenceCrs(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).getAsString());
+                    if (asIngestedCoordinates.has(Constants.COORDINATE_REFERENCE_SYSTEM_ID) && (!asIngestedCoordinates.get(Constants.COORDINATE_REFERENCE_SYSTEM_ID).isJsonNull())) fc.setCoordinateReferenceSystemID(asIngestedCoordinates.get(Constants.COORDINATE_REFERENCE_SYSTEM_ID).getAsString());
+                    if (asIngestedCoordinates.has(Constants.VERTICAL_UNIT_ID) && (!asIngestedCoordinates.get(Constants.VERTICAL_UNIT_ID).isJsonNull())) fc.setVerticalUnitID(asIngestedCoordinates.get(Constants.VERTICAL_UNIT_ID).getAsString());
                     if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_UNIT_Z) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).isJsonNull())) fc.setPersistableReferenceUnitZ(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).getAsString());
                     if (asIngestedCoordinates.has(Constants.BBOX) && (!asIngestedCoordinates.get(Constants.BBOX).isJsonNull())) fc.setBbox(this.bboxValues(asIngestedCoordinates.getAsJsonArray(Constants.BBOX)));
 
@@ -166,6 +168,8 @@ public class CrsConversionService {
                         if (statusBuilder.getErrors().isEmpty()) {
                             ConvertGeoJsonResponse response = crsConverterService.convertGeoJson(request);
                             GeoJsonFeatureCollection wgs84Coordinates = response.getFeatureCollection();
+                            wgs84Coordinates.setCoordinateReferenceSystemID(null);
+                            wgs84Coordinates.setVerticalUnitID(null);
                             this.appendObjectInRecord(recordJsonObject, attributeName, wgs84Coordinates);
                         }
                     } catch (CrsConverterException crsEx) {
