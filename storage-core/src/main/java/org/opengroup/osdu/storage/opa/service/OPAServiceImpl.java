@@ -98,10 +98,7 @@ public class OPAServiceImpl implements IOPAService {
         Type validationRequestType = new TypeToken<CreateOrUpdateValidationRequest>() {}.getType();
         String requestBody = gson.toJson(createOrUpdateValidationRequest, validationRequestType);
 
-        String camelCaseDpId = Arrays.stream(headers.getPartitionIdWithFallbackToAccountId().split("\\-"))
-                .map(s -> Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase())
-                .collect(Collectors.joining());
-        String evaluateUrl = String.format("%s/v1/data/%sPolicies/dataauthz/records", opaEndpoint, camelCaseDpId);
+        String evaluateUrl = String.format("%s/v1/data/osdu/partition/%s/dataauthz/records", opaEndpoint, headers.getPartitionIdWithFallbackToAccountId());
 
         logger.debug("opa url: " + evaluateUrl);
         HttpRequest httpRequest = HttpRequest.builder()
