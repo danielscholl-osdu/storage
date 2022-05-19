@@ -20,6 +20,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.opengroup.osdu.storage.util.AWSTestUtils;
+import org.opengroup.osdu.storage.util.ConfigUtils;
 
 public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
 
@@ -39,6 +40,7 @@ public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
     @Override
     public void setup() throws Exception {
         this.testUtils = new AWSTestUtils();
+        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
