@@ -8,7 +8,7 @@ data:
   requests_memory: "2048M"
   limits_cpu: "1"
   limits_memory: "3G"
-  image: "" 
+  image: ""
   imagePullPolicy: "IfNotPresent"
   serviceAccountName: "storage"
 conf:
@@ -20,3 +20,4 @@ conf:
   postgres_secret_name: "storage-postgres-secret"
   rabbitmq_secret_name: "rabbitmq-secret"
   replicas: 3
+  domain: ""
