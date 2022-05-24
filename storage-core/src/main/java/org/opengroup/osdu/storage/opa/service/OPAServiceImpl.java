@@ -39,9 +39,11 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @ConfigurationProperties(prefix = "opa")
@@ -96,7 +98,8 @@ public class OPAServiceImpl implements IOPAService {
         Type validationRequestType = new TypeToken<CreateOrUpdateValidationRequest>() {}.getType();
         String requestBody = gson.toJson(createOrUpdateValidationRequest, validationRequestType);
 
-        String evaluateUrl = opaEndpoint + "/v1/data/dataauthz/records";
+        String evaluateUrl = String.format("%s/v1/data/osdu/partition/%s/dataauthz/records", opaEndpoint, headers.getPartitionIdWithFallbackToAccountId());
+
         logger.debug("opa url: " + evaluateUrl);
         HttpRequest httpRequest = HttpRequest.builder()
                 .url(evaluateUrl)

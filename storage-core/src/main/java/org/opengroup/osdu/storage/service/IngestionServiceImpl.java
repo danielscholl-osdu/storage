@@ -413,7 +413,7 @@ public class IngestionServiceImpl implements IngestionService {
 			}
 		}
 		List<ValidationOutputRecord> outputCreateRecords = this.opaService.validateUserAccessToRecords(createRecordsMetadata, OperationType.create);
-		List<ValidationOutputRecord> outputUpdateRecords = this.opaService.validateUserAccessToRecords(createRecordsMetadata, OperationType.update);
+		List<ValidationOutputRecord> outputUpdateRecords = this.opaService.validateUserAccessToRecords(updateRecordsMetadata, OperationType.update);
 		outputCreateRecords.addAll(outputUpdateRecords);
 
 		for (ValidationOutputRecord outputRecord : outputCreateRecords) {
