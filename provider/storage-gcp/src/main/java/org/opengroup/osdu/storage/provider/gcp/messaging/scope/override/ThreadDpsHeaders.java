@@ -47,7 +47,7 @@ public class ThreadDpsHeaders extends DpsHeaders {
     private final TokenProvider tokenProvider;
 
     public void setThreadContext(Map<String, String> headers) {
-        this.put(DpsHeaders.AUTHORIZATION, tokenProvider.getIdToken());
+        this.put(DpsHeaders.AUTHORIZATION, "Bearer " + tokenProvider.getIdToken());
         this.put(DpsHeaders.USER_EMAIL, properties.getStorageServiceAccountEmail());
         this.addFromMap(headers);
     }
