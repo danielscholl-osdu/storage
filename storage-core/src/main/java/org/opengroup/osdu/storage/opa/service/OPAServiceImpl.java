@@ -46,9 +46,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@ConfigurationProperties(prefix = "opa")
 public class OPAServiceImpl implements IOPAService {
 
+    @Value("${opa.opa-endpoint}")
     private String opaEndpoint;
 
     @Autowired
