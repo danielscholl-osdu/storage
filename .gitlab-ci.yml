@@ -1,26 +1,26 @@
-variables:
-  AWS_BUILD_SUBDIR: provider/storage-aws/build-aws
-  AWS_TEST_SUBDIR: testing/storage-test-aws
-  AWS_SERVICE: storage
-  AWS_ENVIRONMENT: dev
-  AWS_DEPLOY_TARGET: EKS
-  AWS_EKS_DEPLOYMENT_NAME: os-storage
+# variables:
+#   AWS_BUILD_SUBDIR: provider/storage-aws/build-aws
+#   AWS_TEST_SUBDIR: testing/storage-test-aws
+#   AWS_SERVICE: storage
+#   AWS_ENVIRONMENT: dev
+#   AWS_DEPLOY_TARGET: EKS
+#   AWS_EKS_DEPLOYMENT_NAME: os-storage
 
-  GCP_BUILD_SUBDIR: provider/storage-gcp
-  GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
-  GCP_APPLICATION_NAME: os-storage
-  GCP_ENVIRONMENT: testing
-  GCP_PROJECT: opendes-evt
-  GCP_TENANT_NAME: opendesevt
-  GCP_DEPLOY_ENV: p4d
+#   GCP_BUILD_SUBDIR: provider/storage-gcp
+#   GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
+#   GCP_APPLICATION_NAME: os-storage
+#   GCP_ENVIRONMENT: testing
+#   GCP_PROJECT: opendes-evt
+#   GCP_TENANT_NAME: opendesevt
+#   GCP_DEPLOY_ENV: p4d
 
-  AZURE_SERVICE: storage
-  AZURE_BUILD_SUBDIR: provider/storage-azure
-  AZURE_TEST_SUBDIR: testing/storage-test-azure
+#   AZURE_SERVICE: storage
+#   AZURE_BUILD_SUBDIR: provider/storage-azure
+#   AZURE_TEST_SUBDIR: testing/storage-test-azure
 
-  IBM_BUILD_SUBDIR: provider/storage-ibm
-  IBM_INT_TEST_SUBDIR: testing/storage-test-ibm
-  IBM_TENANT_NAME: tenant1
+#   IBM_BUILD_SUBDIR: provider/storage-ibm
+#   IBM_INT_TEST_SUBDIR: testing/storage-test-ibm
+#   IBM_TENANT_NAME: tenant1
 
 include:
   - project: "osdu/platform/ci-cd-pipelines"
@@ -29,20 +29,21 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "build/maven.yml"
 
-  - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/aws-global.yml"
+  # - project: "osdu/platform/ci-cd-pipelines"
+  #   file: "cloud-providers/aws-global.yml"
+
+  # - project: "osdu/platform/ci-cd-pipelines"
+  #   file: "cloud-providers/aws-maven.yml"
+
+  # - project: "osdu/platform/ci-cd-pipelines"
+  #   file: "cloud-providers/ibm.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/aws-maven.yml"
+    ref: "gcp-release-pipeline"
+    file: "cloud-providers/osdu-gcp-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/ibm.yml"
-
-  - project: 'osdu/platform/ci-cd-pipelines'
-    file: "cloud-providers/osdu-gcp-gke.yml"
-
-  - project: 'osdu/platform/ci-cd-pipelines'
-    file: 'publishing/pages.yml'
+    file: "publishing/pages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa-maven.yml"
@@ -50,8 +51,8 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/gitlab-ultimate.yml"
 
-  - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/azure.yml"
+  # - project: "osdu/platform/ci-cd-pipelines"
+  #   file: "cloud-providers/azure.yml"
 
   - local: "devops/gcp/pipeline/override-stages.yml"
 
