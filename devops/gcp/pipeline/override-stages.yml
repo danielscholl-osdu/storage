@@ -4,7 +4,6 @@ variables:
   OSDU_GCP_VENDOR: gcp
   OSDU_GCP_DEFAULT_DATA_COUNTRY: US
   OSDU_GCP_TEST_SUBDIR: testing/$OSDU_GCP_SERVICE-test-$OSDU_GCP_VENDOR
-  # --- osdu specific variables for GKE ---
   OSDU_GCP_HELM_CONFIG_SERVICE_VARS: >
     --set data.google_audiences=$GOOGLE_AUDIENCE
     --set data.redis_group_host=$REDIS_GROUP_HOST
@@ -20,4 +19,3 @@ variables:
     --set data.serviceAccountName=$OSDU_GCP_SERVICE-k8s
   OSDU_GCP_HELM_CONFIG_SERVICE: storage-config
   OSDU_GCP_HELM_DEPLOYMENT_SERVICE: storage-deploy
-  OSDU_GCP_HELM_PACKAGE_CHARTS: "devops/gcp/deploy devops/gcp/configmap"
