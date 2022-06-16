@@ -18,8 +18,8 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
-import com.microsoft.azure.documentdb.bulkexecutor.BulkImportResponse;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -49,6 +49,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Autowired
     private CosmosContainerConfig cosmosContainerConfig;
+
+    @Autowired
+    private CosmosStoreBulkOperations cosmosBulkStore;
 
     @Autowired
     private String recordMetadataCollection;
@@ -91,14 +94,17 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
      * @param recordsMetadata records to write to cosmos.
      */
     private void createOrUpdateParallel(List<RecordMetadata> recordsMetadata){
-        Collection<RecordMetadataDoc> docs = new ArrayList<>();
+        List<RecordMetadataDoc> docs = new ArrayList<>();
+        List<String> partitionKeys = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata){
             RecordMetadataDoc doc = new RecordMetadataDoc();
             doc.setId(recordMetadata.getId());
             doc.setMetadata(recordMetadata);
             docs.add(doc);
+            partitionKeys.add(recordMetadata.getId());
         }
-        BulkImportResponse response = this.bulkInsert(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docs);
+
+        cosmosBulkStore.bulkInsertWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docs, partitionKeys, 1);
     }
 
     @Override
