@@ -21,6 +21,7 @@ import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
+import org.opengroup.osdu.storage.opa.service.OPAServiceConfig;
 import org.opengroup.osdu.storage.opa.service.OPAServiceImpl;
 
 import java.util.ArrayList;
@@ -49,6 +50,9 @@ public class OPAServiceImplTest {
 
     @Mock
     private HttpResponse httpResponse;
+
+    @Mock
+    private OPAServiceConfig opaServiceConfig;
 
     @InjectMocks
     private OPAServiceImpl sut;
