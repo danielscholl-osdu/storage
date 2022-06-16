@@ -1,11 +1,6 @@
 variables:
   OSDU_GCP_SERVICE: storage
   OSDU_GCP_VENDOR: gcp
-  OSDU_GCP_HELM_CONFIG_SERVICE_VARS_DEV2: >
-    --set data.google_audiences=$GOOGLE_AUDIENCE
-    --set data.redis_group_host=$REDIS_GROUP_HOST
-    --set data.redis_storage_host=$REDIS_STORAGE_HOST
-    --set data.storage_service_account_email=workload-storage-gcp@$OSDU_GCP_PROJECT.iam.gserviceaccount.com
 
 osdu-gcp-anthos-test:
   variables:
