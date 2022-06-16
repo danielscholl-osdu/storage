@@ -11,8 +11,31 @@ spec:
   - "{{ .Values.istioDnsHost }}"
   gateways:
   - istio-gateway
-  http:  
-  - match:
+  http:
+  - name: "Settings for /query/records:batch"
+    match:
+    - uri:
+        prefix: "/api/{{ .Chart.Name }}/v2/query/records:batch"
+    route:
+    - destination:
+        host: {{ .Chart.Name }}
+        port:
+          number: 80
+    corsPolicy:
+      maxAge: "60m"
+      allowCredentials: true
+      allowHeaders:
+      - Authorization
+      - Data-Partition-Id
+      - Correlation-Id
+      - Content-Type
+      - Frame-Of-Reference
+      allowMethods:
+      - POST
+      allowOrigins:
+      - prefix: "*"
+  - name: "Generic Settings"
+    match:
     - uri:
         prefix: "/api/{{ .Chart.Name }}/v2"
     route:
