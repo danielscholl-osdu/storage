@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 @Component
 @RequestScope
@@ -34,6 +35,9 @@ public class StorageAuditLogger {
 	private DpsHeaders dpsHeaders;
 
 	private StorageAuditEvents events = null;
+
+	@Autowired
+	private Consumer<AuditPayload> readAuditLogsConsumer;
 
 	private StorageAuditEvents getAuditEvents() {
 		if (this.events == null) {
@@ -67,39 +71,39 @@ public class StorageAuditLogger {
 	}
 
 	public void readAllVersionsOfRecordSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadAllVersionsOfRecordSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadAllVersionsOfRecordSuccess(resource));
 	}
 
 	public void readAllVersionsOfRecordFail(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadAllVersionsOfRecordFail(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadAllVersionsOfRecordFail(resource));
 	}
 
 	public void readSpecificVersionOfRecordSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadSpecificVersionOfRecordSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadSpecificVersionOfRecordSuccess(resource));
 	}
 
 	public void readSpecificVersionOfRecordFail(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadSpecificVersionOfRecordFail(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadSpecificVersionOfRecordFail(resource));
 	}
 
 	public void readLatestVersionOfRecordSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadLatestVersionOfRecordSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadLatestVersionOfRecordSuccess(resource));
 	}
 
 	public void readLatestVersionOfRecordFail(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadLatestVersionOfRecordFail(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadLatestVersionOfRecordFail(resource));
 	}
 
 	public void readMultipleRecordsSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadMultipleRecordsSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadMultipleRecordsSuccess(resource));
 	}
 
 	public void readAllRecordsOfGivenKindSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadAllRecordsOfGivenKindSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadAllRecordsOfGivenKindSuccess(resource));
 	}
 
 	public void readAllKindsSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getAllKindsEventSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getAllKindsEventSuccess(resource));
 	}
 
 	public void createSchemaSuccess(List<String> resource) {
@@ -111,7 +115,7 @@ public class StorageAuditLogger {
 	}
 
 	public void readSchemaSuccess(List<String> resource) {
-		this.writeLog(this.getAuditEvents().getReadSchemaEventSuccess(resource));
+		readAuditLogsConsumer.accept(this.getAuditEvents().getReadSchemaEventSuccess(resource));
 	}
 
 	public void updateRecordsComplianceStateSuccess(List<String> resource) {
@@ -119,11 +123,11 @@ public class StorageAuditLogger {
 	}
 
 	public void readMultipleRecordsWithOptionalConversionSuccess(List<String> resource) {
-		this.writeLog(getAuditEvents().getReadMultipleRecordsWithOptionalConversionSuccess(resource));
+		readAuditLogsConsumer.accept(getAuditEvents().getReadMultipleRecordsWithOptionalConversionSuccess(resource));
 	}
 
 	public void readMultipleRecordsWithOptionalConversionFail(List<String> resource) {
-		this.writeLog(getAuditEvents().getReadMultipleRecordsWithOptionalConversionFail(resource));
+		readAuditLogsConsumer.accept(getAuditEvents().getReadMultipleRecordsWithOptionalConversionFail(resource));
 	}
 
 	private void writeLog(AuditPayload log) {

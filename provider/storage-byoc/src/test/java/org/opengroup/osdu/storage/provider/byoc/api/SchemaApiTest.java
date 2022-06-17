@@ -36,7 +36,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes={StorageApplication.class})
+@SpringBootTest(classes={StorageApplication.class}, properties = {"PARTITION_API=test"})
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SchemaApiTest {
     @Mock
