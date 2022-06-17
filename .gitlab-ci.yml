@@ -14,31 +14,6 @@ variables:
   GCP_TENANT_NAME: opendesevt
   GCP_DEPLOY_ENV: p4d
 
-  # refactor is required
-  OSDU_GCP_ENVIRONMENT: osdu-gcp
-  OSDU_GCP_SERVICE: storage
-  OSDU_GCP_VENDOR: gcp
-  OSDU_GCP_APPLICATION_NAME: os-storage
-  OSDU_GCP_DEFAULT_DATA_COUNTRY: US
-  OSDU_GCP_TEST_SUBDIR: testing/$OSDU_GCP_SERVICE-test-$OSDU_GCP_VENDOR
-  # --- osdu specific variables for GKE ---
-  OSDU_GCP_HELM_CONFIG_SERVICE_VARS: >
-    --set data.google_audiences=$GOOGLE_AUDIENCE 
-    --set data.redis_group_host=$REDIS_GROUP_HOST 
-    --set data.redis_storage_host=$REDIS_STORAGE_HOST 
-    --set data.storage_service_account_email=workload-storage-gcp@$OSDU_GCP_PROJECT.iam.gserviceaccount.com
-  OSDU_GCP_HELM_CONFIG_SERVICE_VARS_DEV2: >
-    --set data.google_audiences=$GOOGLE_AUDIENCE 
-    --set data.redis_group_host=$REDIS_GROUP_HOST 
-    --set data.redis_storage_host=$REDIS_STORAGE_HOST 
-    --set data.storage_service_account_email=workload-storage-gcp@$OSDU_GCP_PROJECT.iam.gserviceaccount.com
-  OSDU_GCP_HELM_DEPLOYMENT_SERVICE_VARS: >
-    --set data.image=$CI_REGISTRY_IMAGE/osdu-gcp-$OSDU_GCP_SERVICE:$CI_COMMIT_SHORT_SHA 
-    --set data.serviceAccountName=$OSDU_GCP_SERVICE-k8s
-  OSDU_GCP_HELM_CONFIG_SERVICE: storage-config
-  OSDU_GCP_HELM_DEPLOYMENT_SERVICE: storage-deploy
-  OSDU_GCP_HELM_PACKAGE_CHARTS: "devops/gcp/deploy devops/gcp/configmap"
-
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
   AZURE_TEST_SUBDIR: testing/storage-test-azure
@@ -63,11 +38,11 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/ibm.yml"
 
-  - project: 'osdu/platform/ci-cd-pipelines'
-    file: "cloud-providers/osdu-gcp-gke.yml"
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/osdu-gcp-global.yml"
 
-  - project: 'osdu/platform/ci-cd-pipelines'
-    file: 'publishing/pages.yml'
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "publishing/pages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa-maven.yml"
@@ -77,6 +52,8 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/azure.yml"
+
+  - local: "devops/gcp/pipeline/override-stages.yml"
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there

@@ -36,7 +36,7 @@ public class ThreadScopeAttributes {
     }
 
     protected final void registerRequestDestructionCallback(@NonNull String name, @NonNull Runnable callback) {
-        log.debug("Registering callback for: {} on runnable: {}", name, callback);
+        log.trace("Registering callback for: {} on runnable: {}", name, callback);
         this.hRequestDestructionCallbacks.put(name, callback);
     }
 
@@ -48,7 +48,7 @@ public class ThreadScopeAttributes {
     private void processDestructionCallbacks() {
         for (Map.Entry<String, Runnable> mapEntry : this.hRequestDestructionCallbacks.entrySet()) {
             Runnable callback = mapEntry.getValue();
-            log.debug("Performing destruction callback for: {} on thread: {}", mapEntry.getKey(), Thread.currentThread().getName());
+            log.trace("Performing destruction callback for: {} on thread: {}", mapEntry.getKey(), Thread.currentThread().getName());
             callback.run();
         }
         this.hRequestDestructionCallbacks.clear();
