@@ -26,12 +26,12 @@ import org.springframework.beans.factory.config.Scope;
 public class ThreadScope implements Scope {
 
     public Object get(String name, ObjectFactory<?> factory) {
-        log.debug("Get bean:{} with factory: {} current Thread: {}", name, factory, Thread.currentThread().getName());
+        log.trace("Get bean:{} with factory: {} current Thread: {}", name, factory, Thread.currentThread().getName());
         Object result = null;
         Map<String, Object> hBeans = ThreadScopeContextHolder.currentThreadScopeAttributes().getBeanMap();
         if (!hBeans.containsKey(name)) {
             result = factory.getObject();
-            log.debug("No bean in context with name: {} factory provisioning result is: {} current Thread: {}", name, result, Thread.currentThread().getName());
+            log.trace("No bean in context with name: {} factory provisioning result is: {} current Thread: {}", name, result, Thread.currentThread().getName());
             hBeans.put(name, result);
         } else {
             result = hBeans.get(name);
@@ -41,7 +41,7 @@ public class ThreadScope implements Scope {
     }
 
     public Object remove(String name) {
-        log.debug("Removing bean : {} current Thread: {}", name, Thread.currentThread().getName());
+        log.trace("Removing bean : {} current Thread: {}", name, Thread.currentThread().getName());
         Object result = null;
         Map<String, Object> hBeans = ThreadScopeContextHolder.currentThreadScopeAttributes().getBeanMap();
         if (hBeans.containsKey(name)) {
