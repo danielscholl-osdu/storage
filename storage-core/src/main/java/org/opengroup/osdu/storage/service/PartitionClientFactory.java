@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.policy.di;
+package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.partition.IPartitionFactory;
 import org.opengroup.osdu.core.common.partition.PartitionAPIConfig;
 import org.opengroup.osdu.core.common.partition.PartitionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Component
 @Primary
-@ConditionalOnProperty(value = "service.policy.enabled", havingValue = "true", matchIfMissing = false)
 public class PartitionClientFactory extends AbstractFactoryBean<IPartitionFactory> {
 
     @Value("${PARTITION_API}")

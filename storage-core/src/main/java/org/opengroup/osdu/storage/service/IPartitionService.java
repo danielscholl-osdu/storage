@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.policy.service;
+package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.partition.PartitionInfo;
 
