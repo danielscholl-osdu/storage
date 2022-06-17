@@ -14,9 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.repository;
 
-
-import com.azure.cosmos.models.CosmosQueryRequestOptions;
-import com.azure.cosmos.models.SqlQuerySpec;
+import com.azure.cosmos.models.*;
 import com.microsoft.azure.documentdb.bulkexecutor.BulkImportResponse;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStore;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
@@ -25,6 +23,8 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.azure.generator.FindQuerySpecGenerator;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.opengroup.osdu.storage.provider.azure.repository.interfaces.CosmosStoreRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +45,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     private static final String ENTITY_MUST_NOT_BE_NULL = "entity must not be null";
     private static final String PAGEABLE_MUST_NOT_BE_NULL = "pageable must not be null";
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(SimpleCosmosStoreRepository.class);
     private final Class<T> domainClass;
 
     @Autowired
@@ -293,6 +294,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         Assert.notNull(cosmosDBName, "cosmosDBName should not be null");
         Assert.notNull(collectionName, "collectionName should not be null");
         BulkImportResponse response = cosmosBulkStore.bulkInsert(dataPartitionId, cosmosDBName, collectionName, docs, true, true, bulkImportMaxConcurrencyPePartitionRange);
+
         if(!response.getErrors().isEmpty()){
             List<String> exceptions = new ArrayList<>();
             for(Exception e : response.getErrors()){
