@@ -46,6 +46,9 @@ public class AuditLoggerTest {
     @Mock
     private DpsHeaders dpsHeaders;
 
+    @Mock
+    private ReadAuditLogsConsumer readAuditLogsConsumer;
+
 
     @Before
     public void setup() {
@@ -86,7 +89,7 @@ public class AuditLoggerTest {
         this.sut.readAllVersionsOfRecordSuccess(resource);
         this.sut.readAllVersionsOfRecordFail(resource);
 
-        verify(this.log, times(2)).audit(any());
+        verify(readAuditLogsConsumer, times(2)).accept(any());
     }
 
     @Test
@@ -95,7 +98,7 @@ public class AuditLoggerTest {
         this.sut.readSpecificVersionOfRecordSuccess(resource);
         this.sut.readSpecificVersionOfRecordFail(resource);
 
-        verify(this.log, times(2)).audit(any());
+        verify(readAuditLogsConsumer, times(2)).accept(any());
     }
 
     @Test
@@ -104,7 +107,7 @@ public class AuditLoggerTest {
         this.sut.readLatestVersionOfRecordSuccess(resource);
         this.sut.readLatestVersionOfRecordFail(resource);
 
-        verify(this.log,times(2)).audit(any());
+        verify(readAuditLogsConsumer,times(2)).accept(any());
     }
 
     @Test
@@ -112,7 +115,7 @@ public class AuditLoggerTest {
         List<String> resource = Collections.singletonList("1");
         this.sut.readMultipleRecordsSuccess(resource);
 
-        verify(this.log).audit(any());
+        verify(readAuditLogsConsumer).accept(any());
     }
 
     @Test
@@ -120,7 +123,7 @@ public class AuditLoggerTest {
         List<String> resource = Collections.singletonList("1");
         this.sut.readAllRecordsOfGivenKindSuccess(resource);
 
-        verify(this.log).audit(any());
+        verify(readAuditLogsConsumer).accept(any());
     }
 
     @Test
@@ -128,7 +131,7 @@ public class AuditLoggerTest {
       List<String> resource = Collections.singletonList("1");
         this.sut.readAllKindsSuccess(resource);
 
-        verify(this.log).audit(any());
+        verify(readAuditLogsConsumer).accept(any());
     }
 
     @Test
@@ -152,7 +155,7 @@ public class AuditLoggerTest {
         List<String> resource = Collections.singletonList("1");
         this.sut.readSchemaSuccess(resource);
 
-        verify(this.log).audit(any());
+        verify(readAuditLogsConsumer).accept(any());
     }
 
     @Test
@@ -168,7 +171,7 @@ public class AuditLoggerTest {
         List<String> resource = Collections.singletonList("1");
         this.sut.readMultipleRecordsWithOptionalConversionSuccess(resource);
 
-        verify(this.log).audit(any());
+        verify(readAuditLogsConsumer).accept(any());
     }
 
     @Test
@@ -176,7 +179,7 @@ public class AuditLoggerTest {
         List<String> resource = Collections.singletonList("1");
         this.sut.readMultipleRecordsWithOptionalConversionFail(resource);
 
-        verify(this.log).audit(any());
+        verify(readAuditLogsConsumer).accept(any());
     }
 }
 
