@@ -30,10 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
@@ -228,7 +225,7 @@ public class ObmStorage implements ICloudStorage {
         String bucketName = getBucketName(this.tenantInfo);
         String dataPartitionId = tenantInfo.getDataPartitionId();
 
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> map = new ConcurrentHashMap<>();
 
         List<Callable<Boolean>> tasks = new ArrayList<>();
 
