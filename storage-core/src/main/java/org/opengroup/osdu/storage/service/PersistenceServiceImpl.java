@@ -86,7 +86,9 @@ public class PersistenceServiceImpl implements IPersistenceService {
 			this.commitDatastoreTransaction(recordsMetadata);
 		} catch (AppException e) {
 			try {
+				//try deleting the latest version of the record from blob storage and Datastore
 				this.tryCleanupCloudStorage(recordsProcessing);
+				this.tryCleanupDatastore(recordsMetadata);
 			} catch (AppException innerException) {
 				e.addSuppressed(innerException);
 			}
@@ -127,6 +129,17 @@ public class PersistenceServiceImpl implements IPersistenceService {
 
 	private void tryCleanupCloudStorage(List<RecordProcessing> recordsProcessing) {
 		recordsProcessing.forEach(r -> this.cloudStorage.deleteVersion(r.getRecordMetadata(), r.getRecordMetadata().getLatestVersion()));
+	}
+
+	private void tryCleanupDatastore(List<RecordMetadata> recordsMetadata) {
+		List<RecordMetadata> updatedRecordsMetadata = new ArrayList();
+		for(RecordMetadata recordMetadata : recordsMetadata) {
+			List<String> gcsVersionPathsWithoutLatestVersion = new ArrayList<>(recordMetadata.getGcsVersionPaths());
+			gcsVersionPathsWithoutLatestVersion.remove(recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+			recordMetadata.setGcsVersionPaths(gcsVersionPathsWithoutLatestVersion);
+			updatedRecordsMetadata.add(recordMetadata);
+		}
+		this.commitDatastoreTransaction(updatedRecordsMetadata);
 	}
 
 	private void commitCloudStorageTransaction(List<RecordProcessing> recordsProcessing) {
