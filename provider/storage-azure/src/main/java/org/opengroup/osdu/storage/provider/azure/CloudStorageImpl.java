@@ -266,7 +266,24 @@ public class CloudStorageImpl implements ICloudStorage {
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
         validateViewerAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
-        return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
+        try {
+            return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
+        } catch (AppException ex) {
+            //if the error code is 404, we've encountered a data inconsistency. Record is present in cosmosDb but not found in blob storage
+            //we'll attempt to recover the data object
+            if (ex.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
+                try {
+                    restoreSpecifiedBlob(headers.getPartitionId(), path, containerName);
+                    return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
+                } catch (Exception e) {
+                    throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error occurred while restoring and then reading the specified blob", e.getMessage());
+                }
+            } else {
+                throw ex;
+            }
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error occurred while reading the specified blob", e.getMessage());
+        }
     }
 
     @Override
@@ -301,9 +318,25 @@ public class CloudStorageImpl implements ICloudStorage {
         return map;
     }
 
+    private void restoreSpecifiedBlob(String dataPartitionId, String path, String containerName) {
+        blobStore.undeleteFromStorageContainer(dataPartitionId, path, containerName);
+    }
+
     private boolean readBlobThread(String key, String path, Map<String, String> map, String dataPartitionId) {
-        String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
-        map.put(key, content);
+        try {
+            String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
+            map.put(key, content);
+        } catch (AppException e) {
+            if(e.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
+                try {
+                    restoreSpecifiedBlob(dataPartitionId, path, containerName);
+                    String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
+                    map.put(key, content);
+                } catch (Exception ex) {
+                    logger.error("Unknown error occurred while restoring and then reading the specified blob", ex);
+                }
+            }
+        }
         return true;
     }
 
