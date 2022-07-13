@@ -139,7 +139,9 @@ public class PersistenceServiceImpl implements IPersistenceService {
 			recordMetadata.setGcsVersionPaths(gcsVersionPathsWithoutLatestVersion);
 			updatedRecordsMetadata.add(recordMetadata);
 		}
-		this.commitDatastoreTransaction(updatedRecordsMetadata);
+		if(!updatedRecordsMetadata.isEmpty()) {
+			this.commitDatastoreTransaction(updatedRecordsMetadata);
+		}
 	}
 
 	private void commitCloudStorageTransaction(List<RecordProcessing> recordsProcessing) {
