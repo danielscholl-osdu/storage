@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
+@ConfigurationProperties(prefix = "opa")
 public class OPAServiceImpl implements IOPAService {
 
     @Autowired
