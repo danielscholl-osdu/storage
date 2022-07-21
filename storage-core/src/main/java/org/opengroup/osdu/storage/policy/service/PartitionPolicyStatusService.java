@@ -21,6 +21,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
 import org.opengroup.osdu.core.common.partition.PartitionInfo;
 import org.opengroup.osdu.storage.policy.cache.PolicyCache;
+import org.opengroup.osdu.storage.service.IPartitionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
