@@ -18,7 +18,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>os-storage-testing</artifactId>
-	<version>0.15.0-SNAPSHOT</version>
+	<version>0.16.0-SNAPSHOT</version>
 	<description>Root Storage Service project</description>
 	<packaging>pom</packaging>
 
@@ -36,7 +36,8 @@
 		<module>storage-test-azure</module>
 		<module>storage-test-gcp</module>
 		<module>storage-test-ibm</module>
-	</modules>
+        <module>storage-test-anthos</module>
+    </modules>
 
 	<properties>
 		<log4j.version>2.17.1</log4j.version>

@@ -421,3 +421,40 @@ Each Client has embedded Service Account (SA) option. Enable SAs for Clients, ma
 Add `partition-and-entitlements` scope to `Default Client Scopes` and generate Keys.
 
 Give `client-id` and `client-secret` to services, which should be authorized within the platform.
+
+### Running E2E Tests
+
+You will need to have the following environment variables defined.
+
+| name | value | description | sensitive? | source |
+| ---  | ---   | ---         | ---        | ---    |
+| `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
+| `DOMAIN` | ex`opendes-gcp.projects.com` | OSDU R2 to run tests under | no | - |
+| `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
+| `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
+| `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
+| `TEST_OPENID_PROVIDER_CLIENT_ID` | `********` | Client Id for `$INTEGRATION_TESTER` | yes | -- |
+| `TEST_OPENID_PROVIDER_CLIENT_SECRET` | `********` |  | Client secret for `$INTEGRATION_TESTER` | -- |
+| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID` | `********` | Client Id for `$NO_ACCESS_INTEGRATION_TESTER` | yes | -- |
+| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET` | `********` |  | Client secret for `$NO_ACCESS_INTEGRATION_TESTER` | -- |
+| `TEST_OPENID_PROVIDER_URL` | `https://keycloak.com/auth/realms/osdu` | OpenID provider url | yes | -- |
+
+**Entitlements configuration for integration accounts**
+
+| INTEGRATION_TESTER | NO_DATA_ACCESS_TESTER | 
+| ---  | ---   |
+| users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin |
+
+Execute following command to build code and run all the integration tests:
+
+ ```bash
+ # Note: this assumes that the environment variables for integration tests as outlined
+ #       above are already exported in your environment.
+ # build + install integration test core
+ $ (cd testing/storage-test-core/ && mvn clean install)
+ ```
+
+ ```bash
+ # build + run GCP integration tests.
+ $ (cd testing/storage-test-anthos/ && mvn clean test)
+ ```

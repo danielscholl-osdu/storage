@@ -20,26 +20,27 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.15.0-SNAPSHOT</version>
+        <version>0.16.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
-    <version>0.15.0-SNAPSHOT</version>
+    <version>0.16.0-SNAPSHOT</version>
     <properties>
         <azure.appservice.resourcegroup />
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.14.0-rc5</osdu.corelibazure.version>
-        <osdu.storage-core.version>0.15.0-SNAPSHOT</osdu.storage-core.version>
+        <osdu.corelibazure.version>0.15.0-SNAPSHOT</osdu.corelibazure.version>
+        <osdu.storage-core.version>0.16.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <powermock.version>2.0.2</powermock.version>
         <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
+        <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
     </properties>
 
     <dependencyManagement>
@@ -57,6 +58,11 @@
                         <artifactId>azure-storage-blob</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.azure</groupId>
+                <artifactId>azure-spring-data-cosmos</artifactId>
+                <version>${azure-spring-data-cosmos.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
