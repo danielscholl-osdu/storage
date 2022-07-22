@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.api;
 
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -40,7 +40,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.*;
 
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes={StorageApplication.class})
@@ -65,12 +65,9 @@ public class RecordsMetadataRepositoryTest {
 
     @Before
     public void setUp() {
-        initMocks(this);
+        openMocks(this);
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
         .thenReturn(queryHelper);
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(String.class), Mockito.any()))
-        .thenReturn(queryHelper);
-            
     }
 
     @Test
@@ -115,8 +112,6 @@ public class RecordsMetadataRepositoryTest {
         expectedRmd.setMetadata(recordMetadata);
 
         Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedRmd));
-
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         repo.createOrUpdate(recordsMetadata);
@@ -174,8 +169,6 @@ public class RecordsMetadataRepositoryTest {
 
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
-
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         RecordMetadata recordMetadata = repo.get(id);
@@ -238,8 +231,6 @@ public class RecordsMetadataRepositoryTest {
         groupInfo.setEmail("data.tenant@byoc.local");
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
-
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         Map<String, RecordMetadata> recordsMetadata = repo.get(ids);
