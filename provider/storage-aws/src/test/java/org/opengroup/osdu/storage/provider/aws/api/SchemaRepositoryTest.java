@@ -31,12 +31,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import org.springframework.boot.test.context.SpringBootTest;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.storage.provider.aws.SchemaRepositoryImpl;
 
 import java.util.*;
 
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes={StorageApplication.class})
@@ -58,11 +58,9 @@ public class SchemaRepositoryTest {
 
     @Before
     public void setUp() {
-        initMocks(this);
+        openMocks(this);
 
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
-        .thenReturn(queryHelper);
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(String.class), Mockito.any()))
         .thenReturn(queryHelper);
     }
 
@@ -86,8 +84,6 @@ public class SchemaRepositoryTest {
         expectedSd.setSchemaItems(Arrays.asList(schema.getSchema()));
         expectedSd.setDataPartitionId(dataPartitionId);
 
-        Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(SchemaDoc.class), Mockito.anyString()))
-                .thenReturn(null);
         Mockito.when(headers.getPartitionId()).thenReturn(dataPartitionId);
         Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedSd));
 
@@ -133,7 +129,6 @@ public class SchemaRepositoryTest {
         SchemaDoc expectedSd = new SchemaDoc();
         expectedSd.setKind(kind);
 
-        Mockito.doNothing().when(queryHelper).deleteByObject(expectedSd);
         Mockito.doNothing().when(queryHelper).deleteByPrimaryKey(Mockito.eq(SchemaDoc.class), Mockito.anyString());
 
         // Act

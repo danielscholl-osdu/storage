@@ -33,13 +33,14 @@ import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.aws.MessageBusImpl;
 
 import org.springframework.boot.test.context.SpringBootTest;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
+
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes = {StorageApplication.class})
@@ -56,7 +57,7 @@ public class MessageBusImplTest {
 
     @Before
     public void setUp() {
-        initMocks(this);
+        openMocks(this);
     }
 
     @Test
