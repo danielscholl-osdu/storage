@@ -21,8 +21,8 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.internal.util.reflection.Whitebox;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.powermock.reflect.Whitebox;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -44,7 +44,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes={StorageApplication.class})
@@ -62,18 +62,15 @@ public class UserAccessServiceTest {
 
     @Before
     public void setUp() {
-        initMocks(this);        
+        openMocks(this);
 
         record = new RecordMetadata();
         record.setUser("not a user");
 
         CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
-        Mockito.when(cacheHelper.getGroupCacheKey(Mockito.anyObject())).thenReturn("test-cache-key");
         Whitebox.setInternalState(CUT, "cacheHelper", cacheHelper);
 
         GroupCache cache = Mockito.mock(GroupCache.class);
-        Mockito.when(cache.get(Mockito.anyObject())).thenReturn(null);
-        Mockito.doNothing().when(cache).put(Mockito.anyObject(), Mockito.anyObject());
         Whitebox.setInternalState(CUT, "cache", cache);
 
         IEntitlementsService entitlementsService = Mockito.mock(IEntitlementsService.class);
@@ -85,20 +82,13 @@ public class UserAccessServiceTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        try {
-            Mockito.when(entitlementsService.getGroups()).thenReturn(groups);
-        } catch (EntitlementsException e){
-            throw new RuntimeException(e);
-        }
 
         Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
 
         IEntitlementsFactory factory = Mockito.mock(IEntitlementsFactory.class);
-        Mockito.when(factory.create(Mockito.anyObject())).thenReturn(entitlementsService);
         Whitebox.setInternalState(CUT, "entitlementsFactory", factory);
 
         DpsHeaders dpsHeaders = Mockito.mock(DpsHeaders.class);
-        Mockito.when(dpsHeaders.getUserEmail()).thenReturn("notauser@nottheower.com");
         Whitebox.setInternalState(CUT, "dpsHeaders", dpsHeaders);
     }
 
