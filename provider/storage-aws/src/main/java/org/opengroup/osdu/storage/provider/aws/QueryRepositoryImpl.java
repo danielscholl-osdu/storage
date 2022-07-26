@@ -27,6 +27,7 @@ import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 import javax.inject.Inject;
@@ -35,6 +36,8 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+@ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb",
+        matchIfMissing = true)
 @Repository
 public class QueryRepositoryImpl implements IQueryRepository {
 
