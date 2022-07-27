@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 @Repository
@@ -234,16 +235,28 @@ public class CloudStorageImpl implements ICloudStorage {
 
     private boolean hasViewerAccessToRecord(RecordMetadata record)
     {
+        String [] acls = ofNullable(record.getAcl())
+                .map(Acl::getViewers).
+                orElseGet(() -> {
+                    logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
+                    return new String[]{};
+                });
         boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
-                new HashSet<>(Arrays.asList(record.getAcl().getViewers())));
+                new HashSet<>(Arrays.asList(acls)));
         boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
         return isEntitledForViewing || isRecordOwner;
     }
 
     private boolean hasOwnerAccessToRecord(RecordMetadata record)
     {
+        String [] acls = ofNullable(record.getAcl())
+                .map(Acl::getOwners).
+                orElseGet(() -> {
+                    logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
+                    return new String[]{};
+                });
         return dataEntitlementsService.hasAccessToData(headers,
-                new HashSet<>(Arrays.asList(record.getAcl().getOwners())));
+                new HashSet<>(Arrays.asList(acls)));
     }
 
     private void validateOwnerAccessToRecord(RecordMetadata record)

@@ -53,14 +53,14 @@ From the Storage Service perspective, the metadata to be ingested is called __re
 
 ```
 {
-   "id": "common:hello:123456",
-   "kind": "common:test:hello:1.0.0",
+   "id": "data-partition-id:hello:123456",
+   "kind": "schema-authority:wks:hello:1.0.0",
    "acl": {
-     "viewers": ["data.default.viewers@common.[osdu.opengroup.org]"],
-     "owners": ["data.default.owners@common.[osdu.opengroup.org]"]
+     "viewers": ["data.default.viewers@data-partition-id.[osdu.opengroup.org]"],
+     "owners": ["data.default.owners@data-partition-id.[osdu.opengroup.org]"]
    },
    "legal": {
-     "legaltags": ["common-sample-legaltag"],
+     "legaltags": ["data-partition-id-sample-legaltag"],
      "otherRelevantDataCountries": ["FR","US","CA"]
    },
    "data": {
@@ -70,7 +70,7 @@ From the Storage Service perspective, the metadata to be ingested is called __re
 ```
 
 * __id__: _(optional)_ Unique identifier in the Data Ecosystem. When not provided, the service will create and assign an id to the record. Must follow the naming convention: ``{Data-Partition-Id}:{object-type}:{uuid}``.
-* __kind__: _(mandatory)_ Kind of data being ingested. Must follow the naming convention: ``{Data-Partition-Id}:{dataset-name}:{record-type}:{version}``.
+* __kind__: _(mandatory)_ Kind of data being ingested. Must follow the naming convention: ``{Schema-Authority}:{dataset-name}:{record-type}:{version}``.
 * __acl__: _(mandatory)_ Group of users who have access to the record. 
     * __acl.viewers__: List of valid groups which will have view/read privileges over the record. We follow the naming convention such that data groups begin with ``data.``.
     * __acl.owners__: List of valid groups which will have write privileges over the record. We follow the naming convention such that data groups begin with ``data.``.

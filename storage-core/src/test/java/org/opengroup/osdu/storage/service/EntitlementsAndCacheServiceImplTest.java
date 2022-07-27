@@ -36,8 +36,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -413,5 +412,32 @@ public class EntitlementsAndCacheServiceImplTest {
 
         List<RecordMetadata> result = this.sut.hasValidAccess(input, this.headers);
         assertEquals(0, result.size());
+    }
+
+
+    @Test
+    public void shouldCheckValidAccess_when_aclIsNull() throws EntitlementsException {
+
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@slb.com");
+        g1.setName("role1");
+
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        groups.setDesId(MEMBER_EMAIL);
+
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setId("acl-check-2");
+
+        List<RecordMetadata> input = new ArrayList<>();
+        input.add(recordMetadata);
+
+        List<RecordMetadata> result = this.sut.hasValidAccess(input, this.headers);
+        assertTrue(result.isEmpty());
     }
 }
