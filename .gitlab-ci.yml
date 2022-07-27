@@ -6,6 +6,11 @@ variables:
   AWS_DEPLOY_TARGET: EKS
   AWS_EKS_DEPLOYMENT_NAME: os-storage
 
+  MONGODB_AWS_SERVICE: storage
+  MONGODB_AWS_BUILD_SUBDIR: provider/storage-aws/build-aws
+  MONGODB_AWS_TEST_SUBDIR: testing/storage-test-aws
+  MONGODB_AWS_EKS_DEPLOYMENT_NAME: os-storage
+
   GCP_BUILD_SUBDIR: provider/storage-gcp
   GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
   GCP_APPLICATION_NAME: os-storage
@@ -34,6 +39,12 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-maven.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/aws-mongodb-global.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/aws-mongodb-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/ibm.yml"
