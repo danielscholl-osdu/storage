@@ -31,6 +31,7 @@
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
 		<spring-security-core.version>5.6.1</spring-security-core.version>
 		<tomcat-embed-core.version>9.0.54</tomcat-embed-core.version>
+		<spring-webmvc.version>5.3.18</spring-webmvc.version>
 	</properties>
 
 	<dependencies>
@@ -116,6 +117,11 @@
 			<groupId>org.apache.tomcat.embed</groupId>
 			<artifactId>tomcat-embed-core</artifactId>
 			<version>${tomcat-embed-core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>${spring-webmvc.version}</version>
 		</dependency>
 	</dependencies>
 
