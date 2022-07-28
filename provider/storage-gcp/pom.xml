@@ -27,7 +27,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
         <log4j.version>2.17.1</log4j.version>
-        <spring-webmvc.version>5.3.18</spring-webmvc.version>
+        <spring-webmvc.version>5.3.22</spring-webmvc.version>
     </properties>
 
     <dependencyManagement>
