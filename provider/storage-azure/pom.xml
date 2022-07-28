@@ -41,7 +41,7 @@
         <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
-        <spring-webmvc.version>5.3.18</spring-webmvc.version>
+        <spring-webmvc.version>5.3.22</spring-webmvc.version>
     </properties>
 
     <dependencyManagement>
