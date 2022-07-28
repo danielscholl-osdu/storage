@@ -35,24 +35,35 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     private static final String TAG_VALUE1 = "tagvalue1";
     private static final String TAG_VALUE2 = "tagvalue2";
 
-    private static long NOW = System.currentTimeMillis();
+    private static long NOW;
     private static String ACL = TestUtils.getIntegrationTesterAcl();
     private static String ACL_2 = TestUtils.getAcl();
-    private static String LEGAL_TAG = LegalTagUtils.createRandomName();
-    private static String LEGAL_TAG_2 = LegalTagUtils.createRandomName() + "2";
-    private static String LEGAL_TAG_3 = LegalTagUtils.createRandomName() + "3";
-    private static String LEGAL_TAG_4 = LegalTagUtils.createRandomName() + "4";
-    private static String KIND = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.1." + NOW;
-    private static String RECORD_ID = TenantUtils.getFirstTenantName() + ":test:1.1." + NOW;
-    private static String RECORD_ID_2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
-    private static String RECORD_ID_3 = TenantUtils.getFirstTenantName() + ":test:1.3." + NOW;
-    private static String RECORD_ID_4 = TenantUtils.getFirstTenantName() + ":test:1.4." + NOW;
-    private static String NOT_EXISTED_RECORD_ID = TenantUtils.getFirstTenantName() + ":bulkupdate:1.6." + NOW;
+    private static String LEGAL_TAG;
+    private static String LEGAL_TAG_2;
+    private static String LEGAL_TAG_3;
+    private static String LEGAL_TAG_4;
+    private static String KIND;
+    private static String RECORD_ID;
+    private static String RECORD_ID_2;
+    private static String RECORD_ID_3;
+    private static String RECORD_ID_4;
+    private static String NOT_EXISTED_RECORD_ID;
     private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
 
 
     @Before
     public void setup() throws Exception {
+        LEGAL_TAG = LegalTagUtils.createRandomName();
+        LEGAL_TAG_2 = LegalTagUtils.createRandomName() + "2";
+        LEGAL_TAG_3 = LegalTagUtils.createRandomName() + "3";
+        LEGAL_TAG_4 = LegalTagUtils.createRandomName() + "4";
+        NOW = System.currentTimeMillis();
+        KIND = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.1." + NOW;
+        RECORD_ID = TenantUtils.getFirstTenantName() + ":test:1.1." + NOW;
+        RECORD_ID_2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
+        RECORD_ID_3 = TenantUtils.getFirstTenantName() + ":test:1.3." + NOW;
+        RECORD_ID_4 = TenantUtils.getFirstTenantName() + ":test:1.4." + NOW;
+        NOT_EXISTED_RECORD_ID = TenantUtils.getFirstTenantName() + ":bulkupdate:1.6." + NOW;
         LegalTagUtils.create(LEGAL_TAG, testUtils.getToken());
         LegalTagUtils.create(LEGAL_TAG_2, testUtils.getToken());
         LegalTagUtils.create(LEGAL_TAG_3, testUtils.getToken());
