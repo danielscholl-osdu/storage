@@ -38,7 +38,7 @@
 		<!--
 		<springfox-version>2.9.2</springfox-version>
 		-->
-		<spring-webmvc.version>5.3.18</spring-webmvc.version>
+		<spring-webmvc.version>5.3.22</spring-webmvc.version>
 	</properties>
 
 	<dependencyManagement>
