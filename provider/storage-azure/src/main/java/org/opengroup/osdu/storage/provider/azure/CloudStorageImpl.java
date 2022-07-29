@@ -288,14 +288,12 @@ public class CloudStorageImpl implements ICloudStorage {
                 try {
                     restoreSpecifiedBlob(headers.getPartitionId(), path, containerName);
                     return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
-                } catch (Exception e) {
-                    throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error occurred while restoring and then reading the specified blob", e.getMessage(), e);
+                } catch (AppException e) {
+                    throw e;
                 }
             } else {
                 throw ex;
             }
-        } catch (Exception e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error occurred while reading the specified blob", e.getMessage(), e);
         }
     }
 
@@ -347,7 +345,7 @@ public class CloudStorageImpl implements ICloudStorage {
                     restoreSpecifiedBlob(dataPartitionId, path, containerName);
                     String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
                     map.put(key, content);
-                } catch (Exception ex) {
+                } catch (AppException ex) {
                     logger.error("Unknown error occurred while restoring and then reading the specified blob", ex);
                 }
             }
