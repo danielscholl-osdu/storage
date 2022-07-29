@@ -15,8 +15,6 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.base.Strings;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -31,11 +29,9 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.opa.model.ValidationInputRecord;
+import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
-import org.opengroup.osdu.storage.policy.service.IPolicyService;
-import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
@@ -401,7 +397,11 @@ public class IngestionServiceImpl implements IngestionService {
 		for (Record record : inputRecords) {
 			String id = record.getId();
 			if (existingRecords.containsKey(id)) {
-				updateRecordsMetadata.add(existingRecords.get(id));
+				RecordMetadata existingRecordMetadata = existingRecords.get(id);
+				existingRecordMetadata.setAcl(record.getAcl());
+				existingRecordMetadata.setKind(record.getKind());
+				existingRecordMetadata.setLegal(record.getLegal());
+				updateRecordsMetadata.add(existingRecordMetadata);
 			} else {
 				RecordMetadata recordMetadata = new RecordMetadata();
 				recordMetadata.setAcl(record.getAcl());
@@ -419,8 +419,9 @@ public class IngestionServiceImpl implements IngestionService {
 		for (ValidationOutputRecord outputRecord : outputCreateRecords) {
 			if (!outputRecord.getErrors().isEmpty()) {
 				logger.error(String.format("Data authorization failure for record %s: %s", outputRecord.getId(), outputRecord.getErrors().toString()));
-				throw new AppException(HttpStatus.SC_UNAUTHORIZED,
-						"User Unauthorized", "User is not authorized to create or update records.");
+				for (OpaError error : outputRecord.getErrors()) {
+					throw new AppException(Integer.parseInt(error.getCode()), error.getReason(), error.getMessage());
+				}
 			}
 		}
 	}
