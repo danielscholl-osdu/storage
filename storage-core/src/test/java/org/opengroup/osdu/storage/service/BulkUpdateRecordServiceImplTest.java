@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -196,7 +197,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
 
-        List<String> errors = new ArrayList<>();
+        List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
@@ -227,7 +228,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
 
-        List<String> errors = new ArrayList<>();
+        List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
@@ -261,8 +262,8 @@ public class BulkUpdateRecordServiceImplTest {
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
 
-        List<String> errors = new ArrayList<>();
-        errors.add("You must be an owner to update a record");
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("You must be an owner to update a record").build());
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
@@ -294,7 +295,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
 
-        List<String> errors = new ArrayList<>();
+        List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);

@@ -21,6 +21,7 @@ import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.http.HttpClient;
 import org.opengroup.osdu.core.common.http.HttpRequest;
 import org.opengroup.osdu.core.common.http.HttpResponse;
+import org.opengroup.osdu.core.common.http.IHttpClient;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -32,7 +33,6 @@ import org.opengroup.osdu.storage.opa.model.CreateOrUpdateValidationResponse;
 import org.opengroup.osdu.storage.opa.model.ValidationInputRecord;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Type;
@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
-@ConfigurationProperties(prefix = "opa")
 public class OPAServiceImpl implements IOPAService {
 
     @Autowired
