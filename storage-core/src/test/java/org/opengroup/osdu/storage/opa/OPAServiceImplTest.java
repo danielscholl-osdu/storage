@@ -1,6 +1,5 @@
 package org.opengroup.osdu.storage.opa;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
@@ -20,15 +19,14 @@ import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.OPAServiceConfig;
 import org.opengroup.osdu.storage.opa.service.OPAServiceImpl;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -184,11 +182,11 @@ public class OPAServiceImplTest {
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getResponseCode()).thenReturn(200);
-        when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [\"Invalid legal tag(s) found on record\",\"You must be an owner to update a record\"],\"id\": \"tenant1:crazy:record2\"}]}");
+        when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [{\"message\":\"Invalid legal tag(s) found on record\"},{\"message\":\"You must be an owner to update a record\"}],\"id\": \"tenant1:crazy:record2\"}]}");
 
-        List<String> errors2 = new ArrayList<>();
-        errors2.add("Invalid legal tag(s) found on record");
-        errors2.add("You must be an owner to update a record");
+        List<OpaError> errors2 = new ArrayList<>();
+        errors2.add(OpaError.builder().message("Invalid legal tag(s) found on record").build());
+        errors2.add(OpaError.builder().message("You must be an owner to update a record").build());
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(Collections.EMPTY_LIST).build();
         ValidationOutputRecord validationOutputRecord2 = ValidationOutputRecord.builder().id(RECORD_ID2).errors(errors2).build();
         List<ValidationOutputRecord> expectedValidationOutputRecords = new ArrayList<>();
@@ -219,10 +217,10 @@ public class OPAServiceImplTest {
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getResponseCode()).thenReturn(200);
-        when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [\"You must be a viewer or an owner to access a record\"],\"id\": \"tenant1:crazy:record2\"}]}");
+        when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"id\": \"tenant1:crazy:record2\",\"errors\":[{\"reason\":\"test\",\"message\":\"You must be a viewer or an owner to access a record\",\"code\":\"401\",\"id\": \"tenant1:crazy:record2\"}]}]}");
 
-        List<String> errors2 = new ArrayList<>();
-        errors2.add("You must be a viewer or an owner to access a record");
+        List<OpaError> errors2 = new ArrayList<>();
+        errors2.add(OpaError.builder().message("You must be a viewer or an owner to access a record").code("401").reason("test").id("tenant1:crazy:record2").build());
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(Collections.EMPTY_LIST).build();
         ValidationOutputRecord validationOutputRecord2 = ValidationOutputRecord.builder().id(RECORD_ID2).errors(errors2).build();
         List<ValidationOutputRecord> expectedValidationOutputRecords = new ArrayList<>();

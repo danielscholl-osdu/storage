@@ -29,7 +29,7 @@
 		<os-core-lib-ibm.version>0.15.2</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
-		<spring-security-core.version>5.6.1</spring-security-core.version>
+		<spring-security-core.version>5.7.2</spring-security-core.version>
 		<tomcat-embed-core.version>9.0.54</tomcat-embed-core.version>
 		<spring-webmvc.version>5.3.22</spring-webmvc.version>
 	</properties>
@@ -45,17 +45,17 @@
 					<groupId>io.netty</groupId>
 					<artifactId>netty-codec</artifactId>
 				</exclusion>
-				<!-- <exclusion>
+				<exclusion>
 					<groupId>org.springframework.security</groupId>
 					<artifactId>spring-security-core</artifactId>
-				</exclusion> -->
+				</exclusion>
 			</exclusions>
 		</dependency>
-		<!-- <dependency>
+		<dependency>
 		    <groupId>org.springframework.security</groupId>
 		    <artifactId>spring-security-core</artifactId>
 		    <version>${spring-security-core.version}</version>
-		</dependency> -->
+		</dependency>
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-lib-ibm</artifactId>
@@ -106,12 +106,12 @@
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
-			<!-- <exclusions>
+			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.security</groupId>
 					<artifactId>spring-security-core</artifactId>
 				</exclusion>
-			</exclusions> -->
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tomcat.embed</groupId>
