@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws.api;
 
 import com.google.gson.Gson;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.aws.s3.S3ClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes={StorageApplication.class})
@@ -77,11 +77,11 @@ public class CloudStorageTest {
     @Inject
     private JaxRsDpsLog logger;
 
-    @Mock 
+    @Mock
     private DpsHeaders headers;
 
     private String dataPartition = "dummyPartitionName";
-    
+
 
     String userId = "test-user-id";
     RecordMetadata record = new RecordMetadata();
@@ -89,12 +89,12 @@ public class CloudStorageTest {
 
     @Before
     public void setUp() {
-        initMocks(this);
+        openMocks(this);
         record.setId("test-record-id");
         record.addGcsPath(1);
         records.add(record);
-        
-        Mockito.when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);        
+
+        Mockito.when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);
     }
 
 
@@ -163,12 +163,6 @@ public class CloudStorageTest {
 
         Map<String, String> expectedResp = new HashMap<>();
         expectedResp.put("test-record-id", "{data:test-data}");
-
-        RecordMetadata recordMetadata = new RecordMetadata();
-
-        Mockito.when(recordsMetadataRepository.get("test-record-id")).thenReturn(recordMetadata);
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
-                .thenReturn(true);
 
         Mockito.when(recordsUtil.getRecordsValuesById(Mockito.eq(map)))
                 .thenReturn(expectedResp);

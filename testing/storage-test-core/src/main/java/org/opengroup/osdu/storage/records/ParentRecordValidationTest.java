@@ -22,6 +22,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 
 public abstract class ParentRecordValidationTest extends TestBase {
@@ -42,8 +44,10 @@ public abstract class ParentRecordValidationTest extends TestBase {
     @After
     public void tearDown() throws Exception {
         LegalTagUtils.delete(LEGAL_TAG, testUtils.getToken());
-        TestUtils.send("records/" + RECORD_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        TestUtils.send("records/" + RECORD_ID_2, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        for (String record_id : Arrays.asList(RECORD_ID, RECORD_ID_2, RECORD_ID_3))
+        {
+            TestUtils.send("records/" + record_id, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        }
     }
 
     @Test
