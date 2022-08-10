@@ -14,8 +14,7 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -148,5 +147,6 @@ public class LegalValidatorTest {
     public void should_doNothing_inValidatorInitialize() {
         // for coverage purposes only
         this.sut.initialize(null);
+        assertNotNull(this.sut);
     }
 }
