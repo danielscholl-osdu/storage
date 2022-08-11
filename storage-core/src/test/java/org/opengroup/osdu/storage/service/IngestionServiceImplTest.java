@@ -41,9 +41,9 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
-import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
@@ -685,8 +685,8 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class))).thenReturn(output);
 
-        List<String> errors = new ArrayList<>();
-        errors.add("Invalid ACL");
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("User is not authorized to create or update records.").reason("User Unauthorized").code("401").build());
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);

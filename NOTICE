@@ -301,11 +301,14 @@ The following software have components provided under the terms of this license:
 - AWS SDK for Java - Models (from https://aws.amazon.com/sdkforjava)
 - Adapter: RxJava (from https://github.com/square/retrofit)
 - Animal Sniffer Annotations (from https://repo1.maven.org/maven2/org/codehaus/mojo/animal-sniffer-annotations)
+- Apache Commons BeanUtils (from http://commons.apache.org/proper/commons-beanutils/, https://commons.apache.org/proper/commons-beanutils/, https://repo1.maven.org/maven2/commons-beanutils/commons-beanutils)
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/, https://commons.apache.org/proper/commons-codec/)
 - Apache Commons Collections (from http://commons.apache.org/proper/commons-collections/, https://commons.apache.org/proper/commons-collections/)
+- Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
 - Apache Commons IO (from http://commons.apache.org/io/, https://commons.apache.org/proper/commons-io/, https://repo1.maven.org/maven2/commons-io/commons-io)
 - Apache Commons Lang (from http://commons.apache.org/proper/commons-lang/, https://commons.apache.org/proper/commons-lang/)
 - Apache Commons Logging (from http://commons.apache.org/logging/, http://commons.apache.org/proper/commons-logging/)
+- Apache Commons Validator (from http://commons.apache.org/proper/commons-validator/, http://jakarta.apache.org/commons/${pom.artifactId.substring(8)}/, https://repo1.maven.org/maven2/commons-validator/commons-validator)
 - Apache Geronimo JMS Spec 2.0 (from http://geronimo.apache.org/maven/${siteId}/${version})
 - Apache Groovy (from http://groovy-lang.org, http://groovy.codehaus.org/, https://groovy-lang.org)
 - Apache HTTP transport v2 for the Google HTTP Client Library for Java. (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client-apache-v2)
@@ -330,13 +333,21 @@ The following software have components provided under the terms of this license:
 - Byte Buddy Java agent (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent)
 - ClassMate (from http://github.com/cowtowncoder/java-classmate)
 - Cloud Key Management Service (KMS) API v1-rev20220407-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
+- Cloud Key Management Service (KMS) API v1-rev20220617-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
+- Cloud Key Management Service (KMS) API v1-rev20220701-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
 - Cloud Storage JSON API v1-rev20220509-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - Cloud Storage JSON API v1-rev20220608-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
+- Cloud Storage JSON API v1-rev20220705-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
+- Cloud Storage JSON API v1-rev20220705-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - CloudWatch Metrics for AWS Java SDK (from https://aws.amazon.com/sdkforjava)
+- Collections (from https://repo1.maven.org/maven2/commons-collections/commons-collections)
+- Commons Digester (from http://commons.apache.org/digester/)
 - Converter: Jackson (from https://github.com/square/retrofit, https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-jackson)
 - Core functionality for the Reactor Netty library (from https://github.com/reactor/reactor-netty)
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
+- Flapdoodle Embedded MongoDB (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo)
+- Flapdoodle Embedded Process Util (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.process)
 - GSON extensions to the Google HTTP Client Library for Java. (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client-gson)
 - Google APIs Client Library for Java (from https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
 - Google App Engine extensions to the Google HTTP Client Library for Java. (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client-appengine)
@@ -578,6 +589,7 @@ The following software have components provided under the terms of this license:
 - springfox-swagger-ui (from https://github.com/springfox/springfox)
 - springfox-swagger2 (from https://github.com/springfox/springfox)
 - swagger-annotations (from https://repo1.maven.org/maven2/io/swagger/core/v3/swagger-annotations, https://repo1.maven.org/maven2/io/swagger/swagger-annotations)
+- swagger-core (from https://repo1.maven.org/maven2/io/swagger/swagger-core)
 - swagger-jaxrs (from https://repo1.maven.org/maven2/io/swagger/swagger-jaxrs)
 - swagger-models (from https://repo1.maven.org/maven2/io/swagger/core/v3/swagger-models)
 - tomcat-annotations-api (from http://tomcat.apache.org/, https://tomcat.apache.org/)
@@ -594,6 +606,7 @@ The following software have components provided under the terms of this license:
 - GAX (Google Api eXtensions) (from https://github.com/googleapis, https://github.com/googleapis/gax-java)
 - Hamcrest (from http://hamcrest.org/JavaHamcrest/)
 - Hamcrest Core (from http://hamcrest.org/, http://hamcrest.org/JavaHamcrest/, https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core)
+- Hamcrest Library (from http://hamcrest.org/JavaHamcrest/)
 - HdrHistogram (from http://hdrhistogram.github.io/HdrHistogram/)
 - Jodd BeanUtil (from http://jodd.org)
 - Jodd Core (from http://jodd.org)
@@ -785,7 +798,7 @@ The following software have components provided under the terms of this license:
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
 - HK2 Implementation Utilities (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-utils)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
-- JavaBeans Activation Framework
+- JavaBeans Activation Framework (from https://repo1.maven.org/maven2/com/sun/activation/javax.activation)
 - OSGi resource locator (from https://repo1.maven.org/maven2/org/glassfish/hk2/osgi-resource-locator)
 - RabbitMQ Java Client (from http://www.rabbitmq.com, https://www.rabbitmq.com)
 - ServiceLocator Default Implementation (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-locator)
@@ -857,6 +870,7 @@ Info-ZIP
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
 - ClassGraph (from https://github.com/classgraph/classgraph)
 
 ========================================================================
@@ -869,8 +883,6 @@ The following software have components provided under the terms of this license:
 ========================================================================
 LGPL-2.0-or-later
 ========================================================================
-The following software have components provided under the terms of this license:
-
 - SpotBugs Annotations (from https://spotbugs.github.io/)
 
 ========================================================================
@@ -901,6 +913,14 @@ The following software have components provided under the terms of this license:
 - Javassist (from http://www.javassist.org/)
 - SnakeYAML (from http://code.google.com/p/snakeyaml/, http://www.snakeyaml.org, https://bitbucket.org/snakeyaml/snakeyaml)
 - SpotBugs Annotations (from https://spotbugs.github.io/)
+
+========================================================================
+LGPL-3.0-only
+========================================================================
+The following software have components provided under the terms of this license:
+
+- Logback Classic Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-classic)
+- Logback Core Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-core)
 
 ========================================================================
 MIT

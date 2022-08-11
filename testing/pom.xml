@@ -18,7 +18,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>os-storage-testing</artifactId>
-	<version>0.16.0-SNAPSHOT</version>
+	<version>0.17.0-SNAPSHOT</version>
 	<description>Root Storage Service project</description>
 	<packaging>pom</packaging>
 
@@ -32,16 +32,17 @@
 	<modules>
 		<module>storage-test-core</module>
 		<module>storage-test-aws</module>
-		<module>storage-test-aws-mongodb</module>
 		<module>storage-test-azure</module>
 		<module>storage-test-gcp</module>
 		<module>storage-test-ibm</module>
-	</modules>
+        <module>storage-test-anthos</module>
+    </modules>
 
 	<properties>
 		<log4j.version>2.17.1</log4j.version>
 		<jackson.version>2.13.2</jackson.version>
 		<jackson-databind.version>2.13.2.2</jackson-databind.version>
+		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
 	</properties>
 
 	<repositories>

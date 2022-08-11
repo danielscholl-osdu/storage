@@ -26,5 +26,5 @@ import java.util.List;
 @Builder
 public class ValidationOutputRecord {
     private String id;
-    private List<String> errors;
+    private List<OpaError> errors;
 }

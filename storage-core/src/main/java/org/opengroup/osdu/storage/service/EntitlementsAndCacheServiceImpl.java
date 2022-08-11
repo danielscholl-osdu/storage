@@ -36,6 +36,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Optional.ofNullable;
+
+
 @Service
 public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionService {
 
@@ -115,8 +118,8 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
     }
 
     private boolean hasAccess(Acl storageAcl, Groups groups) {
-        String[] viewers = storageAcl.getViewers();
-        String[] owners = storageAcl.getOwners();
+        String[] viewers = ofNullable(storageAcl).map(Acl::getViewers).orElse(new String[]{});
+        String[] owners = ofNullable(storageAcl).map(Acl::getOwners).orElse(new String[]{});
         Set<String> aclList = new HashSet<>();
 
         for (String viewer : viewers) {
@@ -127,11 +130,7 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
         }
 
         String[] acls = new String[aclList.size()];
-        if (groups.any(aclList.toArray(acls))) {
-            return true;
-        } else {
-            return false;
-        }
+        return groups.any(aclList.toArray(acls));
     }
 
     @Override

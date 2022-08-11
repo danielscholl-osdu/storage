@@ -21,20 +21,21 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.16.0-SNAPSHOT</version>
+        <version>0.17.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-aws</artifactId>
     <description>Storage service on AWS</description>
-    <version>0.16.0-SNAPSHOT</version>
+    <version>0.17.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <aws.version>1.11.1018</aws.version>
         <deployment.environment>dev</deployment.environment>
-        <version.number>0.16.0-SNAPSHOT</version.number>
+        <version.number>0.17.0-SNAPSHOT</version.number>
+        <spring-webmvc.version>5.3.22</spring-webmvc.version>
     </properties>
 
     <dependencyManagement>
@@ -65,12 +66,22 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.14.0-rc2</version>
+            <version>0.16.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
             <version>${version.number}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.powermock</groupId>
+                    <artifactId>powermock-api-mockito</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mockito</groupId>
+                    <artifactId>mockito-all</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- AWS managed packages -->
         <dependency>
@@ -122,6 +133,11 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring-webmvc.version}</version>
+        </dependency>
 
         <!-- Testing packages -->
         <dependency>
@@ -132,8 +148,8 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <artifactId>mockito-core</artifactId>
+            <version>3.9.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -149,6 +165,11 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

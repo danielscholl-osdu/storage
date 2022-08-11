@@ -32,15 +32,7 @@ analyze:
     type: mvn
     target: provider/storage-aws/pom.xml
     path: .
-  - name: storage-aws-mongodb
-    type: mvn
-    target: provider/storage-aws-mongodb/pom.xml
-    path: .
   - name: storage-ibm
     type: mvn
     target: provider/storage-ibm/pom.xml
-    path: .
-  - name: storage-reference
-    type: mvn
-    target: provider/storage-reference/pom.xml
     path: .
