@@ -17,7 +17,7 @@ package org.opengroup.osdu.storage.provider.aws.api;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.PutObjectResult;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.s3.S3ClientFactory;
@@ -45,7 +45,7 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 @RunWith(MockitoJUnitRunner.class)
 @SpringBootTest(classes={StorageApplication.class})
@@ -82,28 +82,18 @@ public class S3RecordClientTest {
 
     @Before
     public void setUp() {
-        initMocks(this);
+        openMocks(this);
         recordMetadata.setKind("test-record-id");
         recordMetadata.setId("test-record-id");
         recordMetadata.addGcsPath(1);
         recordMetadata.addGcsPath(2);
 
-        Mockito.when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);
-
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
-        .thenReturn(queryHelper);
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(String.class), Mockito.any()))
-        .thenReturn(queryHelper);
-
         Mockito.when(s3ClientWithBucket.getS3Client()).thenReturn(s3);
         Mockito.when(s3ClientWithBucket.getBucketName()).thenReturn(recordsBucketName);
 
-        Mockito.when(s3ClientFactory.getS3ClientForPartition(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(s3ClientFactory.getS3ClientForPartition(Mockito.nullable(String.class), Mockito.nullable(String.class)))
                 .thenReturn(s3ClientWithBucket);
-        
-        Mockito.when(s3ClientFactory.getS3ClientForPartition(Mockito.any(DpsHeaders.class), Mockito.anyString()))
-                .thenReturn(s3ClientWithBucket);
-        
+
     }
 
     @Test
@@ -165,8 +155,6 @@ public class S3RecordClientTest {
     public void deleteRecord(){
         // arrange
         String expectedKeyName = recordsBucketName + "/" + recordMetadata.getId();
-
-        Mockito.doNothing().when(s3).deleteObject(Mockito.eq(recordsBucketName), Mockito.eq(expectedKeyName));
 
         // act
         client.deleteRecord(recordMetadata, dataPartition);

@@ -34,6 +34,7 @@ In order to run the service locally or remotely, you will need to have the follo
 | `LEGALTAG_BASE_URL` | `http://localhost:8083` or `https://some-hosted-url` | yes | Specify the base url for a legal service instance. Can be run locally or remote | no | 
 | `CRS_CONVERSION_BASE_URL` | `http://localhost:8084` or `https://some-hosted-url` | yes | Specify the base url for a CRS Conversion service instance. Can be run locally or remote | no | 
 | `POLICY_BASE_URL` | `http://localhost:8085` or `https://some-hosted-url` | yes | Specify the base url for a Policy service instance. Can be run locally or remote | no | 
+| `OPA_URL` | `http://opa-agent` | yes | Specify the url for the OPA agent. | no | 
 | `DISABLE_CACHE` | `true` | no | Set to true to disable caching to redis. Either set this or configure cache config env vars | no | 
 | `CACHE_CLUSTER_ENDPOINT` | `true` | no | Redis endpoint uri. Either set this or DISABLE_CACHE | no | 
 | `CACHE_CLUSTER_PORT` | `6379` | no | Redis port. Either set this or DISABLE_CACHE | no | 

@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.byoc.api;
 
+import org.opengroup.osdu.core.common.http.HttpClient;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.api.SchemaApi;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -29,6 +30,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -36,8 +39,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes={StorageApplication.class})
+@SpringBootTest(classes={StorageApplication.class}, properties = {"PARTITION_API=test"})
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestConfiguration
 public class SchemaApiTest {
     @Mock
     private SchemaService schemaService;
@@ -48,6 +52,11 @@ public class SchemaApiTest {
     @InjectMocks
     @Autowired //this causes the Spring app to start, otherwise, it's just a mocked object
     private SchemaApi sut;
+
+    @Bean
+    public HttpClient httpClient() {
+        return new HttpClient();
+    }
 
     @Before
     public void setUp() {

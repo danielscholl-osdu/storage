@@ -18,7 +18,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>storage-gcp</artifactId>
-    <version>0.16.0-SNAPSHOT</version>
+    <version>0.17.0-SNAPSHOT</version>
     <description>Google cloud related implementation staff.</description>
     <packaging>jar</packaging>
 
@@ -27,6 +27,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
         <log4j.version>2.17.1</log4j.version>
+        <spring-webmvc.version>5.3.22</spring-webmvc.version>
     </properties>
 
     <dependencyManagement>
@@ -87,7 +88,7 @@
     <parent>
         <groupId>org.opengroup.osdu</groupId>
         <artifactId>os-storage</artifactId>
-        <version>0.16.0-SNAPSHOT</version>
+        <version>0.17.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -95,7 +96,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-gcp</artifactId>
-            <version>0.15.0-rc3</version>
+            <version>0.16.0-rc1</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -105,7 +106,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
-            <version>0.16.0-SNAPSHOT</version>
+            <version>0.17.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.mockito</groupId>
@@ -125,6 +126,11 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring-webmvc.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
