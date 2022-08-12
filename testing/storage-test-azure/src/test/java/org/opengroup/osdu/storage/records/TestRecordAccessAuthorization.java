@@ -14,11 +14,19 @@
 
 package org.opengroup.osdu.storage.records;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.http.HttpStatus;
+import org.junit.*;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestUtils;
+
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTests {
 
@@ -45,5 +53,20 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     public void tearDown() throws Exception {
         this.testUtils = null;
 	}
+
+	@Override
+    @Test
+    public void should_receiveHttp403_when_userIsNotAuthorizedToPurgeRecord() throws Exception {
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+                testUtils.getNoDataAccessToken());
+
+        ClientResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
+
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatus());
+        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        assertEquals(403, json.get("code").getAsInt());
+        assertEquals("Access denied", json.get("reason").getAsString());
+        assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
+    }
 
 }
