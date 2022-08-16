@@ -385,7 +385,7 @@ curl --request GET \
 
 
 ### Delete record <a name="Delete-record"></a>
-The API performs a logical deletion of the given record. This operation can be reverted later.
+The API performs a logical deletion of the given record. This operation can be reverted later. The operation should be done by the owner only
 ```
 POST /api/storage/v2/records/{id}:delete
 ```

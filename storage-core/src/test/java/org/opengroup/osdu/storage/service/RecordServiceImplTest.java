@@ -287,7 +287,7 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
         when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(true);
-
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         when(this.cloudStorage.hasAccess(record)).thenReturn(true);
 
         this.sut.deleteRecord(RECORD_ID, "anyUserName");
@@ -330,6 +330,8 @@ public class RecordServiceImplTest {
 
         when(this.cloudStorage.hasAccess(record)).thenReturn(false);
         when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(false);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
+
 
         try {
             this.sut.deleteRecord(RECORD_ID, "anyUser");
@@ -339,7 +341,7 @@ public class RecordServiceImplTest {
             verify(this.auditLogger).deleteRecordFail(any());
             assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
             assertEquals("Access denied", e.getError().getReason());
-            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
+            assertEquals("The user is not authorized to perform delete action", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }
@@ -398,7 +400,7 @@ public class RecordServiceImplTest {
         }};
 
         when(recordRepository.get(singletonList(RECORD_ID))).thenReturn(expectedRecordMetadataMap);
-        when(dataAuthorizationService.hasAccess(record, OperationType.delete)).thenReturn(false);
+        when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(false);
 
         try {
             sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME);
@@ -408,7 +410,7 @@ public class RecordServiceImplTest {
             String errorMsg = String
                     .format("The user is not authorized to perform delete record with id %s", RECORD_ID);
             verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
-            verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
+            verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
             verify(recordRepository, never()).createOrUpdate(any());
             verify(auditLogger, only()).deleteRecordFail(singletonList(errorMsg));
             verifyZeroInteractions(pubSubClient);
