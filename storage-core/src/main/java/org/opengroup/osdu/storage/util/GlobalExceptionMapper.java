@@ -51,7 +51,7 @@ import java.io.IOException;
 public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
 
     @Autowired
-    private JaxRsDpsLog logger;
+    private JaxRsDpsLog jaxRsDpsLogger;
 
     @ExceptionHandler(AppException.class)
     protected ResponseEntity<Object> handleAppException(AppException e) {
@@ -91,7 +91,7 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IOException.class)
     public ResponseEntity<Object> handleIOException(IOException e) {
         if (StringUtils.containsIgnoreCase(ExceptionUtils.getRootCauseMessage(e), "Broken pipe")) {
-            this.logger.warning("Client closed the connection while request still being processed");
+            this.jaxRsDpsLogger.warning("Client closed the connection while request still being processed");
             return null;
         } else {
             return this.getErrorResponse(
@@ -132,9 +132,9 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
                 : e.getError().getMessage();
 
         if (e.getError().getCode() > 499) {
-            this.logger.error(exceptionMsg, e);
+            this.jaxRsDpsLogger.error(exceptionMsg, e);
         } else {
-            this.logger.warning(exceptionMsg, e);
+            this.jaxRsDpsLogger.warning(exceptionMsg, e);
         }
 
         return new ResponseEntity<Object>(e.getError(), HttpStatus.resolve(e.getError().getCode()));

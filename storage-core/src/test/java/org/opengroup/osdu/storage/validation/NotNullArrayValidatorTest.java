@@ -14,12 +14,11 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.opengroup.osdu.core.common.model.storage.validation.NotNullArrayValidator;
+
+import static org.junit.Assert.*;
 
 public class NotNullArrayValidatorTest {
 
@@ -54,5 +53,7 @@ public class NotNullArrayValidatorTest {
     public void should_doNothing_inValidatorInitialize() {
         // for coverage purposes only
         this.sut.initialize(null);
+        assertNotNull(this.sut);
+        assertTrue(this.sut.isValid(null, null));
     }
 }
