@@ -1,0 +1,4 @@
+{{- template "common.virtualservice" (list . "os-storage.virtualservice") -}}
+{{- define "os-storage.virtualservice" -}}
+## Define overrides for the service's virtual service resource here
+{{- end -}}

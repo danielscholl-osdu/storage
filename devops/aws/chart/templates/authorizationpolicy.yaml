@@ -1,0 +1,5 @@
+{{- template "common.authzpolicy" (list . "os-storage.authzpolicy") -}}
+{{- define "os-storage.authzpolicy" -}}
+## Define overrides for the service authorization policy resource here
+{{- end -}}
+
