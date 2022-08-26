@@ -4,19 +4,20 @@
 
 data:
   # common
-  crs_converter_host: "http://crs-conversion"
-  default_data_country: "US"  
-  entitlements_host: "http://entitlements"
-  legaltag_host: "http://legal"
-  log_level: "INFO"
-  partition_host: "http://partition"
-  redis_group_host: "redis-group-master"
-  redis_storage_host: "redis-storage-master"
-  storage_service_account_email: "storage@service.local"
-  spring_profiles_active: "gcp"
+  logLevel: "INFO"
+  springProfilesActive: "gcp"
+  defaultDataCountry: "US"
+  storageServiceAccountEmail: "storage@service.local"
+  entitlementsHost: "http://entitlements"
+  partitionHost: "http://partition"
+  crsConverterHost: "http://crs-conversion"
+  legalHost: "http://legal"
+  redisGroupHost: "redis-group-master"
+  redisStorageHost: "redis-storage-master"
+  
   # gcp
-  google_audiences: ""
+  googleAudiences: ""
 conf:
-  app_name: "storage"
+  appName: "storage"
   configmap: "storage-config"
-  on_prem_enabled: false
+  onPremEnabled: false
