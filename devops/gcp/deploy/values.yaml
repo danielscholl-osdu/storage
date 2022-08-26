@@ -4,20 +4,20 @@
 
 # common
 data:
-  requests_cpu: "0.25"
-  requests_memory: "2048M"
-  limits_cpu: "1"
-  limits_memory: "3G"
+  requestsCpu: "0.25"
+  requestsMemory: "2048M"
+  limitsCpu: "1"
+  limitsMemory: "3G"
   image: ""
   imagePullPolicy: "IfNotPresent"
   serviceAccountName: "storage"
 conf:
-  app_name: "storage"
+  appName: "storage"
   configmap: "storage-config"
-  keycloak_secret_name: "storage-keycloak-secret"
-  minio_secret_name: "storage-minio-secret"
-  on_prem_enabled: false
-  postgres_secret_name: "storage-postgres-secret"
-  rabbitmq_secret_name: "rabbitmq-secret"
+  keycloakSecretName: "storage-keycloak-secret"
+  minioSecretName: "storage-minio-secret"
+  postgresSecretName: "storage-postgres-secret"
+  rabbitmqSecretName: "rabbitmq-secret"
   replicas: 3
+  onPremEnabled: false
   domain: ""
