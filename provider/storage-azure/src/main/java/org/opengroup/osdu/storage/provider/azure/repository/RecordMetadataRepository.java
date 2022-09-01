@@ -21,6 +21,7 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -60,6 +61,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     private String cosmosDBName;
 
     @Autowired
+    private JaxRsDpsLog logger;
+
+    @Autowired
     private int minBatchSizeToUseBulkUpload;
 
     public RecordMetadataRepository() {
@@ -69,6 +73,12 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
         Assert.notNull(recordsMetadata, "recordsMetadata must not be null");
+        recordsMetadata.forEach(metadata -> {
+            if(metadata.getAcl() == null) {
+                logger.error( "Acl of the record " + metadata + " must not be null");
+                throw new IllegalArgumentException("Acl of the record must not be null");
+            }
+        });
 
         if(recordsMetadata.size() >= minBatchSizeToUseBulkUpload) createOrUpdateParallel(recordsMetadata);
         else createOrUpdateSerial(recordsMetadata);
