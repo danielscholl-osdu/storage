@@ -73,6 +73,9 @@ phases:
       - echo "Building integration testing assemblies and gathering artifacts..."
       - ./testing/storage-test-aws/build-aws/prepare-dist.sh
 
+      - echo "--Copying Helm Charts to ${OUTPUT_DIR:-dist}--"
+      - rsync -r devops/aws/* "${OUTPUT_DIR:-dist}"
+
       - echo "Logging into Docker Hub..."
       - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
 

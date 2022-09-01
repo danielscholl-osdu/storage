@@ -2,20 +2,20 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    app: "{{ .Values.conf.app_name }}"
+    app: "{{ .Values.conf.appName }}"
   name: "{{ .Values.conf.configmap }}"
   namespace: "{{ .Release.Namespace }}"
 data:
-  CRS_CONVERTER_HOST: "{{ .Values.data.crs_converter_host }}"
-  DEFAULT_DATA_COUNTRY: "{{ .Values.data.default_data_country }}"
-  ENTITLEMENTS_HOST: "{{ .Values.data.entitlements_host }}"  
-  LEGALTAG_HOST: "{{ .Values.data.legaltag_host }}"
-  LOG_LEVEL: "{{ .Values.data.log_level }}"
-  PARTITION_HOST: "{{ .Values.data.partition_host }}"
-  REDIS_GROUP_HOST: "{{ .Values.data.redis_group_host }}"
-  REDIS_STORAGE_HOST: "{{ .Values.data.redis_storage_host }}"
-  STORAGE_SERVICE_ACCOUNT_EMAIL: "{{ .Values.data.storage_service_account_email }}"
-  SPRING_PROFILES_ACTIVE: "{{ .Values.data.spring_profiles_active }}"
-  {{- if not .Values.conf.on_prem_enabled }}
-  GOOGLE_AUDIENCES: "{{ .Values.data.google_audiences }}"
+  CRS_CONVERTER_HOST: "{{ .Values.data.crsConverterHost }}"
+  DEFAULT_DATA_COUNTRY: "{{ .Values.data.defaultDataCountry }}"
+  ENTITLEMENTS_HOST: "{{ .Values.data.entitlementsHost }}"  
+  LEGAL_HOST: "{{ .Values.data.legalHost }}"
+  LOG_LEVEL: "{{ .Values.data.logLevel }}"
+  PARTITION_HOST: "{{ .Values.data.partitionHost }}"
+  REDIS_GROUP_HOST: "{{ .Values.data.redisGroupHost }}"
+  REDIS_STORAGE_HOST: "{{ .Values.data.redisStorageHost }}"
+  STORAGE_SERVICE_ACCOUNT_EMAIL: "{{ .Values.data.storageServiceAccountEmail }}"
+  SPRING_PROFILES_ACTIVE: "{{ .Values.data.springProfilesActive }}"
+  {{- if not .Values.conf.onPremEnabled }}
+  GOOGLE_AUDIENCES: "{{ .Values.data.googleAudiences }}"
   {{- end }}
