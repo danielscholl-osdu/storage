@@ -8,6 +8,8 @@ data:
   requestsMemory: "2048M"
   limitsCpu: "1"
   limitsMemory: "3G"
+  bootstrapImage: ""
+  bootstrapServiceAccountName: ""
   image: ""
   imagePullPolicy: "IfNotPresent"
   serviceAccountName: "storage"
@@ -18,6 +20,8 @@ conf:
   minioSecretName: "storage-minio-secret"
   postgresSecretName: "storage-postgres-secret"
   rabbitmqSecretName: "rabbitmq-secret"
+  bootstrapSecretName: "datafier-secret"
   replicas: 3
   onPremEnabled: false
+  bootstrapEnabled: false
   domain: ""
