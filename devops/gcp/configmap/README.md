@@ -51,6 +51,16 @@ First you need to set variables in **values.yaml** file using any code editor. S
 cat ~/.config/gcloud/application_default_credentials.json | grep client_id
 ```
 
+### Bootstrap variables
+
+This variables can be omitted in case **conf.bootstrapEnabled** is set to `false`.
+
+| Name | Description | Type | Default |Required |
+|------|-------------|------|---------|---------|
+**storageHost** | Storage service host address | string | `http://storage` | yes
+**defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | yes
+**dataPartitionId** | Data partition id | string | `redis-storage-master` | yes
+
 ### Config variables
 
 | Name | Description | Type | Default |Required |
@@ -58,6 +68,7 @@ cat ~/.config/gcloud/application_default_credentials.json | grep client_id
 **appName** | name of the app | string | storage | yes
 **configmap** | configmap name | string | storage-config | yes
 **onPremEnabled** | whether on-prem is enabled | boolean | false | yes
+**bootstrapEnabled** | whether to enable storage bootstrap (requires previously created legal tag) | boolean | false | yes
 
 ### Install the helm chart
 
