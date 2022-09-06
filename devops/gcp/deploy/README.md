@@ -38,6 +38,8 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **image** | service image | string | - | yes
 **imagePullPolicy** | when to pull image | string | IfNotPresent | yes
 **serviceAccountName** | name of your service account | string | storage | yes
+**bootstrapImage** | bootstrap image | string | - | yes
+**bootstrapServiceAccountName** | service account that will be used for bootstrap | string | - | yes
 
 ### Config variables
 
@@ -50,8 +52,10 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **minioSecretName** | secret for minio | string | `storage-minio-secret` | yes
 **postgresSecretName** | secret for postgres | string | `storage-postgres-secret` | yes
 **rabbitmqSecretName** | secret for rabbitmq | string | `rabbitmq-secret` | yes
+**bootstrapSecretName** | secret for bootstrap to access opendi provider | string | `datafier-secret` | yes
 **replicas** | Number of replicas | integer | 3 | yes
 **onPremEnabled** | whether on-prem is enabled | boolean | false | yes
+**bootstrapEnabled** | whether to enable storage bootstrap (should be enabled also for config chart) | boolean | false | yes
 **domain** | your domain | string | - | yes
 
 ### Install the helm chart
