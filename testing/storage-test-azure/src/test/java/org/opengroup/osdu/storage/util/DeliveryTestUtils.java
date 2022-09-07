@@ -70,7 +70,7 @@ public class DeliveryTestUtils {
 
         JsonObject data = new JsonObject();
         data.add("ResourceID", files);
-        data.addProperty("Data.GroupTypeProperties.PreLoadFilePath", filePath);
+        data.addProperty("Data.GroupTypeProperties.PreloadFilePath", filePath);
 
         JsonObject acl = new JsonObject();
         JsonArray acls = new JsonArray();
@@ -111,7 +111,7 @@ public class DeliveryTestUtils {
 
         JsonObject item2 = new JsonObject();
 
-        item2.addProperty("path", "Data.GroupTypeProperties.PreLoadFilePath");
+        item2.addProperty("path", "Data.GroupTypeProperties.PreloadFilePath");
         item2.addProperty("kind", "string");
         item2.add("ext", item1Ext);
 
