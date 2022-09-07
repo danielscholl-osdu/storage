@@ -64,7 +64,7 @@ public abstract class PubsubEndpointTest extends TestBase {
 			throws Exception {
 		LegalTagUtils.delete(LEGAL_TAG_1, testUtils.getToken());
 		// wait until cache of opa will be rebuild
-		Thread.sleep(10000);
+		Thread.sleep(70000);
 
 		List<String> legalTagNames = new ArrayList<>();
 		legalTagNames.add(LEGAL_TAG_1);
