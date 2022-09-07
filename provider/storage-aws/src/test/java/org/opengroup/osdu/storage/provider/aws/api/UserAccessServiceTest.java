@@ -82,11 +82,12 @@ public class UserAccessServiceTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-
         Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
 
         IEntitlementsFactory factory = Mockito.mock(IEntitlementsFactory.class);
         Whitebox.setInternalState(CUT, "entitlementsFactory", factory);
+
+        Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
 
         DpsHeaders dpsHeaders = Mockito.mock(DpsHeaders.class);
         Whitebox.setInternalState(CUT, "dpsHeaders", dpsHeaders);

@@ -23,7 +23,6 @@ import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.IDynamoDBQueryHelperFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +32,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.StorageApplication;
-import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.RecordsMetadataRepositoryImpl;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -56,9 +54,6 @@ public class RecordsMetadataRepositoryTest {
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
-
-    @Mock
-    private UserAccessService userAccessService;
 
     @Mock
     private DpsHeaders dpsHeaders;
@@ -275,8 +270,6 @@ public class RecordsMetadataRepositoryTest {
         Mockito.doNothing().when(queryHelper).deleteByPrimaryKey(RecordMetadataDoc.class, id);
         Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
                 .thenReturn(expectedRmd);
-
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.eq(recordAcl))).thenReturn(true);
 
         // Act
         repo.delete(id);

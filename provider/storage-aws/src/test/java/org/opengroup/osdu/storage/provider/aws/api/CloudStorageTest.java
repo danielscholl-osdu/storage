@@ -113,8 +113,6 @@ public class CloudStorageTest {
         bytes = checksumGenerator.getValueAsBytes();
         String expectedHash = new String(encodeBase64(bytes));
 
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
-                .thenReturn(true);
         Mockito.when(recordsUtil.getRecordsValuesById(Mockito.eq(records)))
                 .thenReturn(mapRecords);
 
@@ -129,8 +127,6 @@ public class CloudStorageTest {
     public void delete(){
         // arrange
         Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(record), Mockito.eq(dataPartition));
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
-                .thenReturn(true);
 
         // act
         repo.delete(record);
@@ -145,8 +141,6 @@ public class CloudStorageTest {
         Long version = 1L;
         Mockito.when(s3RecordClient.getRecord(Mockito.eq(record), Mockito.eq(version), Mockito.eq(dataPartition)))
                 .thenReturn("test-response");
-        Mockito.when(userAccessService.userHasAccessToRecord(Mockito.anyObject()))
-                .thenReturn(true);
 
         // act
         String resp = repo.read(record, version, false);
