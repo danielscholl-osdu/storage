@@ -1,0 +1,4 @@
+{{- template "common.deployment" (list . "os-storage.deployment") -}}
+{{- define "os-storage.deployment" -}}
+## Define overrides for the service deployment resource here
+{{- end -}}
