@@ -376,12 +376,12 @@ public class RecordServiceImplTest {
         }};
 
         when(recordRepository.get(singletonList(RECORD_ID))).thenReturn(expectedRecordMetadataMap);
-        when(dataAuthorizationService.hasAccess(record, OperationType.delete)).thenReturn(true);
+        when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
         sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME);
 
         verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
-        verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
+        verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
         verify(recordRepository, times(1)).createOrUpdate(singletonList(record));
         verify(auditLogger, only()).deleteRecordSuccess(singletonList(RECORD_ID));
         verifyPubSubPublished();
@@ -435,7 +435,7 @@ public class RecordServiceImplTest {
         }};
 
         when(recordRepository.get(asList(RECORD_ID, RECORD_ID_1))).thenReturn(expectedRecordMetadataMap);
-        when(dataAuthorizationService.hasAccess(record, OperationType.delete)).thenReturn(true);
+        when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
         try {
             sut.bulkDeleteRecords(asList(RECORD_ID, RECORD_ID_1), USER_NAME);
@@ -444,7 +444,7 @@ public class RecordServiceImplTest {
         } catch (DeleteRecordsException e) {
             String expectedErrorMessage = "Record with id '" + RECORD_ID_1 + "' not found";
             verify(recordRepository, times(1)).get(asList(RECORD_ID, RECORD_ID_1));
-            verify(dataAuthorizationService, only()).hasAccess(record, OperationType.delete);
+            verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
             verify(recordRepository, times(1)).createOrUpdate(singletonList(record));
             verify(auditLogger, times(1)).deleteRecordSuccess(singletonList(RECORD_ID));
             verify(auditLogger, times(1)).deleteRecordFail(singletonList(expectedErrorMessage));
