@@ -38,6 +38,8 @@ public class KindValidatorTest {
         // for coverage purposes. Do nothing method!
         KindValidator validator = new KindValidator();
         validator.initialize(null);
+        assertTrue(validator.isValid("valid:kind:test:1.0.0", null));
+        assertFalse(validator.isValid("withoutcolon", null));
     }
 
     @Test

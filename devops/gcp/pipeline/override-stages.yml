@@ -3,8 +3,36 @@ variables:
   OSDU_GCP_VENDOR: gcp
   NO_DATA_ACCESS_TESTER: $OSDU_GCP_NO_DATA_ACCESS_TESTER
 
+.define_DATA_BRANCH:
+  script:
+    - >
+      if [[ -z $CI_COMMIT_TAG ]] && [[ $CI_COMMIT_BRANCH =~ ^release\/[0-9]{1,2}.[0-9]{1,2}$ ]];
+      then
+        REF_DATA_BRANCH=$CI_COMMIT_BRANCH
+      elif [[ $CI_COMMIT_TAG =~ ^v[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}$ ]];
+      then
+        TAG=$(echo $CI_COMMIT_TAG | sed "s/^v//");
+        REF_DATA_BRANCH="release/${TAG%.*}";
+      else
+        REF_DATA_BRANCH="master";
+      fi;
+
 osdu-gcp-anthos-test:
   variables:
     OSDU_GCP_VENDOR: anthos
     TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID: storage-no-access-tester
     TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET: $OSDU_ANTHOS_STORAGE_NO_ACCESS_CLIENT_SECRET
+
+osdu-gcp-containerize-bootstrap-gitlab:
+  variables:
+    OSDU_GCP_ENABLE_BOOTSTRAP: "true"
+    BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
+  before_script:
+    - !reference [.define_DATA_BRANCH, script]
+
+osdu-gcp-containerize-bootstrap-gcr:
+  variables:
+    OSDU_GCP_ENABLE_BOOTSTRAP: "true"
+    BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
+  before_script:
+    - !reference [.define_DATA_BRANCH, script]
