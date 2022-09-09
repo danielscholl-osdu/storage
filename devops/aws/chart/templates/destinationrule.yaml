@@ -1,0 +1,4 @@
+{{- template "common.destinationrule" (list . "os-storage.destinationrule") -}}
+{{- define "os-storage.destinationrule" -}}
+## Define overrides for the service destination rule resource here
+{{- end -}}

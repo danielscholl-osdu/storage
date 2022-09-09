@@ -136,7 +136,7 @@ public class PersistenceServiceImplTest {
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture());
+        verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture());
         verify(this.pubSubClient, times(0)).publishMessage(any());
     }
     @Ignore
