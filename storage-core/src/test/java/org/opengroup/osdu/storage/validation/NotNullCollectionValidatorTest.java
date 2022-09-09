@@ -14,9 +14,6 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 
 import org.junit.Before;
@@ -24,6 +21,8 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 import org.opengroup.osdu.core.common.model.storage.validation.NotNullCollectionValidator;
+
+import static org.junit.Assert.*;
 
 public class NotNullCollectionValidatorTest {
 
@@ -54,5 +53,7 @@ public class NotNullCollectionValidatorTest {
     public void should_doNothing_inValidatorInitialize() {
         // for coverage purposes only
         this.sut.initialize(null);
+        assertNotNull(this.sut);
+        assertTrue(this.sut.isValid(null, null));
     }
 }
