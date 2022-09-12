@@ -396,19 +396,15 @@ public class IngestionServiceImpl implements IngestionService {
 		List<RecordMetadata> updateRecordsMetadata = new ArrayList<>();
 		for (Record record : inputRecords) {
 			String id = record.getId();
-			if (existingRecords.containsKey(id)) {
-				RecordMetadata existingRecordMetadata = existingRecords.get(id);
-				existingRecordMetadata.setAcl(record.getAcl());
-				existingRecordMetadata.setKind(record.getKind());
-				existingRecordMetadata.setLegal(record.getLegal());
-				updateRecordsMetadata.add(existingRecordMetadata);
-			} else {
-				RecordMetadata recordMetadata = new RecordMetadata();
-				recordMetadata.setAcl(record.getAcl());
-				recordMetadata.setLegal(record.getLegal());
-				recordMetadata.setId(id);
-				recordMetadata.setKind(record.getKind());
+			RecordMetadata recordMetadata = new RecordMetadata();
+			recordMetadata.setAcl(record.getAcl());
+			recordMetadata.setLegal(record.getLegal());
+			recordMetadata.setKind(record.getKind());
+			recordMetadata.setId(id);
 
+			if (existingRecords.containsKey(id)) {
+				updateRecordsMetadata.add(recordMetadata);
+			} else {
 				createRecordsMetadata.add(recordMetadata);
 			}
 		}
