@@ -341,7 +341,7 @@ public class RecordServiceImplTest {
             verify(this.auditLogger).deleteRecordFail(any());
             assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
             assertEquals("Access denied", e.getError().getReason());
-            assertEquals("The user is not authorized to perform delete action", e.getError().getMessage());
+            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }
