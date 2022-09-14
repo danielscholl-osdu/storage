@@ -207,7 +207,7 @@ public class RecordServiceImpl implements RecordService {
     private void validateDeleteAllowed(RecordMetadata recordMetadata) {
         if (!this.dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.delete)) {
             this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
-            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform delete action");
+            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform this action");
         }
     }
 
