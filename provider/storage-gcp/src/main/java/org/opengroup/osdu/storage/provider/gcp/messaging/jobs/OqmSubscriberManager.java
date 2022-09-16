@@ -24,7 +24,6 @@ import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagConsistencyValidator;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
@@ -80,22 +79,32 @@ public class OqmSubscriberManager {
                 log.info("* * OqmSubscriberManager on check for topic {} existence: PRESENT", configurationProperties.getLegalTagsChangedTopicName());
             }
 
-            log.info("* * OqmSubscriberManager on check for subscription {} existence:", configurationProperties.getLegalTagsChangedSubscriptionName());
-            OqmSubscriptionQuery query =
-                OqmSubscriptionQuery.builder().namePrefix(configurationProperties.getLegalTagsChangedSubscriptionName()).subscriberable(true).build();
+            String legalTagsChangedSubscriptionName = configurationProperties.getLegalTagsChangedSubscriptionName() + "-" +tenantInfo.getDataPartitionId();
+
+            log.info("* * OqmSubscriberManager on check for subscription {} existence:", legalTagsChangedSubscriptionName);
+
+            OqmSubscriptionQuery query = OqmSubscriptionQuery.builder()
+                    .namePrefix(legalTagsChangedSubscriptionName)
+                    .subscriberable(true)
+                    .build();
+
             OqmSubscription subscription = driver.listSubscriptions(topic, query, getDestination(tenantInfo)).stream().findAny().orElse(null);
+
             if (subscription == null) {
-                log.info("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.",
-                    configurationProperties.getLegalTagsChangedSubscriptionName());
-                OqmSubscription request = OqmSubscription.builder().topic(topic).name(configurationProperties.getLegalTagsChangedSubscriptionName()).build();
+                log.info("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.", legalTagsChangedSubscriptionName);
+
+                OqmSubscription request = OqmSubscription.builder()
+                    .topic(topic)
+                    .name(legalTagsChangedSubscriptionName)
+                    .build();
+
                 subscription = driver.createAndGetSubscription(request, getDestination(tenantInfo));
             } else {
-                log.info("* * OqmSubscriberManager on check for subscription {} existence: PRESENT",
-                    configurationProperties.getLegalTagsChangedSubscriptionName());
+                log.info("* * OqmSubscriberManager on check for subscription {} existence: PRESENT", legalTagsChangedSubscriptionName);
             }
 
             log.info("* * OqmSubscriberManager on registering Subscriber for tenant {}, subscription {}", tenantInfo.getDataPartitionId(),
-                configurationProperties.getLegalTagsChangedSubscriptionName());
+                legalTagsChangedSubscriptionName);
             registerSubscriber(tenantInfo, subscription);
             log.info("* * OqmSubscriberManager on provisioning for tenant {}, subscription {}: Subscriber REGISTERED.", tenantInfo.getDataPartitionId(),
                 subscription.getName());
