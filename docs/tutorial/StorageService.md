@@ -385,7 +385,7 @@ curl --request GET \
 
 
 ### Delete record <a name="Delete-record"></a>
-The API performs a logical deletion of the given record. This operation can be reverted later. The operation can be performed by the owner only
+The API performs a logical deletion of the given record. This operation can be reverted later. This operation can be performed by the owner of the record.
 ```
 POST /api/storage/v2/records/{id}:delete
 ```
@@ -403,7 +403,7 @@ curl --request POST \
 </details>
 
 ### Delete records <a name="Delete-records"></a>
-The API performs a logical deletion of batch of record (max size of a batch is 500 records). This operation can be reverted later by ingesting record with the same id one more time. The deleted (inactive) records will be removed from the index, and therefore will not be returned to the search result. This operation can be performed by the owner only.
+The API performs a logical deletion of batch of record (max size of a batch is 500 records). This operation can be reverted later by ingesting record with the same id one more time. The deleted (inactive) records will be removed from the index, and therefore will not be returned to the search result. This operation can be performed by the owner of the record.
 ```
 POST /api/storage/v2/records/delete
 ```
