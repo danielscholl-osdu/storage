@@ -66,7 +66,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
         assertEquals(403, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
-        assertEquals("The user is not authorized to purge the record", json.get("message").getAsString());
+        assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
     }
 
 }
