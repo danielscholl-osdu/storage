@@ -54,6 +54,8 @@ environmentVariables:
     value: http://os-crs-conversion:8080
   - name: OPA_URL
     value: http://opa-agent
+  - name: OPA_ENABLED
+    value: "true"
   - name: PARAMETER_MOUNT_PATH
     value: "/mnt/params"
 podAnnotations: {}
