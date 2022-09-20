@@ -95,13 +95,11 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     @Override
     public void delete(String id) {
-        RecordMetadata rmd = get(id); // needed for authorization check
-        if(userAccessService.userHasAccessToRecord(rmd.getAcl())) {
-            DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-            recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
-            for (String legalTag : rmd.getLegal().getLegaltags()) {
-                deleteLegalTagAssociation(id, legalTag);
-            }
+        RecordMetadata rmd = get(id);
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
+        for (String legalTag : rmd.getLegal().getLegaltags()) {
+            deleteLegalTagAssociation(id, legalTag);
         }
     }
 

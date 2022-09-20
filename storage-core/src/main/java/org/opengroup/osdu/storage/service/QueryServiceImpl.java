@@ -168,7 +168,7 @@ public class QueryServiceImpl implements QueryService {
 		recordMetadataList.add(recordMetadata);
 		if(!this.dataAuthorizationService.validateViewerOrOwnerAccess(recordMetadata, OperationType.view)) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
-                    "The user does not have access to the record");
+                    "The user is not authorized to perform this action");
         }
 
 		// TODO REMOVE AFTER MIGRATION

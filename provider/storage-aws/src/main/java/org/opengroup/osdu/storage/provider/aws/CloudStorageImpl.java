@@ -85,7 +85,6 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public void write(RecordProcessing... recordsProcessing) {
         userAccessService.validateRecordAcl(recordsProcessing);
-
         // TODO: throughout this class userId isn't used, seems to be something to integrate with entitlements service
         // TODO: ensure that the threads come from the shared pool manager from the web server
         // Using threads to write records to S3 to increase efficiency, no impact to cost
@@ -137,9 +136,7 @@ public class CloudStorageImpl implements ICloudStorage {
         Collection<RecordMetadata> accessibleRecords = new ArrayList<>();
 
         for (RecordMetadata record : records) {
-            if (userAccessService.userHasAccessToRecord(record.getAcl())) {
-                accessibleRecords.add(record);
-            }
+            accessibleRecords.add(record);
         }
 
         Gson gson = new Gson();
@@ -167,24 +164,13 @@ public class CloudStorageImpl implements ICloudStorage {
             return;
         }
 
-        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
-            s3RecordClient.deleteRecord(record, headers.getPartitionIdWithFallbackToAccountId());
-        } else {
-            logger.error(String.format("User not in ACL for record %s", record.getId()));
-            throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
-                    "The user is not authorized to perform this action");
-        }
+        s3RecordClient.deleteRecord(record, headers.getPartitionIdWithFallbackToAccountId());
+
     }
 
     @Override
     public void deleteVersion(RecordMetadata record, Long version) {
-        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
-            s3RecordClient.deleteRecordVersion(record, version, headers.getPartitionIdWithFallbackToAccountId());
-        } else {
-            logger.error(String.format("User not in ACL for record %s", record.getId()));
-            throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
-                    "The user is not authorized to perform this action");
-        }
+        s3RecordClient.deleteRecordVersion(record, version, headers.getPartitionIdWithFallbackToAccountId());
     }
 
     @Override
@@ -205,14 +191,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
-        // checkDataInconsistency not used in other providers
-        if(userAccessService.userHasAccessToRecord(record.getAcl())) {
-            return s3RecordClient.getRecord(record, version, headers.getPartitionIdWithFallbackToAccountId());
-        } else {
-            logger.error(String.format("User not in ACL for record %s", record.getId()));
-            throw new AppException(org.apache.http.HttpStatus.SC_FORBIDDEN, "Access denied",
-                    "The user is not authorized to perform this action");
-        }
+        return s3RecordClient.getRecord(record, version, headers.getPartitionIdWithFallbackToAccountId());
     }
 
     @Override
