@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.legal.*;
@@ -54,6 +55,9 @@ public class LegalServiceImplTest {
 
     @Mock
     private ILegalFactory factory;
+
+    @Mock
+    private JaxRsDpsLog log;
 
     @Mock
     private ILegalProvider legalService;
@@ -284,6 +288,21 @@ public class LegalServiceImplTest {
         assertTrue(currentRecord.getLegal().getOtherRelevantDataCountries().contains("CH"));
         assertTrue(currentRecord.getLegal().getOtherRelevantDataCountries().contains("CL"));
         assertEquals(currentAncestry, currentRecord.getAncestry());
+    }
+
+    @Test
+    public void should_batchLegaltags_when_thereIsMoreThan25LegalTags() throws Exception {
+        Set<String> legaltags = Sets.newHashSet("tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7",
+                "tag8", "tag9", "tag10", "tag11", "tag12", "tag13", "tag14",
+                "tag15", "tag16", "tag17", "tag18", "tag19", "tag20", "tag21",
+                "tag22", "tag23", "tag24", "tag25", "tag26", "tag27", "tag28");
+
+
+        List<Set<String>> result = this.sut.batchLegalTagNames(legaltags);
+
+        assertEquals(2, result.size());
+        assertEquals(25, result.get(0).size());
+        assertEquals(3, result.get(1).size());
     }
 
     @Test

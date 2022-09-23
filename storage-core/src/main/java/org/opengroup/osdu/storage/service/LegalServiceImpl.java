@@ -34,6 +34,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +46,7 @@ public class LegalServiceImpl implements ILegalService {
 
     protected static final String LEGAL_PROPERTIES_KEY = "@legal-properties";
     protected static final String DEFAULT_DATA_COUNTRY = "US";
+    private static final int LEGALTAG_PARTITION_COUNT = 25;
     public static Map<String, String> validCountryCodes;
     @Autowired
     private DpsHeaders headers;
@@ -132,15 +136,47 @@ public class LegalServiceImpl implements ILegalService {
 
     @Override
     public InvalidTagWithReason[] getInvalidLegalTags(Set<String> legalTagNames) {
+        List<Set<String>> legalTagBatches = this.batchLegalTagNames(legalTagNames);
         try {
             ILegalProvider legalService = this.factory.create(this.headers);
-            InvalidTagsWithReason response = legalService
-                    .validate(legalTagNames.toArray(new String[legalTagNames.size()]));
-            return response.getInvalidLegalTags();
+            Set<InvalidTagWithReason> invalidLegalTagSet = new HashSet<>();
+            for (int i = 0; i < legalTagBatches.size(); i++) {
+                Set<String> legalTagNameBatch = legalTagBatches.get(i);
+                InvalidTagsWithReason response = legalService
+                        .validate(legalTagNameBatch.toArray(new String[legalTagNameBatch.size()]));
+                invalidLegalTagSet.addAll(Arrays.asList(response.getInvalidLegalTags()));
+            }
+            return invalidLegalTagSet.toArray(new InvalidTagWithReason[invalidLegalTagSet.size()]);
         } catch (LegalException e) {
+            this.log.error(String.format("Error when validating legaltags, error message: %s", e.getMessage()), e);
             throw new AppException(e.getHttpResponse().getResponseCode(), "Error validating legal tags",
                     "An unexpected error occurred when validating legal tags", e);
         }
+    }
+
+    public List<Set<String>> batchLegalTagNames (Set<String> legaltagNames) {
+        List<Set<String>> legalTagBatches = new ArrayList<>();
+        if (legaltagNames.size() <= LEGALTAG_PARTITION_COUNT) {
+            legalTagBatches.add(legaltagNames);
+            return legalTagBatches;
+        }
+
+        List<String> legalTagNameList = new ArrayList<>();
+        legalTagNameList.addAll(legaltagNames);
+        Set<String> tempBatch = new HashSet<>();
+        for (int i = 0; i < legaltagNames.size(); i++) {
+            if ((i + 1) % LEGALTAG_PARTITION_COUNT == 0) {
+                tempBatch.add(legalTagNameList.get(i));
+                legalTagBatches.add(new HashSet<>(tempBatch));
+                tempBatch.clear();
+            } else {
+                tempBatch.add(legalTagNameList.get(i));
+            }
+        }
+        if (!tempBatch.isEmpty()) {
+            legalTagBatches.add(new HashSet<>(tempBatch));
+        }
+        return legalTagBatches;
     }
 
     private boolean isInCache(Set<String> legalTagNames) {
