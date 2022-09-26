@@ -34,6 +34,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.storage.di.SpringConfig;
+
+import static org.opengroup.osdu.core.common.Constants.*;
+import static org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages.MISSING_GEOMETRIES;
 import static org.opengroup.osdu.core.common.util.JsonUtils.jsonElementToString;
 
 @Service
@@ -139,18 +142,18 @@ public class CrsConversionService {
             Iterator<String> keys = filteredObjects.keySet().iterator();
             while(keys.hasNext()) {
                 String attributeName = keys.next();
-                JsonObject asIngestedCoordinates = filteredObjects.getAsJsonObject(attributeName).getAsJsonObject(Constants.AS_INGESTED_COORDINATES);
+                JsonObject asIngestedCoordinates = filteredObjects.getAsJsonObject(attributeName).getAsJsonObject(AS_INGESTED_COORDINATES);
                 if (asIngestedCoordinates != null) {
                     GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection();
-                    if (asIngestedCoordinates.has(Constants.TYPE) && (!asIngestedCoordinates.get(Constants.TYPE).isJsonNull())) fc.setType(asIngestedCoordinates.get(Constants.TYPE).getAsString());
-                    if (asIngestedCoordinates.has(Constants.PROPERTIES) && (!asIngestedCoordinates.get(Constants.PROPERTIES).isJsonNull())) fc.setProperties(asIngestedCoordinates.getAsJsonObject(Constants.PROPERTIES));
-                    if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_CRS) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).isJsonNull())) fc.setPersistableReferenceCrs(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_CRS).getAsString());
-                    if (asIngestedCoordinates.has(Constants.COORDINATE_REFERENCE_SYSTEM_ID) && (!asIngestedCoordinates.get(Constants.COORDINATE_REFERENCE_SYSTEM_ID).isJsonNull())) fc.setCoordinateReferenceSystemID(asIngestedCoordinates.get(Constants.COORDINATE_REFERENCE_SYSTEM_ID).getAsString());
-                    if (asIngestedCoordinates.has(Constants.VERTICAL_UNIT_ID) && (!asIngestedCoordinates.get(Constants.VERTICAL_UNIT_ID).isJsonNull())) fc.setVerticalUnitID(asIngestedCoordinates.get(Constants.VERTICAL_UNIT_ID).getAsString());
-                    if (asIngestedCoordinates.has(Constants.PERSISTABLE_REFERENCE_UNIT_Z) && (!asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).isJsonNull())) fc.setPersistableReferenceUnitZ(asIngestedCoordinates.get(Constants.PERSISTABLE_REFERENCE_UNIT_Z).getAsString());
-                    if (asIngestedCoordinates.has(Constants.BBOX) && (!asIngestedCoordinates.get(Constants.BBOX).isJsonNull())) fc.setBbox(this.bboxValues(asIngestedCoordinates.getAsJsonArray(Constants.BBOX)));
+                    if (isJsonObjectNotNull(asIngestedCoordinates, TYPE)) fc.setType(asIngestedCoordinates.get(TYPE).getAsString());
+                    if (isJsonObjectNotNull(asIngestedCoordinates, PROPERTIES) && isPropertyJsonObject(asIngestedCoordinates, PROPERTIES)) fc.setProperties(asIngestedCoordinates.getAsJsonObject(PROPERTIES));
+                    if (isJsonObjectNotNull(asIngestedCoordinates, PERSISTABLE_REFERENCE_CRS)) fc.setPersistableReferenceCrs(asIngestedCoordinates.get(PERSISTABLE_REFERENCE_CRS).getAsString());
+                    if (isJsonObjectNotNull(asIngestedCoordinates, COORDINATE_REFERENCE_SYSTEM_ID)) fc.setCoordinateReferenceSystemID(asIngestedCoordinates.get(COORDINATE_REFERENCE_SYSTEM_ID).getAsString());
+                    if (isJsonObjectNotNull(asIngestedCoordinates, VERTICAL_UNIT_ID)) fc.setVerticalUnitID(asIngestedCoordinates.get(VERTICAL_UNIT_ID).getAsString());
+                    if (isJsonObjectNotNull(asIngestedCoordinates, PERSISTABLE_REFERENCE_UNIT_Z)) fc.setPersistableReferenceUnitZ(asIngestedCoordinates.get(PERSISTABLE_REFERENCE_UNIT_Z).getAsString());
+                    if (isJsonObjectNotNull(asIngestedCoordinates, BBOX) && isPropertyJsonArray(asIngestedCoordinates, BBOX)) fc.setBbox(this.bboxValues(asIngestedCoordinates.getAsJsonArray(BBOX)));
 
-                    JsonArray featuresArray = (asIngestedCoordinates.has(Constants.FEATURES) && (!asIngestedCoordinates.get(Constants.FEATURES).isJsonNull())) ? asIngestedCoordinates.getAsJsonArray(Constants.FEATURES) : null;
+                    JsonArray featuresArray = isJsonObjectNotNull(asIngestedCoordinates, FEATURES) && isPropertyJsonArray(asIngestedCoordinates, FEATURES) ? asIngestedCoordinates.getAsJsonArray(FEATURES) : null;
                     if (featuresArray == null || featuresArray.size() == 0) {
                         statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_FEATURES);
                         continue;
@@ -617,39 +620,39 @@ public class CrsConversionService {
 
     private GeoJsonFeature getFeature(JsonObject featureItem, ConversionStatus.ConversionStatusBuilder statusBuilder) {
         GeoJsonFeature feature = new GeoJsonFeature();
-        if (featureItem.has(Constants.TYPE) && (!featureItem.get(Constants.TYPE).isJsonNull())) feature.setType(featureItem.get(Constants.TYPE).getAsString());
-        if (featureItem.has(Constants.PROPERTIES) && (!featureItem.get(Constants.PROPERTIES).isJsonNull())) feature.setProperties(featureItem.getAsJsonObject(Constants.PROPERTIES));
-        if (featureItem.has(Constants.BBOX) && (!featureItem.get(Constants.BBOX).isJsonNull())) feature.setBbox(this.bboxValues(featureItem.getAsJsonArray(Constants.BBOX)));
+        if (isJsonObjectNotNull(featureItem, TYPE)) feature.setType(featureItem.get(TYPE).getAsString());
+        if (isJsonObjectNotNull(featureItem, PROPERTIES) && isPropertyJsonObject(featureItem, PROPERTIES))  feature.setProperties(featureItem.getAsJsonObject(PROPERTIES));
+        if (isJsonObjectNotNull(featureItem, BBOX) && isPropertyJsonArray(featureItem, BBOX)) feature.setBbox(this.bboxValues(featureItem.getAsJsonArray(BBOX)));
 
-        if (featureItem.has(Constants.GEOMETRY) && (!featureItem.get(Constants.GEOMETRY).isJsonNull())) {
-            JsonObject geometry = featureItem.getAsJsonObject(Constants.GEOMETRY);
-            String geometryType = (geometry.has(Constants.TYPE) && (!geometry.get(Constants.TYPE).isJsonNull())) ? geometry.get(Constants.TYPE).getAsString() : "";
+        if (isJsonObjectNotNull(featureItem, GEOMETRY) && isPropertyJsonObject(featureItem, GEOMETRY)) {
+            JsonObject geometry = featureItem.getAsJsonObject(GEOMETRY);
+            String geometryType = isJsonObjectNotNull(geometry, TYPE) ? geometry.get(TYPE).getAsString() : "";
 
-            if (geometryType.equals(Constants.ANY_CRS_GEOMETRY_COLLECTION)) {
-                JsonArray geometriesArray = (geometry.has(Constants.GEOMETRIES) && (!geometry.get(Constants.GEOMETRIES).isJsonNull())) ? geometry.get(Constants.GEOMETRIES).getAsJsonArray() : new JsonArray();
+            if (geometryType.equals(ANY_CRS_GEOMETRY_COLLECTION)) {
+                JsonArray geometriesArray = isJsonObjectNotNull(geometry, GEOMETRIES) && isPropertyJsonArray(geometry, GEOMETRIES) ? geometry.get(GEOMETRIES).getAsJsonArray() : new JsonArray();
                 if (geometriesArray == null || geometriesArray.size() == 0) {
-                    statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_GEOMETRIES);
+                    statusBuilder.addError(MISSING_GEOMETRIES);
                 } else {
                     GeoJsonGeometryCollection gc = new GeoJsonGeometryCollection();
                     GeoJsonBase[] geometries = new GeoJsonBase[geometriesArray.size()];
                     for (int k = 0; k < geometriesArray.size(); k++) {
                         JsonObject geometryObj = geometriesArray.get(k).getAsJsonObject();
-                        String geometriesType = (geometryObj.has(Constants.TYPE) && (!geometryObj.get(Constants.TYPE).isJsonNull())) ? geometryObj.get(Constants.TYPE).getAsString() : "";
-                        JsonArray coordinatesValues = (geometryObj.has(Constants.COORDINATES) && (!geometryObj.get(Constants.COORDINATES).isJsonNull())) ? geometryObj.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                        String geometriesType = isJsonObjectNotNull(geometryObj, TYPE) ? geometryObj.get(TYPE).getAsString() : "";
+                        JsonArray coordinatesValues = isJsonObjectNotNull(geometryObj, COORDINATES) && isPropertyJsonArray(geometryObj, COORDINATES) ? geometryObj.get(COORDINATES).getAsJsonArray() : new JsonArray();
                         JsonObject gmCoordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
                         Gson gson = new Gson();
                         switch (geometriesType) {
-                            case Constants.POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj, statusBuilder);
+                            case POINT: geometries[k] = this.getGeoJsonPoint(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj, statusBuilder);
+                            case MULTIPOINT: geometries[k] = this.getGeoJsonMultiPoint(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj, statusBuilder);
+                            case LINE_STRING: geometries[k] = this.getGeoJsonLineString(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj, statusBuilder);
+                            case MULTILINE_STRING: geometries[k] = this.getGeoJsonMultiLineString(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj, statusBuilder);
+                            case POLYGON: geometries[k] = this.getGeoJsonPolygon(gson, gmCoordinatesObj, statusBuilder);
                                 break;
-                            case Constants.MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj, statusBuilder);
+                            case MULTIPOLYGON: geometries[k] = this.getGeoJsonMultiPolygon(gson, gmCoordinatesObj, statusBuilder);
                                 break;
                             default: statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.INVALID_GEOMETRIES, geometriesType));
                                 break;
@@ -660,7 +663,7 @@ public class CrsConversionService {
                     }
                 }
             } else {
-                JsonArray coordinatesValues = (geometry.has(Constants.COORDINATES) && (!geometry.get(Constants.COORDINATES).isJsonNull())) ? geometry.get(Constants.COORDINATES).getAsJsonArray() : new JsonArray();
+                JsonArray coordinatesValues = isJsonObjectNotNull(geometry, COORDINATES) && isPropertyJsonArray(geometry, COORDINATES) ? geometry.get(COORDINATES).getAsJsonArray() : new JsonArray();
                 JsonObject coordinatesObj = this.getCoordinates(coordinatesValues, statusBuilder);
                 this.setGeometry(geometryType, feature, coordinatesObj, statusBuilder);
             }
@@ -733,7 +736,7 @@ public class CrsConversionService {
     private JsonObject getCoordinates(JsonArray coordinates, ConversionStatus.ConversionStatusBuilder statusBuilder) {
         JsonObject coordinatesObj = new JsonObject();
         if (coordinates.size() > 0) {
-            coordinatesObj.add(Constants.COORDINATES, coordinates);
+            coordinatesObj.add(COORDINATES, coordinates);
         } else {
             statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_COORDINATES);
         }
@@ -747,6 +750,16 @@ public class CrsConversionService {
         }
         return bbox;
     }
-    
-   
+
+    private boolean isJsonObjectNotNull(JsonObject jsonObject, String propertyName){
+        return jsonObject.has(propertyName) && !jsonObject.get(propertyName).isJsonNull();
+    }
+
+    private boolean isPropertyJsonObject(JsonObject jsonObject, String propertyName) {
+        return jsonObject.get(propertyName).isJsonObject();
+    }
+
+    private boolean isPropertyJsonArray(JsonObject jsonObject, String propertyName) {
+        return jsonObject.get(propertyName).isJsonArray();
+    }
 }
