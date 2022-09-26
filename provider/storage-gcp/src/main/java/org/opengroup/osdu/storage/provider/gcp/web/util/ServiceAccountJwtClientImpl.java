@@ -36,7 +36,7 @@ public class ServiceAccountJwtClientImpl implements IServiceAccountJwtClient {
 
     @Override
     public String getIdToken(String tenantName) {
-        log.info("Tenant name received for auth token is: " + tenantName);
+        log.debug("Tenant name received for auth token is: {}", tenantName);
         return "Bearer " + tokenProvider.getIdToken();
     }
 }
