@@ -50,7 +50,7 @@ public class ThreadTenantInfoFactory implements FactoryBean<TenantInfo> {
         String id = this.headers.getPartitionIdWithFallbackToAccountId();
         TenantInfo tenantInfo = this.tenantFactory.getTenantInfo(id);
         if (tenantInfo == null) {
-            throw AppException.createUnauthorized(String.format("could not retrieve tenant info for data partition id: %s", id));
+            throw AppException.createUnauthorized(String.format("could not retrieve tenant info for data partition id: %s.", id));
         }
         return tenantInfo;
     }
