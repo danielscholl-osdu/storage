@@ -60,9 +60,9 @@ public class WebAppMainContextConfiguration {
 
     @PostConstruct
     public void setUp() {
-        log.debug("Main web app context initialized with id: {} ", applicationContext.getId());
-        log.debug("Main web app context status: {} ", applicationContext);
+        log.debug("Main web app context initialized with id: {}.", applicationContext.getId());
+        log.debug("Main web app context status: {}.", applicationContext);
         String[] allBeansNames = applicationContext.getBeanDefinitionNames();
-        log.debug("Main web app context beans definitions: {} ", Arrays.toString(allBeansNames));
+        log.debug("Main web app context beans definitions: {}.", Arrays.toString(allBeansNames));
     }
 }
