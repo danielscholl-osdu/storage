@@ -291,21 +291,6 @@ public class LegalServiceImplTest {
     }
 
     @Test
-    public void should_batchLegaltags_when_thereIsMoreThan25LegalTags() throws Exception {
-        Set<String> legaltags = Sets.newHashSet("tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7",
-                "tag8", "tag9", "tag10", "tag11", "tag12", "tag13", "tag14",
-                "tag15", "tag16", "tag17", "tag18", "tag19", "tag20", "tag21",
-                "tag22", "tag23", "tag24", "tag25", "tag26", "tag27", "tag28");
-
-
-        List<Set<String>> result = this.sut.batchLegalTagNames(legaltags);
-
-        assertEquals(2, result.size());
-        assertEquals(25, result.get(0).size());
-        assertEquals(3, result.get(1).size());
-    }
-
-    @Test
     public void should_inheritTagsAndOrdcFromParents_when_processingDerivativesEvenWithBlankLegalTags() {
 
         final String PARENT_RECORD_ID_1 = "tenant1:parent:id:111";

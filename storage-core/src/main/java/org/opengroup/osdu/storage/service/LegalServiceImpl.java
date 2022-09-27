@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.google.common.collect.Lists;
 import com.lambdaworks.redis.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
@@ -136,14 +137,15 @@ public class LegalServiceImpl implements ILegalService {
 
     @Override
     public InvalidTagWithReason[] getInvalidLegalTags(Set<String> legalTagNames) {
-        List<Set<String>> legalTagBatches = this.batchLegalTagNames(legalTagNames);
         try {
+            List<String> legalTags = new ArrayList<>(legalTagNames);
+            List<List<String>> legalTagsList = Lists.partition(legalTags, LEGALTAG_PARTITION_COUNT);
+
             ILegalProvider legalService = this.factory.create(this.headers);
             Set<InvalidTagWithReason> invalidLegalTagSet = new HashSet<>();
-            for (int i = 0; i < legalTagBatches.size(); i++) {
-                Set<String> legalTagNameBatch = legalTagBatches.get(i);
+            for (List<String> tags : legalTagsList) {
                 InvalidTagsWithReason response = legalService
-                        .validate(legalTagNameBatch.toArray(new String[legalTagNameBatch.size()]));
+                        .validate(tags.toArray(new String[tags.size()]));
                 invalidLegalTagSet.addAll(Arrays.asList(response.getInvalidLegalTags()));
             }
             return invalidLegalTagSet.toArray(new InvalidTagWithReason[invalidLegalTagSet.size()]);
@@ -152,31 +154,6 @@ public class LegalServiceImpl implements ILegalService {
             throw new AppException(e.getHttpResponse().getResponseCode(), "Error validating legal tags",
                     "An unexpected error occurred when validating legal tags", e);
         }
-    }
-
-    public List<Set<String>> batchLegalTagNames (Set<String> legaltagNames) {
-        List<Set<String>> legalTagBatches = new ArrayList<>();
-        if (legaltagNames.size() <= LEGALTAG_PARTITION_COUNT) {
-            legalTagBatches.add(legaltagNames);
-            return legalTagBatches;
-        }
-
-        List<String> legalTagNameList = new ArrayList<>();
-        legalTagNameList.addAll(legaltagNames);
-        Set<String> tempBatch = new HashSet<>();
-        for (int i = 0; i < legaltagNames.size(); i++) {
-            if ((i + 1) % LEGALTAG_PARTITION_COUNT == 0) {
-                tempBatch.add(legalTagNameList.get(i));
-                legalTagBatches.add(new HashSet<>(tempBatch));
-                tempBatch.clear();
-            } else {
-                tempBatch.add(legalTagNameList.get(i));
-            }
-        }
-        if (!tempBatch.isEmpty()) {
-            legalTagBatches.add(new HashSet<>(tempBatch));
-        }
-        return legalTagBatches;
     }
 
     private boolean isInCache(Set<String> legalTagNames) {
