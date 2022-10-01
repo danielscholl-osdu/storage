@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.google.common.collect.Lists;
 import com.lambdaworks.redis.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
@@ -34,6 +35,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +47,7 @@ public class LegalServiceImpl implements ILegalService {
 
     protected static final String LEGAL_PROPERTIES_KEY = "@legal-properties";
     protected static final String DEFAULT_DATA_COUNTRY = "US";
+    private static final int LEGALTAG_PARTITION_COUNT = 25;
     public static Map<String, String> validCountryCodes;
     @Autowired
     private DpsHeaders headers;
@@ -133,11 +138,19 @@ public class LegalServiceImpl implements ILegalService {
     @Override
     public InvalidTagWithReason[] getInvalidLegalTags(Set<String> legalTagNames) {
         try {
+            List<String> legalTags = new ArrayList<>(legalTagNames);
+            List<List<String>> legalTagsList = Lists.partition(legalTags, LEGALTAG_PARTITION_COUNT);
+
             ILegalProvider legalService = this.factory.create(this.headers);
-            InvalidTagsWithReason response = legalService
-                    .validate(legalTagNames.toArray(new String[legalTagNames.size()]));
-            return response.getInvalidLegalTags();
+            Set<InvalidTagWithReason> invalidLegalTagSet = new HashSet<>();
+            for (List<String> tags : legalTagsList) {
+                InvalidTagsWithReason response = legalService
+                        .validate(tags.toArray(new String[tags.size()]));
+                invalidLegalTagSet.addAll(Arrays.asList(response.getInvalidLegalTags()));
+            }
+            return invalidLegalTagSet.toArray(new InvalidTagWithReason[invalidLegalTagSet.size()]);
         } catch (LegalException e) {
+            this.log.error(String.format("Error when validating legaltags, error message: %s", e.getMessage()), e);
             throw new AppException(e.getHttpResponse().getResponseCode(), "Error validating legal tags",
                     "An unexpected error occurred when validating legal tags", e);
         }
