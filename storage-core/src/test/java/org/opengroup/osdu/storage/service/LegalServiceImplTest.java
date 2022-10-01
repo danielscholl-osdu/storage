@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.legal.*;
@@ -54,6 +55,9 @@ public class LegalServiceImplTest {
 
     @Mock
     private ILegalFactory factory;
+
+    @Mock
+    private JaxRsDpsLog log;
 
     @Mock
     private ILegalProvider legalService;
