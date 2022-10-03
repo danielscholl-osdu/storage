@@ -5,7 +5,7 @@ variables:
   AWS_SERVICE: storage
   AWS_SERVICE_GATEWAY: osdu-gateway
   AWS_ENVIRONMENT: dev
-  AWS_DEPLOY_TARGET: EKS
+  AWS_DEPLOY_TARGET: HELM
   AWS_EKS_DEPLOYMENT_NAME: os-storage
 
   MONGODB_AWS_SERVICE: storage
