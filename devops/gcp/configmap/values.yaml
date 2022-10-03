@@ -4,7 +4,7 @@
 
 data:
   # common
-  logLevel: "INFO"
+  logLevel: "ERROR"
   springProfilesActive: "gcp"
   defaultDataCountry: "US"
   storageServiceAccountEmail: "storage@service.local"
