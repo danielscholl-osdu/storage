@@ -64,24 +64,24 @@ public class OqmSubscriberManager {
 
     @PostConstruct
     void postConstruct() {
-        log.info("OqmSubscriberManager bean constructed. Provisioning STARTED");
+        log.debug("OqmSubscriberManager bean constructed. Provisioning STARTED.");
 
         //Get all Tenant infos
         for (TenantInfo tenantInfo : tenantInfoFactory.listTenantInfo()) {
-            log.info("* OqmSubscriberManager on provisioning tenant {}:", tenantInfo.getDataPartitionId());
+            log.debug("* OqmSubscriberManager on provisioning tenant {}:", tenantInfo.getDataPartitionId());
 
-            log.info("* * OqmSubscriberManager on check for topic {} existence:", configurationProperties.getLegalTagsChangedTopicName());
+            log.debug("* * OqmSubscriberManager on check for topic {} existence:", configurationProperties.getLegalTagsChangedTopicName());
             OqmTopic topic = driver.getTopic(configurationProperties.getLegalTagsChangedTopicName(), getDestination(tenantInfo)).orElse(null);
             if (topic == null) {
-                log.info("* * OqmSubscriberManager on check for topic {} existence: ABSENT", configurationProperties.getLegalTagsChangedTopicName());
+                log.debug("* * OqmSubscriberManager on check for topic {} existence: ABSENT.", configurationProperties.getLegalTagsChangedTopicName());
                 continue;
             } else {
-                log.info("* * OqmSubscriberManager on check for topic {} existence: PRESENT", configurationProperties.getLegalTagsChangedTopicName());
+                log.debug("* * OqmSubscriberManager on check for topic {} existence: PRESENT.", configurationProperties.getLegalTagsChangedTopicName());
             }
 
             String legalTagsChangedSubscriptionName = configurationProperties.getLegalTagsChangedSubscriptionName() + "-" +tenantInfo.getDataPartitionId();
 
-            log.info("* * OqmSubscriberManager on check for subscription {} existence:", legalTagsChangedSubscriptionName);
+            log.debug("* * OqmSubscriberManager on check for subscription {} existence:", legalTagsChangedSubscriptionName);
 
             OqmSubscriptionQuery query = OqmSubscriptionQuery.builder()
                     .namePrefix(legalTagsChangedSubscriptionName)
@@ -91,7 +91,7 @@ public class OqmSubscriberManager {
             OqmSubscription subscription = driver.listSubscriptions(topic, query, getDestination(tenantInfo)).stream().findAny().orElse(null);
 
             if (subscription == null) {
-                log.info("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.", legalTagsChangedSubscriptionName);
+                log.debug("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.", legalTagsChangedSubscriptionName);
 
                 OqmSubscription request = OqmSubscription.builder()
                     .topic(topic)
@@ -100,19 +100,19 @@ public class OqmSubscriberManager {
 
                 subscription = driver.createAndGetSubscription(request, getDestination(tenantInfo));
             } else {
-                log.info("* * OqmSubscriberManager on check for subscription {} existence: PRESENT", legalTagsChangedSubscriptionName);
+                log.debug("* * OqmSubscriberManager on check for subscription {} existence: PRESENT.", legalTagsChangedSubscriptionName);
             }
 
-            log.info("* * OqmSubscriberManager on registering Subscriber for tenant {}, subscription {}", tenantInfo.getDataPartitionId(),
+            log.debug("* * OqmSubscriberManager on registering Subscriber for tenant {}, subscription {}", tenantInfo.getDataPartitionId(),
                 legalTagsChangedSubscriptionName);
             registerSubscriber(tenantInfo, subscription);
-            log.info("* * OqmSubscriberManager on provisioning for tenant {}, subscription {}: Subscriber REGISTERED.", tenantInfo.getDataPartitionId(),
+            log.debug("* * OqmSubscriberManager on provisioning for tenant {}, subscription {}: Subscriber REGISTERED.", tenantInfo.getDataPartitionId(),
                 subscription.getName());
 
-            log.info("* OqmSubscriberManager on provisioning tenant {}: COMPLETED.", tenantInfo.getDataPartitionId());
+            log.debug("* OqmSubscriberManager on provisioning tenant {}: COMPLETED.", tenantInfo.getDataPartitionId());
         }
 
-        log.info("OqmSubscriberManager bean constructed. Provisioning COMPLETED");
+        log.debug("OqmSubscriberManager bean constructed. Provisioning COMPLETED.");
     }
 
     private void registerSubscriber(TenantInfo tenantInfo, OqmSubscription subscription) {
@@ -130,7 +130,7 @@ public class OqmSubscriberManager {
                 LegalTagChangedProcessing legalTagChangedProcessing =
                     new LegalTagChangedProcessing(legalTagConsistencyValidator, legalComplianceChangeServiceGcp, dpsHeaders);
                 legalTagChangedProcessing.process(oqmMessage);
-                log.info("OQM message handling for tenant {} topic {} subscription {}. ACK. Message: -data: {}, attributes: {}",
+                log.debug("OQM message handling for tenant {} topic {} subscription {}. ACK. Message: -data: {}, attributes: {}.",
                     dpsHeaders.getPartitionId(),
                     configurationProperties.getLegalTagsChangedTopicName(),
                     configurationProperties.getLegalTagsChangedSubscriptionName(),
@@ -140,7 +140,7 @@ public class OqmSubscriberManager {
                 oqmAckReplier.ack();
                 ackedNacked = true;
             } catch (Exception e) {
-                log.error("OQM message handling error for tenant {} topic {} subscription {}. Message: -data: {}, attributes: {}, error: {}",
+                log.error("OQM message handling error for tenant {} topic {} subscription {}. Message: -data: {}, attributes: {}, error: {}.",
                     dpsHeaders.getPartitionId(),
                     configurationProperties.getLegalTagsChangedTopicName(),
                     configurationProperties.getLegalTagsChangedSubscriptionName(),
@@ -158,7 +158,7 @@ public class OqmSubscriberManager {
 
         OqmSubscriber subscriber = OqmSubscriber.builder().subscription(subscription).messageReceiver(receiver).build();
         driver.subscribe(subscriber, destination);
-        log.info("Just subscribed at topic {} subscription {} for tenant {}",
+        log.debug("Just subscribed at topic {} subscription {} for tenant {}.",
             subscription.getTopics().get(0).getName(), subscription.getName(), tenantInfo.getDataPartitionId());
     }
 
