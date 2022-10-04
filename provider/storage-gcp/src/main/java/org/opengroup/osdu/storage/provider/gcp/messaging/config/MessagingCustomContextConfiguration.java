@@ -62,10 +62,10 @@ public class MessagingCustomContextConfiguration {
 
     @PostConstruct
     public void setUp() {
-        log.debug("Messaging context initialized with id: {} ", applicationContext.getId());
-        log.debug("Messaging context status: {} ", applicationContext);
+        log.debug("Messaging context initialized with id: {}.", applicationContext.getId());
+        log.debug("Messaging context status: {}.", applicationContext);
         String[] allBeansNames = applicationContext.getBeanDefinitionNames();
-        log.debug("Messaging context beans definitions: {} ", Arrays.toString(allBeansNames));
+        log.debug("Messaging context beans definitions: {}.", Arrays.toString(allBeansNames));
     }
 
     @Bean

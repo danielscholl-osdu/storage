@@ -41,9 +41,9 @@ public class LegalTagChangedProcessing {
         LegalTagChangedCollection dto = (new Gson()).fromJson(pubsubMessage, LegalTagChangedCollection.class);
 
         LegalTagChangedCollection validDto = this.legalTagConsistencyValidator.checkLegalTagStatusWithLegalService(dto);
-        log.info("LegalTags changed status validation via Legal service: {}", validDto);
+        log.debug("LegalTags changed status validation via Legal service: {}.", validDto);
         Map<String, LegalCompliance> stringLegalComplianceMap = this.legalComplianceChangeServiceGcp.updateComplianceOnRecords(validDto, dpsHeaders);
-        log.info("Updated compliance on records: {}", stringLegalComplianceMap);
+        log.debug("Updated compliance on records: {}.", stringLegalComplianceMap);
 
     }
 }

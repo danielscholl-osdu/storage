@@ -220,7 +220,7 @@ paths:
       summary: "Delete record"
       description: "The API performs a logical deletion of the given record. This\
         \ operation can be reverted later. Allowed roles: service.storage.creator\
-        \ and service.storage.admin."
+        \ and service.storage.admin who is the OWNER of the record."
       operationId: "Delete record"
       consumes:
       - "application/json"
@@ -257,7 +257,7 @@ paths:
         - records
       summary: Soft delete of multiple records
       description: "The API performs a soft deletion of the given list of records. Required roles: 'users.datalake.editors' or
-        'users.datalake.admins'."
+        'users.datalake.admins' who is the OWNER of the record."
       operationId: Delete records
       parameters:
         - name: data-partition-id
@@ -344,7 +344,7 @@ paths:
       - "records"
       summary: "Purge record"
       description: "The API performs the physical deletion of the given record and\
-        \ all of its versions. This operation cannot be undone. Allowed roles: service.storage.admin."
+        \ all of its versions. This operation cannot be undone. Allowed roles: service.storage.admin who is the OWNER of the record."
       operationId: "Purge record"
       consumes:
       - "application/json"
