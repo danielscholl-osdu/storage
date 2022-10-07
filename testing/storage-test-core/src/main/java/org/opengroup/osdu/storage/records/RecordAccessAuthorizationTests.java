@@ -128,16 +128,19 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		// Creates a new record
 		String newRecordId = TenantUtils.getTenantName() + ":no:2.2." + NOW;
 
-		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
-				testUtils.getNoDataAccessToken());
+		Map<String, String> headersWithValidAccessToken = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+				testUtils.getToken());
 
-		ClientResponse response = TestUtils.send("records", "PUT", headers,
+		ClientResponse response = TestUtils.send("records", "PUT", headersWithValidAccessToken,
 				RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
 
 		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
 
 		// Query for original record (no access) and recently created record (with
 		// access)
+		Map<String, String> headersWithNoDataAccessToken = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+				testUtils.getNoDataAccessToken());
+
 		JsonArray records = new JsonArray();
 		records.add(RECORD_ID);
 		records.add(newRecordId);
@@ -145,7 +148,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		JsonObject body = new JsonObject();
 		body.add("records", records);
 
-		response = TestUtils.send("query/records", "POST", headers, body.toString(), "");
+		response = TestUtils.send("query/records", "POST", headersWithNoDataAccessToken, body.toString(), "");
 		assertEquals(HttpStatus.SC_OK, response.getStatus());
 
 		DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
@@ -154,7 +157,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		assertEquals(0, responseObject.invalidRecords.length);
 		assertEquals(0, responseObject.retryRecords.length);
 
-		TestUtils.send("records/" + newRecordId, "DELETE", headers, "", "");
+		TestUtils.send("records/" + newRecordId, "DELETE", headersWithNoDataAccessToken, "", "");
 	}
 
 	protected void assertNotAuthorized(ClientResponse response) {
