@@ -28,6 +28,9 @@ variables:
   IBM_BUILD_SUBDIR: provider/storage-ibm
   IBM_INT_TEST_SUBDIR: testing/storage-test-ibm
   IBM_TENANT_NAME: tenant1
+  IBM_HELM_CONFIG_PATH: devops/ibm/ibm-storage-config
+  IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
+
 
 include:
   - project: "osdu/platform/ci-cd-pipelines"
@@ -65,6 +68,10 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/azure.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "cloud-providers/ibm.yml"
+
 
   - local: "devops/gcp/pipeline/override-stages.yml"
 
