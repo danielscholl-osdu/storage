@@ -517,6 +517,7 @@ The following software have components provided under the terms of this license:
 - Spring Web (from http://www.springframework.org, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-web)
 - Spring Web MVC (from https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-webmvc)
 - Spring WebFlux (from https://github.com/spring-projects/spring-framework)
+- Swagger UI (from http://webjars.org)
 - Vavr (from http://vavr.io, https://www.vavr.io)
 - Vavr Match (from http://vavr.io)
 - Woodstox (from https://github.com/FasterXML/woodstox)
@@ -576,6 +577,9 @@ The following software have components provided under the terms of this license:
 - spring-security-oauth2-jose (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-oauth2-resource-server (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-test (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
+- springdoc-openapi-common (from https://repo1.maven.org/maven2/org/springdoc/springdoc-openapi-common)
+- springdoc-openapi-ui (from https://repo1.maven.org/maven2/org/springdoc/springdoc-openapi-ui)
+- springdoc-openapi-webmvc-core (from https://repo1.maven.org/maven2/org/springdoc/springdoc-openapi-webmvc-core)
 - springfox-bean-validators (from https://github.com/springfox/springfox)
 - springfox-boot-starter (from https://github.com/springfox/springfox)
 - springfox-core (from https://github.com/springfox/springfox)
@@ -590,13 +594,14 @@ The following software have components provided under the terms of this license:
 - springfox-swagger-ui (from https://github.com/springfox/springfox)
 - springfox-swagger2 (from https://github.com/springfox/springfox)
 - swagger-annotations (from https://repo1.maven.org/maven2/io/swagger/core/v3/swagger-annotations, https://repo1.maven.org/maven2/io/swagger/swagger-annotations)
-- swagger-core (from https://repo1.maven.org/maven2/io/swagger/swagger-core)
+- swagger-core (from https://repo1.maven.org/maven2/io/swagger/core/v3/swagger-core, https://repo1.maven.org/maven2/io/swagger/swagger-core)
 - swagger-jaxrs (from https://repo1.maven.org/maven2/io/swagger/swagger-jaxrs)
 - swagger-models (from https://repo1.maven.org/maven2/io/swagger/core/v3/swagger-models, https://repo1.maven.org/maven2/io/swagger/swagger-models)
 - tomcat-annotations-api (from http://tomcat.apache.org/, https://tomcat.apache.org/)
 - tomcat-embed-core (from http://tomcat.apache.org/)
 - tomcat-embed-el (from http://tomcat.apache.org/, https://tomcat.apache.org/)
 - tomcat-embed-websocket (from http://tomcat.apache.org/, https://tomcat.apache.org/)
+- webjars-locator-core (from http://webjars.org)
 
 ========================================================================
 BSD-2-Clause
@@ -990,6 +995,7 @@ The following software have components provided under the terms of this license:
 - msal4j (from https://github.com/AzureAD/microsoft-authentication-library-for-java)
 - msal4j-persistence-extension (from https://github.com/AzureAD/microsoft-authentication-extensions-for-java)
 - qpid-proton-j-extensions (from https://github.com/Azure/qpid-proton-j-extensions)
+- webjars-locator-core (from http://webjars.org)
 
 ========================================================================
 MPL-1.1

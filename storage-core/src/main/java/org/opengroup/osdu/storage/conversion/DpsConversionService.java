@@ -108,7 +108,7 @@ public class DpsConversionService {
     }
 
     private boolean isAsIngestedCoordinatesPresent(JsonObject record, List<String> validationErrors) {
-        JsonObject filteredObject = this.filterDataFields(record, validationErrors);
+        JsonObject filteredObject = filterDataFields(record, validationErrors);
         return ((filteredObject != null) && (filteredObject.size() > 0));
     }
 
@@ -198,7 +198,7 @@ public class DpsConversionService {
         }
     }
 
-    public JsonObject filterDataFields(JsonObject record, List<String> validationErrors) {
+    public static JsonObject filterDataFields(JsonObject record, List<String> validationErrors) {
         JsonObject dataObject = record.get(Constants.DATA).getAsJsonObject();
         JsonObject filteredData = new JsonObject();
         Iterator var = validAttributes.iterator();
