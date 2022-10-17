@@ -53,9 +53,6 @@ public class CrsConversionService {
     private CrsPropertySet crsPropertySet;
 
     @Autowired
-    private DpsConversionService dpsConversionService;
-
-    @Autowired
     private ICrsConverterFactory crsConverterFactory;
 
     @Autowired
@@ -138,7 +135,7 @@ public class CrsConversionService {
             String recordId = this.getRecordId(recordJsonObject);
             ConversionStatus.ConversionStatusBuilder statusBuilder = this.getConversionStatusBuilderFromList(recordId, conversionStatuses);
             List<String> validationErrors = new ArrayList<>();
-            JsonObject filteredObjects = this.dpsConversionService.filterDataFields(recordJsonObject, validationErrors);
+            JsonObject filteredObjects = DpsConversionService.filterDataFields(recordJsonObject, validationErrors);
             Iterator<String> keys = filteredObjects.keySet().iterator();
             while(keys.hasNext()) {
                 String attributeName = keys.next();
