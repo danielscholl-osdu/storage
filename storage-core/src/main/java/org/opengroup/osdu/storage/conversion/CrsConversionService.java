@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.common.crs.ICrsConverterFactory;
 import org.opengroup.osdu.core.common.crs.ICrsConverterService;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -53,6 +54,7 @@ public class CrsConversionService {
     private CrsPropertySet crsPropertySet;
 
     @Autowired
+    @Lazy
     private DpsConversionService dpsConversionService;
 
     @Autowired

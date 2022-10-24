@@ -28,15 +28,15 @@
 		<docker.image.prefix>opendes</docker.image.prefix>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<os-core-common.version>0.18.0-rc3</os-core-common.version>
-		<jackson-databind.version>2.13.2.2</jackson-databind.version>
+		<jackson-databind.version>2.13.4</jackson-databind.version>
 		<jackson.version>2.13.2</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
-		<snakeyaml.version>1.26</snakeyaml.version>
+		<snakeyaml.version>1.31</snakeyaml.version>
 		<commons-codec.version>1.14</commons-codec.version>
 		<nimbusds.version>7.9</nimbusds.version>
 		<woodstox-core.version>6.2.3</woodstox-core.version>
 		<log4j2.version>2.17.1</log4j2.version>
-		<springfox.version>3.0.0</springfox.version>
+		<openapi.version>1.6.9</openapi.version>
 		<json-smart.version>2.4.7</json-smart.version>
 	</properties>
 
@@ -135,20 +135,11 @@
 		
     <!--Swagger-->
 		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-boot-starter</artifactId>
-			<version>${springfox.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.plugin</groupId>
-					<artifactId>spring-plugin-core</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.springframework.plugin</groupId>
-					<artifactId>spring-plugin-metadata</artifactId>
-				</exclusion>
-			</exclusions>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>${openapi.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.plugin</groupId>
 			<artifactId>spring-plugin-core</artifactId>
