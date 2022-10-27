@@ -39,6 +39,7 @@ import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public abstract class CollaborationRecordsIntegrationTest extends TestBase {
     protected static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
@@ -173,6 +174,45 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
 
         response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "?kind=" + KIND3);
         assertEquals(SC_NOT_FOUND, response.getStatus());
+    }
+
+    @Test
+    public void should_fetchCorrectRecords_when_validRecordIdsAndCollaborationIdAreProvided() throws Exception {
+        //If I fetch records 1, 2,and 3 in context guid1,I should get a 200 with records 1 and 3
+        JsonArray records = new JsonArray();
+        records.add(RECORD_ID_1);
+        records.add(RECORD_ID_2);
+        records.add(RECORD_ID_3);
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+        ClientResponse response = TestUtils.send("query/records:batch", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(2, responseObject.records.length);
+        assertEquals(1, responseObject.notFound.length);
+        assertEquals(0, responseObject.conversionStatuses.size());
+        for (DummyRecordsHelper.RecordResultMock record : responseObject.records) {
+            if (record.id.equals(RECORD_ID_1)) assertEquals(RECORD1_V3, Long.valueOf(record.version));
+            else if (record.id.equals(RECORD_ID_2)) fail("should not contain record 2: " + RECORD_ID_2);
+            else if (record.id.equals(RECORD_ID_3)) assertEquals(RECORD3_V1, Long.valueOf(record.version));
+            else fail(String.format("should only contain record 1 %s, and record 3 %s", RECORD_ID_1, RECORD_ID_3));
+        }
+
+        // If I fetch records 1, 2, and 3 in no context, I should get a 200 with records 1 and 2
+        response = TestUtils.send("query/records:batch", "POST", getHeadersWithxCollaboration(null, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(2, responseObject.records.length);
+        assertEquals(1, responseObject.notFound.length);
+        assertEquals(0, responseObject.conversionStatuses.size());
+        for (DummyRecordsHelper.RecordResultMock record : responseObject.records) {
+            if (record.id.equals(RECORD_ID_1)) assertEquals(RECORD1_V1, Long.valueOf(record.version));
+            else if (record.id.equals(RECORD_ID_2)) assertEquals(RECORD2_V1, Long.valueOf(record.version));
+            else if (record.id.equals(RECORD_ID_3)) fail("should not contain record 3: " + RECORD_ID_3);
+            else fail(String.format("should only contain record 1 %s, and record 2 %s", RECORD_ID_1, RECORD_ID_2));
+        }
     }
 
     private static Long createRecord(String recordId, String collaborationId, String kind, String token) throws Exception {
