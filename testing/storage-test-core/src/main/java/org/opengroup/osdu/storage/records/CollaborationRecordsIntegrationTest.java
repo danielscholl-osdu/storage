@@ -36,10 +36,12 @@ import java.util.UUID;
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_NO_CONTENT;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public abstract class CollaborationRecordsIntegrationTest extends TestBase {
+    protected static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
     protected static final String COLLABORATION_HEADER = "x-collaboration";
     protected static final String APPLICATION_NAME = "storage service integration test";
     protected static final String TENANT_NAME = TenantUtils.getTenantName();
@@ -53,6 +55,7 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
     protected static final String RECORD_PURGE_ID = TENANT_NAME + ":inttestpurge:1" + CURRENT_TIME_MILLIS;
     protected static final String KIND1 = TENANT_NAME + ":ds:inttest:1" + CURRENT_TIME_MILLIS;
     protected static final String KIND2 = TENANT_NAME + ":ds:inttest:2" + CURRENT_TIME_MILLIS;
+    protected static final String KIND3 = TENANT_NAME + ":ds:inttest:3" + CURRENT_TIME_MILLIS;
     protected static Long RECORD1_V1;
     protected static Long RECORD1_V2;
     protected static Long RECORD1_V3;
@@ -151,6 +154,25 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
         assertEquals(SC_NOT_FOUND, response.getStatus());
         response = TestUtils.send("records/" + RECORD_PURGE_ID, "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD_PURGE_V3);
+    }
+
+    @Test
+    public void should_getRecordsOnlyInCollaborationContext_whenQueryByKind() throws Exception {
+        ClientResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, testUtils.getToken()), "", "?kind=" + KIND1);
+        assertEquals(SC_OK, response.getStatus());
+        DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
+        assertEquals(2, responseObject.results.length);
+        assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_1::equals));
+        assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_2::equals));
+
+        response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "?kind=" + KIND1);
+        assertEquals(SC_OK, response.getStatus());
+        responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
+        assertEquals(1, responseObject.results.length);
+        assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_1::equals));
+
+        response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "?kind=" + KIND3);
+        assertEquals(SC_NOT_FOUND, response.getStatus());
     }
 
     private static Long createRecord(String recordId, String collaborationId, String kind, String token) throws Exception {
