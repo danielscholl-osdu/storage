@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import org.apache.http.HttpStatus;
 import org.junit.Before;
@@ -35,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
@@ -55,6 +57,7 @@ public class RecordApiTest {
     private final String USER = "user";
     private final String TENANT = "tenant1";
     private final String RECORD_ID = "osdu:anyID:any";
+    private final String COLLABORATION_ID = UUID.randomUUID().toString();
 
     @Mock
     private IngestionService ingestionService;
@@ -69,6 +72,9 @@ public class RecordApiTest {
     private DpsHeaders httpHeaders;
 
     @Mock
+    private CollaborationContext collaborationContext;
+
+    @Mock
     private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
 
     @InjectMocks
@@ -79,6 +85,7 @@ public class RecordApiTest {
         initMocks(this);
 
         when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
+        when(this.collaborationContext.getId()).thenReturn(COLLABORATION_ID);
         when(this.httpHeaders.getPartitionIdWithFallbackToAccountId()).thenReturn(this.TENANT);
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
