@@ -278,7 +278,7 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
     private static Map<String, String> getHeadersWithxCollaboration(String collaborationId, String token) {
         Map<String, String> headers = HeaderUtils.getHeaders(TENANT_NAME, token);
         if (!Strings.isNullOrEmpty(collaborationId)) {
-            headers.put(COLLABORATION_HEADER, collaborationId);
+            headers.put(COLLABORATION_HEADER, "id=" + collaborationId + ",application=" + APPLICATION_NAME);
         }
         return headers;
     }
