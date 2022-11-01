@@ -21,12 +21,14 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
+import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.core.common.storage.IngestionService;
 import org.opengroup.osdu.storage.mapper.CreateUpdateRecordsResponseMapper;
 import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
@@ -71,12 +73,21 @@ public class RecordApi {
 	@Autowired
 	private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
 
+	@ValidateCollaborationContext
+	@Autowired
+	private CollaborationContext collaborationContext;
+
 	@PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	@ResponseStatus(HttpStatus.CREATED)
 	public CreateUpdateRecordsResponse createOrUpdateRecords(@RequestParam(required = false) boolean skipdupes,
 			@RequestBody @Valid @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<Record> records) {
-
+		
+//		if(collaborationContext.exists()) {
+//			String a = collaborationContext.getId();
+//			System.out.println("hello");
+//			String b = collaborationContext.getApplication();
+//		}
 		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail());
 		return createUpdateRecordsResponseMapper.map(transfer, records);
 	}
@@ -118,6 +129,11 @@ public class RecordApi {
 			@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
 					message = ValidationDoc.INVALID_RECORD_ID) String id,
 			@RequestParam(name = "attribute", required = false) String[] attributes) {
+//		if(collaborationContext.exists()) {
+//			String a = collaborationContext.getId();
+//			System.out.println("hello");
+//			String b = collaborationContext.getApplication();
+//		}
 		return new ResponseEntity<String>(this.queryService.getRecordInfo(id, attributes), HttpStatus.OK);
 	}
 
