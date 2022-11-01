@@ -31,6 +31,7 @@ import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -70,6 +71,9 @@ public class CloudStorageImpl implements ICloudStorage {
     private RecordUtil recordUtil;
 
     @Autowired
+    private CollaborationUtil collaborationUtil;
+
+    @Autowired
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
 
@@ -106,7 +110,7 @@ public class CloudStorageImpl implements ICloudStorage {
             // validate that updated metadata has the same version
             if (!id.equalsIgnoreCase(idWithVersion)) {
                 long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
-                long currentVersion = currentRecords.get(id).getLatestVersion();
+                long currentVersion = currentRecords.get(collaborationUtil.getIdWithNamespace(id)).getLatestVersion();
                 // if version is different, do not update
                 if (previousVersion != currentVersion) {
                     lockedRecords.add(idWithVersion);
@@ -114,7 +118,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 }
             }
             validMetadata.add(recordMetadata);
-            originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(collaborationUtil.getIdWithNamespace(id)).getAcl());
         }
         return originalAcls;
     }
@@ -309,7 +313,7 @@ public class CloudStorageImpl implements ICloudStorage {
         String dataPartitionId = headers.getPartitionId();
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+            RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(recordId));
             if (!hasViewerAccessToRecord(recordMetadata)) {
                 continue;
             }

@@ -49,6 +49,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -100,6 +101,9 @@ public class IngestionServiceImplTest {
 
     @Mock
     private RecordUtil recordUtil;
+    
+    @Mock
+    private CollaborationUtil collaborationUtil;
 
     @Mock
     private IOPAService opaService;
@@ -168,6 +172,8 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
         when(this.entitlementsFactory.create(headers)).thenReturn(entitlementsService);
         when(this.entitlementsService.getGroups()).thenReturn(groups);
+        when(this.collaborationUtil.getIdWithNamespace(RECORD_ID1)).thenReturn(RECORD_ID1);
+        when(this.collaborationUtil.getIdWithNamespace(RECORD_ID2)).thenReturn(RECORD_ID2);
     }
 
     @Test

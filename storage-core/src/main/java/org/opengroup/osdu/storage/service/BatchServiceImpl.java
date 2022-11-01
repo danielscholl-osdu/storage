@@ -44,6 +44,7 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -81,6 +82,9 @@ public abstract class BatchServiceImpl implements BatchService {
     @Autowired
     private IOPAService opaService;
 
+    @Autowired
+    private CollaborationUtil collaborationUtil;
+
     @Value("${opa.enabled}")
     private boolean isOpaEnabled;
 
@@ -95,7 +99,7 @@ public abstract class BatchServiceImpl implements BatchService {
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+            RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(recordId));
 
             if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
                 recordsNotFound.add(recordId);
@@ -140,7 +144,7 @@ public abstract class BatchServiceImpl implements BatchService {
                     jsonRecord = PersistenceHelper.filterRecordDataFields(jsonRecord, validAttributes);
                 }
 
-                RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+                RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(recordId));
                 JsonObject recordObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
 
                 Gson gson = new Gson();
@@ -184,7 +188,7 @@ public abstract class BatchServiceImpl implements BatchService {
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+            RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(recordId));
             if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
                 recordsNotFound.add(recordId);
                 continue;
@@ -214,7 +218,7 @@ public abstract class BatchServiceImpl implements BatchService {
                 recordsNotFound.add(recordId);
             } else {
                 JsonElement jsonRecord = jsonParser.parse(recordData);
-                RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+                RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(recordId));
                 JsonObject recordJsonObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(
                         jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
                 jsonObjectRecords.add(recordJsonObject);
@@ -251,7 +255,7 @@ public abstract class BatchServiceImpl implements BatchService {
         Map<String, String> recordsMap = new HashMap<>();
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         for (Map.Entry<String, String> record : recordsPreAclMap.entrySet()) {
-            RecordMetadata recordMetadata = recordsMetadata.get(record.getKey());
+            RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(record.getKey()));
             recordMetadataList.add(recordMetadata);
         }
 

@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
+import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -98,6 +99,8 @@ public class BulkUpdateRecordServiceImplTest {
     private JaxRsDpsLog logger;
     @Mock
     private IOPAService opaService;
+    @Mock
+    private CollaborationUtil collaborationUtil;
     @InjectMocks
     private BulkUpdateRecordServiceImpl service;
 
@@ -196,6 +199,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+        when(collaborationUtil.getIdWithNamespace(ID)).thenReturn(ID);
 
         List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
@@ -261,6 +265,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+        when(collaborationUtil.getIdWithNamespace(ID)).thenReturn(ID);
 
         List<OpaError> errors = new ArrayList<>();
         errors.add(OpaError.builder().message("You must be an owner to update a record").build());
@@ -294,6 +299,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+        when(collaborationUtil.getIdWithNamespace(ID)).thenReturn(ID);
 
         List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
@@ -344,6 +350,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
         when(dataAuthorizationService.policyEnabled()).thenReturn(false);
+        when(collaborationUtil.getIdWithNamespace(ID)).thenReturn(ID);
     }
 
     private void commonVerify(List<String> ids, List<PatchOperation> ops) {

@@ -48,6 +48,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
 import java.util.Arrays;
@@ -105,6 +106,9 @@ public class RecordServiceImplTest {
     @Mock
     private DataAuthorizationService dataAuthorizationService;
 
+    @Mock
+    private CollaborationUtil collaborationUtil;
+
     @Before
     public void setup() {
         mock(PersistenceHelper.class);
@@ -113,6 +117,7 @@ public class RecordServiceImplTest {
         when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT_NAME);
         when(this.tenantFactory.exists(TENANT_NAME)).thenReturn(true);
         when(this.tenantFactory.getTenantInfo(TENANT_NAME)).thenReturn(this.tenant);
+        when(this.collaborationUtil.getIdWithNamespace(RECORD_ID)).thenReturn(RECORD_ID);
     }
 
     @Test

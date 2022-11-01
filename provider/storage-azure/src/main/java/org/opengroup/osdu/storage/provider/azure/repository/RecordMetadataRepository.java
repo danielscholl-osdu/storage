@@ -30,6 +30,7 @@ import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -66,6 +67,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Autowired
     private int minBatchSizeToUseBulkUpload;
 
+    @Autowired
+    private CollaborationUtil collaborationUtil;
+
     public RecordMetadataRepository() {
         super(RecordMetadataDoc.class);
     }
@@ -93,7 +97,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata){
         for (RecordMetadata recordMetadata : recordsMetadata) {
             RecordMetadataDoc doc = new RecordMetadataDoc();
-            doc.setId(recordMetadata.getId());
+            doc.setId(collaborationUtil.getIdWithNamespace(recordMetadata.getId()));
             doc.setMetadata(recordMetadata);
             this.save(doc);
         }
@@ -108,7 +112,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         List<String> partitionKeys = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata){
             RecordMetadataDoc doc = new RecordMetadataDoc();
-            doc.setId(recordMetadata.getId());
+            doc.setId(collaborationUtil.getIdWithNamespace(recordMetadata.getId()));
             doc.setMetadata(recordMetadata);
             docs.add(doc);
             partitionKeys.add(recordMetadata.getId());
@@ -119,7 +123,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public RecordMetadata get(String id) {
-        RecordMetadataDoc item = this.getOne(id);
+        RecordMetadataDoc item = this.getOne(collaborationUtil.getIdWithNamespace(id));
         return (item == null) ? null : item.getMetadata();
     }
 
@@ -219,7 +223,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public void delete(String id) {
-        this.deleteById(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id);
+        this.deleteById(collaborationUtil.getIdWithNamespace(id), headers.getPartitionId(), cosmosDBName, recordMetadataCollection, collaborationUtil.getIdWithNamespace(id));
     }
 
     /**
@@ -231,7 +235,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT * FROM c WHERE c.id IN (");
         for(String id : ids){
-            sb.append("\"" + id + "\",");
+            sb.append("\"" + collaborationUtil.getIdWithNamespace(id) + "\",");
         }
 
         // remove trailing comma, add closing parenthesis
