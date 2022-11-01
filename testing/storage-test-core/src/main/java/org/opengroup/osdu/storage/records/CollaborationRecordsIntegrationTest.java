@@ -215,6 +215,45 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
         }
     }
 
+    @Test
+    public void should_queryAllRecords_when_validRecordIdsAndCollaborationIdAreProvided() throws Exception {
+        // If I query records 1,2 and 3 in context guid2, I should get 200 with records 1,2 and 3
+        JsonArray records = new JsonArray();
+        records.add(RECORD_ID_1);
+        records.add(RECORD_ID_2);
+        records.add(RECORD_ID_3);
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+        ClientResponse response = TestUtils.send("query/records", "POST", getHeadersWithxCollaboration(COLLABORATION2_ID, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        DummyRecordsHelper.RecordsMock responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
+        assertEquals(3, responseObject.records.length);
+        assertEquals(0, responseObject.invalidRecords.length);
+        assertEquals(0, responseObject.retryRecords.length);
+        for (DummyRecordsHelper.RecordResultMock record : responseObject.records) {
+            if (record.id.equals(RECORD_ID_1)) assertEquals(RECORD1_V4, Long.valueOf(record.version));
+            else if (record.id.equals(RECORD_ID_2)) assertEquals(RECORD2_V2, Long.valueOf(record.version));
+            else if (record.id.equals(RECORD_ID_3)) assertEquals(RECORD3_V2, Long.valueOf(record.version));
+            else fail(String.format("should only contain record 1 %s, 2 %s and record 3 %s", RECORD_ID_1, RECORD_ID_2, RECORD_ID_3));
+        }
+
+        // If I query records 1, 2 and 3 in context guid1, I should get 2xx with records 1 and 3
+        response = TestUtils.send("query/records", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
+        assertEquals(2, responseObject.records.length);
+        assertEquals(1, responseObject.invalidRecords.length);
+        assertEquals(0, responseObject.retryRecords.length);
+        for (DummyRecordsHelper.RecordResultMock record : responseObject.records) {
+            if (record.id.equals(RECORD_ID_1)) assertEquals(RECORD1_V3, Long.valueOf(record.version));
+            else if (record.id.equals(RECORD_ID_2)) fail("should not contain record 2: " + RECORD_ID_2);
+            else if (record.id.equals(RECORD_ID_3)) assertEquals(RECORD3_V1, Long.valueOf(record.version));
+            else fail(String.format("should only contain record 1 %s, and record 3 %s", RECORD_ID_1, RECORD_ID_3));
+        }
+    }
+
     private static Long createRecord(String recordId, String collaborationId, String kind, String token) throws Exception {
         String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, LEGAL_TAG_NAME_A);
 
@@ -239,7 +278,7 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
     private static Map<String, String> getHeadersWithxCollaboration(String collaborationId, String token) {
         Map<String, String> headers = HeaderUtils.getHeaders(TENANT_NAME, token);
         if (!Strings.isNullOrEmpty(collaborationId)) {
-            headers.put(COLLABORATION_HEADER, "id=" + collaborationId + ",application=" + APPLICATION_NAME);
+            headers.put(COLLABORATION_HEADER, collaborationId);
         }
         return headers;
     }
