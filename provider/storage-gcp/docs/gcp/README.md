@@ -1,4 +1,4 @@
-# Service Configuration for GCP
+# Service Configuration for Google Cloud
 
 ## Table of Contents <a name="TOC"></a>
 * [Environment variables](#Environment-variables)
@@ -6,8 +6,8 @@
 * [For Mappers to activate drivers](#For-Mappers-to-activate-drivers)
 * [Datastore configuration](#Datastore-configuration)
 * [Pubsub configuration](#Pubsub-configuration)
-* [GCS configuration](#ObjectStoreConfig)
-* [Google cloud service account configuration](#Google-cloud-service-account-configuration)
+* [Google Cloud service configuration](#ObjectStoreConfig)
+* [Google loud service account configuration](#Google-cloud-service-account-configuration)
 
 ## Environment variables
 
@@ -18,7 +18,7 @@ Must have:
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
 | `GOOGLE_AUDIENCES` | ex `*****.apps.googleusercontent.com` | Client ID for getting access to cloud resources | yes | https://console.cloud.google.com/apis/credentials |
-| `SPRING_PROFILES_ACTIVE` | ex `gcp` | Spring profile that activate default configuration for GCP environment | false | - |
+| `SPRING_PROFILES_ACTIVE` | ex `gcp` | Spring profile that activate default configuration for Google Cloud environment | false | - |
 | `STORAGE_SERVICE_ACCOUNT_EMAIL` | `workload-storage-gcp@nice-etching-277309.iam.gserviceaccount.com` |  Storage service account email, used during OQM events processing |no| - |
 
 ### Common properties for all environments
@@ -85,7 +85,7 @@ It can be overridden by:
 ## GCS configuration <a name="ObjectStoreConfig"></a>
 ### Per-tenant buckets configuration
 
-These buckets must be defined in tenants’ “data” GCP projects that names are pointed in tenants’ PartitionInfo registration objects’ “projectId” property at the Partition service.
+These buckets must be defined in tenants’ “data” Google Cloud projects that names are pointed in tenants’ PartitionInfo registration objects’ “projectId” property at the Partition service.
 
 
 <table>
@@ -104,7 +104,7 @@ These buckets must be defined in tenants’ “data” GCP projects that names a
 </table>
 
 
-## Google cloud service account configuration
+## Google Cloud service account configuration
 TBD
 
 | Required roles |
@@ -143,6 +143,6 @@ Execute following command to build code and run all the integration tests:
  ```
 
  ```bash
- # build + run GCP integration tests.
+ # build + run Google Cloud integration tests.
  $ (cd testing/storage-test-gcp/ && mvn clean test)
  ```
