@@ -192,6 +192,7 @@ public class IngestionServiceImpl implements IngestionService {
 				recordMetadata.setStatus(RecordState.active);
 				recordMetadata.setCreateTime(currentTimestamp);
 				recordMetadata.addGcsPath(transfer.getVersion());
+				recordMetadata.setNamespace(collaborationUtil.getNamespaceFromCollaborationContext());
 
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
@@ -207,6 +208,7 @@ public class IngestionServiceImpl implements IngestionService {
 				updatedRecordMetadata.setUser(existingRecordMetadata.getUser());
 				updatedRecordMetadata.setCreateTime(existingRecordMetadata.getCreateTime());
 				updatedRecordMetadata.setGcsVersionPaths(versions);
+				updatedRecordMetadata.setNamespace(collaborationUtil.getNamespaceFromCollaborationContext());
 
                 if (versions.isEmpty()) {
                     this.logger.warning(String.format("Record %s does not have versions available", updatedRecordMetadata.getId()));
