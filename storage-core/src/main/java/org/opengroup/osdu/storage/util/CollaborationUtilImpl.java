@@ -27,4 +27,9 @@ public class CollaborationUtilImpl implements CollaborationUtil {
             return recordId;
         return recordId + namespace;
     }
+    
+    @Override
+    public String getNamespaceFromCollaborationContext(){
+        return collaborationContext.getId();
+    }
 }

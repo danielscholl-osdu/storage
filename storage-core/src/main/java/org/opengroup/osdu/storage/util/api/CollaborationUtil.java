@@ -19,4 +19,6 @@ public interface CollaborationUtil {
     String getIdWithNamespace(String recordId);
     
     String getIdWithNamespace(String recordId, String namespace);
+    
+    String getNamespaceFromCollaborationContext();
 }
