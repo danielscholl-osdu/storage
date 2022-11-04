@@ -14,7 +14,6 @@
 
 package org.opengroup.osdu.storage.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
@@ -46,7 +45,6 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
-import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.storage.IPersistenceService;
@@ -61,7 +59,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -131,7 +128,7 @@ public class IngestionServiceImplTest {
     private Acl acl;
 
     @Before
-    public void setup() throws PartitionException, EntitlementsException, JsonProcessingException {
+    public void setup() throws PartitionException, EntitlementsException {
 
         List<String> userHeaders = new ArrayList<>();
         userHeaders.add(USER);
@@ -177,37 +174,6 @@ public class IngestionServiceImplTest {
         when(this.entitlementsService.getGroups()).thenReturn(groups);
         recordBlocks = new RecordBlocks(cloudStorage);
         sut.recordBlocks = recordBlocks;
-    }
-
-    @Test
-    public void should_throwAppException400_when_InvalidKindIsPassed() {
-
-        final String NEW_RECORD_ID = "tenant:record:123";
-
-        this.record1.setId(NEW_RECORD_ID);
-        this.record1.setKind("tenant1#wks#record#1.0.0");
-        this.record2.setId(NEW_RECORD_ID);
-        this.record2.setKind("tenant1:wks:record:1.0.0");
-        List<Record> recordsList = Arrays.asList(record1, record2);
-        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
-        existingRecordMetadata1.setUser(NEW_USER);
-
-        RecordMetadata existingRecordMetadata2 = new RecordMetadata();
-        existingRecordMetadata2.setUser(NEW_USER);
-
-        when(this.recordRepository.get(NEW_RECORD_ID)).thenReturn(existingRecordMetadata1);
-        when(this.recordRepository.get(NEW_RECORD_ID)).thenReturn(existingRecordMetadata2);
-
-        try {
-            this.sut.createUpdateRecords(false, recordsList, USER);
-
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals("Invalid kind", e.getError().getReason());
-            assertEquals("Invalid kind: 'tenant1#wks#record#1.0.0', does not follow the required naming convention",
-                    e.getError().getMessage());
-        }
     }
 
     @Test

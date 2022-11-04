@@ -47,9 +47,7 @@ public class RecordBlocksTest {
     private static final String KIND_2 = "tenant1:test:crazy:2.0.2";
     private static final String USER = "testuser@gmail.com";
     private static final String NEW_USER = "newuser@gmail.com";
-    private static final String TENANT = "tenant1";
     private static final String[] VALID_ACL = new String[]{"data.email1@tenant1.gmail.com", "data.test@tenant1.gmail.com"};
-    private static final String[] INVALID_ACL = new String[]{"data.email1@test.test.com", "data.test@test.test.com"};
 
     private Record record1;
     private Record record2;
