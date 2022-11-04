@@ -326,6 +326,7 @@ The following software have components provided under the terms of this license:
 - Asynchronous Http Client Netty Utils (from https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client-netty-utils)
 - AutoValue Annotations (from https://github.com/google/auto/tree/master/value, https://repo1.maven.org/maven2/com/google/auto/value/auto-value-annotations)
 - BSON (from http://bsonspec.org, https://bsonspec.org)
+- BSON Record Codec (from https://www.mongodb.com/)
 - Bean Validation API (from http://beanvalidation.org)
 - Brave (from https://repo1.maven.org/maven2/io/zipkin/brave/brave)
 - Brave Instrumentation: Http Adapters (from https://repo1.maven.org/maven2/io/zipkin/brave/brave-instrumentation-http)
@@ -348,7 +349,9 @@ The following software have components provided under the terms of this license:
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
 - Flapdoodle Embedded MongoDB (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo)
+- Flapdoodle Embedded MongoDB Package Resolver (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo.packageresolver)
 - Flapdoodle Embedded Process Util (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.process)
+- Flapdoodle OS Detection Library (from http://github.com/flapdoodle-oss/de.flapdoodle.os)
 - GSON extensions to the Google HTTP Client Library for Java. (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client-gson)
 - Google APIs Client Library for Java (from https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
 - Google App Engine extensions to the Google HTTP Client Library for Java. (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client-appengine)
@@ -1051,6 +1054,13 @@ The following software have components provided under the terms of this license:
 
 - Guava: Google Core Libraries for Java (from http://code.google.com/p/guava-libraries, https://github.com/google/guava, https://repo1.maven.org/maven2/com/google/guava/guava)
 - MongoDB Java Driver (from http://mongodb.org/, http://www.mongodb.org, https://www.mongodb.com/)
+
+========================================================================
+bzip2-1.0.6
+========================================================================
+The following software have components provided under the terms of this license:
+
+- Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
 
 ========================================================================
 cc-pd
