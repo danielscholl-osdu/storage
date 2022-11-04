@@ -31,8 +31,7 @@ public class RecordBlocks {
     private static final String HASH_KEY_META = "meta";
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public void populateRecordBlocksMetadata(Map<String, RecordMetadata> existingRecords,
-                                             List<RecordProcessing> recordsToProcess) {
+    public void populateRecordBlocksMetadata(Map<String, RecordMetadata> existingRecords, List<RecordProcessing> recordsToProcess) {
 
         for (RecordProcessing x : recordsToProcess) {
             if (x.getOperationType().equals(OperationType.update)) {
@@ -66,7 +65,6 @@ public class RecordBlocks {
 
                 recordBlocksUpdate += getRecordBlocksUpdate(previousMetadataCompare, currentMetadataCompare);
                 x.setRecordBlocks(recordBlocksUpdate.trim());
-                System.out.println("RecordBlocks " + recordBlocksUpdate.trim());
 
             }
         }

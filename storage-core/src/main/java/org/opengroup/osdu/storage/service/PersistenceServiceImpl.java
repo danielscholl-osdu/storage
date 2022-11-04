@@ -64,7 +64,6 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		for (int i = 0; i < recordsProcessing.size(); i++) {
 			RecordProcessing processing = recordsProcessing.get(i);
 			RecordMetadata recordMetadata = processing.getRecordMetadata();
-			System.out.println("RecordBlocks 2 "+processing.getRecordBlocks());
 			recordsMetadata.add(recordMetadata);
 			if(processing.getOperationType() == OperationType.create) {
 				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.create).build();

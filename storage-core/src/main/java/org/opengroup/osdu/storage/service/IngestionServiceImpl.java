@@ -321,7 +321,7 @@ public class IngestionServiceImpl implements IngestionService {
 
 		List<RecordProcessing> recordsToRemove = new ArrayList<>();
 		for (RecordProcessing recordProcessing : recordsToProcess) {
-			// RecordBlocks field will have some value if record is updated or will have null value if processingRecordBlocks fails
+			// RecordBlocks field will have some value if record is updated or will have empty value
 			if (recordProcessing.getOperationType().equals(OperationType.update) && "".equals(recordProcessing.getRecordBlocks())) {
 				recordsToRemove.add(recordProcessing);
 				transfer.getSkippedRecords().add(recordProcessing.getRecordMetadata().getId());
