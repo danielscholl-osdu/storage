@@ -32,6 +32,7 @@ public class RecordMetadataDoc extends RecordMetadata {
     	super.setStatus(recordMetadata.getStatus());
     	super.setUser(recordMetadata.getUser());
     	super.setGcsVersionPaths(recordMetadata.getGcsVersionPaths());
+		super.setHash(recordMetadata.getHash());
 	}
     
     public RecordMetadata getRecordMetadata() {
@@ -48,6 +49,7 @@ public class RecordMetadataDoc extends RecordMetadata {
     	rm.setModifyUser(this.getModifyUser());
     	rm.setModifyTime(this.getModifyTime());
 		rm.setTags(this.getTags());
+		rm.setHash(this.getHash());
     	return rm;
     }
 	
