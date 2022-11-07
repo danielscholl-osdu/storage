@@ -20,18 +20,18 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
 
-public class TestCollaborationRecords extends CollaborationRecordsIntegrationTest {
+public class TestCollaborationRetrieveRecords extends CollaborationRecordsRetrieveTest {
 
     private static final AzureTestUtils azureTestUtils = new AzureTestUtils();
 
     @BeforeClass
 	public static void classSetup() throws Exception {
-        CollaborationRecordsIntegrationTest.classSetup(azureTestUtils.getToken());
+        CollaborationRecordsRetrieveTest.classSetup(azureTestUtils.getToken());
 	}
 
 	@AfterClass
 	public static void classTearDown() throws Exception {
-        CollaborationRecordsIntegrationTest.classTearDown(azureTestUtils.getToken());
+        CollaborationRecordsRetrieveTest.classTearDown(azureTestUtils.getToken());
     }
 
     @Before
