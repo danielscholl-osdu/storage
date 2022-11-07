@@ -41,35 +41,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public abstract class CollaborationRecordsIntegrationTest extends TestBase {
-    protected static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
-    protected static final String COLLABORATION_HEADER = "x-collaboration";
-    protected static final String APPLICATION_NAME = "storage service integration test";
-    protected static final String TENANT_NAME = TenantUtils.getTenantName();
-    protected static final long CURRENT_TIME_MILLIS = System.currentTimeMillis();
-    protected static final String COLLABORATION1_ID = UUID.randomUUID().toString();
-    protected static final String COLLABORATION2_ID = UUID.randomUUID().toString();
-    protected static final String RECORD_ID_1 = TENANT_NAME + ":inttest:1" + CURRENT_TIME_MILLIS;
-    protected static final String RECORD_ID_2 = TENANT_NAME + ":inttest:2" + CURRENT_TIME_MILLIS;
-    protected static final String RECORD_ID_3 = TENANT_NAME + ":inttest:3" + CURRENT_TIME_MILLIS;
-
-    protected static final String RECORD_PURGE_ID = TENANT_NAME + ":inttestpurge:1" + CURRENT_TIME_MILLIS;
-    protected static final String KIND1 = TENANT_NAME + ":ds:inttest:1" + CURRENT_TIME_MILLIS;
-    protected static final String KIND2 = TENANT_NAME + ":ds:inttest:2" + CURRENT_TIME_MILLIS;
-    protected static final String KIND3 = TENANT_NAME + ":ds:inttest:3" + CURRENT_TIME_MILLIS;
-    protected static Long RECORD1_V1;
-    protected static Long RECORD1_V2;
-    protected static Long RECORD1_V3;
-    protected static Long RECORD1_V4;
-    protected static Long RECORD2_V1;
-    protected static Long RECORD2_V2;
-    protected static Long RECORD3_V1;
-    protected static Long RECORD3_V2;
-
-    protected static Long RECORD_PURGE_V1;
-    protected static Long RECORD_PURGE_V2;
-    protected static Long RECORD_PURGE_V3;
-    protected static String LEGAL_TAG_NAME_A;
+public abstract class CollaborationRecordsRetrieveTest extends TestBase {
+    private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
+    private static final String COLLABORATION_HEADER = "x-collaboration";
+    private static final String APPLICATION_NAME = "storage service integration test";
+    private static final String TENANT_NAME = TenantUtils.getTenantName();
+    private static final long CURRENT_TIME_MILLIS = System.currentTimeMillis();
+    private static final String COLLABORATION1_ID = UUID.randomUUID().toString();
+    private static final String COLLABORATION2_ID = UUID.randomUUID().toString();
+    private static final String RECORD_ID_1 = TENANT_NAME + ":inttest:1" + CURRENT_TIME_MILLIS;
+    private static final String RECORD_ID_2 = TENANT_NAME + ":inttest:2" + CURRENT_TIME_MILLIS;
+    private static final String RECORD_ID_3 = TENANT_NAME + ":inttest:3" + CURRENT_TIME_MILLIS;
+    private static final String KIND1 = TENANT_NAME + ":ds:inttest:1" + CURRENT_TIME_MILLIS;
+    private static final String KIND2 = TENANT_NAME + ":ds:inttest:2" + CURRENT_TIME_MILLIS;
+    private static final String KIND3 = TENANT_NAME + ":ds:inttest:3" + CURRENT_TIME_MILLIS;
+    private static Long RECORD1_V1;
+    private static Long RECORD1_V2;
+    private static Long RECORD1_V3;
+    private static Long RECORD1_V4;
+    private static Long RECORD2_V1;
+    private static Long RECORD2_V2;
+    private static Long RECORD3_V1;
+    private static Long RECORD3_V2;
+    private static String LEGAL_TAG_NAME_A;
 
     public static void classSetup(String token) throws Exception {
         LEGAL_TAG_NAME_A = LegalTagUtils.createRandomName();
@@ -85,11 +79,6 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
 
         RECORD3_V1 = createRecord(RECORD_ID_3, COLLABORATION1_ID, KIND2, token);
         RECORD3_V2 = createRecord(RECORD_ID_3, COLLABORATION2_ID, KIND2, token);
-
-        //for purge integration test
-        RECORD_PURGE_V1 = createRecord(RECORD_PURGE_ID, COLLABORATION1_ID, KIND1, token);
-        RECORD_PURGE_V2 = createRecord(RECORD_PURGE_ID, COLLABORATION1_ID, KIND1, token);
-        RECORD_PURGE_V3 = createRecord(RECORD_PURGE_ID, COLLABORATION2_ID, KIND1, token);
     }
 
     public static void classTearDown(String token) throws Exception {
@@ -145,16 +134,6 @@ public abstract class CollaborationRecordsIntegrationTest extends TestBase {
         List<Long> versions = Arrays.asList(versionsResponse.versions);
         assertTrue(versions.contains(RECORD1_V2));
         assertTrue(versions.contains(RECORD1_V3));
-    }
-
-    @Test
-    public void should_purgeAllRecordVersionsOnlyInCollaborationContext() throws Exception {
-        ClientResponse response = TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
-        assertEquals(SC_NO_CONTENT, response.getStatus());
-        response = TestUtils.send("records/" + RECORD_PURGE_ID, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
-        assertEquals(SC_NOT_FOUND, response.getStatus());
-        response = TestUtils.send("records/" + RECORD_PURGE_ID, "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, testUtils.getToken()), "", "");
-        assertRecordVersion(response, RECORD_PURGE_V3);
     }
 
     @Test
