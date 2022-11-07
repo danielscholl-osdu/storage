@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
+import org.opengroup.osdu.storage.provider.azure.model.DocumentCount;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -201,6 +202,14 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status);
         return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
+    }
+
+    public int getMetadataDocumentCountForBlob(String path) {
+        Assert.notNull(path, "path must not be null");
+        String sqlQueryString = String.format("SELECT COUNT(1) AS documentCount from c WHERE ARRAY_CONTAINS (c.metadata.gcsVersionPaths, '%s')", path);
+        SqlQuerySpec query = new SqlQuerySpec(sqlQueryString);
+        List<DocumentCount> queryResponse = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, new CosmosQueryRequestOptions(), DocumentCount.class);
+        return queryResponse == null || queryResponse.isEmpty() ? 0 : queryResponse.get(0).getDocumentCount();
     }
 
     private static SqlQuerySpec getIdsByMetadata_kindAndMetada_statusQuery(String kind, String status) {

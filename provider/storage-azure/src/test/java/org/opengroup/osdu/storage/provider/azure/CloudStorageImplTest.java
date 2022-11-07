@@ -17,6 +17,7 @@ import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
@@ -39,6 +40,9 @@ public class CloudStorageImplTest {
     @Mock
     private BlobStore blobStore;
 
+    @Mock
+    private RecordMetadataRepository recordRepository;
+
     @InjectMocks
     private CloudStorageImpl cloudStorage;
 
@@ -58,6 +62,16 @@ public class CloudStorageImplTest {
         Mockito.verify(blobStore, Mockito.never()).deleteFromStorageContainer(any(String.class), any(String.class), any(String.class));
     }
 
+    @Test
+    public void shouldNotInvokeDeleteOnBlobStoreWhenReferencedFromOtherDocuments() {
+        RecordMetadata recordMetadata = setUpRecordMetadata();
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path1"));
+        Mockito.when(entitlementsAndCacheServiceAzure.hasAccessToData(any(DpsHeaders.class), any(Set.class))).thenReturn(true);
+        Mockito.when(recordRepository.getMetadataDocumentCountForBlob("path1")).thenReturn(1);
+        cloudStorage.delete(recordMetadata);
+        Mockito.verify(blobStore, Mockito.never()).deleteFromStorageContainer(any(String.class), any(String.class), any(String.class));
+    }
+
     @Test(expected = AppException.class)
     public void shouldThrowAppExceptionWhenDeleteWithNoOwnerAccess() {
         RecordMetadata recordMetadata = setUpRecordMetadata();
@@ -71,6 +85,8 @@ public class CloudStorageImplTest {
         RecordMetadata recordMetadata = setUpRecordMetadata();
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1", "path2"));
         Mockito.when(entitlementsAndCacheServiceAzure.hasAccessToData(any(DpsHeaders.class), any(Set.class))).thenReturn(true);
+        Mockito.when(recordRepository.getMetadataDocumentCountForBlob("path1")).thenReturn(0);
+        Mockito.when(recordRepository.getMetadataDocumentCountForBlob("path2")).thenReturn(0);
         cloudStorage.delete(recordMetadata);
         Mockito.verify(blobStore, Mockito.times(1)).deleteFromStorageContainer(DATA_PARTITION, "path1", CONTAINER);
         Mockito.verify(blobStore, Mockito.times(1)).deleteFromStorageContainer(DATA_PARTITION, "path2", CONTAINER);
