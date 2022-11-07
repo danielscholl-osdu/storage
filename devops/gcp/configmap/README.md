@@ -33,7 +33,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **defaultDataCountry** | Data storage region | string | US | yes
 **storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | storage@service.local | yes
 
-### GCP variables
+### Google Cloud variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
@@ -43,9 +43,9 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **legalHost** | Legal service host address | string | `http://legal` | yes
 **redisGroupHost** | Redis host for groups | string | `redis-group-master` | yes
 **redisStorageHost** | Redis host for storage | string | `redis-storage-master` | yes
-**googleAudiences** | your GCP client ID | string | - | yes
+**googleAudiences** | your Google Cloud client ID | string | - | yes
 
-> googleAudiences: If you are connected to GCP console with `gcloud auth application-default login --no-browser` from your terminal, you can get your client_id using the command:
+> googleAudiences: If you are connected to Google Cloud console with `gcloud auth application-default login --no-browser` from your terminal, you can get your client_id using the command:
 
 ```console
 cat ~/.config/gcloud/application_default_credentials.json | grep client_id
