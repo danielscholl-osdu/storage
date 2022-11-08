@@ -20,10 +20,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
+import org.checkerframework.checker.nullness.Opt;
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
@@ -31,7 +33,7 @@ import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.api.CollaborationUtil;
+import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -71,9 +73,6 @@ public class CloudStorageImpl implements ICloudStorage {
     private RecordUtil recordUtil;
 
     @Autowired
-    private CollaborationUtil collaborationUtil;
-
-    @Autowired
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
 
@@ -99,10 +98,10 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+    public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
 
         Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
-        Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
+        Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId, collaborationContext);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
             String id = recordMetadata.getId();
@@ -110,7 +109,7 @@ public class CloudStorageImpl implements ICloudStorage {
             // validate that updated metadata has the same version
             if (!id.equalsIgnoreCase(idWithVersion)) {
                 long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
-                long currentVersion = currentRecords.get(collaborationUtil.getIdWithNamespace(id)).getLatestVersion();
+                long currentVersion = currentRecords.get(CollaborationUtilImpl.getIdWithNamespace(id, collaborationContext)).getLatestVersion();
                 // if version is different, do not update
                 if (previousVersion != currentVersion) {
                     lockedRecords.add(idWithVersion);
@@ -118,13 +117,13 @@ public class CloudStorageImpl implements ICloudStorage {
                 }
             }
             validMetadata.add(recordMetadata);
-            originalAcls.put(recordMetadata.getId(), currentRecords.get(collaborationUtil.getIdWithNamespace(id)).getAcl());
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(CollaborationUtilImpl.getIdWithNamespace(id, collaborationContext)).getAcl());
         }
         return originalAcls;
     }
 
     @Override
-    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> originalAclRecords = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {
             Acl acl = originalAcls.get(recordMetadata.getId());
@@ -132,7 +131,7 @@ public class CloudStorageImpl implements ICloudStorage {
             originalAclRecords.add(recordMetadata);
         }
         try {
-            this.recordRepository.createOrUpdate(originalAclRecords);
+            this.recordRepository.createOrUpdate(originalAclRecords, collaborationContext);
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
         }
@@ -242,10 +241,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         String [] acls = ofNullable(record.getAcl())
                 .map(Acl::getViewers).
-                orElseGet(() -> {
-                    logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
-                    return new String[]{};
-                });
+                        orElseGet(() -> {
+                            logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
+                            return new String[]{};
+                        });
         boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
         boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
@@ -256,10 +255,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         String [] acls = ofNullable(record.getAcl())
                 .map(Acl::getOwners).
-                orElseGet(() -> {
-                    logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
-                    return new String[]{};
-                });
+                        orElseGet(() -> {
+                            logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
+                            return new String[]{};
+                        });
         return dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
     }
@@ -303,17 +302,17 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, String> read(Map<String, String> objects) {
+    public Map<String, String> read(Map<String, String> objects, Optional<CollaborationContext> collaborationContext) {
         List<Callable<Boolean>> tasks = new ArrayList<>();
         Map<String, String> map = new ConcurrentHashMap<>();
 
         List<String> recordIds = new ArrayList<>(objects.keySet());
-        Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
+        Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds, collaborationContext);
 
         String dataPartitionId = headers.getPartitionId();
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(collaborationUtil.getIdWithNamespace(recordId));
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtilImpl.getIdWithNamespace(recordId, collaborationContext));
             if (!hasViewerAccessToRecord(recordMetadata)) {
                 continue;
             }
