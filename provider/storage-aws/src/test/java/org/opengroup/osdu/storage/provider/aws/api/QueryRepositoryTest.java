@@ -40,6 +40,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.MockitoAnnotations.openMocks;
 
@@ -137,7 +138,7 @@ public class QueryRepositoryTest {
                 .thenReturn(expectedQueryPageResult);
 
         // Act
-        DatastoreQueryResult datastoreQueryResult = repo.getAllRecordIdsFromKind(kind, 50, cursor);
+        DatastoreQueryResult datastoreQueryResult = repo.getAllRecordIdsFromKind(kind, 50, cursor, Optional.empty());
 
         // Assert
         Mockito.verify(queryHelper, Mockito.times(1)).queryPage(Mockito.eq(RecordMetadataDoc.class), Mockito.anyObject(), Mockito.anyString(),

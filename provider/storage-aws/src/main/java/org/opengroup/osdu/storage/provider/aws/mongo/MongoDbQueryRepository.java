@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.aws.mongo;
 
 import org.opengroup.osdu.core.aws.mongodb.MongoDBMultiClusterFactory;
 import org.opengroup.osdu.core.aws.mongodb.entity.QueryPageResult;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
@@ -27,6 +28,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.storage.provider.aws.mongo.MongoDbRecordsMetadataRepository.RECORD_METADATA_PREFIX;
@@ -78,7 +80,7 @@ public class MongoDbQueryRepository implements IQueryRepository {
      * @return the all record ids from kind
      */
     @Override
-    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
+    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext) {
         String dataPartitionId = getDataPartitionId();
         Query query = Query.query(Criteria.where(DATA_KIND).is(kind));
 

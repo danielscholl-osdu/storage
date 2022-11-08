@@ -50,7 +50,7 @@
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
                 <artifactId>os-core-common</artifactId>
-                <version>${os-core-common.version}</version>
+                <version>0.18.0-X-COLLABORATION</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -62,6 +62,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
+            <version>0.18.0-X-COLLABORATION</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
