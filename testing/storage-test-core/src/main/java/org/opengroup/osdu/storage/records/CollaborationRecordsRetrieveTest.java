@@ -34,8 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.apache.http.HttpStatus.SC_CREATED;
-import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-import static org.apache.http.HttpStatus.SC_NO_CONTENT;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -152,7 +150,9 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_1::equals));
 
         response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "?kind=" + KIND3);
-        assertEquals(SC_NOT_FOUND, response.getStatus());
+        assertEquals(SC_OK, response.getStatus());
+        responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
+        assertEquals(0, responseObject.results.length);
     }
 
     @Test
