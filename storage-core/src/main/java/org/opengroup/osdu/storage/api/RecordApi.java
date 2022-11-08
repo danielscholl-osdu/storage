@@ -15,23 +15,29 @@
 package org.opengroup.osdu.storage.api;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
+import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.core.common.storage.IngestionService;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.mapper.CreateUpdateRecordsResponseMapper;
 import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
+import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -44,6 +50,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -71,62 +78,80 @@ public class RecordApi {
 	@Autowired
 	private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
 
+	@Autowired
+	private CollaborationContextFactory collaborationContextFactory;
+
 	@PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public CreateUpdateRecordsResponse createOrUpdateRecords(@RequestParam(required = false) boolean skipdupes,
+	public CreateUpdateRecordsResponse createOrUpdateRecords(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+															 @RequestParam(required = false) boolean skipdupes,
 			@RequestBody @Valid @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<Record> records) {
-		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail());
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		System.out.println("1. Collaboration Context is: " + CollaborationUtilImpl.getIdWithNamespace("recordId", collaborationContext));
+		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail(), collaborationContext);
 		return createUpdateRecordsResponseMapper.map(transfer, records);
 	}
 
 	@GetMapping(value = "/versions/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<RecordVersions> getRecordVersions(
+	public ResponseEntity<RecordVersions> getRecordVersions(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 			@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
 					message = ValidationDoc.INVALID_RECORD_ID) String id) {
-		return new ResponseEntity<RecordVersions>(this.queryService.listVersions(id), HttpStatus.OK);
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		return new ResponseEntity<RecordVersions>(this.queryService.listVersions(id, collaborationContext), HttpStatus.OK);
 	}
 
 	@DeleteMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
-	public ResponseEntity<Void> purgeRecord(@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+	public ResponseEntity<Void> purgeRecord(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+											@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
 			message = ValidationDoc.INVALID_RECORD_ID) String id) {
-		this.recordService.purgeRecord(id);
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		this.recordService.purgeRecord(id, collaborationContext);
 		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
 	}
 
 	@PostMapping(value = "/{id}:delete", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<Void> deleteRecord(@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+	public ResponseEntity<Void> deleteRecord(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+											 @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
 			message = ValidationDoc.INVALID_RECORD_ID) String id) {
-		this.recordService.deleteRecord(id, this.headers.getUserEmail());
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		this.recordService.deleteRecord(id, this.headers.getUserEmail(), collaborationContext);
 		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
 	}
 
 	@PostMapping(value = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<Void> bulkDeleteRecords(@RequestBody @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<String> recordIs) {
-		this.recordService.bulkDeleteRecords(recordIs, this.headers.getUserEmail());
+	public ResponseEntity<Void> bulkDeleteRecords(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+												  @RequestBody @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<String> recordIs) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		this.recordService.bulkDeleteRecords(recordIs, this.headers.getUserEmail(), collaborationContext);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	@GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<String> getLatestRecordVersion(
+			@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 			@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
 					message = ValidationDoc.INVALID_RECORD_ID) String id,
 			@RequestParam(name = "attribute", required = false) String[] attributes) {
-		return new ResponseEntity<String>(this.queryService.getRecordInfo(id, attributes), HttpStatus.OK);
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		System.out.println("2. Collaboration Context is: " + CollaborationUtilImpl.getIdWithNamespace("recordId", collaborationContext));
+		return new ResponseEntity<String>(this.queryService.getRecordInfo(id, attributes, collaborationContext), HttpStatus.OK);
 	}
 
 	@GetMapping(value = "/{id}/{version}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<String> getSpecificRecordVersion(
+			@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 			@PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
 					message = ValidationDoc.INVALID_RECORD_ID) String id,
 			@PathVariable("version") long version,
 			@RequestParam(name = "attribute", required = false) String[] attributes) {
-		return new ResponseEntity<String>(this.queryService.getRecordInfo(id, version, attributes), HttpStatus.OK);
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		return new ResponseEntity<String>(this.queryService.getRecordInfo(id, version, attributes, collaborationContext), HttpStatus.OK);
 	}
 }

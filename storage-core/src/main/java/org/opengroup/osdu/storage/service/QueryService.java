@@ -14,13 +14,16 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
+
+import java.util.Optional;
 
 public interface QueryService {
 
-	String getRecordInfo(String id, String[] attributes);
+	String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext);
 
-	String getRecordInfo(String id, long version, String[] attributes);
+	String getRecordInfo(String id, long version, String[] attributes, Optional<CollaborationContext> collaborationContext);
 
-	RecordVersions listVersions(String id);
+	RecordVersions listVersions(String id, Optional<CollaborationContext> collaborationContext);
 }

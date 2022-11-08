@@ -15,12 +15,15 @@
 package org.opengroup.osdu.storage.api;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.apache.http.HttpStatus;
 import org.junit.Test;
@@ -30,7 +33,9 @@ import org.mockito.Mock;
 
 import com.google.common.collect.Lists;
 import org.mockito.Spy;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
@@ -46,12 +51,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueryApiTest {
-
+    private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
+    private final String COLLABORATION_DIRECTIVES = "id=9e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=TestApp";
+    
     @Mock
     private BatchService batchService;
 
     @Mock
     private SchemaEndpointsConfig schemaEndpointsConfig;
+
+    @Mock
+    private CollaborationContextFactory collaborationContextFactory;
 
     @Spy
     private EncodeDecode encodeDecode;
@@ -77,9 +87,11 @@ public class QueryApiTest {
         validRecords.add(record2);
         output.setRecords(validRecords);
 
-        when(this.batchService.getMultipleRecords(input)).thenReturn(output);
+        when(this.batchService.getMultipleRecords(input, COLLABORATION_CONTEXT)).thenReturn(output);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
 
-        ResponseEntity response = this.sut.getRecords(input);
+
+        ResponseEntity response = this.sut.getRecords(COLLABORATION_DIRECTIVES, input);
 
         MultiRecordInfo records = (MultiRecordInfo) response.getBody();
 
@@ -151,9 +163,10 @@ public class QueryApiTest {
         allRecords.setCursor("new cursor");
         allRecords.setResults(recordIds);
 
-        when(this.batchService.getAllRecords(CURSOR, KIND, LIMIT)).thenReturn(allRecords);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+        when(this.batchService.getAllRecords(CURSOR, KIND, LIMIT, Optional.empty())).thenReturn(allRecords);
 
-        ResponseEntity response = this.sut.getAllRecords(ENCODED_CURSOR, LIMIT, KIND);
+        ResponseEntity response = this.sut.getAllRecords(COLLABORATION_DIRECTIVES, ENCODED_CURSOR, LIMIT, KIND);
 
         DatastoreQueryResult allRecordIds = (DatastoreQueryResult) response.getBody();
 
@@ -167,7 +180,7 @@ public class QueryApiTest {
     @Test
     public void should_allowAccessToGetRecords_when_userBelongsToViewerCreatorOrAdminGroups() throws Exception {
 
-        Method method = this.sut.getClass().getMethod("getRecords", MultiRecordIds.class);
+        Method method = this.sut.getClass().getMethod("getRecords", String.class, MultiRecordIds.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertTrue(annotation.value().contains(StorageRole.VIEWER));
@@ -189,7 +202,7 @@ public class QueryApiTest {
     @Test
     public void should_allowAccessToGetAllRecordsFromKind_when_userBelongsToAdminGroup() throws Exception {
 
-        Method method = this.sut.getClass().getMethod("getAllRecords", String.class, Integer.class, String.class);
+        Method method = this.sut.getClass().getMethod("getAllRecords",String.class, String.class, Integer.class, String.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertFalse(annotation.value().contains(StorageRole.VIEWER));

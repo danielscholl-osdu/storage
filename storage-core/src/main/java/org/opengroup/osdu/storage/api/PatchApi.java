@@ -31,6 +31,8 @@ import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("records")
 @RequestScope
@@ -46,7 +48,8 @@ public class PatchApi {
 	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
-		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail());
+		//will be implemented as part of PATCH user story
+		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), Optional.empty());
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {

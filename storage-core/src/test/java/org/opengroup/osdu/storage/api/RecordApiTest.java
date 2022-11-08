@@ -19,13 +19,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -36,6 +38,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
@@ -57,7 +60,8 @@ public class RecordApiTest {
     private final String USER = "user";
     private final String TENANT = "tenant1";
     private final String RECORD_ID = "osdu:anyID:any";
-    private final String COLLABORATION_ID = UUID.randomUUID().toString();
+    private final String COLLABORATION_DIRECTIVES = "id=9e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=TestApp";
+    private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
     private IngestionService ingestionService;
@@ -72,7 +76,7 @@ public class RecordApiTest {
     private DpsHeaders httpHeaders;
 
     @Mock
-    private CollaborationContext collaborationContext;
+    private CollaborationContextFactory collaborationContextFactory;
 
     @Mock
     private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
@@ -85,7 +89,7 @@ public class RecordApiTest {
         initMocks(this);
 
         when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
-        when(this.collaborationContext.getId()).thenReturn(COLLABORATION_ID);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
         when(this.httpHeaders.getPartitionIdWithFallbackToAccountId()).thenReturn(this.TENANT);
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
@@ -107,10 +111,10 @@ public class RecordApiTest {
         records.add(r1);
         records.add(r2);
 
-        when(this.ingestionService.createUpdateRecords(false, records, this.USER)).thenReturn(transfer);
+        when(this.ingestionService.createUpdateRecords(false, records, this.USER, Optional.empty())).thenReturn(transfer); // check 
         when(createUpdateRecordsResponseMapper.map(transfer, records)).thenReturn(new CreateUpdateRecordsResponse());
 
-        CreateUpdateRecordsResponse response = this.sut.createOrUpdateRecords(false, records);
+        CreateUpdateRecordsResponse response = this.sut.createOrUpdateRecords(COLLABORATION_DIRECTIVES, false, records);
         assertNotNull(response);
     }
 
@@ -125,10 +129,10 @@ public class RecordApiTest {
         List<Record> records = new ArrayList<>();
         records.add(r1);
 
-        when(this.ingestionService.createUpdateRecords(false, records, this.USER)).thenReturn(transfer);
+        when(this.ingestionService.createUpdateRecords(false, records, this.USER, Optional.empty())).thenReturn(transfer);
         when(createUpdateRecordsResponseMapper.map(transfer, records)).thenReturn(new CreateUpdateRecordsResponse());
 
-        CreateUpdateRecordsResponse response = this.sut.createOrUpdateRecords(false, records);
+        CreateUpdateRecordsResponse response = this.sut.createOrUpdateRecords(COLLABORATION_DIRECTIVES, false, records);
         assertNotNull(response);
     }
 
@@ -142,9 +146,9 @@ public class RecordApiTest {
         recordVersions.setRecordId(RECORD_ID);
         recordVersions.setVersions(versions);
 
-        when(this.queryService.listVersions(RECORD_ID)).thenReturn(recordVersions);
+        when(this.queryService.listVersions(RECORD_ID, Optional.empty())).thenReturn(recordVersions);
 
-        ResponseEntity response = this.sut.getRecordVersions(RECORD_ID);
+        ResponseEntity response = this.sut.getRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID);
 
         RecordVersions versionsResponse = (RecordVersions) response.getBody();
 
@@ -156,16 +160,16 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp204_when_purgingRecordSuccessfully() {
-        ResponseEntity response = this.sut.purgeRecord(RECORD_ID);
+        ResponseEntity response = this.sut.purgeRecord(COLLABORATION_DIRECTIVES, RECORD_ID);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
     }
 
     @Test
     public void should_returnHttp200_when_gettingTheLatestVersionOfARecordSuccessfully() {
-        when(this.queryService.getRecordInfo(RECORD_ID, new String[] {})).thenReturn(RECORD_ID);
+        when(this.queryService.getRecordInfo(RECORD_ID, new String[] {}, Optional.empty())).thenReturn(RECORD_ID);
 
-        ResponseEntity response = this.sut.getLatestRecordVersion(RECORD_ID, new String[] {});
+        ResponseEntity response = this.sut.getLatestRecordVersion(COLLABORATION_DIRECTIVES, RECORD_ID, new String[] {});
 
         String recordInfoResponse = response.getBody().toString();
 
@@ -179,9 +183,9 @@ public class RecordApiTest {
 
         String expectedRecord = "{\"id\": \"osdu:anyID:any\",\r\n\"version\": 1}";
 
-        when(this.queryService.getRecordInfo(RECORD_ID, VERSION, new String[] {})).thenReturn(expectedRecord);
+        when(this.queryService.getRecordInfo(RECORD_ID, VERSION, new String[] {}, Optional.empty())).thenReturn(expectedRecord);
 
-        ResponseEntity response = this.sut.getSpecificRecordVersion(RECORD_ID, VERSION, new String[] {});
+        ResponseEntity response = this.sut.getSpecificRecordVersion(COLLABORATION_DIRECTIVES, RECORD_ID, VERSION, new String[] {});
 
         String recordResponse = response.getBody().toString();
 
@@ -192,14 +196,14 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp204_when_deletingRecordSuccessfully() {
-        ResponseEntity response = this.sut.deleteRecord(RECORD_ID);
+        ResponseEntity response = this.sut.deleteRecord(COLLABORATION_DIRECTIVES, RECORD_ID);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
     }
 
     @Test
     public void should_returnHttp204_when_bulkDeleteRecordsSuccessfully() {
-        ResponseEntity response = this.sut.bulkDeleteRecords(singletonList(RECORD_ID));
+        ResponseEntity response = this.sut.bulkDeleteRecords(COLLABORATION_DIRECTIVES, singletonList(RECORD_ID));
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
     }
@@ -207,7 +211,7 @@ public class RecordApiTest {
     @Test
     public void should_allowAccessToCreateOrUpdateRecords_when_userBelongsToCreatorOrAdminGroups() throws Exception {
 
-        Method method = this.sut.getClass().getMethod("createOrUpdateRecords", boolean.class, List.class);
+        Method method = this.sut.getClass().getMethod("createOrUpdateRecords",  String.class ,boolean.class, List.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertFalse(annotation.value().contains(StorageRole.VIEWER));
@@ -218,7 +222,7 @@ public class RecordApiTest {
     @Test
     public void should_allowAccessToGetRecordVersions_when_userBelongsToViewerCreatorOrAdminGroups() throws Exception {
 
-        Method method = this.sut.getClass().getMethod("getRecordVersions", String.class);
+        Method method = this.sut.getClass().getMethod("getRecordVersions", String.class, String.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertTrue(annotation.value().contains(StorageRole.VIEWER));
@@ -229,7 +233,7 @@ public class RecordApiTest {
     @Test
     public void should_allowAccessToPurgeRecord_when_userBelongsToAdminGroup() throws Exception {
 
-        Method method = this.sut.getClass().getMethod("purgeRecord", String.class);
+        Method method = this.sut.getClass().getMethod("purgeRecord", String.class, String.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertFalse(annotation.value().contains(StorageRole.VIEWER));
@@ -240,7 +244,7 @@ public class RecordApiTest {
     @Test
     public void should_allowAccessToDeleteRecord_when_userBelongsToCreatorOrAdminGroups() throws Exception {
 
-        Method method = this.sut.getClass().getMethod("deleteRecord", String.class);
+        Method method = this.sut.getClass().getMethod("deleteRecord", String.class, String.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertFalse(annotation.value().contains(StorageRole.VIEWER));
@@ -250,7 +254,7 @@ public class RecordApiTest {
 
     @Test
     public void should_allowAccessToBulkDeleteRecords_when_userBelongsToCreatorOrAdminGroups() throws Exception {
-        Method method = this.sut.getClass().getMethod("deleteRecord", String.class);
+        Method method = this.sut.getClass().getMethod("deleteRecord", String.class, String.class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertFalse(annotation.value().contains(StorageRole.VIEWER));
@@ -262,7 +266,7 @@ public class RecordApiTest {
     public void should_allowAccessToGetLatestVersionOfRecord_when_userBelongsToViewerCreatorOrAdminGroups()
             throws Exception {
 
-        Method method = this.sut.getClass().getMethod("getLatestRecordVersion", String.class, String[].class);
+        Method method = this.sut.getClass().getMethod("getLatestRecordVersion", String.class, String.class, String[].class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertTrue(annotation.value().contains(StorageRole.VIEWER));
@@ -274,8 +278,8 @@ public class RecordApiTest {
     public void should_allowAccessToGetSpecificRecordVersion_when_userBelongsToViewerCreatorOrAdminGroups()
             throws Exception {
 
-        Method method = this.sut.getClass().getMethod("getSpecificRecordVersion", String.class, long.class,
-                String[].class);
+        Method method = this.sut.getClass().getMethod("getSpecificRecordVersion", String.class, String.class,
+                long.class, String[].class);
         PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
 
         assertTrue(annotation.value().contains(StorageRole.VIEWER));

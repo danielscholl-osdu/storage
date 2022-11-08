@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("push-handlers")
 @RequestScope
@@ -39,7 +41,7 @@ public class PubsubEndpoints {
     @PostMapping("/legaltag-changed")
     @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "', '" + StorageRole.PUBSUB + "')")
     public ResponseEntity legaltagChanged() throws ComplianceUpdateStoppedException {
-        this.pushReceiver.receiveMessageFromHttpRequest();
+        this.pushReceiver.receiveMessageFromHttpRequest(Optional.empty());
         return new ResponseEntity(HttpStatus.OK);
     }
 }

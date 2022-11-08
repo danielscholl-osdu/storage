@@ -40,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -72,7 +73,7 @@ public class LegalComplianceChangeUpdate{
             headers.setThreadContext(legalTagsChangedData.getDataPartitionId(), legalTagsChangedData.getCorrelationId(), legalTagsChangedData.getUser());
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
-            complianceMessagePullReceiver.receiveMessage(tags, headers);
+            complianceMessagePullReceiver.receiveMessage(tags, headers, Optional.empty());
         } catch (AppException e) {
             LOGGER.error(String.format("Error occurred while updating compliance on records: %s", e.getMessage()), e);
             throw e;
