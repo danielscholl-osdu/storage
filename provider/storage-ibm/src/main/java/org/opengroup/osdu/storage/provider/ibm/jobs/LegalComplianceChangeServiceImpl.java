@@ -9,6 +9,7 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.inject.Inject;
 
@@ -79,10 +80,10 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
 
 				if (lt.getChangedTagStatus() == incompliantName) {
 					for (RecordMetadata rmd : recordsMetadata) {
-						this.recordsMetadataRepository.delete(rmd.getId());
+						this.recordsMetadataRepository.delete(rmd.getId(), Optional.empty());
 					}
 				} else {
-					this.recordsMetadataRepository.createOrUpdate(recordsMetadata);
+					this.recordsMetadataRepository.createOrUpdate(recordsMetadata, Optional.empty());
 				}
 
 				StringBuilder recordsId = new StringBuilder();
