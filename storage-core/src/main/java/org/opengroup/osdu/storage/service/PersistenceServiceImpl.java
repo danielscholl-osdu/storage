@@ -24,7 +24,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -38,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class PersistenceServiceImpl implements IPersistenceService {
+public class PersistenceServiceImpl implements PersistenceService {
 
 	@Autowired
 	private IRecordsMetadataRepository recordRepository;

@@ -43,17 +43,14 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
-import javax.swing.text.html.Option;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +86,7 @@ public class RecordServiceImplTest {
     private IEntitlementsAndCacheService entitlementsAndCacheService;
 
     @Mock
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
 
     @Mock
     private DpsHeaders headers;

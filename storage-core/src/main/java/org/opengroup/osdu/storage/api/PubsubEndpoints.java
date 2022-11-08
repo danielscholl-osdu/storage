@@ -14,9 +14,9 @@
 
 package org.opengroup.osdu.storage.api;
 
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
+import org.opengroup.osdu.storage.jobs.ComplianceMessagePushReceiver;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
