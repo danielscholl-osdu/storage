@@ -23,7 +23,6 @@ import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
@@ -65,7 +64,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     private StorageAuditLogger auditLogger;
 
     @Autowired
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
 
     @Autowired
     private DpsHeaders headers;

@@ -47,7 +47,6 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
@@ -70,7 +69,7 @@ public class IngestionServiceImplTest {
     private ICloudStorage cloudStorage;
 
     @Mock
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
 
     @Mock
     private ILegalService legalService;

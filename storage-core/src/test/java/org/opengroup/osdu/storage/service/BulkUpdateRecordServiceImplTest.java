@@ -28,19 +28,16 @@ import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import javax.swing.text.html.Option;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,7 +92,7 @@ public class BulkUpdateRecordServiceImplTest {
     @Mock
     private StorageAuditLogger auditLogger;
     @Mock
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
     @Mock
     private Clock clock;
     @Mock

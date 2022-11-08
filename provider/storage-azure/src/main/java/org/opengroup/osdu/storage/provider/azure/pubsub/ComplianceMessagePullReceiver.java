@@ -16,10 +16,10 @@ package org.opengroup.osdu.storage.provider.azure.pubsub;
 
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
-import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
+import org.opengroup.osdu.storage.jobs.ComplianceMessagePushReceiver;
+import org.opengroup.osdu.storage.jobs.ILegalComplianceChangeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
