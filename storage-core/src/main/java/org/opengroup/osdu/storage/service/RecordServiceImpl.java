@@ -19,6 +19,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -32,7 +33,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.api.CollaborationUtil;
+import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -73,13 +75,10 @@ public class RecordServiceImpl implements RecordService {
     @Autowired
     private RecordUtil recordUtil;
 
-    @Autowired
-    private CollaborationUtil collaborationUtil;
-
     @Override
-    public void purgeRecord(String recordId) {
+    public void purgeRecord(String recordId, Optional<CollaborationContext> collaborationContext) {
 
-        RecordMetadata recordMetadata = this.getRecordMetadata(recordId, true);
+        RecordMetadata recordMetadata = this.getRecordMetadata(recordId, true, collaborationContext);
         boolean hasOwnerAccess = this.dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.purge);
 
         if (!hasOwnerAccess) {
@@ -89,7 +88,7 @@ public class RecordServiceImpl implements RecordService {
         }
 
         try {
-            this.recordRepository.delete(recordId);
+            this.recordRepository.delete(recordId, collaborationContext);
         } catch (AppException e) {
             this.auditLogger.purgeRecordFail(singletonList(recordId));
             throw e;
@@ -99,7 +98,7 @@ public class RecordServiceImpl implements RecordService {
             this.cloudStorage.delete(recordMetadata);
         } catch (AppException e) {
             if (e.getError().getCode() != HttpStatus.SC_NOT_FOUND) {
-                this.recordRepository.createOrUpdate(Lists.newArrayList(recordMetadata));
+                this.recordRepository.createOrUpdate(Lists.newArrayList(recordMetadata), collaborationContext);
             }
             this.auditLogger.purgeRecordFail(singletonList(recordId));
             throw e;
@@ -112,9 +111,9 @@ public class RecordServiceImpl implements RecordService {
     }
 
     @Override
-    public void deleteRecord(String recordId, String user) {
+    public void deleteRecord(String recordId, String user, Optional<CollaborationContext> collaborationContext) {
 
-        RecordMetadata recordMetadata = this.getRecordMetadata(recordId, false);
+        RecordMetadata recordMetadata = this.getRecordMetadata(recordId, false, collaborationContext);
 
         this.validateDeleteAllowed(recordMetadata);
 
@@ -125,7 +124,7 @@ public class RecordServiceImpl implements RecordService {
         List<RecordMetadata> recordsMetadata = new ArrayList<>();
         recordsMetadata.add(recordMetadata);
 
-        this.recordRepository.createOrUpdate(recordsMetadata);
+        this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
         this.auditLogger.deleteRecordSuccess(singletonList(recordId));
 
         PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.soft);
@@ -133,11 +132,11 @@ public class RecordServiceImpl implements RecordService {
     }
 
     @Override
-    public void bulkDeleteRecords(List<String> records, String user) {
+    public void bulkDeleteRecords(List<String> records, String user, Optional<CollaborationContext> collaborationContext) {
         recordUtil.validateRecordIds(records);
         List<Pair<String, String>> notDeletedRecords = new ArrayList<>();
 
-        List<RecordMetadata> recordsMetadata = getRecordsMetadata(records, notDeletedRecords);
+        List<RecordMetadata> recordsMetadata = getRecordsMetadata(records, notDeletedRecords, collaborationContext);
         this.validateAccess(recordsMetadata, notDeletedRecords);
 
         Date modifyTime = new Date();
@@ -148,7 +147,7 @@ public class RecordServiceImpl implements RecordService {
                 }
         );
         if (notDeletedRecords.isEmpty()) {
-            this.recordRepository.createOrUpdate(recordsMetadata);
+            this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
             this.auditLogger.deleteRecordSuccess(records);
             publishDeletedRecords(recordsMetadata);
         } else {
@@ -158,7 +157,7 @@ public class RecordServiceImpl implements RecordService {
                     .collect(toList());
             deletedRecords.removeAll(notDeletedRecordIds);
             if (!deletedRecords.isEmpty()) {
-                this.recordRepository.createOrUpdate(recordsMetadata);
+                this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
                 this.auditLogger.deleteRecordSuccess(deletedRecords);
                 publishDeletedRecords(recordsMetadata);
             }
@@ -173,7 +172,7 @@ public class RecordServiceImpl implements RecordService {
         pubSubClient.publishMessage(headers, messages.toArray(new PubSubDeleteInfo[messages.size()]));
     }
 
-    private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest) {
+    private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest, Optional<CollaborationContext> collaborationContext) {
 
         String tenantName = tenant.getName();
         if (!Record.isRecordIdValidFormatAndTenant(recordId, tenantName)) {
@@ -182,7 +181,7 @@ public class RecordServiceImpl implements RecordService {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record ID", msg);
         }
 
-        RecordMetadata record = this.recordRepository.get(recordId);
+        RecordMetadata record = this.recordRepository.get(recordId, collaborationContext);
         String msg = String.format("Record with id '%s' does not exist", recordId);
         if ((record == null || record.getStatus() != RecordState.active) && !isPurgeRequest) {
             throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found", msg);
@@ -194,11 +193,11 @@ public class RecordServiceImpl implements RecordService {
         return record;
     }
 
-    private List<RecordMetadata> getRecordsMetadata(List<String> recordIds, List<Pair<String, String>> notDeletedRecords) {
-        Map<String, RecordMetadata> result = this.recordRepository.get(recordIds);
+    private List<RecordMetadata> getRecordsMetadata(List<String> recordIds, List<Pair<String, String>> notDeletedRecords, Optional<CollaborationContext> collaborationContext) {
+        Map<String, RecordMetadata> result = this.recordRepository.get(recordIds, collaborationContext);
 
         recordIds.stream()
-                .filter(recordId -> result.get(collaborationUtil.getIdWithNamespace(recordId)) == null)
+                .filter(recordId -> result.get(CollaborationUtilImpl.getIdWithNamespace(recordId, collaborationContext)) == null)
                 .forEach(recordId -> {
                     String msg = String.format("Record with id '%s' not found", recordId);
                     notDeletedRecords.add(new ImmutablePair<>(recordId, msg));

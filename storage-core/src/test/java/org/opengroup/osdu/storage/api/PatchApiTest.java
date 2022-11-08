@@ -7,6 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
@@ -21,8 +23,11 @@ import javax.inject.Provider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -30,6 +35,8 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class PatchApiTest {
     private final String USER = "user";
     private final String TENANT = "tenant1";
+    private final String COLLABORATION_DIRECTIVES = "id=9e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=TestApp";
+    private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
     private Provider<BulkUpdateRecordService> bulkUpdateRecordServiceProvider;
@@ -42,6 +49,9 @@ public class PatchApiTest {
 
     @Mock
     private DpsHeaders httpHeaders;
+    
+    @Mock
+    private CollaborationContextFactory collaborationContextFactory;
 
     @InjectMocks
     private PatchApi sut;
@@ -55,6 +65,8 @@ public class PatchApiTest {
 
         when(this.headersProvider.get()).thenReturn(this.httpHeaders);
         when(this.bulkUpdateRecordServiceProvider.get()).thenReturn(this.bulkUpdateRecordService);
+
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
 
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
@@ -93,7 +105,7 @@ public class PatchApiTest {
                 .lockedRecordIds(lockedRecordIds)
                 .build();
 
-        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER)).thenReturn(expectedResponse);
+        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
         ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(recordBulkUpdateParam);
 
@@ -127,7 +139,7 @@ public class PatchApiTest {
                 .lockedRecordIds(lockedRecordIds)
                 .build();
 
-        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER)).thenReturn(expectedResponse);
+        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
         ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(recordBulkUpdateParam);
 

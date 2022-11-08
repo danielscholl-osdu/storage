@@ -1,35 +1,20 @@
 package org.opengroup.osdu.storage.util;
 
-import com.google.common.base.Strings;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.storage.util.api.CollaborationUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-public class CollaborationUtilImpl implements CollaborationUtil {
+import java.util.Optional;
+
+public class CollaborationUtilImpl {
     
-    @Autowired
-    private CollaborationContext collaborationContext;
-
-    public CollaborationUtilImpl(CollaborationContext collaborationContext) {
-        this.collaborationContext = collaborationContext;
-    }
-
-    @Override
-    public String getIdWithNamespace(String recordId) {
-        return getIdWithNamespace(recordId, collaborationContext.getId());
-    }
-    
-    @Override
-    public String getIdWithNamespace(String recordId, String namespace) {
-        if(Strings.isNullOrEmpty(namespace))
+    public static String getIdWithNamespace(String recordId, Optional<CollaborationContext> collaborationContext) {
+        if (!collaborationContext.isPresent())
             return recordId;
-        return recordId + namespace;
+        return collaborationContext.get().getId() + recordId;
     }
-    
-    @Override
-    public String getNamespaceFromCollaborationContext(){
-        return collaborationContext.getId();
+
+    public static String getNamespace(Optional<CollaborationContext> collaborationContext) {
+        if (collaborationContext.isPresent())
+            return collaborationContext.get().getId();
+        return "";
     }
 }

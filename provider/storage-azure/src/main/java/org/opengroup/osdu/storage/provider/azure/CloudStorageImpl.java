@@ -30,6 +30,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
+import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -61,7 +62,7 @@ public class CloudStorageImpl implements ICloudStorage {
     private ExecutorService threadPool;
 
     @Autowired
-    private IRecordsMetadataRepository recordRepository;
+    private RecordMetadataRepository recordRepository;
 
     @Autowired
     private BlobStore blobStore;
@@ -201,6 +202,10 @@ public class CloudStorageImpl implements ICloudStorage {
 
         validateOwnerAccessToRecord(record);
         for (String path : record.getGcsVersionPaths()) {
+            if(recordRepository.getMetadataDocumentCountForBlob(path) > 0) {
+                this.logger.warning(String.format("More than 1 metadata documents reference the StorageBlob, skip purge", path));
+                return;
+            }
             blobStore.deleteFromStorageContainer(headers.getPartitionId(), path, containerName);
         }
     }

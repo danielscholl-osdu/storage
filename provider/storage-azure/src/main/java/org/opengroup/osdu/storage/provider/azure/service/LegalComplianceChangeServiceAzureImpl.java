@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.azure.service;
 
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -52,7 +53,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
 
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
-                                                                  DpsHeaders headers) throws ComplianceUpdateStoppedException {
+                                                                  DpsHeaders headers, Optional<CollaborationContext> collaborationContext) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
 
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
@@ -71,7 +72,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     List<RecordMetadata> recordsMetadata = results.getValue();
                     PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
                     try {
-                        this.recordsRepo.createOrUpdate(recordsMetadata);
+                        this.recordsRepo.createOrUpdate(recordsMetadata, collaborationContext);
                     } catch (Exception e) {
                         logOnFailedUpdateRecords(lt, e);
                         throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error updating records upon legaltag changed.",
