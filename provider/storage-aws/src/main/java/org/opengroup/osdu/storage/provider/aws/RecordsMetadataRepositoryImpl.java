@@ -18,6 +18,7 @@ import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -66,7 +67,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         if (recordsMetadata != null) {
 
             DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
@@ -94,8 +95,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     @Override
-    public void delete(String id) {
-        RecordMetadata rmd = get(id);
+    public void delete(String id, Optional<CollaborationContext> collaborationContext) {
+        RecordMetadata rmd = get(id,collaborationContext);
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class, id);
         for (String legalTag : rmd.getLegal().getLegaltags()) {
@@ -104,7 +105,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     @Override
-    public RecordMetadata get(String id) {
+    public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         RecordMetadataDoc doc = recordMetadataQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, id);
         if (doc == null) {
@@ -115,7 +116,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     @Override
-    public Map<String, RecordMetadata> get(List<String> ids) {
+    public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
         
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         
@@ -159,7 +160,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
         List<RecordMetadata> associatedRecords = new ArrayList<>();
         for(String recordId : associatedRecordIds){
-            associatedRecords.add(get(recordId));
+            associatedRecords.add(get(recordId, Optional.empty()));
         }
 
         return new AbstractMap.SimpleEntry<>(result.cursor, associatedRecords);

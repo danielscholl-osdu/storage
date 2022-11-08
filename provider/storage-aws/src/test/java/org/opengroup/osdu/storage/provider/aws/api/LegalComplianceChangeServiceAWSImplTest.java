@@ -147,7 +147,7 @@ public class LegalComplianceChangeServiceAWSImplTest {
 
         // assert
         // that create is called on the record returned for compliant
-        Mockito.verify(repo, Mockito.times(1)).createOrUpdate(compliantRecordMetaDatas);
+        Mockito.verify(repo, Mockito.times(1)).createOrUpdate(compliantRecordMetaDatas, Optional.empty());
 
         // that storageMessageBus publishMessage is called with the right pubsubinfos
         Mockito.verify(storageMessageBus, Mockito.times(2))

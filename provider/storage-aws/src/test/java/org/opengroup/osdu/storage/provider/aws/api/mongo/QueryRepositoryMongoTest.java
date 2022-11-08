@@ -31,6 +31,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,20 +58,20 @@ public class QueryRepositoryMongoTest extends ParentUtil {
         assertEquals(firstList.size() + secondList.size(), all.size());
 
         //when
-        DatastoreQueryResult firstPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, null);
+        DatastoreQueryResult firstPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, null, Optional.empty());
         String cursor1 = firstPageRecords.getCursor();
         List<String> firstPageRecordsIds = firstPageRecords.getResults();
 
-        DatastoreQueryResult secondPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 20, cursor1);
+        DatastoreQueryResult secondPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 20, cursor1, Optional.empty());
         String cursor2 = secondPageRecords.getCursor();
         List<String> secondPageRecordsIds = secondPageRecords.getResults();
 
-        DatastoreQueryResult lastPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, cursor2);
+        DatastoreQueryResult lastPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, cursor2, Optional.empty());
         String cursor3 = lastPageRecords.getCursor();
         List<String> lastPageRecordsIds = lastPageRecords.getResults();
 
 
-        DatastoreQueryResult otherRecords = queryRepository.getAllRecordIdsFromKind(otherKind, 50, null);
+        DatastoreQueryResult otherRecords = queryRepository.getAllRecordIdsFromKind(otherKind, 50, null, Optional.empty());
         String cursor4 = otherRecords.getCursor();
         List<String> otherResults = otherRecords.getResults();
 

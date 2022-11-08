@@ -31,10 +31,8 @@ import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import lombok.NoArgsConstructor;
 
 import static java.util.Collections.singletonList;
@@ -84,7 +82,8 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 cursor = results.getKey();
                 List<RecordMetadata> recordsMetadata = results.getValue();
                 PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-                this.recordsMetadataRepository.createOrUpdate(recordsMetadata);
+
+                this.recordsMetadataRepository.createOrUpdate(recordsMetadata, Optional.empty());
 
                 StringBuilder recordsId = new StringBuilder();
                 for (RecordMetadata recordMetadata : recordsMetadata) {
