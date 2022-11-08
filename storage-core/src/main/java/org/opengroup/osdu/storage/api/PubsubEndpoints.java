@@ -14,9 +14,9 @@
 
 package org.opengroup.osdu.storage.api;
 
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
-import org.opengroup.osdu.storage.jobs.ComplianceMessagePushReceiver;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,8 +26,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("push-handlers")
@@ -41,7 +39,7 @@ public class PubsubEndpoints {
     @PostMapping("/legaltag-changed")
     @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "', '" + StorageRole.PUBSUB + "')")
     public ResponseEntity legaltagChanged() throws ComplianceUpdateStoppedException {
-        this.pushReceiver.receiveMessageFromHttpRequest(Optional.empty());
+        this.pushReceiver.receiveMessageFromHttpRequest();
         return new ResponseEntity(HttpStatus.OK);
     }
 }
