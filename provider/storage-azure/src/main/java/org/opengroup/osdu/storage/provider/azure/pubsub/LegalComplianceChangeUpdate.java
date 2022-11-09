@@ -19,9 +19,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.microsoft.azure.servicebus.IMessage;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
@@ -37,10 +34,6 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -73,7 +66,7 @@ public class LegalComplianceChangeUpdate{
             headers.setThreadContext(legalTagsChangedData.getDataPartitionId(), legalTagsChangedData.getCorrelationId(), legalTagsChangedData.getUser());
             MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getCorrelationId()));
 
-            complianceMessagePullReceiver.receiveMessage(tags, headers, Optional.empty());
+            complianceMessagePullReceiver.receiveMessage(tags, headers);
         } catch (AppException e) {
             LOGGER.error(String.format("Error occurred while updating compliance on records: %s", e.getMessage()), e);
             throw e;

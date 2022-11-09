@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -61,7 +62,7 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     public static final String STATUS = "status";
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         if (recordsMetadata != null) {
             Transaction txn = context.beginTransaction(getDestination());
             try {
@@ -77,12 +78,12 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     }
 
     @Override
-    public void delete(String id) {
+    public void delete(String id, Optional<CollaborationContext> collaborationContext) {
         context.deleteById(RecordMetadata.class, getDestination(), id);
     }
 
     @Override
-    public RecordMetadata get(String id) {
+    public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
         GetQuery<RecordMetadata> osmQuery = new GetQuery<>(RecordMetadata.class, getDestination(), eq("id", id));
         return context.getResultsAsList(osmQuery).stream().findFirst().orElse(null);
     }
@@ -102,11 +103,11 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     }
 
     @Override
-    public Map<String, RecordMetadata> get(List<String> ids) {
+    public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
 
         Map<String, RecordMetadata> output = new HashMap<>();
         for (String id : ids) {
-            Optional.ofNullable(get(id)).ifPresent(r -> output.put(id, r));
+            Optional.ofNullable(get(id, collaborationContext)).ifPresent(r -> output.put(id, r));
         }
         return output;
     }
