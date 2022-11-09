@@ -19,6 +19,7 @@ package org.opengroup.osdu.storage.provider.aws.api.mongo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.aws.api.mongo.configuration.StorageTestConfig;
 import org.opengroup.osdu.storage.provider.aws.api.mongo.util.DbUtil;
 import org.opengroup.osdu.storage.provider.aws.api.mongo.util.ParentUtil;
@@ -27,6 +28,7 @@ import org.opengroup.osdu.storage.provider.aws.mongo.MongoDbQueryRepository;
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -37,9 +39,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-@DataMongoTest
+//@DataMongoTest
 @RunWith(SpringRunner.class)
 @SpringJUnitConfig(classes = StorageTestConfig.class)
+@SpringBootTest(classes={StorageTestConfig.class})
 public class QueryRepositoryMongoTest extends ParentUtil {
 
     @Autowired
