@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opengroup.osdu.core.common.multitenancy.TenantInfoFactory;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.gcp.web.config.WebAppMainContextConfiguration;
+import org.opengroup.osdu.storage.swagger.SwaggerConfiguration;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
@@ -51,7 +52,8 @@ import org.springframework.context.annotation.PropertySource;
             value = {
                 StorageApplication.class,
                 WebAppMainContextConfiguration.class,
-                TenantInfoFactory.class
+                TenantInfoFactory.class,
+                SwaggerConfiguration.class
             }
         )
     }
