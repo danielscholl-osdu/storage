@@ -197,8 +197,9 @@ public class CloudStorageImpl implements ICloudStorage {
         }
 
         validateOwnerAccessToRecord(record);
-        String path = this.buildPath(record);
-        blobStore.deleteFromStorageContainer(headers.getPartitionId(), path, containerName);
+        for (String path : record.getGcsVersionPaths()) {
+            blobStore.deleteFromStorageContainer(headers.getPartitionId(), path, containerName);
+        }
     }
 
     @Override

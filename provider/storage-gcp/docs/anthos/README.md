@@ -25,7 +25,7 @@ Must have:
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
-| `SPRING_PROFILES_ACTIVE` | ex `anthos` | Spring profile that activate default configuration for GCP environment | false | - |
+| `SPRING_PROFILES_ACTIVE` | ex `anthos` | Spring profile that activate default configuration for Google Cloud environment | false | - |
 | `OPENID_PROVIDER_CLIENT_ID` | `*****` |  Client id that represents this service and serves to request tokens, example `workload-identity-legal` |yes| - |
 | `OPENID_PROVIDER_CLIENT_SECRET` | `*****` | This client secret that serves to request tokens| yes | - |
 | `OPENID_PROVIDER_URL` | `https://keycloack.com/auth/realms/master` | URL of OpenID Connect provider, it will be used as `<OpenID URL> + /.well-known/openid-configuration` to auto configure endpoint for token request  | no | - |
@@ -110,7 +110,7 @@ They are specific to each storage technology:
 
 **database structure**
 OSM works with data logically organized as "partition"->"namespace"->"kind"->"record"->"columns". The above sequence
-describes how it is named in Google Datastore, where "partition" maps to "GCP project".
+describes how it is named in Google Datastore, where "partition" maps to "Google Cloud project".
 
 For example, this is how **Datastore** OSM driver contains records for "RecordsChanged" data register:
 
@@ -455,6 +455,6 @@ Execute following command to build code and run all the integration tests:
  ```
 
  ```bash
- # build + run GCP integration tests.
+ # build + run Google Cloud integration tests.
  $ (cd testing/storage-test-anthos/ && mvn clean test)
  ```
