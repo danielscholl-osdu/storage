@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -70,21 +71,13 @@ public class QueryApiTest {
     private QueryApi sut;
 
     @Test
-    public void should_returnHttp200_when_gettingRecordsSuccessfully() {
+    public void should_returnHttp200_when_gettingRecordsSuccessfullyWithCollaborationContext() {
         MultiRecordIds input = new MultiRecordIds();
         input.setRecords(Lists.newArrayList("id1", "id2"));
 
         MultiRecordInfo output = new MultiRecordInfo();
-        List<Record> validRecords = new ArrayList<>();
+        List<Record> validRecords = getValidRecords();
 
-        Record record1 = new Record();
-        record1.setId("id1");
-
-        Record record2 = new Record();
-        record2.setId("id2");
-
-        validRecords.add(record1);
-        validRecords.add(record2);
         output.setRecords(validRecords);
 
         when(this.batchService.getMultipleRecords(input, COLLABORATION_CONTEXT)).thenReturn(output);
@@ -101,6 +94,46 @@ public class QueryApiTest {
         assertEquals(2, records.getRecords().size());
         assertTrue(records.getRecords().get(0).toString().contains("id1"));
         assertTrue(records.getRecords().get(1).toString().contains("id2"));
+    }
+
+    @Test
+    public void should_returnHttp200_when_gettingRecordsSuccessfullyWithoutCollaborationContext() {
+        MultiRecordIds input = new MultiRecordIds();
+        input.setRecords(Lists.newArrayList("id1", "id2"));
+
+        MultiRecordInfo output = new MultiRecordInfo();
+        List<Record> validRecords = getValidRecords();
+
+        output.setRecords(validRecords);
+
+        when(this.batchService.getMultipleRecords(input, Optional.empty())).thenReturn(output);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+
+
+        ResponseEntity response = this.sut.getRecords(COLLABORATION_DIRECTIVES, input);
+
+        MultiRecordInfo records = (MultiRecordInfo) response.getBody();
+
+        assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
+        assertNull(records.getInvalidRecords());
+        assertNull(records.getRetryRecords());
+        assertEquals(2, records.getRecords().size());
+        assertTrue(records.getRecords().get(0).toString().contains("id1"));
+        assertTrue(records.getRecords().get(1).toString().contains("id2"));
+    }
+
+    private List<Record> getValidRecords() {
+        List<Record> validRecords = new ArrayList<>();
+
+        Record record1 = new Record();
+        record1.setId("id1");
+
+        Record record2 = new Record();
+        record2.setId("id2");
+
+        validRecords.add(record1);
+        validRecords.add(record2);
+        return validRecords;
     }
 
     @Test
@@ -147,17 +180,42 @@ public class QueryApiTest {
     }
 
     @Test
-    public void should_returnHttp200_when_gettingAllRecordsFromKindSuccessfully() {
+    public void should_returnHttp200_when_gettingAllRecordsFromKindSuccessfullyWithCollaborationContext() {
         final String CURSOR = "any cursor";
         final String ENCODED_CURSOR = Base64.getEncoder().encodeToString("any cursor".getBytes());
 
         final String KIND = "any kind";
         final int LIMIT = 10;
 
-        List<String> recordIds = new ArrayList<String>();
-        recordIds.add("id1");
-        recordIds.add("id2");
-        recordIds.add("id3");
+        List<String> recordIds = Arrays.asList("id1", "id2", "id3");
+
+        DatastoreQueryResult allRecords = new DatastoreQueryResult();
+        allRecords.setCursor("new cursor");
+        allRecords.setResults(recordIds);
+
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+        when(this.batchService.getAllRecords(CURSOR, KIND, LIMIT, COLLABORATION_CONTEXT)).thenReturn(allRecords);
+
+        ResponseEntity response = this.sut.getAllRecords(COLLABORATION_DIRECTIVES, ENCODED_CURSOR, LIMIT, KIND);
+
+        DatastoreQueryResult allRecordIds = (DatastoreQueryResult) response.getBody();
+
+        assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
+        assertEquals(3, allRecordIds.getResults().size());
+        assertTrue(allRecordIds.getResults().contains("id1"));
+        assertTrue(allRecordIds.getResults().contains("id2"));
+        assertTrue(allRecordIds.getResults().contains("id3"));
+    }
+
+    @Test
+    public void should_returnHttp200_when_gettingAllRecordsFromKindSuccessfullyWithoutCollaborationContext() {
+        final String CURSOR = "any cursor";
+        final String ENCODED_CURSOR = Base64.getEncoder().encodeToString("any cursor".getBytes());
+
+        final String KIND = "any kind";
+        final int LIMIT = 10;
+
+        List<String> recordIds = Arrays.asList("id1", "id2", "id3");
 
         DatastoreQueryResult allRecords = new DatastoreQueryResult();
         allRecords.setCursor("new cursor");
