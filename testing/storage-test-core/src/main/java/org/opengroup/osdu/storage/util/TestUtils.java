@@ -103,6 +103,15 @@ public abstract class TestUtils {
         assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
     }
 
+    public static String assertRecordVersionAndReturnResponseBody(ClientResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        String responseBody = response.getEntity(String.class);
+        DummyRecordsHelper.RecordResultMock result = gson.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
+        assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
+        return responseBody;
+    }
+
     public abstract String getToken() throws Exception;
 
     public abstract String getNoDataAccessToken() throws Exception;
@@ -153,10 +162,6 @@ public abstract class TestUtils {
         }
 
         return gson.fromJson(json, classOfT);
-    }
-
-    public static JsonObject bodyToJsonObject(String json) {
-        return new JsonParser().parse(json).getAsJsonObject();
     }
 
     protected static Client getClient() {

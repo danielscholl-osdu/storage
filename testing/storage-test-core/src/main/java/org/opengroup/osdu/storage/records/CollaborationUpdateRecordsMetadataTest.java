@@ -1,6 +1,7 @@
 package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Test;
@@ -21,8 +22,7 @@ import static org.opengroup.osdu.storage.records.CollaborationRecordsPurgeTest.C
 import static org.opengroup.osdu.storage.records.UpdateRecordsMetadataTest.TAG_KEY;
 import static org.opengroup.osdu.storage.records.UpdateRecordsMetadataTest.TAG_VALUE1;
 import static org.opengroup.osdu.storage.util.HeaderUtils.getHeadersWithxCollaboration;
-import static org.opengroup.osdu.storage.util.TestUtils.assertRecordVersion;
-import static org.opengroup.osdu.storage.util.TestUtils.bodyToJsonObject;
+import static org.opengroup.osdu.storage.util.TestUtils.assertRecordVersionAndReturnResponseBody;
 
 public abstract class CollaborationUpdateRecordsMetadataTest extends TestBase {
 
@@ -53,13 +53,13 @@ public abstract class CollaborationUpdateRecordsMetadataTest extends TestBase {
     public void shouldMaintainAndUpdateRecordInRespctiveCollaborationContext() throws Exception {
         //assert record with no collaboration context
         ClientResponse getResponse = TestUtils.send("records/" + RECORD_PATCH_ID, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertRecordVersion(getResponse, RECORD_PATCH_V1);
-        JsonObject resultObject = bodyToJsonObject(getResponse.getEntity(String.class));
+        String responseBody = assertRecordVersionAndReturnResponseBody(getResponse, RECORD_PATCH_V1);
+        JsonObject resultObject = bodyToJsonObject(responseBody);
         assertNull(resultObject.get("tags"));
         //assert record with collaboration context
         getResponse = TestUtils.send("records/" + RECORD_PATCH_ID, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertRecordVersion(getResponse, RECORD_PATCH_V2);
-        resultObject = bodyToJsonObject(getResponse.getEntity(String.class));
+        responseBody = assertRecordVersionAndReturnResponseBody(getResponse, RECORD_PATCH_V2);
+        resultObject = bodyToJsonObject(responseBody);
         assertTrue(resultObject.get("tags").getAsJsonObject().has(TAG_KEY));
         assertEquals(TAG_VALUE1, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
     }
@@ -82,5 +82,9 @@ public abstract class CollaborationUpdateRecordsMetadataTest extends TestBase {
         TestUtils.send("records/" + RECORD_PATCH_ID, "DELETE", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         TestUtils.send("records/" + RECORD_PATCH_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         LegalTagUtils.delete(LEGAL_TAG_NAME, testUtils.getToken());
+    }
+
+    private static JsonObject bodyToJsonObject(String json) {
+        return new JsonParser().parse(json).getAsJsonObject();
     }
 }
