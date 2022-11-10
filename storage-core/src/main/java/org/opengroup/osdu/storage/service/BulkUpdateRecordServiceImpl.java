@@ -29,14 +29,13 @@ import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.html.Option;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,7 +117,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         final long currentTimestamp = clock.millis();
         for (String id : idsWithoutVersion) {
             String idWithVersion = idMap.get(id);
-            RecordMetadata metadata = existingRecords.get(CollaborationUtilImpl.getIdWithNamespace(id, collaborationContext));
+            RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext));
 
             if (metadata == null) {
                 notFoundRecordIds.add(idWithVersion);

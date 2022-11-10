@@ -4,7 +4,7 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 
 import java.util.Optional;
 
-public class CollaborationUtilImpl {
+public class CollaborationUtil {
     
     public static String getIdWithNamespace(String recordId, Optional<CollaborationContext> collaborationContext) {
         if (!collaborationContext.isPresent())
