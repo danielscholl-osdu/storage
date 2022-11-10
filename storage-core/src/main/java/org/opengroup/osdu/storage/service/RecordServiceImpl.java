@@ -33,7 +33,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -197,7 +197,7 @@ public class RecordServiceImpl implements RecordService {
         Map<String, RecordMetadata> result = this.recordRepository.get(recordIds, collaborationContext);
 
         recordIds.stream()
-                .filter(recordId -> result.get(CollaborationUtilImpl.getIdWithNamespace(recordId, collaborationContext)) == null)
+                .filter(recordId -> result.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext)) == null)
                 .forEach(recordId -> {
                     String msg = String.format("Record with id '%s' not found", recordId);
                     notDeletedRecords.add(new ImmutablePair<>(recordId, msg));
