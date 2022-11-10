@@ -36,7 +36,6 @@ import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.IngestionService;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,7 +86,6 @@ public class RecordApi {
 															 @RequestParam(required = false) boolean skipdupes,
 			@RequestBody @Valid @NotEmpty @Size(max = 500, message = ValidationDoc.RECORDS_MAX) List<Record> records) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		System.out.println("1. Collaboration Context is: " + CollaborationUtilImpl.getIdWithNamespace("recordId", collaborationContext));
 		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail(), collaborationContext);
 		return createUpdateRecordsResponseMapper.map(transfer, records);
 	}
@@ -138,7 +136,6 @@ public class RecordApi {
 					message = ValidationDoc.INVALID_RECORD_ID) String id,
 			@RequestParam(name = "attribute", required = false) String[] attributes) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		System.out.println("2. Collaboration Context is: " + CollaborationUtilImpl.getIdWithNamespace("recordId", collaborationContext));
 		return new ResponseEntity<String>(this.queryService.getRecordInfo(id, attributes, collaborationContext), HttpStatus.OK);
 	}
 

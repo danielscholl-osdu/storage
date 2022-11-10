@@ -41,7 +41,7 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -191,7 +191,7 @@ public class IngestionServiceImpl implements IngestionService {
 			RecordData recordData = new RecordData(record);
 			//String test = CollaborationUtilImpl.getIdWithNamespace(record.getId(), collaborationContext);
 
-			if (!existingRecords.containsKey(CollaborationUtilImpl.getIdWithNamespace(record.getId(), collaborationContext))) {
+			if (!existingRecords.containsKey(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext))) {
 				RecordMetadata recordMetadata = new RecordMetadata(record);
 				recordMetadata.setUser(transfer.getUser());
 				recordMetadata.setStatus(RecordState.active);
@@ -200,7 +200,7 @@ public class IngestionServiceImpl implements IngestionService {
 
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
-				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationUtilImpl.getIdWithNamespace(record.getId(), collaborationContext));
+				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext));
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
 				if(!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {
 					updatedRecordMetadata.setPreviousVersionKind(existingRecordMetadata.getKind());

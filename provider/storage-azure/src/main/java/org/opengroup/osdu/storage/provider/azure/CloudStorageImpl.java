@@ -20,7 +20,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
-import org.checkerframework.checker.nullness.Opt;
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -33,8 +32,7 @@ import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository
 import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
-import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtilImpl;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -110,7 +108,7 @@ public class CloudStorageImpl implements ICloudStorage {
             // validate that updated metadata has the same version
             if (!id.equalsIgnoreCase(idWithVersion)) {
                 long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
-                long currentVersion = currentRecords.get(CollaborationUtilImpl.getIdWithNamespace(id, collaborationContext)).getLatestVersion();
+                long currentVersion = currentRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext)).getLatestVersion();
                 // if version is different, do not update
                 if (previousVersion != currentVersion) {
                     lockedRecords.add(idWithVersion);
@@ -118,7 +116,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 }
             }
             validMetadata.add(recordMetadata);
-            originalAcls.put(recordMetadata.getId(), currentRecords.get(CollaborationUtilImpl.getIdWithNamespace(id, collaborationContext)).getAcl());
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext)).getAcl());
         }
         return originalAcls;
     }
@@ -317,7 +315,7 @@ public class CloudStorageImpl implements ICloudStorage {
         String dataPartitionId = headers.getPartitionId();
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtilImpl.getIdWithNamespace(recordId, collaborationContext));
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
             if (!hasViewerAccessToRecord(recordMetadata)) {
                 continue;
             }
