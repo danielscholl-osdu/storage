@@ -33,7 +33,6 @@ import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.partition.PartitionException;
@@ -116,9 +115,7 @@ public class IngestionServiceImplTest {
     private static final String TENANT = "tenant1";
     private static final String[] VALID_ACL = new String[] { "data.email1@tenant1.gmail.com", "data.test@tenant1.gmail.com" };
     private static final String[] INVALID_ACL = new String[] { "data.email1@test.test.com", "data.test@test.test.com" };
-
-    private final Optional<CollaborationContext> collaborationContext = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
-
+    
     private Record record1;
     private Record record2;
 
@@ -192,7 +189,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(NEW_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata2);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
 
             fail("Should not succeed");
         } catch (AppException e) {
@@ -220,7 +217,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(INVALID_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata2);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
 
             fail("Should not succeed");
         } catch (AppException e) {
@@ -243,7 +240,7 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(new RecordMetadata[] {})).thenReturn(true);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(new Integer(2), transferInfo.getRecordCount());
 
         ArgumentCaptor<List> ids = ArgumentCaptor.forClass(List.class);
@@ -293,7 +290,7 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(false);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
@@ -330,7 +327,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
@@ -540,7 +537,7 @@ public class IngestionServiceImplTest {
         this.acl.setOwners(INVALID_ACL);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
@@ -620,7 +617,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
@@ -658,7 +655,7 @@ public class IngestionServiceImplTest {
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
@@ -695,7 +692,7 @@ public class IngestionServiceImplTest {
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER, collaborationContext);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_UNAUTHORIZED, e.getError().getCode());
