@@ -66,7 +66,7 @@ public class PatchApiTest {
         when(this.headersProvider.get()).thenReturn(this.httpHeaders);
         when(this.bulkUpdateRecordServiceProvider.get()).thenReturn(this.bulkUpdateRecordService);
 
-        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
 
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
@@ -107,7 +107,7 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
-        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(recordBulkUpdateParam);
+        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.PARTIAL_CONTENT, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
@@ -141,7 +141,43 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
-        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(recordBulkUpdateParam);
+        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedResponse, response.getBody());
+    }
+
+    @Test
+    public void should_returnsHttp200_when_bulkUpdatingRecordsFullySuccessfullyWithCollaborationContext() {
+        List<String> recordIds = new ArrayList<>();
+        List<String> validRecordIds = new ArrayList<>();
+        List<String> notFoundRecordIds = new ArrayList<>();
+        List<String> unAuthorizedRecordIds = new ArrayList<>();
+        List<String> lockedRecordIds = new ArrayList<>();
+        validRecordIds.add("Valid1");
+        validRecordIds.add("Valid2");
+        recordIds.addAll(validRecordIds);
+
+        List<PatchOperation> ops = new ArrayList<>();
+        ops.add(PatchOperation.builder().op("replace").path("acl/viewers").value(new String[]{"viewer@tester"}).build());
+
+        RecordBulkUpdateParam recordBulkUpdateParam = RecordBulkUpdateParam.builder()
+                .query(RecordQuery.builder().ids(recordIds).build())
+                .ops(ops)
+                .build();
+        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
+                .recordCount(6)
+                .recordIds(validRecordIds)
+                .notFoundRecordIds(notFoundRecordIds)
+                .unAuthorizedRecordIds(unAuthorizedRecordIds)
+                .lockedRecordIds(lockedRecordIds)
+                .build();
+
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+
+        when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, COLLABORATION_CONTEXT)).thenReturn(expectedResponse);
+
+        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
