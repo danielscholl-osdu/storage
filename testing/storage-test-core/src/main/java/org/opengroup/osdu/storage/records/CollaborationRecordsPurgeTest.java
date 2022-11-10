@@ -24,11 +24,11 @@ import static org.junit.Assert.assertTrue;
 public abstract class CollaborationRecordsPurgeTest extends TestBase {
     protected static final String COLLABORATION_HEADER = "x-collaboration";
     protected static final String APPLICATION_NAME = "storage service integration test";
-    private static final String TENANT_NAME = TenantUtils.getTenantName();
+    protected static final String TENANT_NAME = TenantUtils.getTenantName();
     private static final long CURRENT_TIME_MILLIS = System.currentTimeMillis();
     private static final String RECORD_PURGE_ID = TENANT_NAME + ":inttestpurge:1" + CURRENT_TIME_MILLIS;
-    private static final String COLLABORATION1_ID = UUID.randomUUID().toString();
-    private static final String COLLABORATION2_ID = UUID.randomUUID().toString();
+    protected static final String COLLABORATION1_ID = UUID.randomUUID().toString();
+    protected static final String COLLABORATION2_ID = UUID.randomUUID().toString();
     private static final String KIND1 = TENANT_NAME + ":ds:inttest:1" + CURRENT_TIME_MILLIS;
     private static Long RECORD_PURGE_V1;
     private static Long RECORD_PURGE_V2;
