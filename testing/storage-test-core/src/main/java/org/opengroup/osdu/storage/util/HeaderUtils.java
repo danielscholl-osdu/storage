@@ -14,11 +14,15 @@
 
 package org.opengroup.osdu.storage.util;
 
+import com.google.api.client.util.Strings;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class HeaderUtils {
+
+	protected static final String COLLABORATION_HEADER = "x-collaboration";
 
 	public static Map<String, String> getHeaders(String tenantName, String token) {
 		Map<String, String> headers = new HashMap<>();
@@ -35,4 +39,11 @@ public class HeaderUtils {
 		return headers;
 	}
 
+	public static Map<String, String> getHeadersWithxCollaboration(String collaborationId, String applicationName, String tenantName, String token) {
+		Map<String, String> headers = getHeaders(tenantName, token);
+		if (!Strings.isNullOrEmpty(collaborationId)) {
+			headers.put(COLLABORATION_HEADER, "id=" + collaborationId + ",application=" + applicationName);
+		}
+		return headers;
+	}
 }

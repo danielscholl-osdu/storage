@@ -36,13 +36,17 @@ import javax.ws.rs.core.MediaType;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.http.HttpStatus;
 
 public abstract class TestUtils {
     protected static String token = null;
     protected static String noDataAccesstoken = null;
+    private static Gson gson = new Gson();
 
     protected static final String domain = System.getProperty("DOMAIN", System.getenv("DOMAIN"));
 
@@ -89,6 +93,14 @@ public abstract class TestUtils {
         URL mergedURL = new URL(baseUrl + api);
         System.out.println(mergedURL.toString());
         return mergedURL.toString();
+    }
+
+    public static void assertRecordVersion(ClientResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        String responseBody = response.getEntity(String.class);
+        DummyRecordsHelper.RecordResultMock result = gson.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
+        assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
     }
 
     public abstract String getToken() throws Exception;
@@ -140,8 +152,11 @@ public abstract class TestUtils {
             return (T) json;
         }
 
-        Gson gson = new Gson();
         return gson.fromJson(json, classOfT);
+    }
+
+    public static JsonObject bodyToJsonObject(String json) {
+        return new JsonParser().parse(json).getAsJsonObject();
     }
 
     protected static Client getClient() {
