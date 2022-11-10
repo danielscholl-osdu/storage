@@ -29,7 +29,6 @@ import java.util.Map;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.http.HttpStatus.*;
 import static org.junit.Assert.*;
-import static org.opengroup.osdu.storage.util.TestUtils.bodyToJsonObject;
 
 public abstract class UpdateRecordsMetadataTest extends TestBase {
     protected static final String TAG_KEY = "tagkey1";
@@ -272,9 +271,9 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         return new Gson().toJson(object);
     }
 
-//    private JsonObject bodyToJsonObject(String json) {
-//        return new JsonParser().parse(json).getAsJsonObject();
-//    }
+    private JsonObject bodyToJsonObject(String json) {
+        return new JsonParser().parse(json).getAsJsonObject();
+    }
 
     @Test
     public void should_return200AndUpdateLegalMetadataOr400ForRemoveRestriction_whenValidRecordsProvided() throws Exception {
