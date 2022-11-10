@@ -16,6 +16,9 @@ package org.opengroup.osdu.storage.api;
 
 import javax.validation.Valid;
 
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -45,11 +48,15 @@ public class PatchApi {
 	@Autowired
 	private BulkUpdateRecordService bulkUpdateRecordService;
 
+	@Autowired
+	private CollaborationContextFactory collaborationContextFactory;
+
 	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
-		//will be implemented as part of PATCH user story
-		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), Optional.empty());
+	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+																		   @RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), collaborationContext);
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
