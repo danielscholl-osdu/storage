@@ -160,11 +160,11 @@
 
   <modules>
 		<module>storage-core</module>
-<!--		<module>provider/storage-gcp</module>-->
-<!--		<module>provider/storage-byoc</module>-->
-<!--		<module>provider/storage-azure</module>-->
+		<module>provider/storage-gcp</module>
+		<module>provider/storage-byoc</module>
+		<module>provider/storage-azure</module>
 		<module>provider/storage-aws</module>
-<!--		<module>provider/storage-ibm</module>-->
+		<module>provider/storage-ibm</module>
   </modules>
 
 	<repositories>
