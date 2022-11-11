@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import static java.util.Collections.singletonList;
@@ -98,7 +99,7 @@ public class SchemaServiceImpl implements SchemaService {
             this.auditLogger.createSchemaSuccess(singletonList(inputSchema.getKind()));
 
             this.cache.put(this.getSchemaCacheKey(inputSchema.getKind()), schema);
-            this.pubSubClient.publishMessage(this.headers,
+            this.pubSubClient.publishMessage(Optional.empty(), this.headers,
                     new PubSubInfo(null, inputSchema.getKind(), OperationType.create_schema));
 
         } catch (IllegalArgumentException e) {
@@ -130,7 +131,7 @@ public class SchemaServiceImpl implements SchemaService {
         this.auditLogger.deleteSchemaSuccess(singletonList(schema.getKind()));
 
         this.cache.delete(this.getSchemaCacheKey(kind));
-        this.pubSubClient.publishMessage(this.headers,
+        this.pubSubClient.publishMessage(Optional.empty(), this.headers,
                 new PubSubInfo(null, schema.getKind(), OperationType.purge_schema));
     }
 

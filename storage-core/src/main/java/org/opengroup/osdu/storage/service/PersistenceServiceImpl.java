@@ -77,7 +77,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 		}
 
 		this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
-		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		this.pubSubClient.publishMessage(collaborationContext, this.headers, pubsubInfo);
 	}
 
     private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
@@ -124,7 +124,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 			RecordMetadata metadata = recordMetadata.get(i);
 			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
 		}
-		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		this.pubSubClient.publishMessage(collaborationContext, this.headers, pubsubInfo);
 		return lockedRecords;
 	}
 

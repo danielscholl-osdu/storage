@@ -86,7 +86,7 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
                     recordsId.append(", ").append(recordMetadata.getId());
                 }
                 this.recordsRepo.createOrUpdate(recordsMetadata, Optional.empty());
-                this.messageBus.publishMessage(headers, pubsubInfos);
+                this.messageBus.publishMessage(Optional.empty(), headers, pubsubInfos);
                 this.auditLogger.updateRecordsComplianceStateSuccess(
                     singletonList("[" + recordsId.substring(2) + "]"));
                 results = this.recordsRepo.queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);

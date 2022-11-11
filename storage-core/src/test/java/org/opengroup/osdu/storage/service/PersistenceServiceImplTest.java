@@ -115,7 +115,7 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<PubSubInfo[]> pubsubCaptor = ArgumentCaptor.forClass(PubSubInfo[].class);
 
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubCaptor.capture());
 
         this.assertPubsubInfo(48, pubsubCaptor.getAllValues());
         verify(this.cloudStorage, times(0)).delete(any(RecordMetadata.class));
@@ -139,7 +139,7 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
         verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture(), any());
-        verify(this.pubSubClient, times(0)).publishMessage(any());
+        verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
     }
     @Ignore
     @Test
@@ -160,7 +160,7 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
-        verify(this.pubSubClient, times(0)).publishMessage(any());
+        verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
     @Ignore
     @Test
@@ -181,7 +181,7 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
-        verify(this.pubSubClient, times(0)).publishMessage(any());
+        verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
 
     @Ignore

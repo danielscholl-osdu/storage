@@ -93,7 +93,7 @@ public class LegalComplianceChangeServiceImpl implements ILegalComplianceChangeS
 				this.auditLogger.updateRecordsComplianceStateSuccess(
 						singletonList("[" + recordsId.toString().substring(2) + "]"));
 
-				this.storageMessageBus.publishMessage(headers, pubsubInfos);
+				this.storageMessageBus.publishMessage(Optional.empty(), headers, pubsubInfos);
 			} while (cursor != null);
 		}
 

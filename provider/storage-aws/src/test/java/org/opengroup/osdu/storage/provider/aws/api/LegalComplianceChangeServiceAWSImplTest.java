@@ -151,7 +151,7 @@ public class LegalComplianceChangeServiceAWSImplTest {
 
         // that storageMessageBus publishMessage is called with the right pubsubinfos
         Mockito.verify(storageMessageBus, Mockito.times(2))
-                .publishMessage(Mockito.any(), pubSubArg.capture());
+                .publishMessage(Mockito.eq(Optional.empty()), Mockito.any(), pubSubArg.capture());
         List<PubSubInfo[]> captured = pubSubArg.getAllValues();
         Object incompliantPubSubObj = captured.get(0);
         PubSubInfo incompliantPubSub = (PubSubInfo) incompliantPubSubObj;
