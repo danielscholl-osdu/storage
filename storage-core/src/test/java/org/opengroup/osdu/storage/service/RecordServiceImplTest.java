@@ -396,7 +396,7 @@ public class RecordServiceImplTest {
     }
 
     @Test
-    public void shouldDeleteRecords_successfully_inCollaborationContext() {
+    public void shouldBulkDeleteRecords_successfully_inCollaborationContext() {
         RecordMetadata record = buildRecordMetadata();
         Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
             put(COLLABORATION_CONTEXT.get().getId() + RECORD_ID, record);
@@ -419,6 +419,20 @@ public class RecordServiceImplTest {
         assertTrue(record.getModifyTime() != 0);
     }
 
+    @Test
+    public void shouldSoftDeleteRecords_successfully_inCollaborationContext() {
+        RecordMetadata record = buildRecordMetadata();
+        when(recordRepository.get(RECORD_ID, COLLABORATION_CONTEXT)).thenReturn(record);
+        when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
+        sut.deleteRecord(RECORD_ID, USER_NAME, COLLABORATION_CONTEXT);
+        verify(recordRepository, times(1)).get(RECORD_ID, COLLABORATION_CONTEXT);
+        verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
+        verify(auditLogger, only()).deleteRecordSuccess(singletonList(RECORD_ID));
+        verifyPubSubPublished(COLLABORATION_CONTEXT);
+        assertEquals(RecordState.deleted, record.getStatus());
+        assertEquals(USER_NAME, record.getModifyUser());
+
+    }
     @Test
     public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhichUserDoesNotHaveAccessTo() {
         RecordMetadata record = buildRecordMetadata();

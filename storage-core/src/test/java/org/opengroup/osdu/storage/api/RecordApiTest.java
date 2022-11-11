@@ -223,6 +223,15 @@ public class RecordApiTest {
     }
 
     @Test
+    public void should_returnHttp204_when_deletingRecordSuccessfullyWithCollaborationContext() {
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+        doNothing().when(recordService).deleteRecord(RECORD_ID, USER,COLLABORATION_CONTEXT);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+        ResponseEntity response = this.sut.deleteRecord(COLLABORATION_DIRECTIVES, RECORD_ID);
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
     public void should_returnHttp200_when_gettingTheLatestVersionOfARecordSuccessfully() {
         when(this.queryService.getRecordInfo(RECORD_ID, new String[] {}, Optional.empty())).thenReturn(RECORD_ID);
 
