@@ -66,7 +66,7 @@ public class MongoDbRecordsMetadataRepository implements IRecordsMetadataReposit
      * @param recordsMetadata the records metadata
      * @return the list
      */
-//    @Override
+    @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         String dataPartitionId = getDataPartitionId();
         String collection = getCollection(dataPartitionId);

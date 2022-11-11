@@ -39,10 +39,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-//@DataMongoTest
+@DataMongoTest
 @RunWith(SpringRunner.class)
 @SpringJUnitConfig(classes = StorageTestConfig.class)
-@SpringBootTest(classes={StorageTestConfig.class})
 public class QueryRepositoryMongoTest extends ParentUtil {
 
     @Autowired
