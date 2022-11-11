@@ -14,32 +14,28 @@
 
 package org.opengroup.osdu.storage.records;
 
-import com.google.api.client.util.Strings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.opengroup.osdu.storage.util.HeaderUtils.getHeadersWithxCollaboration;
 import static org.opengroup.osdu.storage.util.TestUtils.assertRecordVersion;
+import static org.opengroup.osdu.storage.util.TestUtils.createRecordInCollaborationContext_AndReturnVersion;
 
 public abstract class CollaborationRecordsRetrieveTest extends TestBase {
     private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
@@ -67,17 +63,18 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
     public static void classSetup(String token) throws Exception {
         LEGAL_TAG_NAME_A = LegalTagUtils.createRandomName();
         LegalTagUtils.create(LEGAL_TAG_NAME_A, token);
+        //createRecordInCollaborationContext_AndResultVersion(String recordId, String kind, String legaltag, String collaborationId, String applicationName, String tenant_name, String token)
 
-        RECORD1_V1 = createRecord(RECORD_ID_1, null, KIND1, token);
-        RECORD1_V2 = createRecord(RECORD_ID_1, COLLABORATION1_ID, KIND1, token);
-        RECORD1_V3 = createRecord(RECORD_ID_1, COLLABORATION1_ID, KIND1, token);
-        RECORD1_V4 = createRecord(RECORD_ID_1, COLLABORATION2_ID, KIND1, token);
+        RECORD1_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD1_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD1_V3 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD1_V4 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token);
 
-        RECORD2_V1 = createRecord(RECORD_ID_2, null, KIND1, token);
-        RECORD2_V2 = createRecord(RECORD_ID_2, COLLABORATION2_ID, KIND1, token);
+        RECORD2_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_2, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD2_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_2, KIND1, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token);
 
-        RECORD3_V1 = createRecord(RECORD_ID_3, COLLABORATION1_ID, KIND2, token);
-        RECORD3_V2 = createRecord(RECORD_ID_3, COLLABORATION2_ID, KIND2, token);
+        RECORD3_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_3, KIND2, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD3_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_3, KIND2, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token);
     }
 
     public static void classTearDown(String token) throws Exception {
@@ -232,18 +229,5 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
             else if (record.id.equals(RECORD_ID_3)) assertEquals(RECORD3_V1, Long.valueOf(record.version));
             else fail(String.format("should only contain record 1 %s, and record 3 %s", RECORD_ID_1, RECORD_ID_3));
         }
-    }
-
-    private static Long createRecord(String recordId, String collaborationId, String kind, String token) throws Exception {
-        String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, LEGAL_TAG_NAME_A);
-
-        ClientResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, APPLICATION_NAME, TENANT_NAME, token), jsonInput, "");
-        assertEquals(SC_CREATED, response.getStatus());
-        assertTrue(response.getType().toString().contains("application/json"));
-
-        String responseBody = response.getEntity(String.class);
-        DummyRecordsHelper.CreateRecordResponse result = GSON.fromJson(responseBody, DummyRecordsHelper.CreateRecordResponse.class);
-
-        return Long.parseLong(result.recordIdVersions[0].split(":")[3]);
     }
 }
