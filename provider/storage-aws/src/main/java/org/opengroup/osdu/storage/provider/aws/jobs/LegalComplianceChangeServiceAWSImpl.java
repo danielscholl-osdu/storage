@@ -94,7 +94,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 this.auditLogger.updateRecordsComplianceStateSuccess(
                         singletonList("[" + recordsId.toString() + "]"));
 
-                this.storageMessageBus.publishMessage(headers, pubsubInfos);
+                this.storageMessageBus.publishMessage(Optional.empty(), headers, pubsubInfos);
             } while (cursor != null);
         }
 

@@ -162,7 +162,7 @@ public class RecordServiceImplTest {
 
         PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(RECORD_ID, "any kind", DeletionType.hard);
 
-        verify(this.pubSubClient).publishMessage(this.headers, pubSubDeleteInfo);
+        verify(this.pubSubClient).publishMessage(Optional.empty(), this.headers, pubSubDeleteInfo);
     }
 
 
@@ -313,7 +313,7 @@ public class RecordServiceImplTest {
 
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubMessageCaptor.capture());
 
         PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
@@ -491,7 +491,7 @@ public class RecordServiceImplTest {
     private void verifyPubSubPublished() {
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubMessageCaptor.capture());
 
         PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());

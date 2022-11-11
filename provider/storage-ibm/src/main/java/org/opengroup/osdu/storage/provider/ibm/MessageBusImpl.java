@@ -6,9 +6,11 @@ package org.opengroup.osdu.storage.provider.ibm;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.ibm.messagebus.IMessageFactory;
@@ -23,7 +25,7 @@ public class MessageBusImpl implements IMessageBus {
 	@Inject
 	IMessageFactory mq;
 
-	public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+	public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
 
 		final int BATCH_SIZE = 50;
 		Map<String, String> message = new HashMap<>();

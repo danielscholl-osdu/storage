@@ -105,7 +105,7 @@ public class RecordServiceImpl implements RecordService {
         }
 
         this.auditLogger.purgeRecordSuccess(singletonList(recordId));
-        this.pubSubClient.publishMessage(this.headers,
+        this.pubSubClient.publishMessage(collaborationContext, this.headers,
                 new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.hard));
 
     }
@@ -128,7 +128,7 @@ public class RecordServiceImpl implements RecordService {
         this.auditLogger.deleteRecordSuccess(singletonList(recordId));
 
         PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.soft);
-        this.pubSubClient.publishMessage(this.headers, pubSubDeleteInfo);
+        this.pubSubClient.publishMessage(collaborationContext, this.headers, pubSubDeleteInfo);
     }
 
     @Override
@@ -149,7 +149,7 @@ public class RecordServiceImpl implements RecordService {
         if (notDeletedRecords.isEmpty()) {
             this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
             this.auditLogger.deleteRecordSuccess(records);
-            publishDeletedRecords(recordsMetadata);
+            publishDeletedRecords(collaborationContext, recordsMetadata);
         } else {
             List<String> deletedRecords = new ArrayList<>(records);
             List<String> notDeletedRecordIds = notDeletedRecords.stream()
@@ -159,17 +159,17 @@ public class RecordServiceImpl implements RecordService {
             if (!deletedRecords.isEmpty()) {
                 this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
                 this.auditLogger.deleteRecordSuccess(deletedRecords);
-                publishDeletedRecords(recordsMetadata);
+                publishDeletedRecords(collaborationContext, recordsMetadata);
             }
             throw new DeleteRecordsException(notDeletedRecords);
         }
     }
 
-    private void publishDeletedRecords(List<RecordMetadata> records) {
+    private void publishDeletedRecords(Optional<CollaborationContext> collaborationContext, List<RecordMetadata> records) {
         List<PubSubDeleteInfo> messages = records.stream()
                 .map(recordMetadata -> new PubSubDeleteInfo(recordMetadata.getId(), recordMetadata.getKind(), DeletionType.soft))
                 .collect(Collectors.toList());
-        pubSubClient.publishMessage(headers, messages.toArray(new PubSubDeleteInfo[messages.size()]));
+        pubSubClient.publishMessage(collaborationContext, headers, messages.toArray(new PubSubDeleteInfo[messages.size()]));
     }
 
     private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest, Optional<CollaborationContext> collaborationContext) {
