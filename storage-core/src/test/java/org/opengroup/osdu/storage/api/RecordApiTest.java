@@ -283,6 +283,18 @@ public class RecordApiTest {
     }
 
     @Test
+    public void should_returnHttp204_when_bulkSoftDeletingRecordsSuccessfullyWithCollaborationContext() {
+        String id2 = "osdu:anyID2:any";
+        List<String> recordIds = new ArrayList<>();
+        recordIds.add(RECORD_ID);
+        recordIds.add(id2);
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+
+        ResponseEntity response = this.sut.bulkDeleteRecords(COLLABORATION_DIRECTIVES, recordIds);
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
     public void should_returnHttp204_when_deletingRecordSuccessfully() {
         ResponseEntity response = this.sut.deleteRecord(COLLABORATION_DIRECTIVES, RECORD_ID);
 
