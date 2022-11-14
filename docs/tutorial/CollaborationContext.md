@@ -45,12 +45,5 @@ curl --request POST\
 ```
 </details>
 
-### Record structure 
-For collaboration context each Cloud Service Provider should use collaboration id combined with the record id for the primary key of the metadata's data model.
-That is, the __record id__ in this case can be represented as:
-
-``{Data-Partition-Id}:{object-type}:{uuid}{collaboration_id}``
-
 ##### More info 
 More info about __Namespacing storage records__ can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/issues/149).
-
