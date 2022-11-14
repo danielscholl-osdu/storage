@@ -2,6 +2,9 @@
 
 > Collaboration enables domain users to always consume quality data from the OSDU, share data within your team and control how and what you want to share back. This maintains the data integrity of the OSDU while enabling teams to succeed in creating new value.
 
+Collaboration context feature flag has been added, and it is false by default. to use a collaboration context API you will need to enable it and provide the correct header.
+
+
 In order to use storage api in a collaboration context, the API user needs to add a __x-collaboration HTTP header__ to the requests.
 The header holds directives instructing the OSDU to handle in context of the provided collaboration instance and not in the context of the promoted or trusted data.
 
