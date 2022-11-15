@@ -801,6 +801,7 @@ The following software have components provided under the terms of this license:
 
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
+- HK2 API module (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-api)
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
 - JUnit Jupiter API (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Engine (from http://junit.org/junit5/, https://junit.org/junit5/)
@@ -942,8 +943,6 @@ The following software have components provided under the terms of this license:
 ========================================================================
 LGPL-3.0-only
 ========================================================================
-The following software have components provided under the terms of this license:
-
 - Logback Classic Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-classic)
 - Logback Core Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-core)
 
