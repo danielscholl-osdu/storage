@@ -15,10 +15,9 @@
 package org.opengroup.osdu.storage.util;
 
 import java.io.IOException;
-import java.util.List;
+import java.io.PrintWriter;
 import java.util.Map;
 
-import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -31,8 +30,10 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import com.google.common.base.Strings;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.http.ResponseHeadersFactory;
+import org.opengroup.osdu.storage.response.ErrorResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -41,6 +42,7 @@ public class StorageFilter implements Filter {
 	private static final String DISABLE_AUTH_PROPERTY = "org.opengroup.osdu.storage.disableAuth";
 	private static final String OPTIONS_STRING = "OPTIONS";
 	private static final String FOR_HEADER_NAME = "frame-of-reference";
+	private static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
 
 	@Autowired
 	private DpsHeaders dpsHeaders;
@@ -48,6 +50,9 @@ public class StorageFilter implements Filter {
 	// defaults to * for any front-end, string must be comma-delimited if more than one domain
 	@Value("${ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS:*}")
 	String ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS;
+	
+	@Value("${collaboration.enabled}")
+	private boolean isCollaborationEnabled;
 
 	private ResponseHeadersFactory responseHeadersFactory = new ResponseHeadersFactory();
 
@@ -81,6 +86,19 @@ public class StorageFilter implements Filter {
 		// are also enforcing requests coming from other origins to be rejected.
 		if (httpRequest.getMethod().equalsIgnoreCase(OPTIONS_STRING)) {
 			httpResponse.setStatus(HttpStatus.SC_OK);
+		}
+
+		if (!isCollaborationEnabled) {
+			String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
+			if (!Strings.isNullOrEmpty(collaborationHeader)) {
+				httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
+				httpResponse.setStatus(HttpStatus.SC_LOCKED);
+				ErrorResponse errorResponse = new ErrorResponse(HttpStatus.SC_LOCKED, "Locked","Feature is not enabled on this environment");
+				PrintWriter writer = httpResponse.getWriter();
+				writer.write(errorResponse.toString());
+				writer.flush();
+				return;
+			}
 		}
 
 		chain.doFilter(request, response);
