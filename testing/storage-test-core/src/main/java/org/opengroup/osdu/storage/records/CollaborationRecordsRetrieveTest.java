@@ -18,6 +18,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.http.HttpStatus;
+import org.junit.After;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
@@ -38,6 +39,7 @@ import static org.opengroup.osdu.storage.util.TestUtils.assertRecordVersion;
 import static org.opengroup.osdu.storage.util.TestUtils.createRecordInCollaborationContext_AndReturnVersion;
 
 public abstract class CollaborationRecordsRetrieveTest extends TestBase {
+    private static boolean isCollaborationEnabled = false;
     private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
     private static final String APPLICATION_NAME = "storage service integration test";
     private static final String TENANT_NAME = TenantUtils.getTenantName();
@@ -60,36 +62,44 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
     private static Long RECORD3_V2;
     private static String LEGAL_TAG_NAME_A;
 
-    public static void classSetup(String token) throws Exception {
+    @Override
+    public void setup() throws Exception {
+        if (configUtils != null && !configUtils.getIsCollaborationEnabled()) {
+            return;
+        }
+        isCollaborationEnabled = true;
         LEGAL_TAG_NAME_A = LegalTagUtils.createRandomName();
-        LegalTagUtils.create(LEGAL_TAG_NAME_A, token);
+        LegalTagUtils.create(LEGAL_TAG_NAME_A, testUtils.getToken());
         //createRecordInCollaborationContext_AndResultVersion(String recordId, String kind, String legaltag, String collaborationId, String applicationName, String tenant_name, String token)
 
-        RECORD1_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, token);
-        RECORD1_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token);
-        RECORD1_V3 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token);
-        RECORD1_V4 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD1_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
+        RECORD1_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
+        RECORD1_V3 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
+        RECORD1_V4 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
 
-        RECORD2_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_2, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, token);
-        RECORD2_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_2, KIND1, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD2_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_2, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
+        RECORD2_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_2, KIND1, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
 
-        RECORD3_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_3, KIND2, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token);
-        RECORD3_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_3, KIND2, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token);
+        RECORD3_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_3, KIND2, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
+        RECORD3_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_3, KIND2, LEGAL_TAG_NAME_A, COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
     }
 
-    public static void classTearDown(String token) throws Exception {
-        TestUtils.send("records/" + RECORD_ID_1, "DELETE", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        TestUtils.send("records/" + RECORD_ID_1, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        TestUtils.send("records/" + RECORD_ID_1, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        TestUtils.send("records/" + RECORD_ID_2, "DELETE", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        TestUtils.send("records/" + RECORD_ID_2, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        TestUtils.send("records/" + RECORD_ID_3, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        TestUtils.send("records/" + RECORD_ID_3, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, token), "", "");
-        LegalTagUtils.delete(LEGAL_TAG_NAME_A, token);
+    @After
+    public void tearDown() throws Exception {
+        if (!isCollaborationEnabled) return;
+        TestUtils.send("records/" + RECORD_ID_1, "DELETE", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID_1, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID_1, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID_2, "DELETE", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID_2, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID_3, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID_3, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        LegalTagUtils.delete(LEGAL_TAG_NAME_A, testUtils.getToken());
     }
 
     @Test
     public void should_getLatestVersion_when_validRecordIdAndCollaborationIdAreProvided() throws Exception {
+        if (!isCollaborationEnabled) return;
         //get record1 --> v1
         ClientResponse response = TestUtils.send("records/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD1_V1);
@@ -106,6 +116,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
     @Test
     public void should_getCorrectRecordVersion_when_validRecordIdAndCollaborationIdAndRecordVersionAreProvided() throws Exception {
+        if (!isCollaborationEnabled) return;
         //get record1 with v2 with context guid1
         ClientResponse response = TestUtils.send("records/" + RECORD_ID_1 + "/" + RECORD1_V2, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD1_V2);
@@ -116,6 +127,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
     @Test
     public void should_getAllRecordVersions_when_validRecordIdAndCollaborationIdAreProvided() throws Exception {
+        if (!isCollaborationEnabled) return;
         //I will get only v1 for record1 with no context
         ClientResponse response = TestUtils.send("records/versions/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         RecordsApiAcceptanceTests.GetVersionsResponse versionsResponse = TestUtils.getResult(response, 200, RecordsApiAcceptanceTests.GetVersionsResponse.class);
@@ -134,6 +146,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
     @Test
     public void should_getRecordsOnlyInCollaborationContext_whenQueryByKind() throws Exception {
+        if (!isCollaborationEnabled) return;
         ClientResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND1);
         assertEquals(SC_OK, response.getStatus());
         DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
@@ -155,6 +168,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
     @Test
     public void should_fetchCorrectRecords_when_validRecordIdsAndCollaborationIdAreProvided() throws Exception {
+        if (!isCollaborationEnabled) return;
         //If I fetch records 1, 2,and 3 in context guid1,I should get a 200 with records 1 and 3
         JsonArray records = new JsonArray();
         records.add(RECORD_ID_1);
@@ -194,6 +208,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
     @Test
     public void should_queryAllRecords_when_validRecordIdsAndCollaborationIdAreProvided() throws Exception {
+        if (!isCollaborationEnabled) return;
         // If I query records 1,2 and 3 in context guid2, I should get 200 with records 1,2 and 3
         JsonArray records = new JsonArray();
         records.add(RECORD_ID_1);

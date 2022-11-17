@@ -3,6 +3,7 @@ package org.opengroup.osdu.storage.records;
 import com.google.api.client.util.Strings;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.http.HttpStatus;
+import org.junit.After;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.HeaderUtils;
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public abstract class CollaborationRecordsPurgeTest extends TestBase {
+    private static boolean isCollaborationEnabled = false;
     protected static final String COLLABORATION_HEADER = "x-collaboration";
     protected static final String APPLICATION_NAME = "storage service integration test";
     protected static final String TENANT_NAME = TenantUtils.getTenantName();
@@ -35,23 +37,31 @@ public abstract class CollaborationRecordsPurgeTest extends TestBase {
     private static Long RECORD_PURGE_V3;
     private static String LEGAL_TAG_NAME_A;
 
-    public static void classSetup(String token) throws Exception {
+    @Override
+    public void setup() throws Exception {
+        if (configUtils != null && !configUtils.getIsCollaborationEnabled()) {
+            return;
+        }
+        isCollaborationEnabled = true;
         LEGAL_TAG_NAME_A = LegalTagUtils.createRandomName();
-        LegalTagUtils.create(LEGAL_TAG_NAME_A, token);
+        LegalTagUtils.create(LEGAL_TAG_NAME_A, testUtils.getToken());
 
-        RECORD_PURGE_V1 = createRecord(RECORD_PURGE_ID, COLLABORATION1_ID, KIND1, token);
-        RECORD_PURGE_V2 = createRecord(RECORD_PURGE_ID, COLLABORATION1_ID, KIND1, token);
-        RECORD_PURGE_V3 = createRecord(RECORD_PURGE_ID, COLLABORATION2_ID, KIND1, token);
+        RECORD_PURGE_V1 = createRecord(RECORD_PURGE_ID, COLLABORATION1_ID, KIND1, testUtils.getToken());
+        RECORD_PURGE_V2 = createRecord(RECORD_PURGE_ID, COLLABORATION1_ID, KIND1, testUtils.getToken());
+        RECORD_PURGE_V3 = createRecord(RECORD_PURGE_ID, COLLABORATION2_ID, KIND1, testUtils.getToken());
     }
 
-    public static void classTearDown(String token) throws Exception {
-        TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, token), "", "");
-        TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, token), "", "");
-        LegalTagUtils.delete(LEGAL_TAG_NAME_A, token);
+    @After
+    public void tearDown() throws Exception {
+        if (!isCollaborationEnabled) return;
+        TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION2_ID, testUtils.getToken()), "", "");
+        LegalTagUtils.delete(LEGAL_TAG_NAME_A, testUtils.getToken());
     }
 
     @Test
     public void should_purgeAllRecordVersionsOnlyInCollaborationContext() throws Exception {
+        if (!isCollaborationEnabled) return;
         ClientResponse response = TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
         assertEquals(SC_NO_CONTENT, response.getStatus());
         response = TestUtils.send("records/" + RECORD_PURGE_ID, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
