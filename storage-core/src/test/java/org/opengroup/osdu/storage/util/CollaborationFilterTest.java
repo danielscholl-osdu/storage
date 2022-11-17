@@ -8,7 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.opengroup.osdu.storage.response.ErrorResponse;
+import org.opengroup.osdu.core.common.model.http.AppError;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -55,7 +55,7 @@ public class CollaborationFilterTest {
 
         Mockito.verify(httpServletResponse).setContentType("application/json");
         Mockito.verify(httpServletResponse).setStatus(HttpStatus.SC_LOCKED);
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.SC_LOCKED, "Locked","Feature is not enabled on this environment");
-        Mockito.verify(writer).write(errorResponse.toString());
+        AppError errorResponse = new AppError(HttpStatus.SC_LOCKED, "Locked","Feature is not enabled on this environment");
+        Mockito.verify(writer).write(CollaborationFilter.appErrorToJson(errorResponse));
     }
 }
