@@ -70,7 +70,6 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         isCollaborationEnabled = true;
         LEGAL_TAG_NAME_A = LegalTagUtils.createRandomName();
         LegalTagUtils.create(LEGAL_TAG_NAME_A, testUtils.getToken());
-        //createRecordInCollaborationContext_AndResultVersion(String recordId, String kind, String legaltag, String collaborationId, String applicationName, String tenant_name, String token)
 
         RECORD1_V1 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
         RECORD1_V2 = createRecordInCollaborationContext_AndReturnVersion(RECORD_ID_1, KIND1, LEGAL_TAG_NAME_A, COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken());
@@ -134,7 +133,6 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         assertEquals(1, versionsResponse.versions.length);
         assertEquals(RECORD1_V1, versionsResponse.versions[0]);
 
-
         //I will get v2 and v3 for record1 with context guid1
         response = TestUtils.send("records/versions/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         versionsResponse = TestUtils.getResult(response, 200, RecordsApiAcceptanceTests.GetVersionsResponse.class);
@@ -163,6 +161,15 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND3);
         assertEquals(SC_OK, response.getStatus());
         responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
+        assertEquals(0, responseObject.results.length);
+    }
+
+    @Test
+    public void should_getEmptyRecordsInNoCollaborationContext_whenQueryByKind() throws Exception {
+        if (!isCollaborationEnabled) return;
+        ClientResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(null, null, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND2);
+        assertEquals(SC_OK, response.getStatus());
+        DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
         assertEquals(0, responseObject.results.length);
     }
 

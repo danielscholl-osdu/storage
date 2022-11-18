@@ -138,10 +138,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
         Iterable<RecordMetadataDoc> docs;
 
-        long start = System.currentTimeMillis();
         try {
             String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '%s')", legalTagName);
-            SqlQuerySpec query = new SqlQuerySpec(queryText);;
+            SqlQuerySpec query = new SqlQuerySpec(queryText);
             final Page<RecordMetadataDoc> docPage = this.find(CosmosStorePageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
             docs.forEach(d -> {
@@ -160,9 +159,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         } catch (Exception e) {
             throw e;
         }
-        long finish = System.currentTimeMillis();
-        long timeElapsed = finish - start;
-        //System.out.println("!! queryByLegalTagName time elapsed = " + timeElapsed);
+
         return new AbstractMap.SimpleEntry<>(continuation, outputRecords);
     }
 
@@ -213,13 +210,12 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     private static SqlQuerySpec getIdsByMetadata_kindAndMetada_statusQuery(String kind, String status, Optional<CollaborationContext> collaborationContext) {
         String queryText;
         if (!collaborationContext.isPresent()){
-            queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
+            queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' AND c.id = c.metadata.id", kind, status);
         }
         else {
             queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' and STARTSWITH(c.id, '%s')", kind, status, CollaborationUtil.getNamespace(collaborationContext));
         }
-        SqlQuerySpec query = new SqlQuerySpec(queryText);
-        return query;
+        return new SqlQuerySpec(queryText);
     }
 
     public Page<RecordMetadataDoc> find(@NonNull Pageable pageable, SqlQuerySpec query) {

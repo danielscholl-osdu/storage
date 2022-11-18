@@ -15,9 +15,7 @@
 package org.opengroup.osdu.storage.records;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
 import org.opengroup.osdu.storage.util.ConfigUtils;
 
