@@ -162,7 +162,7 @@ public class CloudStorageTest {
                 .thenReturn(expectedResp);
 
         // act
-        Map<String, String> resp = repo.read(map);
+        Map<String, String> resp = repo.read(map, Optional.empty());
 
         // assert
         Assert.assertEquals(expectedResp.get("test-record-id"), resp.get("test-record-id"));

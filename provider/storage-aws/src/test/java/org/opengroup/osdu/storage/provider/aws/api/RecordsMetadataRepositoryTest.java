@@ -109,7 +109,7 @@ public class RecordsMetadataRepositoryTest {
         Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedRmd));
 
         // Act
-        repo.createOrUpdate(recordsMetadata);
+        repo.createOrUpdate(recordsMetadata, Optional.empty());
 
         // Assert
         Mockito.verify(queryHelper, Mockito.times(1)).save(expectedRmd);
@@ -166,7 +166,7 @@ public class RecordsMetadataRepositoryTest {
                 .thenReturn(expectedRmd);
 
         // Act
-        RecordMetadata recordMetadata = repo.get(id);
+        RecordMetadata recordMetadata = repo.get(id, Optional.empty());
 
         // Assert
         Assert.assertEquals(recordMetadata, expectedRecordMetadata);
@@ -228,7 +228,7 @@ public class RecordsMetadataRepositoryTest {
         groups.setGroups(groupInfos);
 
         // Act
-        Map<String, RecordMetadata> recordsMetadata = repo.get(ids);
+        Map<String, RecordMetadata> recordsMetadata = repo.get(ids, Optional.empty());
 
         // Assert
         Assert.assertEquals(recordsMetadata, expectedRecordsMetadata);
@@ -272,7 +272,7 @@ public class RecordsMetadataRepositoryTest {
                 .thenReturn(expectedRmd);
 
         // Act
-        repo.delete(id);
+        repo.delete(id, Optional.empty());
 
         // Assert
         Mockito.verify(queryHelper, Mockito.times(1)).deleteByPrimaryKey(RecordMetadataDoc.class, id);

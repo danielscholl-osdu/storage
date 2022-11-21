@@ -14,19 +14,22 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordRequest;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordResponse;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 
+import java.util.Optional;
+
 public interface BatchService {
 
-	MultiRecordInfo getMultipleRecords(MultiRecordIds ids);
+	MultiRecordInfo getMultipleRecords(MultiRecordIds ids, Optional<CollaborationContext> collaborationContext);
 
-	MultiRecordResponse fetchMultipleRecords(MultiRecordRequest recordIds);
+	MultiRecordResponse fetchMultipleRecords(MultiRecordRequest recordIds, Optional<CollaborationContext> collaborationContext);
 
 	DatastoreQueryResult getAllKinds(String cursor, Integer limit);
 
-	DatastoreQueryResult getAllRecords(String cursorId, String kind, Integer limit);
+	DatastoreQueryResult getAllRecords(String cursorId, String kind, Integer limit, Optional<CollaborationContext> collaborationContext);
 }

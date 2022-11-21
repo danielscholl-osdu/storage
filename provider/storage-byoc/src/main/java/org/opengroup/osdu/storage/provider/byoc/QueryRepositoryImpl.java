@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.byoc;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
@@ -46,7 +47,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public DatastoreQueryResult getAllRecordIdsFromKind(
-            String kind, Integer limit, String cursor)
+            String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext)
     {
         List<String> ids = new ArrayList<>();
         DatastoreQueryResult result = new DatastoreQueryResult();
@@ -54,7 +55,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
         Set<String> recordIds = RecordsMetadataRepositoryImpl.memMap.keySet();
         for (String id: recordIds)
         {
-            RecordMetadata rd = recordsMetadataRepository.get(id);
+            RecordMetadata rd = recordsMetadataRepository.get(id, collaborationContext);
             if (rd.getKind().equals(kind)) {
                 ids.add(id);
             }

@@ -19,6 +19,7 @@ import com.amazonaws.services.sns.model.PublishRequest;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import com.google.gson.Gson;
 import com.amazonaws.services.sns.AmazonSNS;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -33,6 +34,7 @@ import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class MessageBusImpl implements IMessageBus {
@@ -55,7 +57,7 @@ public class MessageBusImpl implements IMessageBus {
     }
 
     @Override
-    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
         final int BATCH_SIZE = 50;
         Gson gson = new Gson();
         for (int i =0; i < messages.length; i+= BATCH_SIZE){

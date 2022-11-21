@@ -20,11 +20,14 @@ package org.opengroup.osdu.storage.provider.gcp.web.service;
 import static java.util.Collections.singletonList;
 
 import lombok.RequiredArgsConstructor;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.opengroup.osdu.storage.service.BatchServiceImpl;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +44,8 @@ public class BatchServiceGcpImpl extends BatchServiceImpl {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecords(String cursor, String kind, Integer limit) {
-        DatastoreQueryResult result = this.queryRepository.getAllRecordIdsFromKind(kind, limit, cursor);
+    public DatastoreQueryResult getAllRecords(String cursor, String kind, Integer limit, Optional<CollaborationContext> collaborationContext) {
+        DatastoreQueryResult result = this.queryRepository.getAllRecordIdsFromKind(kind, limit, cursor, collaborationContext);
         if (!result.getResults().isEmpty()) {
             this.auditLogger.readAllRecordsOfGivenKindSuccess(singletonList(kind));
         }

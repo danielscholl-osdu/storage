@@ -23,13 +23,16 @@ import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
+import org.opengroup.osdu.storage.provider.azure.model.DocumentCount;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,7 +74,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata,  Optional<CollaborationContext> collaborationContext) {
         Assert.notNull(recordsMetadata, "recordsMetadata must not be null");
         recordsMetadata.forEach(metadata -> {
             if(metadata.getAcl() == null) {
@@ -80,8 +83,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
             }
         });
 
-        if(recordsMetadata.size() >= minBatchSizeToUseBulkUpload) createOrUpdateParallel(recordsMetadata);
-        else createOrUpdateSerial(recordsMetadata);
+        if(recordsMetadata.size() >= minBatchSizeToUseBulkUpload) createOrUpdateParallel(recordsMetadata, collaborationContext);
+        else createOrUpdateSerial(recordsMetadata, collaborationContext);
 
         return recordsMetadata;
     }
@@ -90,10 +93,10 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
      * Implementation of createOrUpdate that writes the records in serial one at a time to Cosmos.
      * @param recordsMetadata records to write to cosmos.
      */
-    private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata){
+    private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext){
         for (RecordMetadata recordMetadata : recordsMetadata) {
             RecordMetadataDoc doc = new RecordMetadataDoc();
-            doc.setId(recordMetadata.getId());
+            doc.setId(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
             doc.setMetadata(recordMetadata);
             this.save(doc);
         }
@@ -103,12 +106,12 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
      * Implementation of createOrUpdate that uses DocumentBulkExecutor to upload all records in parallel to Cosmos.
      * @param recordsMetadata records to write to cosmos.
      */
-    private void createOrUpdateParallel(List<RecordMetadata> recordsMetadata){
+    private void createOrUpdateParallel(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext){
         List<RecordMetadataDoc> docs = new ArrayList<>();
         List<String> partitionKeys = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata){
             RecordMetadataDoc doc = new RecordMetadataDoc();
-            doc.setId(recordMetadata.getId());
+            doc.setId(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
             doc.setMetadata(recordMetadata);
             docs.add(doc);
             partitionKeys.add(recordMetadata.getId());
@@ -118,8 +121,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public RecordMetadata get(String id) {
-        RecordMetadataDoc item = this.getOne(id);
+    public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
+        RecordMetadataDoc item = this.getOne(CollaborationUtil.getIdWithNamespace(id, collaborationContext));
         return (item == null) ? null : item.getMetadata();
     }
 
@@ -135,10 +138,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
         Iterable<RecordMetadataDoc> docs;
 
-        long start = System.currentTimeMillis();
         try {
             String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '%s')", legalTagName);
-            SqlQuerySpec query = new SqlQuerySpec(queryText);;
+            SqlQuerySpec query = new SqlQuerySpec(queryText);
             final Page<RecordMetadataDoc> docPage = this.find(CosmosStorePageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
             docs.forEach(d -> {
@@ -157,15 +159,13 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         } catch (Exception e) {
             throw e;
         }
-        long finish = System.currentTimeMillis();
-        long timeElapsed = finish - start;
-        //System.out.println("!! queryByLegalTagName time elapsed = " + timeElapsed);
+
         return new AbstractMap.SimpleEntry<>(continuation, outputRecords);
     }
 
     @Override
-    public Map<String, RecordMetadata> get(List<String> ids) {
-        String sqlQueryString = createCosmosBatchGetQueryById(ids);
+    public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
+        String sqlQueryString = createCosmosBatchGetQueryById(ids, collaborationContext);
         SqlQuerySpec query = new SqlQuerySpec(sqlQueryString);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
 
@@ -184,25 +184,38 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 "The requested cursor does not exist or is invalid");
     }
 
-    public List<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status) {
+    public List<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status, Optional<CollaborationContext> collaborationContext) {
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
-        SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status);
+        SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status, collaborationContext);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
         return this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
     }
 
-    public Page<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable) {
+    public Page<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable, Optional<CollaborationContext> collaborationContext) {
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
-        SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status);
+        SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status, collaborationContext);
         return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
     }
 
-    private static SqlQuerySpec getIdsByMetadata_kindAndMetada_statusQuery(String kind, String status) {
-        String queryText = String.format("SELECT c.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s'", kind, status);
-        SqlQuerySpec query = new SqlQuerySpec(queryText);
-        return query;
+    public int getMetadataDocumentCountForBlob(String path) {
+        Assert.notNull(path, "path must not be null");
+        String sqlQueryString = String.format("SELECT COUNT(1) AS documentCount from c WHERE ARRAY_CONTAINS (c.metadata.gcsVersionPaths, '%s')", path);
+        SqlQuerySpec query = new SqlQuerySpec(sqlQueryString);
+        List<DocumentCount> queryResponse = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, new CosmosQueryRequestOptions(), DocumentCount.class);
+        return queryResponse == null || queryResponse.isEmpty() ? 0 : queryResponse.get(0).getDocumentCount();
+    }
+
+    private static SqlQuerySpec getIdsByMetadata_kindAndMetada_statusQuery(String kind, String status, Optional<CollaborationContext> collaborationContext) {
+        String queryText;
+        if (!collaborationContext.isPresent()){
+            queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' AND c.id = c.metadata.id", kind, status);
+        }
+        else {
+            queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' and STARTSWITH(c.id, '%s')", kind, status, CollaborationUtil.getNamespace(collaborationContext));
+        }
+        return new SqlQuerySpec(queryText);
     }
 
     public Page<RecordMetadataDoc> find(@NonNull Pageable pageable, SqlQuerySpec query) {
@@ -218,8 +231,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public void delete(String id) {
-        this.deleteById(id, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, id);
+    public void delete(String id, Optional<CollaborationContext> collaborationContext) {
+        this.deleteById(CollaborationUtil.getIdWithNamespace(id, collaborationContext), headers.getPartitionId(), cosmosDBName, recordMetadataCollection, CollaborationUtil.getIdWithNamespace(id, collaborationContext));
     }
 
     /**
@@ -227,11 +240,11 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
      * @param ids Ids to generate query for.
      * @return String representing Cosmos query searching for all of the ids.
      */
-    private String createCosmosBatchGetQueryById(List<String> ids){
+    private String createCosmosBatchGetQueryById(List<String> ids, Optional<CollaborationContext> collaborationContext){
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT * FROM c WHERE c.id IN (");
         for(String id : ids){
-            sb.append("\"" + id + "\",");
+            sb.append("\"" + CollaborationUtil.getIdWithNamespace(id, collaborationContext) + "\",");
         }
 
         // remove trailing comma, add closing parenthesis

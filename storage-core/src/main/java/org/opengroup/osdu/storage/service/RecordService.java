@@ -14,13 +14,16 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+
 import java.util.List;
+import java.util.Optional;
 
 public interface RecordService {
 
-	void purgeRecord(String recordId);
+	void purgeRecord(String recordId, Optional<CollaborationContext> collaborationContext);
 
-	void deleteRecord(String recordId, String user);
+	void deleteRecord(String recordId, String user, Optional<CollaborationContext> collaborationContext);
 
-	void bulkDeleteRecords(List<String> records, String user);
+	void bulkDeleteRecords(List<String> records, String user, Optional<CollaborationContext> collaborationContext);
 }

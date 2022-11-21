@@ -46,7 +46,6 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
@@ -69,7 +68,7 @@ public class IngestionServiceImplTest {
     private ICloudStorage cloudStorage;
 
     @Mock
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
 
     @Mock
     private ILegalService legalService;
@@ -116,7 +115,7 @@ public class IngestionServiceImplTest {
     private static final String TENANT = "tenant1";
     private static final String[] VALID_ACL = new String[] { "data.email1@tenant1.gmail.com", "data.test@tenant1.gmail.com" };
     private static final String[] INVALID_ACL = new String[] { "data.email1@test.test.com", "data.test@test.test.com" };
-
+    
     private Record record1;
     private Record record2;
 
@@ -186,11 +185,11 @@ public class IngestionServiceImplTest {
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
 
-        when(this.recordRepository.get(NEW_RECORD_ID)).thenReturn(existingRecordMetadata1);
-        when(this.recordRepository.get(NEW_RECORD_ID)).thenReturn(existingRecordMetadata2);
+        when(this.recordRepository.get(NEW_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata1);
+        when(this.recordRepository.get(NEW_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata2);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
 
             fail("Should not succeed");
         } catch (AppException e) {
@@ -214,11 +213,11 @@ public class IngestionServiceImplTest {
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
 
-        when(this.recordRepository.get(INVALID_RECORD_ID)).thenReturn(existingRecordMetadata1);
-        when(this.recordRepository.get(INVALID_RECORD_ID)).thenReturn(existingRecordMetadata2);
+        when(this.recordRepository.get(INVALID_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata1);
+        when(this.recordRepository.get(INVALID_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata2);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
 
             fail("Should not succeed");
         } catch (AppException e) {
@@ -241,11 +240,11 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(new RecordMetadata[] {})).thenReturn(true);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(new Integer(2), transferInfo.getRecordCount());
 
         ArgumentCaptor<List> ids = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository).get(ids.capture());
+        verify(this.recordRepository).get(ids.capture(), any());
 
         List<String> capturedIds = ids.getValue();
         assertEquals(2, capturedIds.size());
@@ -253,7 +252,7 @@ public class IngestionServiceImplTest {
         assertTrue(capturedIds.get(1).startsWith("tenant1:"));
 
         ArgumentCaptor<TransferBatch> transferCaptor = ArgumentCaptor.forClass(TransferBatch.class);
-        verify(this.persistenceService).persistRecordBatch(transferCaptor.capture());
+        verify(this.persistenceService).persistRecordBatch(transferCaptor.capture(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch capturedTransfer = transferCaptor.getValue();
@@ -286,12 +285,12 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata);
 
-        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1, RECORD_ID2))).thenReturn(output);
+        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1, RECORD_ID2), Optional.empty())).thenReturn(output);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(false);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
@@ -325,10 +324,10 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
@@ -367,16 +366,16 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(output.values().toArray(new RecordMetadata[output.size()]))).thenReturn(true);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(2), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();
@@ -408,18 +407,18 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, Collections.singletonList(this.record1), USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, Collections.singletonList(this.record1), USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();
@@ -453,7 +452,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, updatedRecordMetadata);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
         when(this.cloudStorage.hasAccess(updatedRecordMetadata)).thenReturn(true);
 
         Record recordInStorage = new Record();
@@ -468,11 +467,11 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.getHash(any())).thenReturn(hashMap);
         when(this.cloudStorage.isDuplicateRecord(any(), eq(hashMap), any())).thenReturn(true);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(0)).persistRecordBatch(any());
+        verify(this.persistenceService, times(0)).persistRecordBatch(any(), any());
     }
 
     @Test
@@ -508,7 +507,7 @@ public class IngestionServiceImplTest {
         recordInStorage.setId(RECORD_ID1);
         recordInStorage.setKind(KIND_1);
 
-        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(existingRecords);
+        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1), Optional.empty())).thenReturn(existingRecords);
 
         String recordFromStorage = new Gson().toJson(recordInStorage);
 
@@ -520,11 +519,11 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.read(existingRecordMetadata, 123456L, false)).thenReturn(recordFromStorage);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(1)).persistRecordBatch(any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(any(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
     }
 
@@ -538,7 +537,7 @@ public class IngestionServiceImplTest {
         this.acl.setOwners(INVALID_ACL);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
@@ -573,15 +572,15 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata);
 
-        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(output);
+        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1), Optional.empty())).thenReturn(output);
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
 
-        this.sut.createUpdateRecords(false, this.records, USER);
+        this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
 
         ArgumentCaptor<TransferBatch> captor = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService).persistRecordBatch(captor.capture());
+        verify(this.persistenceService).persistRecordBatch(captor.capture(), any());
 
         TransferBatch batch = captor.getValue();
         assertEquals(new Integer(1), batch.getTransferInfo().getRecordCount());
@@ -615,10 +614,10 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
@@ -653,10 +652,10 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
@@ -683,7 +682,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         List<OpaError> errors = new ArrayList<>();
         errors.add(OpaError.builder().message("User is not authorized to create or update records.").reason("User Unauthorized").code("401").build());
@@ -693,7 +692,7 @@ public class IngestionServiceImplTest {
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
         try {
-            this.sut.createUpdateRecords(false, this.records, USER);
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
             fail("Should not succeed");
         } catch (AppException e) {
             assertEquals(HttpStatus.SC_UNAUTHORIZED, e.getError().getCode());
@@ -730,7 +729,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
         output.put(RECORD_ID2, existingRecordMetadata2);
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(Collections.EMPTY_LIST).build();
         ValidationOutputRecord validationOutputRecord2 = ValidationOutputRecord.builder().id(RECORD_ID2).errors(Collections.EMPTY_LIST).build();
@@ -739,14 +738,14 @@ public class IngestionServiceImplTest {
         validationOutputRecords.add(validationOutputRecord2);
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(2), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();

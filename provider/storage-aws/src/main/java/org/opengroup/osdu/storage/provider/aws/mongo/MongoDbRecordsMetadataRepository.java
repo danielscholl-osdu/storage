@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.aws.mongo;
 
 import org.opengroup.osdu.core.aws.mongodb.MongoDBMultiClusterFactory;
 import org.opengroup.osdu.core.aws.mongodb.entity.QueryPageResult;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -31,6 +32,7 @@ import javax.inject.Inject;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.opengroup.osdu.storage.provider.aws.mongo.mongodb.EntityFieldPaths.DATA_LEGAL_LEGALTAGS;
@@ -65,7 +67,7 @@ public class MongoDbRecordsMetadataRepository implements IRecordsMetadataReposit
      * @return the list
      */
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         String dataPartitionId = getDataPartitionId();
         String collection = getCollection(dataPartitionId);
         recordsMetadata.stream()
@@ -80,7 +82,7 @@ public class MongoDbRecordsMetadataRepository implements IRecordsMetadataReposit
      * @param id the id
      */
     @Override
-    public void delete(String id) {
+    public void delete(String id, Optional<CollaborationContext> collaborationContext) {
         String dataPartitionId = getDataPartitionId();
         mongoDBMultiClusterFactory.getHelper(dataPartitionId).delete(ID, id, getCollection(dataPartitionId));
     }
@@ -92,7 +94,7 @@ public class MongoDbRecordsMetadataRepository implements IRecordsMetadataReposit
      * @return the record metadata
      */
     @Override
-    public RecordMetadata get(String id) {
+    public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
         String dataPartitionId = getDataPartitionId();
         RecordMetadataMongoDBDto recordMetadataMongoDBDto = mongoDBMultiClusterFactory
                 .getHelper(dataPartitionId)
@@ -107,7 +109,7 @@ public class MongoDbRecordsMetadataRepository implements IRecordsMetadataReposit
      * @return the map
      */
     @Override
-    public Map<String, RecordMetadata> get(List<String> ids) {
+    public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
         String dataPartitionId = getDataPartitionId();
         return mongoDBMultiClusterFactory
                 .getHelper(dataPartitionId)
