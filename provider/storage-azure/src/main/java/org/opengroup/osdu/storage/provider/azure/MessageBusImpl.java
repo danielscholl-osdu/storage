@@ -67,6 +67,7 @@ public class MessageBusImpl implements IMessageBus {
         }
     }
 
+
     public void publishMessageToRecordsEvent(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
