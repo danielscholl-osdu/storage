@@ -44,8 +44,10 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        if(collaborationContext.isPresent())
+        publishMessageToRecordsEvent(collaborationContext, headers, messages);
+        if(collaborationContext.isPresent()){
             return;
+        }
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for (int i = 0; i < messages.length; i += BATCH_SIZE) {
@@ -61,7 +63,26 @@ public class MessageBusImpl implements IMessageBus {
                     .messageId(messageId)
                     .build();
 
-            messagePublisher.publishMessage(headers, publisherInfo);
+            messagePublisher.publishMessage(headers, publisherInfo, collaborationContext);
+        }
+    }
+
+    public void publishMessageToRecordsEvent(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+        // The batch size is same for both Event grid and Service bus.
+        final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
+        for (int i = 0; i < messages.length; i += BATCH_SIZE) {
+            String messageId = String.format("%s-%d",headers.getCorrelationId(), i);
+            PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
+            PublisherInfo publisherInfo = PublisherInfo.builder()
+                    .batch(batch)
+                    .eventGridTopicName(eventGridConfig.getEventGridTopic())
+                    .eventGridEventSubject(eventGridConfig.getEventSubject())
+                    .eventGridEventType(eventGridConfig.getEventType())
+                    .eventGridEventDataVersion(eventGridConfig.getEventDataVersion())
+                    .serviceBusTopicName(serviceBusConfig.getServiceBusRecordsEventTopic())
+                    .messageId(messageId)
+                    .build();
+            messagePublisher.publishMessage(headers, publisherInfo, collaborationContext);
         }
     }
 }
