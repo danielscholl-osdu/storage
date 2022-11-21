@@ -23,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
+import org.opengroup.osdu.azure.publisherFacade.PubsubConfiguration;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -53,6 +54,9 @@ public class MessageBusImplTest {
     private EventGridConfig eventGridConfig;
     @Mock
     private PublisherConfig publisherConfig;
+
+    @Mock
+    private PubsubConfiguration pubsubConfiguration;
     @Mock
     private DpsHeaders dpsHeaders;
     @InjectMocks
@@ -85,26 +89,34 @@ public class MessageBusImplTest {
     }
 
     @Test
-    @Ignore
-    //TODO: update this unit test to cover respect to new topic i.e. recordsevent
-    public void should_not_publishToMessagePublisherWhenCollaborationContextIsProvided() {
-        // Set Up
-        String[] ids = {"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11"};
-        String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5", "kind6", "kind7", "kind8", "kind9", "kind10", "kind11"};
-        doReturn("id").when(dpsHeaders).getCorrelationId();
-
-        PubSubInfo[] pubSubInfo = new PubSubInfo[11];
-        for (int i = 0; i < ids.length; ++i) {
-            pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
-        }
+    public void should_publishToOnlyRecordseventTopic_WhenCollaborationContextIsProvided() {
+        PubSubInfo[] pubSubInfo = setup();
         sut.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, pubSubInfo);
-        verify(messagePublisher, never()).publishMessage(any(), any(), any());
+        verify(messagePublisher, times(1)).publishMessage(any(), any(), any());
+    }
+
+    @Test
+    public void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
+        PubSubInfo[] pubSubInfo = setup();
+        sut.publishMessage(Optional.empty(), dpsHeaders, pubSubInfo);
+        verify(messagePublisher, times(2)).publishMessage(any(), any(), any());
     }
 
     private PubSubInfo getPubsInfo(String id, String kind) {
         PubSubInfo pubSubInfo = new PubSubInfo();
         pubSubInfo.setId(id);
         pubSubInfo.setKind(kind);
+        return pubSubInfo;
+    }
+
+    private PubSubInfo[] setup() {
+        String[] ids = {"id1", "id2", "id3", "id4", "id5"};
+        String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5"};
+        doReturn("id").when(dpsHeaders).getCorrelationId();
+        PubSubInfo[] pubSubInfo = new PubSubInfo[5];
+        for (int i = 0; i < ids.length; ++i) {
+            pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
+        }
         return pubSubInfo;
     }
 }
