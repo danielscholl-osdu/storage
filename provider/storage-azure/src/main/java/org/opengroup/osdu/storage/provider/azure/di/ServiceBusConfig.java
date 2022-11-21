@@ -33,6 +33,9 @@ public class ServiceBusConfig {
     @Value("${azure.servicebus.topic-name}")
     private String serviceBusTopic;
 
+    @Value("${azure.servicebus.recordsevent.topic-name}")
+    private String serviceBusRecordsEventTopic;
+
     @Value("${azure.legal.servicebus.topic-name}")
     private String legalServiceBusTopic;
 

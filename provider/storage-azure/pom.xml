@@ -33,7 +33,8 @@
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.18.0-rc4</osdu.corelibazure.version>
+        <!-- below corelibazure version will be updated to a release candidate once the associated MR is merged -->
+        <osdu.corelibazure.version>0.18.0-recordsevent</osdu.corelibazure.version> 
         <osdu.storage-core.version>0.18.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
