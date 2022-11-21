@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.aws;
 import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
@@ -195,7 +196,7 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, String> read(Map<String, String> objects) {
+    public Map<String, String> read(Map<String, String> objects, Optional<CollaborationContext> collaborationContext) {
         // key -> record id
         // value -> record version path
         return recordsUtil.getRecordsValuesById(objects);
@@ -223,10 +224,10 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+    public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
 
         Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
-        Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId);
+        Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId, Optional.empty());
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
             String id = recordMetadata.getId();
@@ -247,7 +248,7 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls) {
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> originalAclRecords = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {
             Acl acl = originalAcls.get(recordMetadata.getId());
@@ -255,7 +256,7 @@ public class CloudStorageImpl implements ICloudStorage {
             originalAclRecords.add(recordMetadata);
         }
         try {
-            this.recordsMetadataRepository.createOrUpdate(originalAclRecords);
+            this.recordsMetadataRepository.createOrUpdate(originalAclRecords, Optional.empty());
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
         }

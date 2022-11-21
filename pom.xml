@@ -27,7 +27,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<docker.image.prefix>opendes</docker.image.prefix>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<os-core-common.version>0.15.0</os-core-common.version>
+		<os-core-common.version>0.18.0-X-COLLABORATION</os-core-common.version>
 		<jackson-databind.version>2.13.4</jackson-databind.version>
 		<jackson.version>2.13.2</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
@@ -165,7 +165,7 @@
 		<module>provider/storage-azure</module>
 		<module>provider/storage-aws</module>
 		<module>provider/storage-ibm</module>
-	</modules>
+  </modules>
 
 	<repositories>
 		<repository>

@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.azure;
 
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
 import org.opengroup.osdu.azure.publisherFacade.PublisherInfo;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
@@ -42,7 +43,9 @@ public class MessageBusImpl implements IMessageBus {
     private PublisherConfig publisherConfig;
 
     @Override
-    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+        if(collaborationContext.isPresent())
+            return;
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for (int i = 0; i < messages.length; i += BATCH_SIZE) {

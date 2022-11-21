@@ -19,6 +19,7 @@ import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.google.common.base.Strings;
 import com.lambdaworks.redis.RedisException;
+import net.bytebuddy.dynamic.DynamicType;
 import org.apache.http.HttpStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +28,7 @@ import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
@@ -45,6 +47,7 @@ import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class QueryRepository implements IQueryRepository {
@@ -113,7 +116,7 @@ public class QueryRepository implements IQueryRepository {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String hashedCursorKey) {
+    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String hashedCursorKey, Optional<CollaborationContext> collaborationContext) {
         Assert.notNull(kind, "kind must not be null");
 
         boolean paginated = false;
@@ -147,7 +150,7 @@ public class QueryRepository implements IQueryRepository {
                 do {
                     preferredPageSize = numRecords - ids.size();
                     // Fetch records and set ids
-                    Page<RecordMetadataDoc> docPage = record.findIdsByMetadata_kindAndMetadata_status(kind, status, CosmosStorePageRequest.of(0, preferredPageSize, continuation));
+                    Page<RecordMetadataDoc> docPage = record.findIdsByMetadata_kindAndMetadata_status(kind, status, CosmosStorePageRequest.of(0, preferredPageSize, continuation), collaborationContext);
                     docs = docPage.getContent();
                     docs.forEach(d -> ids.add(d.getId()));
 
@@ -174,10 +177,9 @@ public class QueryRepository implements IQueryRepository {
                 }
 
             } else {
-                docs = record.findIdsByMetadata_kindAndMetadata_status(kind, status);
+                docs = record.findIdsByMetadata_kindAndMetadata_status(kind, status, collaborationContext);
                 docs.forEach(d -> ids.add(d.getId()));
             }
-
             dqr.setResults(ids);
         } catch (CosmosException e) {
             if (e.getStatusCode() == HttpStatus.SC_BAD_REQUEST && e.getMessage().contains("INVALID JSON in continuation token"))
