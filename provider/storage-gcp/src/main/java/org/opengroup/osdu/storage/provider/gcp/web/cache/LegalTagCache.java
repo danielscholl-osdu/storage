@@ -21,11 +21,8 @@ import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.MultiTenantCache;
 import org.opengroup.osdu.core.common.cache.RedisCache;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component("LegalTagCache")
 public class LegalTagCache implements ICache<String, String> {
 
     @Autowired
@@ -33,11 +30,12 @@ public class LegalTagCache implements ICache<String, String> {
 
     private final MultiTenantCache<String> caches;
 
-    public LegalTagCache(GcpAppServiceConfig gcpAppServiceConfig) {
-        this.caches = new MultiTenantCache<>(new RedisCache<>(gcpAppServiceConfig.getRedisStorageHost(), gcpAppServiceConfig.getRedisStoragePort(),
-            60 * 60,
-            String.class,
-            String.class));
+    public LegalTagCache(String host, int port, int expTimeSeconds) {
+        this.caches = new MultiTenantCache<>(new RedisCache<>(host, port, expTimeSeconds, String.class, String.class));
+    }
+
+    public LegalTagCache(String host, int port, String password, int expTimeSeconds, boolean withSsl) {
+        this.caches = new MultiTenantCache<>(new RedisCache<>(host, port, password, expTimeSeconds, withSsl, String.class, String.class));
     }
 
     @Override
