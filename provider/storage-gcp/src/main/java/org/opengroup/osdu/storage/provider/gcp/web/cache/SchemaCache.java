@@ -19,14 +19,14 @@ package org.opengroup.osdu.storage.provider.gcp.web.cache;
 
 import org.opengroup.osdu.core.common.cache.RedisCache;
 import org.opengroup.osdu.core.common.model.storage.Schema;
-import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
-import org.springframework.stereotype.Component;
 
-@Component
 public class SchemaCache extends RedisCache<String, Schema> {
 
-    public SchemaCache(GcpAppServiceConfig gcpAppServiceConfig) {
-        super(gcpAppServiceConfig.getRedisStorageHost(), gcpAppServiceConfig.getRedisStoragePort(), 60 * 60, String.class,
-            Schema.class);
+    public SchemaCache(String host, int port, int expTimeSeconds) {
+        super(host, port, expTimeSeconds, String.class, Schema.class);
+    }
+
+    public SchemaCache(String host, int port, String password, int expTimeSeconds, boolean withSsl) {
+        super(host, port, password, expTimeSeconds, withSsl, String.class, Schema.class);
     }
 }
