@@ -19,15 +19,14 @@ package org.opengroup.osdu.storage.provider.gcp.web.cache;
 
 import org.opengroup.osdu.core.common.cache.RedisCache;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
-import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
-import org.springframework.stereotype.Component;
 
-@Component
 public class GroupCache extends RedisCache<String, Groups> {
 
-    public GroupCache(GcpAppServiceConfig appServiceConfig) {
-        super(appServiceConfig.getRedisGroupHost(), appServiceConfig.getRedisGroupPort(), 30, String.class,
-            Groups.class);
+    public GroupCache(String host, int port, int expTimeSeconds) {
+        super(host, port, expTimeSeconds, String.class, Groups.class);
+    }
 
+    public GroupCache(String host, int port, String password, int expTimeSeconds, boolean withSsl) {
+        super(host, port, password, expTimeSeconds, withSsl, String.class, Groups.class);
     }
 }
