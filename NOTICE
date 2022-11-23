@@ -306,7 +306,6 @@ The following software have components provided under the terms of this license:
 - Apache Commons Codec (from http://commons.apache.org/proper/commons-codec/, https://commons.apache.org/proper/commons-codec/)
 - Apache Commons Collections (from http://commons.apache.org/proper/commons-collections/, https://commons.apache.org/proper/commons-collections/)
 - Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
-- Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
 - Apache Commons IO (from http://commons.apache.org/io/, https://commons.apache.org/proper/commons-io/, https://repo1.maven.org/maven2/commons-io/commons-io)
 - Apache Commons Lang (from http://commons.apache.org/proper/commons-lang/, https://commons.apache.org/proper/commons-lang/)
 - Apache Commons Logging (from http://commons.apache.org/logging/, http://commons.apache.org/proper/commons-logging/)
@@ -350,8 +349,8 @@ The following software have components provided under the terms of this license:
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
 - Flapdoodle Embedded MongoDB (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo)
-- Flapdoodle Embedded Process Util (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.process)
 - Flapdoodle Embedded MongoDB Package Resolver (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo.packageresolver)
+- Flapdoodle Embedded Process Util (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.process)
 - Flapdoodle OS Detection Library (from http://github.com/flapdoodle-oss/de.flapdoodle.os)
 - GSON extensions to the Google HTTP Client Library for Java. (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client-gson)
 - Google APIs Client Library for Java (from https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
@@ -366,13 +365,11 @@ The following software have components provided under the terms of this license:
 - Google Cloud Storage (from https://github.com/googleapis/google-cloud-java/tree/master/google-cloud-clients/google-cloud-storage, https://github.com/googleapis/java-storage)
 - Google HTTP Client Library for Java (from https://repo1.maven.org/maven2/com/google/http-client/google-http-client)
 - Google OAuth Client Library for Java (from https://repo1.maven.org/maven2/com/google/oauth-client/google-oauth-client)
-- Google OAuth Client Library for Java (from https://repo1.maven.org/maven2/com/google/oauth-client/google-oauth-client)
 - Gson (from http://code.google.com/p/google-gson/, https://repo1.maven.org/maven2/com/google/code/gson/gson)
 - Guava InternalFutureFailureAccess and InternalFutures (from https://repo1.maven.org/maven2/com/google/guava/failureaccess)
 - Guava ListenableFuture only (from https://repo1.maven.org/maven2/com/google/guava/listenablefuture)
 - Guava: Google Core Libraries for Java (from http://code.google.com/p/guava-libraries, https://github.com/google/guava, https://repo1.maven.org/maven2/com/google/guava/guava)
 - HK2 Implementation Utilities (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-utils)
-- HK2 API module (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-api)
 - HTTP functionality for the Reactor Netty library (from https://github.com/reactor/reactor-netty)
 - Hibernate Validator (from https://repo1.maven.org/maven2/org/hibernate/hibernate-validator, https://repo1.maven.org/maven2/org/hibernate/validator/hibernate-validator)
 - HikariCP (from https://github.com/brettwooldridge/HikariCP)
@@ -512,16 +509,14 @@ The following software have components provided under the terms of this license:
 - Spring Commons Logging Bridge (from https://github.com/spring-projects/spring-framework)
 - Spring Context (from http://www.springframework.org, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-context)
 - Spring Core (from http://www.springframework.org, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-core)
-- Spring Data Core (from https://repo1.maven.org/maven2/org/springframework/data/spring-data-commons)
-- Spring Data Core (from https://spring.io/projects/spring-data)
+- Spring Data Core (from https://repo1.maven.org/maven2/org/springframework/data/spring-data-commons, https://spring.io/projects/spring-data)
 - Spring Data MongoDB - Core (from https://repo1.maven.org/maven2/org/springframework/data/spring-data-mongodb)
 - Spring Expression Language (SpEL) (from https://github.com/SpringSource/spring-framework, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-expression)
 - Spring JDBC (from https://github.com/SpringSource/spring-framework, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-jdbc)
 - Spring JMS (from http://www.springframework.org, https://github.com/SpringSource/spring-framework, https://github.com/spring-projects/spring-framework, https://repo1.maven.org/maven2/org/springframework/spring-jms)
 - Spring Messaging (from https://github.com/spring-projects/spring-framework)
 - Spring Plugin - Metadata Extension (from https://repo1.maven.org/maven2/org/springframework/plugin/spring-plugin-metadata)
-- Spring Plugin Core (from https://repo1.maven.org/maven2/org/springframework/plugin/spring-plugin-core)
-- Spring Plugin Core (from https://github.com/spring-projects/spring-plugin/spring-plugin-core)
+- Spring Plugin Core (from https://github.com/spring-projects/spring-plugin/spring-plugin-core, https://repo1.maven.org/maven2/org/springframework/plugin/spring-plugin-core)
 - Spring Security - Core (from http://spring.io/spring-security, https://repo1.maven.org/maven2/org/springframework/security/spring-security-core, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - Spring Security - Namespace Configuration Module (from http://spring.io/spring-security, https://repo1.maven.org/maven2/org/springframework/security/spring-security-config, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - Spring Security - Web Application Security Module (from http://spring.io/spring-security, https://repo1.maven.org/maven2/org/springframework/security/spring-security-web, https://spring.io/projects/spring-security, https://spring.io/spring-security)
@@ -807,13 +802,13 @@ The following software have components provided under the terms of this license:
 
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
+- HK2 API module (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-api)
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
 - JUnit Jupiter API (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Engine (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Params (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Commons (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Engine API (from http://junit.org/junit5/, https://junit.org/junit5/)
-- HK2 API module (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-api)
 - Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - Jakarta Bean Validation API (from https://beanvalidation.org)
@@ -949,17 +944,8 @@ The following software have components provided under the terms of this license:
 ========================================================================
 LGPL-3.0-only
 ========================================================================
-The following software have components provided under the terms of this license:
-
 - Logback Classic Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-classic)
 - Logback Core Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-core)
-
-========================================================================
-bzip2-1.0.6
-========================================================================
-The following software have components provided under the terms of this license:
-
--  Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
 
 ========================================================================
 MIT
@@ -1068,6 +1054,13 @@ The following software have components provided under the terms of this license:
 
 - Guava: Google Core Libraries for Java (from http://code.google.com/p/guava-libraries, https://github.com/google/guava, https://repo1.maven.org/maven2/com/google/guava/guava)
 - MongoDB Java Driver (from http://mongodb.org/, http://www.mongodb.org, https://www.mongodb.com/)
+
+========================================================================
+bzip2-1.0.6
+========================================================================
+The following software have components provided under the terms of this license:
+
+- Apache Commons Compress (from http://commons.apache.org/compress/, http://commons.apache.org/proper/commons-compress/, https://commons.apache.org/proper/commons-compress/)
 
 ========================================================================
 cc-pd
