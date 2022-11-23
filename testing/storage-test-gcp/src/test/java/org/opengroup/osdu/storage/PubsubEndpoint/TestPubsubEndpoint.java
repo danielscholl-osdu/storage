@@ -59,14 +59,15 @@ public class TestPubsubEndpoint extends PubsubEndpointTest {
     @Override
     public void should_deleteIncompliantLegaltagAndInvalidateRecordsAndNotIngestAgain_whenIncompliantMessageSentToEndpoint() throws Exception {
         LegalTagUtils.delete(LEGAL_TAG_1, testUtils.getToken());
+        // wait until cache of opa is rebuilt
+        Thread.sleep(70000);
 
         List<String> legalTagNames = new ArrayList<>();
         legalTagNames.add(LEGAL_TAG_1);
         legalTagNames.add(LEGAL_TAG_2);
-        //Wait while the Storage service processes the legal tag deleted event
-        Thread.sleep(1000);
-        ClientResponse responseRecordQuery = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
-            "");
+        ClientResponse responseRecordQuery =
+            TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+                "");
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, responseRecordQuery.getStatus());
 
         long now = System.currentTimeMillis();
@@ -77,10 +78,12 @@ public class TestPubsubEndpoint extends PubsubEndpointTest {
         String recordIdTemp2 = TenantUtils.getTenantName() + ":endtoend:1.1." + later;
         String recordTemp2 = RecordUtil.createDefaultJsonRecord(recordIdTemp2, kindTemp, LEGAL_TAG_2);
 
-        ClientResponse responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
+        ClientResponse responseInvalid =
+            TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, responseInvalid.getStatus());
         Assert.assertEquals("Invalid legal tags", this.getResponseReasonFromRecordIngestResponse(responseInvalid));
-        ClientResponse responseValid3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp2, "");
+        ClientResponse responseValid3 =
+            TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp2, "");
         Assert.assertEquals(HttpStatus.SC_CREATED, responseValid3.getStatus());
         TestUtils.send("records/" + recordIdTemp2, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
     }
