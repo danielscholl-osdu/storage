@@ -19,8 +19,13 @@ data:
   storageHost: "http://storage"
   defaultLegalTag: "default-data-tag"
   dataPartitionId: ""
+
   # gcp
   googleAudiences: ""
+
+  # opa
+  opaEnabled: true
+  opaEndpoint: "http://opa"
 conf:
   appName: "storage"
   configmap: "storage-config"
