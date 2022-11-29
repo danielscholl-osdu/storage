@@ -42,6 +42,7 @@ public class SchemaApiTest {
 
     @Before
     public void setUp() {
+
         initMocks(this);
     }
 
