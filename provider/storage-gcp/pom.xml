@@ -102,7 +102,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>0.18.0-X-COLLABORATION</version>
+            <version>0.17.0-X-COLLABORATION</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
