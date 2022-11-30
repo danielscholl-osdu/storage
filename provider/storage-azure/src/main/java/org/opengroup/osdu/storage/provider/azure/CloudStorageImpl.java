@@ -244,10 +244,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         String [] acls = ofNullable(record.getAcl())
                 .map(Acl::getViewers).
-                        orElseGet(() -> {
-                            logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
-                            return new String[]{};
-                        });
+                orElseGet(() -> {
+                    logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
+                    return new String[]{};
+                });
         boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
         boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
@@ -258,10 +258,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         String [] acls = ofNullable(record.getAcl())
                 .map(Acl::getOwners).
-                        orElseGet(() -> {
-                            logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
-                            return new String[]{};
-                        });
+                orElseGet(() -> {
+                    logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
+                    return new String[]{};
+                });
         return dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
     }
