@@ -337,6 +337,7 @@ The following software have components provided under the terms of this license:
 - Cloud Key Management Service (KMS) API v1-rev20220407-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
 - Cloud Key Management Service (KMS) API v1-rev20220617-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
 - Cloud Key Management Service (KMS) API v1-rev20220701-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
+- Cloud Key Management Service (KMS) API v1-rev20221107-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
 - Cloud Storage JSON API v1-rev20220509-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - Cloud Storage JSON API v1-rev20220608-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - Cloud Storage JSON API v1-rev20220705-1.32.1 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
@@ -1068,6 +1069,13 @@ cc-pd
 The following software have components provided under the terms of this license:
 
 - Netty/Codec (from https://repo1.maven.org/maven2/io/netty/netty-codec)
+
+========================================================================
+cockroach
+========================================================================
+The following software have components provided under the terms of this license:
+
+- ServiceLocator Default Implementation (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-locator)
 
 ========================================================================
 public-domain
