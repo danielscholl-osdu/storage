@@ -41,10 +41,7 @@ public class SchemaApiTest {
     private SchemaApi sut;
 
     @Before
-    public void setUp() {
-
-        initMocks(this);
-    }
+    public void setUp() {initMocks(this);}
 
     @Test(expected = AuthenticationCredentialsNotFoundException.class)
     public void givenUnauthenticated_whenCallCreateSchema_thenThrowsException(){
