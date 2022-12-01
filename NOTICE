@@ -619,6 +619,8 @@ The following software have components provided under the terms of this license:
 
 - API Common (from https://github.com/googleapis, https://github.com/googleapis/api-common-java)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis, https://github.com/googleapis/gax-java)
+- GAX (Google Api eXtensions) for Java (Core) (from https://repo1.maven.org/maven2/com/google/api/gax)
+- GAX (Google Api eXtensions) for Java (gRPC) (from https://repo1.maven.org/maven2/com/google/api/gax-grpc)
 - Hamcrest (from http://hamcrest.org/JavaHamcrest/)
 - Hamcrest Core (from http://hamcrest.org/, http://hamcrest.org/JavaHamcrest/, https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core)
 - Hamcrest Library (from http://hamcrest.org/JavaHamcrest/)
@@ -641,6 +643,8 @@ The following software have components provided under the terms of this license:
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
 - GAX (Google Api eXtensions) (from https://github.com/googleapis, https://github.com/googleapis/gax-java)
+- GAX (Google Api eXtensions) for Java (Core) (from https://repo1.maven.org/maven2/com/google/api/gax)
+- GAX (Google Api eXtensions) for Java (gRPC) (from https://repo1.maven.org/maven2/com/google/api/gax-grpc)
 - Google APIs Client Library for Java (from https://repo1.maven.org/maven2/com/google/api-client/google-api-client)
 - Google Auth Library for Java - Credentials (from https://repo1.maven.org/maven2/com/google/auth/google-auth-library-credentials)
 - Google Auth Library for Java - OAuth2 HTTP (from https://repo1.maven.org/maven2/com/google/auth/google-auth-library-oauth2-http)
@@ -878,6 +882,13 @@ The following software have components provided under the terms of this license:
 - javax.ws.rs-api (from http://jax-rs-spec.java.net, https://github.com/eclipse-ee4j/jaxrs-api)
 
 ========================================================================
+GPL-3.0-or-later
+========================================================================
+The following software have components provided under the terms of this license:
+
+- javax.ws.rs-api (from http://jax-rs-spec.java.net, https://github.com/eclipse-ee4j/jaxrs-api)
+
+========================================================================
 ISC
 ========================================================================
 The following software have components provided under the terms of this license:
@@ -1075,6 +1086,7 @@ cockroach
 ========================================================================
 The following software have components provided under the terms of this license:
 
+- HK2 Implementation Utilities (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-utils)
 - ServiceLocator Default Implementation (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-locator)
 
 ========================================================================
