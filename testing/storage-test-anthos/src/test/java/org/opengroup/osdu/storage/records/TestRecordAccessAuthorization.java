@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
 import java.util.Map;
 import org.apache.http.HttpStatus;
@@ -60,42 +61,17 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     }
 
     @Override
-    @Test
-    public void should_NoneRecords_when_fetchingMultipleRecords_and_notAuthorizedToRecords()
-        throws Exception {
-
-        // Creates a new record
-        String newRecordId = TenantUtils.getTenantName() + ":no:2.2." + NOW;
-
+    public void should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord() throws Exception {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
-            testUtils.getToken());
-
-        ClientResponse response = TestUtils.send("records", "PUT", headers,
-            RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
-
-        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-
-        // Query for original record (no access) and recently created record (with
-        // access)
-        JsonArray records = new JsonArray();
-        records.add(RECORD_ID);
-        records.add(newRecordId);
-
-        JsonObject body = new JsonObject();
-        body.add("records", records);
-
-        Map<String, String> noDataAccessHeaders = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
             testUtils.getNoDataAccessToken());
 
-        response = TestUtils.send("query/records", "POST", noDataAccessHeaders, body.toString(), "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        ClientResponse response = TestUtils.send("records", "PUT", headers,
+            RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
-        DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
-
-        assertEquals(0, responseObject.records.length);
-        assertEquals(0, responseObject.invalidRecords.length);
-        assertEquals(0, responseObject.retryRecords.length);
-
-        TestUtils.send("records/" + newRecordId, "DELETE", headers, "", "");
+        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatus());
+        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        assertEquals(401, json.get("code").getAsInt());
+        assertEquals("Error from compliance service", json.get("reason").getAsString());
+        assertEquals("Legal response 401 {\"code\":401,\"reason\":\"Unauthorized\",\"message\":\"The user is not authorized to perform this action\"}", json.get("message").getAsString());
     }
 }
