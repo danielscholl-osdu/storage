@@ -2,14 +2,16 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.gson.Gson;
 import org.opengroup.osdu.core.common.util.Crc32c;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
+@Component
 public class CrcHashGenerator {
 
-    public static String getHash(Object data) {
+    public String getHash(Object data) {
         Gson gson = new Gson();
         Crc32c checksumGenerator = new Crc32c();
         String newRecordStr = gson.toJson(data);

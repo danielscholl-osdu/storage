@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
@@ -38,6 +39,9 @@ public class RecordBlocksTest {
 
     @Mock
     private ICloudStorage cloudStorage;
+
+    @Spy
+    CrcHashGenerator crcHashGenerator;
 
     @InjectMocks
     private RecordBlocks recordBlocks;

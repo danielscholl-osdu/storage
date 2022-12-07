@@ -21,12 +21,15 @@ import java.util.Optional;
 public class RecordBlocks {
 
     private ICloudStorage cloudStorage;
+    private CrcHashGenerator crcHashGenerator;
 
     @Autowired
-    public RecordBlocks(ICloudStorage cloudStorage) {
+    public RecordBlocks(ICloudStorage cloudStorage, CrcHashGenerator crcHashGenerator) {
         this.cloudStorage = cloudStorage;
+        this.crcHashGenerator = crcHashGenerator;
     }
 
+    @Autowired
     private static final String HASH_KEY_DATA = "data";
     private static final String HASH_KEY_META = "meta";
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -99,9 +102,9 @@ public class RecordBlocks {
 
     public Map<String, String> hashForRecordData(RecordData recordData) {
         Map<String, String> hash = new HashMap<>();
-        hash.put(HASH_KEY_DATA, CrcHashGenerator.getHash(recordData.getData()));
+        hash.put(HASH_KEY_DATA, crcHashGenerator.getHash(recordData.getData()));
         if (recordData.getMeta() != null) {
-            hash.put(HASH_KEY_META, CrcHashGenerator.getHash(recordData.getMeta()));
+            hash.put(HASH_KEY_META, crcHashGenerator.getHash(recordData.getMeta()));
         }
         return hash;
     }

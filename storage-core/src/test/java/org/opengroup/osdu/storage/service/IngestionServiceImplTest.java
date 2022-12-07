@@ -108,6 +108,9 @@ public class IngestionServiceImplTest {
     @Mock
     private IOPAService opaService;
 
+    @Spy
+    CrcHashGenerator crcHashGenerator;
+
     @InjectMocks
     private IngestionServiceImpl sut;
 
@@ -172,7 +175,7 @@ public class IngestionServiceImplTest {
         when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
         when(this.entitlementsFactory.create(headers)).thenReturn(entitlementsService);
         when(this.entitlementsService.getGroups()).thenReturn(groups);
-        recordBlocks = new RecordBlocks(cloudStorage);
+        recordBlocks = new RecordBlocks(cloudStorage, crcHashGenerator);
         sut.recordBlocks = recordBlocks;
     }
 
@@ -455,7 +458,7 @@ public class IngestionServiceImplTest {
 
         RecordMetadata updatedRecordMetadata = new RecordMetadata(record1);
 
-        String dataHash = CrcHashGenerator.getHash(record1.getData());
+        String dataHash = crcHashGenerator.getHash(record1.getData());
         Map<String, String> hashes = new HashMap<>();
         hashes.put("data",dataHash);
         updatedRecordMetadata.setHash(hashes);

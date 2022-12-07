@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class CrcHashGeneratorTest {
 
+    CrcHashGenerator crcHashGenerator = new CrcHashGenerator();
     @Test
     @DisplayName("Validate same Hash is generated for records with same value")
     void validateSameHashIsGenerated_For_RecordsWithSameValue() {
@@ -28,7 +29,7 @@ class CrcHashGeneratorTest {
 
         RecordData record2 = new RecordData();
         record2.setData(map2);
-        assertEquals(CrcHashGenerator.getHash(record1), CrcHashGenerator.getHash(record2));
+        assertEquals(crcHashGenerator.getHash(record1), crcHashGenerator.getHash(record2));
     }
 
     @Test
@@ -47,6 +48,6 @@ class CrcHashGeneratorTest {
 
         RecordData record2 = new RecordData();
         record2.setData(map2);
-        assertNotEquals(CrcHashGenerator.getHash(record1), CrcHashGenerator.getHash(record2));
+        assertNotEquals(crcHashGenerator.getHash(record1), crcHashGenerator.getHash(record2));
     }
 }
