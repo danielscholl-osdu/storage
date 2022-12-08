@@ -26,18 +26,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.legal.ILegalService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.RecordData;
-import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.core.common.model.storage.TransferBatch;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
@@ -48,8 +36,6 @@ import org.opengroup.osdu.core.common.model.storage.TransferBatch;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
-import org.opengroup.osdu.core.common.storage.IngestionService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
@@ -69,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -247,7 +234,7 @@ public class IngestionServiceImpl implements IngestionService {
 		recordUpdatesMap.putAll(recordUpdateWithoutVersions);
 
 		this.populateUpdatedRecords(recordUpdatesMap, recordsToProcess, transfer, currentTimestamp);
-		recordBlocks.populateRecordBlocksMetadata(existingRecords, recordsToProcess);
+		recordBlocks.populateRecordBlocksMetadata(existingRecords, recordsToProcess, collaborationContext);
 
 		if (skipDupes) {
 			// Skipdupes now compares both the data and metadata fields

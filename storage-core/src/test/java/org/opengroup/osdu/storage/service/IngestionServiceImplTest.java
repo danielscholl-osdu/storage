@@ -468,7 +468,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, updatedRecordMetadata);
 
-        when(this.recordRepository.get(any(List.class))).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
         when(this.cloudStorage.hasAccess(updatedRecordMetadata)).thenReturn(true);
 
         Record recordInStorage = new Record();
@@ -477,11 +477,11 @@ public class IngestionServiceImplTest {
         recordInStorage.setId(RECORD_ID1);
         recordInStorage.setKind(KIND_1);
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(0)).persistRecordBatch(any());
+        verify(this.persistenceService, times(0)).persistRecordBatch(any(), any());
     }
 
 
@@ -563,7 +563,7 @@ public class IngestionServiceImplTest {
         recordInStorage.setId(RECORD_ID1);
         recordInStorage.setKind(KIND_1);
 
-        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1))).thenReturn(existingRecords);
+        when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1), Optional.empty())).thenReturn(existingRecords);
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
         when(this.cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(recordInStorage));
 
@@ -572,11 +572,11 @@ public class IngestionServiceImplTest {
         when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
 
-        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER);
+        TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(1), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(1)).persistRecordBatch(any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(any(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
     }
 
