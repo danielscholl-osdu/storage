@@ -27,23 +27,21 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
+import org.opengroup.osdu.storage.util.CrcHashGenerator;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.inject.Named;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
 @Repository
 public class CloudStorageImpl implements ICloudStorage {
@@ -70,6 +68,9 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Autowired
     private RecordUtil recordUtil;
+
+    @Autowired
+    private CrcHashGenerator crcHashGenerator;
 
     @Autowired
     @Named("STORAGE_CONTAINER_NAME")
@@ -158,7 +159,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 logger.error(String.format("Error while converting metadata for record %s", rm.getId()), e);
                 continue;
             }
-            String hash = getHash(data);
+            String hash = crcHashGenerator.getHash(data);
             hashes.put(rm.getId(), hash);
         }
         return hashes;
@@ -170,7 +171,7 @@ public class CloudStorageImpl implements ICloudStorage {
         RecordData recordData = kv.getValue();
         String recordHash = hashMap.get(updatedRecordMetadata.getId());
 
-        String newHash = getHash(recordData);
+        String newHash = crcHashGenerator.getHash(recordData);
 
         if (newHash.equals(recordHash)) {
             transfer.getSkippedRecords().add(updatedRecordMetadata.getId());
@@ -178,17 +179,6 @@ public class CloudStorageImpl implements ICloudStorage {
         }else{
             return false;
         }
-    }
-
-    private String getHash(RecordData data) {
-        Gson gson = new Gson();
-        Crc32c checksumGenerator = new Crc32c();
-        String newRecordStr = gson.toJson(data);
-        byte[] bytes = newRecordStr.getBytes(StandardCharsets.UTF_8);
-        checksumGenerator.update(bytes, 0, bytes.length);
-        bytes = checksumGenerator.getValueAsBytes();
-        String newHash = new String(encodeBase64(bytes));
-        return newHash;
     }
 
     @Override
@@ -244,10 +234,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         String [] acls = ofNullable(record.getAcl())
                 .map(Acl::getViewers).
-                        orElseGet(() -> {
-                            logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
-                            return new String[]{};
-                        });
+                orElseGet(() -> {
+                    logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
+                    return new String[]{};
+                });
         boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
         boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
@@ -258,10 +248,10 @@ public class CloudStorageImpl implements ICloudStorage {
     {
         String [] acls = ofNullable(record.getAcl())
                 .map(Acl::getOwners).
-                        orElseGet(() -> {
-                            logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
-                            return new String[]{};
-                        });
+                orElseGet(() -> {
+                    logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
+                    return new String[]{};
+                });
         return dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
     }
