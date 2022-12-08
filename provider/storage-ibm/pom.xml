@@ -16,7 +16,7 @@
 	<parent>
 		<artifactId>os-storage</artifactId>
 		<groupId>org.opengroup.osdu</groupId>
-		<version>0.18.0-SNAPSHOT</version>
+		<version>0.19.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
@@ -26,11 +26,12 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<os-core-lib-ibm.version>0.16.0-rc1</os-core-lib-ibm.version>
+		<os-core-lib-ibm.version>0.17.0-rc4</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
 		<spring-security-core.version>5.7.4</spring-security-core.version>
-		<tomcat-embed-core.version>9.0.67</tomcat-embed-core.version>		
+		<tomcat-embed-core.version>9.0.67</tomcat-embed-core.version>
+		<commons-compress.version>1.22</commons-compress.version>		
 	</properties>
 
 	<dependencies>
@@ -38,17 +39,7 @@
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>storage-core</artifactId>
-			<version>0.18.0-SNAPSHOT</version>
-			<exclusions>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-codec</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.springframework.security</groupId>
-					<artifactId>spring-security-core</artifactId>
-				</exclusion>
-			</exclusions>
+			<version>0.19.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.springframework.security</groupId>
@@ -59,16 +50,6 @@
 			<groupId>org.opengroup.osdu</groupId>
 			<artifactId>os-core-lib-ibm</artifactId>
 			<version>${os-core-lib-ibm.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-codec</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.fasterxml.jackson.dataformat</groupId>
-					<artifactId>jackson-dataformat-cbor</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 		    <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -116,6 +97,11 @@
 			<groupId>org.apache.tomcat.embed</groupId>
 			<artifactId>tomcat-embed-core</artifactId>
 			<version>${tomcat-embed-core.version}</version>
+		</dependency>
+		<dependency>
+    		<groupId>org.apache.commons</groupId>
+    		<artifactId>commons-compress</artifactId>
+    		<version>${commons-compress.version}</version>
 		</dependency>	
 	</dependencies>
 

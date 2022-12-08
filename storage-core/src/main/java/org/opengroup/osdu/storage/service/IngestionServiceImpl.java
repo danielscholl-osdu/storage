@@ -15,16 +15,17 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.base.Strings;
+import io.jsonwebtoken.lang.Collections;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.legal.Legal;
-import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.legal.Legal;
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
@@ -42,15 +43,20 @@ import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
+import org.opengroup.osdu.storage.util.RecordBlocks;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-
-import io.jsonwebtoken.lang.Collections;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class IngestionServiceImpl implements IngestionService {
@@ -90,6 +96,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 	@Value("${opa.enabled}")
 	private boolean isOpaEnabled;
+
+	@Autowired
+	RecordBlocks recordBlocks;
 
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user, Optional<CollaborationContext> collaborationContext) {
@@ -189,45 +198,48 @@ public class IngestionServiceImpl implements IngestionService {
 
 		inputRecords.forEach(record -> {
 			RecordData recordData = new RecordData(record);
-			//String test = CollaborationUtilImpl.getIdWithNamespace(record.getId(), collaborationContext);
-
+			Map<String, String> hash = recordBlocks.hashForRecordData(recordData);
 			if (!existingRecords.containsKey(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext))) {
 				RecordMetadata recordMetadata = new RecordMetadata(record);
 				recordMetadata.setUser(transfer.getUser());
 				recordMetadata.setStatus(RecordState.active);
 				recordMetadata.setCreateTime(currentTimestamp);
 				recordMetadata.addGcsPath(transfer.getVersion());
-
+				recordMetadata.setHash(hash);
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
 				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext));
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
-				if(!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {
+				if (!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {
 					updatedRecordMetadata.setPreviousVersionKind(existingRecordMetadata.getKind());
 				}
-
 				List<String> versions = new ArrayList<>();
 				versions.addAll(existingRecordMetadata.getGcsVersionPaths());
 
 				updatedRecordMetadata.setUser(existingRecordMetadata.getUser());
 				updatedRecordMetadata.setCreateTime(existingRecordMetadata.getCreateTime());
 				updatedRecordMetadata.setGcsVersionPaths(versions);
+				updatedRecordMetadata.setHash(hash);
 
-                if (versions.isEmpty()) {
-                    this.logger.warning(String.format("Record %s does not have versions available", updatedRecordMetadata.getId()));
-                    recordUpdateWithoutVersions.put(updatedRecordMetadata, recordData);
-                } else {
-                    recordUpdatesMap.put(updatedRecordMetadata, recordData);
-                }
+				if (versions.isEmpty()) {
+					this.logger.warning(String.format("Record %s does not have versions available", updatedRecordMetadata.getId()));
+					recordUpdateWithoutVersions.put(updatedRecordMetadata, recordData);
+				} else {
+					recordUpdatesMap.put(updatedRecordMetadata, recordData);
+				}
 			}
 		});
 
-		if (skipDupes && recordUpdatesMap.size() > 0) {
-			this.removeDuplicatedRecords(recordUpdatesMap, transfer);
-		}
+
 		recordUpdatesMap.putAll(recordUpdateWithoutVersions);
 
 		this.populateUpdatedRecords(recordUpdatesMap, recordsToProcess, transfer, currentTimestamp);
+		recordBlocks.populateRecordBlocksMetadata(existingRecords, recordsToProcess, collaborationContext);
+
+		if (skipDupes) {
+			// Skipdupes now compares both the data and metadata fields
+			this.removeDuplicatedRecords(recordsToProcess, transfer);
+		}
 		return recordsToProcess;
 	}
 
@@ -302,12 +314,17 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 	}
 
-	private void removeDuplicatedRecords(Map<RecordMetadata, RecordData> recordUpdatesMap, TransferInfo transfer) {
-		Collection<RecordMetadata> metadataList = recordUpdatesMap.keySet();
-		Map<String, String> hashMap = this.cloudStorage.getHash(metadataList);
-		recordUpdatesMap
-				.entrySet()
-				.removeIf(kv -> this.cloudStorage.isDuplicateRecord(transfer, hashMap, kv));
+	private void removeDuplicatedRecords (List < RecordProcessing > recordsToProcess, TransferInfo transfer){
+
+		List<RecordProcessing> recordsToRemove = new ArrayList<>();
+		for (RecordProcessing recordProcessing : recordsToProcess) {
+			// RecordBlocks field will have some value if record is updated or will have empty value
+			if (recordProcessing.getOperationType().equals(OperationType.update) && "".equals(recordProcessing.getRecordBlocks())) {
+				recordsToRemove.add(recordProcessing);
+				transfer.getSkippedRecords().add(recordProcessing.getRecordMetadata().getId());
+			}
+		}
+		recordsToProcess.removeAll(recordsToRemove);
 	}
 
 	private void populateUpdatedRecords(Map<RecordMetadata, RecordData> recordUpdatesMap,
