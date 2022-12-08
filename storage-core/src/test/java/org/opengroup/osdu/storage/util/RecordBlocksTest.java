@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Matchers.any;
@@ -139,7 +140,7 @@ public class RecordBlocksTest {
         recordsToProcess.add(recordProcessing);
 
         Mockito.when(cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(this.record1));
-        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess);
+        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess, Optional.empty());
         assertEquals("", recordsToProcess.get(0).getRecordBlocks());
     }
 
@@ -193,7 +194,7 @@ public class RecordBlocksTest {
         recordsToProcess.add(recordProcessing);
 
         Mockito.when(cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(this.record1));
-        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess);
+        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess, Optional.empty());
         assertEquals("data", recordsToProcess.get(0).getRecordBlocks());
     }
 
@@ -248,7 +249,7 @@ public class RecordBlocksTest {
         recordsToProcess.add(recordProcessing);
 
         Mockito.when(cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(this.record1));
-        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess);
+        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess, Optional.empty());
         assertEquals("metadata", recordsToProcess.get(0).getRecordBlocks());
     }
 
@@ -302,7 +303,7 @@ public class RecordBlocksTest {
         recordsToProcess.add(recordProcessing);
 
         Mockito.when(cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(this.record1));
-        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess);
+        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess, Optional.empty());
         assertEquals("metadata+", recordsToProcess.get(0).getRecordBlocks());
     }
 
@@ -357,7 +358,7 @@ public class RecordBlocksTest {
         recordsToProcess.add(recordProcessing);
 
 
-        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess);
+        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess, Optional.empty());
         assertEquals("metadata-", recordsToProcess.get(0).getRecordBlocks());
     }
 
@@ -412,7 +413,7 @@ public class RecordBlocksTest {
         recordsToProcess.add(recordProcessing);
 
         Mockito.when(cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(this.record1));
-        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess);
+        recordBlocks.populateRecordBlocksMetadata(existingRecord, recordsToProcess, Optional.empty());
         assertEquals("data metadata", recordsToProcess.get(0).getRecordBlocks());
     }
 
