@@ -26,9 +26,11 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
@@ -64,7 +66,7 @@ public class OsmQueryRepository implements IQueryRepository {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
+    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext) {
 
         GetQuery<RecordMetadata> q = new GetQuery<>(RecordMetadata.class, getDestination(), and(eq(KIND, kind), eq(STATUS, RecordState.active)));
         Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList("id"), false, cursor).outcome();

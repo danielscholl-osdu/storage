@@ -524,6 +524,29 @@ public class RecordUtil {
 		return records.toString();
 	}
 
+	public static JsonObject buildUpdateTagBody(String id, String op, String val) {
+		JsonArray records = new JsonArray();
+		records.add(id);
+
+		JsonArray value = new JsonArray();
+		value.add(val);
+		JsonObject operation = new JsonObject();
+		operation.addProperty("op", op);
+		operation.addProperty("path", "/tags");
+		operation.add("value", value);
+		JsonArray ops = new JsonArray();
+		ops.add(operation);
+
+		JsonObject query = new JsonObject();
+		query.add("ids", records);
+
+		JsonObject updateBody = new JsonObject();
+		updateBody.add("query", query);
+		updateBody.add("ops", ops);
+
+		return updateBody;
+	}
+
 	public static String createJsonRecordWithWGS84Coordinates(int recordsNumber, String id, String kind, String legalTag, String prCRS, String prUNITZ, String geometryType, String attributeType) {
 		JsonArray records = new JsonArray();
 		Gson gson = new Gson();

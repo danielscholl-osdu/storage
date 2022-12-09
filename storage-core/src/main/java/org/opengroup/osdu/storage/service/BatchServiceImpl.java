@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.function.Consumer;
 
@@ -30,6 +31,7 @@ import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
@@ -44,6 +46,7 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -85,17 +88,17 @@ public abstract class BatchServiceImpl implements BatchService {
     private boolean isOpaEnabled;
 
     @Override
-    public MultiRecordInfo getMultipleRecords(MultiRecordIds ids) {
+    public MultiRecordInfo getMultipleRecords(MultiRecordIds ids, Optional<CollaborationContext> collaborationContext) {
 
         List<String> recordIds = ids.getRecords();
         Map<String, String> validRecords = new HashMap<>();
         List<String> recordsNotFound = new ArrayList<>();
         List<String> retryRecords = new ArrayList<>();
 
-        Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
+        Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds, collaborationContext);
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
 
             if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
                 recordsNotFound.add(recordId);
@@ -115,10 +118,10 @@ public abstract class BatchServiceImpl implements BatchService {
             return response;
         }
 
-        Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords);
+        Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords, collaborationContext);
 
         this.logUnauthorizedGCSRecords(validRecords, recordsPreAclMap);
-        Map<String, String> recordsMap = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata);
+        Map<String, String> recordsMap = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata, collaborationContext);
         this.auditLogger.readMultipleRecordsSuccess(validRecordObjects);
 
         validRecordObjects.clear();
@@ -140,7 +143,7 @@ public abstract class BatchServiceImpl implements BatchService {
                     jsonRecord = PersistenceHelper.filterRecordDataFields(jsonRecord, validAttributes);
                 }
 
-                RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+                RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 JsonObject recordObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
 
                 Gson gson = new Gson();
@@ -159,7 +162,7 @@ public abstract class BatchServiceImpl implements BatchService {
     }
 
     @Override
-    public MultiRecordResponse fetchMultipleRecords(MultiRecordRequest ids) {
+    public MultiRecordResponse fetchMultipleRecords(MultiRecordRequest ids, Optional<CollaborationContext> collaborationContext) {
         String frameOfRef = this.headers.getHeaders().get(FRAME_OF_REF_HEADER);
         // TODO:
         // it appears FRAME_OF_REF_HEADER is required to even set isConversionNeeded to false
@@ -181,10 +184,10 @@ public abstract class BatchServiceImpl implements BatchService {
         List<ConversionStatus> conversionStatuses = new ArrayList<>();
 
         List<String> recordIds = ids.getRecords();
-        Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds);
+        Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds, collaborationContext);
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
             if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
                 recordsNotFound.add(recordId);
                 continue;
@@ -200,9 +203,9 @@ public abstract class BatchServiceImpl implements BatchService {
             return response;
         }
 
-        Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords);
+        Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords, collaborationContext);
         this.logUnauthorizedGCSRecords(validRecords, recordsPreAclMap);
-        Map<String, String> recordsFromCloudStorage = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata);
+        Map<String, String> recordsFromCloudStorage = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata, collaborationContext);
 
         this.auditLogger.readMultipleRecordsSuccess(validRecordObjects);
 
@@ -214,7 +217,7 @@ public abstract class BatchServiceImpl implements BatchService {
                 recordsNotFound.add(recordId);
             } else {
                 JsonElement jsonRecord = jsonParser.parse(recordData);
-                RecordMetadata recordMetadata = recordsMetadata.get(recordId);
+                RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 JsonObject recordJsonObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(
                         jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
                 jsonObjectRecords.add(recordJsonObject);
@@ -247,11 +250,11 @@ public abstract class BatchServiceImpl implements BatchService {
         return records;
     }
 
-    private Map<String, String> postCheckRecordsAcl(Map<String, String> recordsPreAclMap, Map<String, RecordMetadata> recordsMetadata) {
+    private Map<String, String> postCheckRecordsAcl(Map<String, String> recordsPreAclMap, Map<String, RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         Map<String, String> recordsMap = new HashMap<>();
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         for (Map.Entry<String, String> record : recordsPreAclMap.entrySet()) {
-            RecordMetadata recordMetadata = recordsMetadata.get(record.getKey());
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(record.getKey(), collaborationContext));
             recordMetadataList.add(recordMetadata);
         }
 

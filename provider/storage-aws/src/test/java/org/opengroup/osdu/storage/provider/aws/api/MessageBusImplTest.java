@@ -38,6 +38,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.mockito.MockitoAnnotations.openMocks;
 
@@ -105,7 +106,7 @@ public class MessageBusImplTest {
         }
 
         // act
-        messageBus.publishMessage(headers, message);
+        messageBus.publishMessage(Optional.empty(), headers, message);
 
         // assert
         Mockito.verify(snsClient, Mockito.times(1)).publish(Mockito.eq(publishRequest));

@@ -24,6 +24,8 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -83,8 +85,8 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
                 for (RecordMetadata recordMetadata : recordsMetadata) {
                     recordsId.append(", ").append(recordMetadata.getId());
                 }
-                this.recordsRepo.createOrUpdate(recordsMetadata);
-                this.messageBus.publishMessage(headers, pubsubInfos);
+                this.recordsRepo.createOrUpdate(recordsMetadata, Optional.empty());
+                this.messageBus.publishMessage(Optional.empty(), headers, pubsubInfos);
                 this.auditLogger.updateRecordsComplianceStateSuccess(
                     singletonList("[" + recordsId.substring(2) + "]"));
                 results = this.recordsRepo.queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);

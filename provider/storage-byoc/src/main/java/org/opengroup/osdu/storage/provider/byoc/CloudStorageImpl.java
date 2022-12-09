@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.provider.byoc;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.util.Crc32c;
@@ -162,7 +163,7 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, String> read(Map<String, String> objects)
+    public Map<String, String> read(Map<String, String> objects, Optional<CollaborationContext> collaborationContext)
     {
         Map<String, String> map = new HashMap<>();
         for (RecordProcessing rp : memList)

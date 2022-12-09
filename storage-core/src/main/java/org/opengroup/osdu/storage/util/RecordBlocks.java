@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -34,12 +35,12 @@ public class RecordBlocks {
     private static final String HASH_KEY_META = "meta";
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public void populateRecordBlocksMetadata(Map<String, RecordMetadata> existingRecords, List<RecordProcessing> recordsToProcess) {
+    public void populateRecordBlocksMetadata(Map<String, RecordMetadata> existingRecords, List<RecordProcessing> recordsToProcess, Optional<CollaborationContext> collaborationContext) {
 
         for (RecordProcessing x : recordsToProcess) {
             if (x.getOperationType().equals(OperationType.update)) {
                 String recordBlocksUpdate = "";
-                String id = x.getRecordMetadata().getId();
+                String id = CollaborationUtil.getIdWithNamespace(x.getRecordMetadata().getId(), collaborationContext);
                 RecordMetadata previousRecordMetadata = existingRecords.get(id);
                 Map<String, Integer> previousMetadataCompare = populateHashes(previousRecordMetadata);
                 Map<String, Integer> currentMetadataCompare = populateHashes(x.getRecordMetadata());

@@ -18,20 +18,22 @@ import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 // <K> is a serializable (e.g a Cursor, com.google.cloud.datastore.Cursor in case of gcp implementation)
 public interface IRecordsMetadataRepository<K extends Serializable> {
-	List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata);
+	List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext);
 
-	void delete(String id);
+	void delete(String id, Optional<CollaborationContext> collaborationContext);
 
-	RecordMetadata get(String id);
+	RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext);
 
-	Map<String, RecordMetadata> get(List<String> ids);
+	Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext);
 
 	//TODO remove after all providers replace it with the new method queryByLegal
 	AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, K cursor);

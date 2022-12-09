@@ -34,6 +34,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -58,7 +59,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         List<RecordMetadata> recordMetadataList = RecordMetadataGenerator.generate(5, "legalTag").stream().map(RecordMetadataMongoDBDto::getData).collect(Collectors.toList());
 
         //when
-        List<RecordMetadata> recordMetadataListFromRepo = recordsMetadataRepository.createOrUpdate(recordMetadataList);
+        List<RecordMetadata> recordMetadataListFromRepo = recordsMetadataRepository.createOrUpdate(recordMetadataList, Optional.empty());
 
         //then
         allFromHelper = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
@@ -91,7 +92,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         assertEquals(existsListAfterChange.size() + notExistrecordsCount, notExistsList.size());
 
         //when
-        List<RecordMetadata> recordMetadataListFromRepo = recordsMetadataRepository.createOrUpdate(notExistsList);
+        List<RecordMetadata> recordMetadataListFromRepo = recordsMetadataRepository.createOrUpdate(notExistsList, Optional.empty());
 
         //then
         allFromHelper = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
@@ -113,7 +114,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         assertEquals(1, recordMetadataMongoDBDtos.size());
 
         //when
-        recordsMetadataRepository.delete(id);
+        recordsMetadataRepository.delete(id, Optional.empty());
 
         //then
         recordMetadataMongoDBDtos = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
@@ -127,7 +128,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         assertEquals(0, recordMetadataMongoDBDtos.size());
 
         //when
-        recordsMetadataRepository.delete("anyId");
+        recordsMetadataRepository.delete("anyId", Optional.empty());
 
         //then
         recordMetadataMongoDBDtos = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
@@ -143,7 +144,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         assertNotNull(mongoTemplateHelper.insert(recordMetadataMongoDBDto));
 
         //when
-        RecordMetadata recordMetadataFromRepo = recordsMetadataRepository.get(id);
+        RecordMetadata recordMetadataFromRepo = recordsMetadataRepository.get(id, Optional.empty());
 
         //then
         assertEquals(id, recordMetadataFromRepo.getId());
@@ -156,7 +157,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         assertEquals(0, all.size());
 
         //when
-        RecordMetadata recordMetadataFromRepo = recordsMetadataRepository.get(RECORD_ID);
+        RecordMetadata recordMetadataFromRepo = recordsMetadataRepository.get(RECORD_ID, Optional.empty());
 
         //then
         assertNull(recordMetadataFromRepo);
@@ -173,7 +174,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
         assertEquals(firstList.size() + secondList.size(), all.size());
 
         //when
-        Map<String, RecordMetadata> stringRecordMetadataMap = recordsMetadataRepository.get(firstList.stream().map(RecordMetadataMongoDBDto::getId).collect(Collectors.toList()));
+        Map<String, RecordMetadata> stringRecordMetadataMap = recordsMetadataRepository.get(firstList.stream().map(RecordMetadataMongoDBDto::getId).collect(Collectors.toList()), Optional.empty());
 
         //then
         stringRecordMetadataMap.forEach((key, value) -> {
