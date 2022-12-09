@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -48,6 +49,7 @@ public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
     private static final String BUCKET = "anyBucket";
+    private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
     private IRecordsMetadataRepository recordRepository;
@@ -93,7 +95,7 @@ public class PersistenceServiceImplTest {
 
         TransferBatch batch = this.createBatchTransfer();
 
-        this.sut.persistRecordBatch(batch);
+        this.sut.persistRecordBatch(batch, Optional.empty());
 
         for (int i = 0; i < BATCH_SIZE; i++) {
             verify(this.cloudStorage)
@@ -102,7 +104,7 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
 
-        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture());
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
 
         List<List> capturedDatastoreList = datastoreCaptor.getAllValues();
 
@@ -113,7 +115,7 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<PubSubInfo[]> pubsubCaptor = ArgumentCaptor.forClass(PubSubInfo[].class);
 
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubCaptor.capture());
 
         this.assertPubsubInfo(48, pubsubCaptor.getAllValues());
         verify(this.cloudStorage, times(0)).delete(any(RecordMetadata.class));
@@ -126,18 +128,18 @@ public class PersistenceServiceImplTest {
         TransferBatch batch = this.createBatchTransfer();
 
         this.setupRecordRepository(23, 10, 25);
-        doThrow(new NullPointerException()).when(this.recordRepository).createOrUpdate(any());
+        doThrow(new NullPointerException()).when(this.recordRepository).createOrUpdate(any(), any());
 
         try {
-            this.sut.persistRecordBatch(batch);
+            this.sut.persistRecordBatch(batch, Optional.empty());
             fail("Expected exception");
         } catch (AppException e) {
             assertEquals(500, e.getError().getCode());
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture());
-        verify(this.pubSubClient, times(0)).publishMessage(any());
+        verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
     }
     @Ignore
     @Test
@@ -147,9 +149,9 @@ public class PersistenceServiceImplTest {
         TransferBatch batch = this.createBatchTransfer();
 
         this.setupRecordRepository(23, 10, 25);
-        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any());
+        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any(), any());
         try {
-            this.sut.persistRecordBatch(batch);
+            this.sut.persistRecordBatch(batch, Optional.empty());
             fail("Expected exception");
         } catch (AppException e) {
             assertEquals(413, e.getError().getCode());
@@ -157,8 +159,8 @@ public class PersistenceServiceImplTest {
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture());
-        verify(this.pubSubClient, times(0)).publishMessage(any());
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
     @Ignore
     @Test
@@ -168,9 +170,9 @@ public class PersistenceServiceImplTest {
         TransferBatch batch = this.createBatchTransfer();
 
         this.setupRecordRepository(23, 10, 25);
-        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any());
+        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
         try {
-            this.sut.persistRecordBatch(batch);
+            this.sut.persistRecordBatch(batch, Optional.empty());
             fail("Expected exception");
         } catch (AppException e) {
             assertEquals(500, e.getError().getCode());
@@ -178,8 +180,8 @@ public class PersistenceServiceImplTest {
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture());
-        verify(this.pubSubClient, times(0)).publishMessage(any());
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
 
     @Ignore
@@ -195,11 +197,11 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
-        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any());
-        when(this.recordRepository.get(recordsId)).thenReturn(currentRecords);
+        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
-            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>());
+            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
             assertEquals(413, e.getError().getCode());
@@ -220,11 +222,11 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
-        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any());
-        when(this.recordRepository.get(recordsId)).thenReturn(currentRecords);
+        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
-            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>());
+            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
             verify(this.logger, times(1)).warning("Reverting meta data changes");
@@ -243,8 +245,8 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
-        when(this.recordRepository.get(recordsId)).thenReturn(currentRecords);
-        List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>());
+        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
+        List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
     }
@@ -265,7 +267,7 @@ public class PersistenceServiceImplTest {
             entities2.add(mock);
         }
 
-        when(this.recordRepository.createOrUpdate(any(List.class))).thenReturn(entities1, entities2);
+        when(this.recordRepository.createOrUpdate(any(List.class), any())).thenReturn(entities1, entities2);
     }
 
     private TransferBatch createBatchTransfer() {

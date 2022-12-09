@@ -21,7 +21,10 @@ import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import lombok.Getter;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -32,7 +35,7 @@ public class OqmPubSubStub implements IMessageBus {
     private final List<Map<DpsHeaders, PubSubInfo[]>> collector = new ArrayList<>();
 
     @Override
-    public synchronized void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+    public synchronized void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
         collector.add(ImmutableMap.of(DpsHeaders.createFromMap(headers.getHeaders()), messages));
     }
 }

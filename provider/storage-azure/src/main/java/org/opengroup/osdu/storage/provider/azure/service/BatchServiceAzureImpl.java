@@ -15,12 +15,15 @@
 package org.opengroup.osdu.storage.provider.azure.service;
 
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.opengroup.osdu.storage.service.BatchServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
@@ -44,9 +47,9 @@ public class BatchServiceAzureImpl extends BatchServiceImpl {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecords(String cursor, String kind, Integer limit)
+    public DatastoreQueryResult getAllRecords(String cursor, String kind, Integer limit, Optional<CollaborationContext> collaborationContext)
     {
-        DatastoreQueryResult result = this.queryRepository.getAllRecordIdsFromKind(kind, limit, cursor);
+        DatastoreQueryResult result = this.queryRepository.getAllRecordIdsFromKind(kind, limit, cursor, collaborationContext);
         if (!result.getResults().isEmpty()) {
             this.auditLogger.readAllRecordsOfGivenKindSuccess(singletonList(kind));
         }

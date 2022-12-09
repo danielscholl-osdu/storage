@@ -19,7 +19,7 @@ import org.mockito.Mockito;
 import org.opengroup.osdu.core.aws.mongodb.MongoDBSimpleFactory;
 import org.opengroup.osdu.core.aws.mongodb.MultiClusteredConfigReader;
 import org.opengroup.osdu.core.aws.mongodb.config.MongoProperties;
-import org.opengroup.osdu.core.common.storage.IngestionService;
+import org.opengroup.osdu.storage.service.IngestionService;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.conversion.CrsConversionService;
 import org.opengroup.osdu.storage.provider.aws.CloudStorageImpl;

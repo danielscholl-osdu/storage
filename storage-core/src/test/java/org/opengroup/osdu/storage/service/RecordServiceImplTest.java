@@ -33,6 +33,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -41,7 +42,6 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
@@ -54,6 +54,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RecordServiceImplTest {
@@ -68,6 +70,7 @@ public class RecordServiceImplTest {
 
     private static final String[] OWNERS = new String[]{"owner1@slb.com", "owner2@slb.com"};
     private static final String[] VIEWERS = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+    private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
     private IRecordsMetadataRepository recordRepository;
@@ -82,7 +85,7 @@ public class RecordServiceImplTest {
     private IEntitlementsAndCacheService entitlementsAndCacheService;
 
     @Mock
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
 
     @Mock
     private DpsHeaders headers;
@@ -118,7 +121,7 @@ public class RecordServiceImplTest {
     @Test
     public void should_throwHttp404_when_purgingRecordWhichDoesNotExist() {
         try {
-            this.sut.purgeRecord(RECORD_ID);
+            this.sut.purgeRecord(RECORD_ID, Optional.empty());
 
             fail("Should not succeed!");
         } catch (AppException e) {
@@ -145,20 +148,20 @@ public class RecordServiceImplTest {
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
-        this.sut.purgeRecord(RECORD_ID);
+        this.sut.purgeRecord(RECORD_ID, Optional.empty());
         verify(this.auditLogger).purgeRecordSuccess(any());
 
-        verify(this.recordRepository).delete(RECORD_ID);
+        verify(this.recordRepository).delete(RECORD_ID, Optional.empty());
 
         verify(this.cloudStorage).delete(record);
 
         PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(RECORD_ID, "any kind", DeletionType.hard);
 
-        verify(this.pubSubClient).publishMessage(this.headers, pubSubDeleteInfo);
+        verify(this.pubSubClient).publishMessage(Optional.empty(), this.headers, pubSubDeleteInfo);
     }
 
 
@@ -176,13 +179,13 @@ public class RecordServiceImplTest {
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
 
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
         try {
-            this.sut.purgeRecord(RECORD_ID);
+            this.sut.purgeRecord(RECORD_ID, Optional.empty());
 
             fail("Should not succeed");
         } catch (AppException e) {
@@ -208,14 +211,14 @@ public class RecordServiceImplTest {
 
         AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
-        doThrow(originalException).when(this.recordRepository).delete(RECORD_ID);
+        doThrow(originalException).when(this.recordRepository).delete(RECORD_ID, Optional.empty());
 
         try {
-            this.sut.purgeRecord(RECORD_ID);
+            this.sut.purgeRecord(RECORD_ID, Optional.empty());
 
             fail("Should not succeed!");
         } catch (AppException e) {
@@ -231,7 +234,7 @@ public class RecordServiceImplTest {
     @Test
     public void should_returnHttp400_when_purgingARecordWhichIdDoesNotMatchTenantName() {
         try {
-            this.sut.purgeRecord("invalidID");
+            this.sut.purgeRecord("invalidID", Optional.empty());
 
             fail("Should not succeed!");
         } catch (AppException e) {
@@ -258,18 +261,18 @@ public class RecordServiceImplTest {
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
         when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
                 "The user is not authorized to perform this action")).when(this.cloudStorage).delete(record);
         try {
-            this.sut.purgeRecord(RECORD_ID);
+            this.sut.purgeRecord(RECORD_ID, Optional.empty());
 
             fail("Should not succeed");
         } catch (AppException e) {
-            verify(this.recordRepository).createOrUpdate(Lists.newArrayList(record));
+            verify(this.recordRepository).createOrUpdate(Lists.newArrayList(record), Optional.empty());
             verify(this.auditLogger).purgeRecordFail(any());
         } catch (Exception e) {
             fail("Should not get different exception");
@@ -285,17 +288,17 @@ public class RecordServiceImplTest {
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
         when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(true);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         when(this.cloudStorage.hasAccess(record)).thenReturn(true);
 
-        this.sut.deleteRecord(RECORD_ID, "anyUserName");
+        this.sut.deleteRecord(RECORD_ID, "anyUserName", Optional.empty());
         verify(this.auditLogger).deleteRecordSuccess(any());
 
         ArgumentCaptor<List> recordListCaptor = ArgumentCaptor.forClass(List.class);
 
-        verify(this.recordRepository).createOrUpdate(recordListCaptor.capture());
+        verify(this.recordRepository).createOrUpdate(recordListCaptor.capture(), any());
 
         List capturedRecords = recordListCaptor.getValue();
         assertEquals(1, capturedRecords.size());
@@ -309,7 +312,7 @@ public class RecordServiceImplTest {
 
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubMessageCaptor.capture());
 
         PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
@@ -326,7 +329,7 @@ public class RecordServiceImplTest {
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
 
         when(this.cloudStorage.hasAccess(record)).thenReturn(false);
         when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(false);
@@ -334,7 +337,7 @@ public class RecordServiceImplTest {
 
 
         try {
-            this.sut.deleteRecord(RECORD_ID, "anyUser");
+            this.sut.deleteRecord(RECORD_ID, "anyUser", Optional.empty());
 
             fail("Should not succeed!");
         } catch (AppException e) {
@@ -353,10 +356,10 @@ public class RecordServiceImplTest {
         RecordMetadata record = new RecordMetadata();
         record.setStatus(RecordState.deleted);
 
-        when(this.recordRepository.get(RECORD_ID)).thenReturn(record);
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
 
         try {
-            this.sut.deleteRecord(RECORD_ID, "anyUserName");
+            this.sut.deleteRecord(RECORD_ID, "anyUserName", Optional.empty());
 
             fail("Should not succeed!");
         } catch (AppException e) {
@@ -375,16 +378,16 @@ public class RecordServiceImplTest {
             put(RECORD_ID, record);
         }};
 
-        when(recordRepository.get(singletonList(RECORD_ID))).thenReturn(expectedRecordMetadataMap);
+        when(recordRepository.get(singletonList(RECORD_ID), Optional.empty())).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
-        sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME);
+        sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME, Optional.empty());
 
-        verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
+        verify(recordRepository, times(1)).get(singletonList(RECORD_ID), Optional.empty());
         verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
-        verify(recordRepository, times(1)).createOrUpdate(singletonList(record));
+        verify(recordRepository, times(1)).createOrUpdate(singletonList(record), Optional.empty());
         verify(auditLogger, only()).deleteRecordSuccess(singletonList(RECORD_ID));
-        verifyPubSubPublished();
+        verifyPubSubPublished(Optional.empty());
 
         assertEquals(RecordState.deleted, record.getStatus());
         assertEquals(USER_NAME, record.getModifyUser());
@@ -393,25 +396,63 @@ public class RecordServiceImplTest {
     }
 
     @Test
+    public void shouldBulkDeleteRecords_successfully_inCollaborationContext() {
+        RecordMetadata record = buildRecordMetadata();
+        Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(COLLABORATION_CONTEXT.get().getId() + RECORD_ID, record);
+        }};
+
+        when(recordRepository.get(singletonList(RECORD_ID), COLLABORATION_CONTEXT)).thenReturn(expectedRecordMetadataMap);
+        when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
+
+        sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME, COLLABORATION_CONTEXT);
+
+        verify(recordRepository, times(1)).get(singletonList(RECORD_ID), COLLABORATION_CONTEXT);
+        verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
+        verify(recordRepository, times(1)).createOrUpdate(singletonList(record), COLLABORATION_CONTEXT);
+        verify(auditLogger, only()).deleteRecordSuccess(singletonList(RECORD_ID));
+        verifyPubSubPublished(COLLABORATION_CONTEXT);
+
+        assertEquals(RecordState.deleted, record.getStatus());
+        assertEquals(USER_NAME, record.getModifyUser());
+        assertNotNull(record.getModifyTime());
+        assertTrue(record.getModifyTime() != 0);
+    }
+
+    @Test
+    public void shouldSoftDeleteRecords_successfully_inCollaborationContext() {
+        RecordMetadata record = buildRecordMetadata();
+        when(recordRepository.get(RECORD_ID, COLLABORATION_CONTEXT)).thenReturn(record);
+        when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
+        sut.deleteRecord(RECORD_ID, USER_NAME, COLLABORATION_CONTEXT);
+        verify(recordRepository, times(1)).get(RECORD_ID, COLLABORATION_CONTEXT);
+        verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
+        verify(auditLogger, only()).deleteRecordSuccess(singletonList(RECORD_ID));
+        verifyPubSubPublished(COLLABORATION_CONTEXT);
+        assertEquals(RecordState.deleted, record.getStatus());
+        assertEquals(USER_NAME, record.getModifyUser());
+
+    }
+    @Test
     public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhichUserDoesNotHaveAccessTo() {
         RecordMetadata record = buildRecordMetadata();
         Map<String, RecordMetadata> expectedRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
             put(RECORD_ID, record);
         }};
 
-        when(recordRepository.get(singletonList(RECORD_ID))).thenReturn(expectedRecordMetadataMap);
+        when(recordRepository.get(singletonList(RECORD_ID), Optional.empty())).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(false);
 
         try {
-            sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME);
+            sut.bulkDeleteRecords(singletonList(RECORD_ID), USER_NAME, Optional.empty());
 
             fail("Should not succeed!");
         } catch (DeleteRecordsException e) {
             String errorMsg = String
                     .format("The user is not authorized to perform delete record with id %s", RECORD_ID);
-            verify(recordRepository, times(1)).get(singletonList(RECORD_ID));
+            verify(recordRepository, times(1)).get(singletonList(RECORD_ID), Optional.empty());
             verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
-            verify(recordRepository, never()).createOrUpdate(any());
+            verify(recordRepository, never()).createOrUpdate(any(), any());
             verify(auditLogger, only()).deleteRecordFail(singletonList(errorMsg));
             verifyZeroInteractions(pubSubClient);
 
@@ -434,21 +475,21 @@ public class RecordServiceImplTest {
             put(RECORD_ID, record);
         }};
 
-        when(recordRepository.get(asList(RECORD_ID, RECORD_ID_1))).thenReturn(expectedRecordMetadataMap);
+        when(recordRepository.get(asList(RECORD_ID, RECORD_ID_1), Optional.empty())).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
         try {
-            sut.bulkDeleteRecords(asList(RECORD_ID, RECORD_ID_1), USER_NAME);
+            sut.bulkDeleteRecords(asList(RECORD_ID, RECORD_ID_1), USER_NAME, Optional.empty());
 
             fail("Should not succeed!");
         } catch (DeleteRecordsException e) {
             String expectedErrorMessage = "Record with id '" + RECORD_ID_1 + "' not found";
-            verify(recordRepository, times(1)).get(asList(RECORD_ID, RECORD_ID_1));
+            verify(recordRepository, times(1)).get(asList(RECORD_ID, RECORD_ID_1), Optional.empty());
             verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
-            verify(recordRepository, times(1)).createOrUpdate(singletonList(record));
+            verify(recordRepository, times(1)).createOrUpdate(singletonList(record), Optional.empty());
             verify(auditLogger, times(1)).deleteRecordSuccess(singletonList(RECORD_ID));
             verify(auditLogger, times(1)).deleteRecordFail(singletonList(expectedErrorMessage));
-            verifyPubSubPublished();
+            verifyPubSubPublished(Optional.empty());
 
             assertEquals(RecordState.deleted, record.getStatus());
             assertEquals(USER_NAME, record.getModifyUser());
@@ -470,7 +511,7 @@ public class RecordServiceImplTest {
             doThrow(new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", errorMsg))
                     .when(recordUtil).validateRecordIds(singletonList(RECORD_ID));
 
-            sut.bulkDeleteRecords(asList(RECORD_ID), USER_NAME);
+            sut.bulkDeleteRecords(asList(RECORD_ID), USER_NAME, Optional.empty());
 
             fail("Should not succeed!");
         } catch (AppException e) {
@@ -484,10 +525,14 @@ public class RecordServiceImplTest {
         }
     }
 
-    private void verifyPubSubPublished() {
+    private void verifyPubSubPublished(Optional<CollaborationContext> collaborationContext) {
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
+        if (collaborationContext.isPresent()){
+            verify(this.pubSubClient).publishMessage(eq(collaborationContext), eq(this.headers), pubsubMessageCaptor.capture());
+        } else {
+            verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubMessageCaptor.capture());
+        }
 
         PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());

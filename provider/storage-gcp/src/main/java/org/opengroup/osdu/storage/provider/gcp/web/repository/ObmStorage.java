@@ -39,6 +39,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
@@ -114,10 +115,10 @@ public class ObmStorage implements ICloudStorage {
 
     @Override
     public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata,
-        List<String> lockedRecords, Map<String, String> recordsIdMap) {
+                                                 List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
         String bucket = getBucketName(this.tenantInfo);
         Map<String, Acl> originalAcls = new HashMap<>();
-        Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId);
+        Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId, collaborationContext);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
             String id = recordMetadata.getId();
@@ -140,7 +141,7 @@ public class ObmStorage implements ICloudStorage {
     }
 
     @Override
-    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls) {
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
         String bucket = getBucketName(this.tenantInfo);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
@@ -220,7 +221,7 @@ public class ObmStorage implements ICloudStorage {
     }
 
     @Override
-    public Map<String, String> read(Map<String, String> objects) {
+    public Map<String, String> read(Map<String, String> objects, Optional<CollaborationContext> collaborationContext) {
 
         String bucketName = getBucketName(this.tenantInfo);
         String dataPartitionId = tenantInfo.getDataPartitionId();
