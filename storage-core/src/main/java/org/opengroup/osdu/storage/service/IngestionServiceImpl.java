@@ -365,9 +365,9 @@ public class IngestionServiceImpl implements IngestionService {
 				List<RecordIdWithVersion> parents = new ArrayList<>();
 
 				for (String parent : record.getAncestry().getParents()) {
-					String[] tokens = parent.split(":");
-					String parentRecordId = String.join(":", tokens[0], tokens[1], tokens[2]);
-					Long parentRecordVersion = Long.parseLong(tokens[3]);
+					int lastColon = parent.lastIndexOf(":");
+					String parentRecordId = parent.substring(0, lastColon);
+					Long parentRecordVersion = Long.parseLong(parent.substring(lastColon + 1));
 
 					parents.add(
 							RecordIdWithVersion
