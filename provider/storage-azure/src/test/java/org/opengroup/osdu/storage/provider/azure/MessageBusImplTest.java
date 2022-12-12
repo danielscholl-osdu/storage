@@ -22,11 +22,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
 import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
+
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -38,6 +42,8 @@ public class MessageBusImplTest {
     private final static String RECORDS_CHANGED_EVENT_SUBJECT = "RecordsChanged";
     private final static String RECORDS_CHANGED_EVENT_TYPE = "RecordsChanged";
     private final static String RECORDS_CHANGED_EVENT_DATA_VERSION = "1.0";
+
+    private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
     @Mock
     private MessagePublisher messagePublisher;
     @Mock
@@ -74,7 +80,22 @@ public class MessageBusImplTest {
         for (int i = 0; i < ids.length; ++i) {
             pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
         }
-        sut.publishMessage(dpsHeaders, pubSubInfo);
+        sut.publishMessage(Optional.empty(), dpsHeaders, pubSubInfo);
+    }
+
+    @Test
+    public void should_not_publishToMessagePublisherWhenCollaborationContextIsProvided() {
+        // Set Up
+        String[] ids = {"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11"};
+        String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5", "kind6", "kind7", "kind8", "kind9", "kind10", "kind11"};
+        doReturn("id").when(dpsHeaders).getCorrelationId();
+
+        PubSubInfo[] pubSubInfo = new PubSubInfo[11];
+        for (int i = 0; i < ids.length; ++i) {
+            pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
+        }
+        sut.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, pubSubInfo);
+        verify(messagePublisher, never()).publishMessage(any(), any());
     }
 
     private PubSubInfo getPubsInfo(String id, String kind) {

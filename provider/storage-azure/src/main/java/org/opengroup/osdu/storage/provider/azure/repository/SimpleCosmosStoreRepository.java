@@ -90,6 +90,10 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         return this.operation.queryItems(dataPartitionId, cosmosDBName, collection, query, options, this.getDomainClass());
     }
 
+    public <T> List<T> queryItems(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query, CosmosQueryRequestOptions options, Class<T> clazz) {
+        return this.operation.queryItems(dataPartitionId, cosmosDBName, collection, query, options, clazz);
+    }
+
     @Override
     public void upsertItem(String dataPartitionId, String cosmosDBName, String collection, @NonNull String partitionKey, @NonNull T item) {
         Assert.notNull(item, ENTITY_MUST_NOT_BE_NULL);

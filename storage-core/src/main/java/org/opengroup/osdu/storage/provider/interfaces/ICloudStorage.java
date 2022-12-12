@@ -17,10 +17,12 @@ package org.opengroup.osdu.storage.provider.interfaces;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.lang3.NotImplementedException;
 
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
@@ -34,11 +36,11 @@ public interface ICloudStorage {
 
     void write(RecordProcessing... recordsProcessing);
 
-    default Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap) {
+    default Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
         throw new NotImplementedException("TODO");
     }
 
-    default void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls) {
+    default void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
         throw new NotImplementedException("TODO");
     }
 
@@ -52,7 +54,7 @@ public interface ICloudStorage {
 
     String read(RecordMetadata record, Long version, boolean checkDataInconsistency);
 
-    Map<String, String> read(Map<String, String> objects);
+    Map<String, String> read(Map<String, String> objects, Optional<CollaborationContext> collaborationContext);
 
     boolean isDuplicateRecord(TransferInfo transfer, Map<String, String> hashMap, Map.Entry<RecordMetadata, RecordData> kv);
 }

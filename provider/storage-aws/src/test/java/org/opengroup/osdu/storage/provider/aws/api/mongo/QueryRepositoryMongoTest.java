@@ -19,6 +19,7 @@ package org.opengroup.osdu.storage.provider.aws.api.mongo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.aws.api.mongo.configuration.StorageTestConfig;
 import org.opengroup.osdu.storage.provider.aws.api.mongo.util.DbUtil;
 import org.opengroup.osdu.storage.provider.aws.api.mongo.util.ParentUtil;
@@ -27,10 +28,12 @@ import org.opengroup.osdu.storage.provider.aws.mongo.MongoDbQueryRepository;
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,20 +60,20 @@ public class QueryRepositoryMongoTest extends ParentUtil {
         assertEquals(firstList.size() + secondList.size(), all.size());
 
         //when
-        DatastoreQueryResult firstPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, null);
+        DatastoreQueryResult firstPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, null, Optional.empty());
         String cursor1 = firstPageRecords.getCursor();
         List<String> firstPageRecordsIds = firstPageRecords.getResults();
 
-        DatastoreQueryResult secondPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 20, cursor1);
+        DatastoreQueryResult secondPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 20, cursor1, Optional.empty());
         String cursor2 = secondPageRecords.getCursor();
         List<String> secondPageRecordsIds = secondPageRecords.getResults();
 
-        DatastoreQueryResult lastPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, cursor2);
+        DatastoreQueryResult lastPageRecords = queryRepository.getAllRecordIdsFromKind(someKind, 5, cursor2, Optional.empty());
         String cursor3 = lastPageRecords.getCursor();
         List<String> lastPageRecordsIds = lastPageRecords.getResults();
 
 
-        DatastoreQueryResult otherRecords = queryRepository.getAllRecordIdsFromKind(otherKind, 50, null);
+        DatastoreQueryResult otherRecords = queryRepository.getAllRecordIdsFromKind(otherKind, 50, null, Optional.empty());
         String cursor4 = otherRecords.getCursor();
         List<String> otherResults = otherRecords.getResults();
 

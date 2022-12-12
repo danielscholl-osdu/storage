@@ -14,10 +14,13 @@
 
 package org.opengroup.osdu.storage.provider.interfaces;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 
+import java.util.Optional;
+
 public interface IMessageBus {
 
-	void publishMessage(DpsHeaders headers, PubSubInfo... messages);
+	void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages);
 }
