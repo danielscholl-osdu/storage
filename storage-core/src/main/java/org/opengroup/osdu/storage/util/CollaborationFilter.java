@@ -19,7 +19,7 @@ import java.io.PrintWriter;
 
 @Component
 public class CollaborationFilter implements Filter {
-    private static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
+    public final static String X_COLLABORATION_HEADER_NAME = "x-collaboration";
 
     @Value("${collaboration.enabled:false}")
     private boolean isCollaborationEnabled;
