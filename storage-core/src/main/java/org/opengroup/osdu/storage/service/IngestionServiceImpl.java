@@ -314,7 +314,7 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 	}
 
-	private void removeDuplicatedRecords (List < RecordProcessing > recordsToProcess, TransferInfo transfer){
+	private void removeDuplicatedRecords (List<RecordProcessing> recordsToProcess, TransferInfo transfer){
 
 		List<RecordProcessing> recordsToRemove = new ArrayList<>();
 		for (RecordProcessing recordProcessing : recordsToProcess) {
