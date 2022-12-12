@@ -17,8 +17,10 @@ package org.opengroup.osdu.storage.provider.aws.jobs;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.*;
-import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
@@ -35,6 +37,8 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import lombok.NoArgsConstructor;
 
 import static java.util.Collections.singletonList;
@@ -84,7 +88,8 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 cursor = results.getKey();
                 List<RecordMetadata> recordsMetadata = results.getValue();
                 PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-                this.recordsMetadataRepository.createOrUpdate(recordsMetadata);
+
+                this.recordsMetadataRepository.createOrUpdate(recordsMetadata, Optional.empty());
 
                 StringBuilder recordsId = new StringBuilder();
                 for (RecordMetadata recordMetadata : recordsMetadata) {
@@ -93,7 +98,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 this.auditLogger.updateRecordsComplianceStateSuccess(
                         singletonList("[" + recordsId.toString() + "]"));
 
-                this.storageMessageBus.publishMessage(headers, pubsubInfos);
+                this.storageMessageBus.publishMessage(Optional.empty(), headers, pubsubInfos);
             } while (cursor != null);
         }
 

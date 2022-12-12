@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.byoc;
 
 import com.google.gson.Gson;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -28,7 +29,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     public static Map<String, String> memMap = new HashMap<>();
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata)
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext)
     {
         if (recordsMetadata != null) {
             for (RecordMetadata recordMetadata : recordsMetadata) {
@@ -40,13 +41,13 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     @Override
-    public void delete(String id)
+    public void delete(String id, Optional<CollaborationContext> collaborationContext)
     {
         memMap.remove(id);
     }
 
     @Override
-    public RecordMetadata get(String id)
+    public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext)
     {
         String entityJson = memMap.get(id);
         if (entityJson == null) return null;
@@ -54,13 +55,13 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     }
 
     @Override
-    public Map<String, RecordMetadata> get(List<String> ids)
+    public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext)
     {
         Map<String, RecordMetadata> output = new HashMap<>();
 
         for (int i = 0; i < ids.size(); i++) {
             String key = ids.get(i);
-            RecordMetadata rmd = this.get(key);
+            RecordMetadata rmd = this.get(key, collaborationContext);
             if (rmd == null) continue;
             output.put(key, rmd);
         }
@@ -84,7 +85,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         {
             Map.Entry pair = (Map.Entry) it.next();
             String key = pair.getKey().toString();
-            RecordMetadata rmd = this.get(key);
+            RecordMetadata rmd = this.get(key, Optional.empty());
             if (rmd.getLegal().getLegaltags().contains(legalTagName))
                 outputRecords.add(rmd);
         }

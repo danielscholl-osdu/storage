@@ -16,19 +16,20 @@ package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,7 +63,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     private StorageAuditLogger auditLogger;
 
     @Autowired
-    private IPersistenceService persistenceService;
+    private PersistenceService persistenceService;
 
     @Autowired
     private DpsHeaders headers;
@@ -88,7 +90,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     private boolean isOpaEnabled;
 
     @Override
-    public BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user) {
+    public BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
         List<String> validRecordsId = new ArrayList<>();
         List<String> lockedRecordsId = new ArrayList<>();
@@ -106,7 +108,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
 
         Map<String, String> idMap = ids.stream().collect(Collectors.toMap(identity(), identity()));
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
-        Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion);
+        Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
         List<String> notFoundRecordIds = new ArrayList<>();
         List<String> unauthorizedRecordIds= isOpaEnabled
                 ? this.validateUserAccessAndCompliancePolicyConstraints(bulkUpdateOps, idMap, existingRecords, user)
@@ -115,7 +117,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         final long currentTimestamp = clock.millis();
         for (String id : idsWithoutVersion) {
             String idWithVersion = idMap.get(id);
-            RecordMetadata metadata = existingRecords.get(id);
+            RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext));
 
             if (metadata == null) {
                 notFoundRecordIds.add(idWithVersion);
@@ -132,7 +134,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         }
 
         if (!validRecordsId.isEmpty()) {
-            lockedRecordsId = persistenceService.updateMetadata(validRecordsMetadata, validRecordsId, idMap);
+            lockedRecordsId = persistenceService.updateMetadata(validRecordsMetadata, validRecordsId, idMap, collaborationContext);
         }
 
         for (String lockedId : lockedRecordsId) {

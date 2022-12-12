@@ -18,6 +18,7 @@ import com.google.common.base.Strings;
 import io.jsonwebtoken.lang.Collections;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -35,14 +36,13 @@ import org.opengroup.osdu.core.common.model.storage.TransferBatch;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
-import org.opengroup.osdu.core.common.storage.IngestionService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.RecordBlocks;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -67,7 +68,7 @@ public class IngestionServiceImpl implements IngestionService {
 	private ICloudStorage cloudStorage;
 
 	@Autowired
-	private IPersistenceService persistenceService;
+	private PersistenceService persistenceService;
 
 	@Autowired
 	private ILegalService legalService;
@@ -100,16 +101,16 @@ public class IngestionServiceImpl implements IngestionService {
 	RecordBlocks recordBlocks;
 
 	@Override
-	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user) {
+	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user, Optional<CollaborationContext> collaborationContext) {
 		this.validateKindFormat(inputRecords);
 		this.validateRecordIds(inputRecords);
 		this.validateAcl(inputRecords);
 
 		TransferInfo transfer = new TransferInfo(user, inputRecords.size());
 
-		List<RecordProcessing> recordsToProcess = this.getRecordsForProcessing(skipDupes, inputRecords, transfer);
+		List<RecordProcessing> recordsToProcess = this.getRecordsForProcessing(skipDupes, inputRecords, transfer, collaborationContext);
 
-		this.sendRecordsForProcessing(recordsToProcess, transfer);
+		this.sendRecordsForProcessing(recordsToProcess, transfer, collaborationContext);
 		return transfer;
 	}
 
@@ -176,12 +177,12 @@ public class IngestionServiceImpl implements IngestionService {
 	}
 
 	private List<RecordProcessing> getRecordsForProcessing(boolean skipDupes, List<Record> inputRecords,
-			TransferInfo transfer) {
+			TransferInfo transfer, Optional<CollaborationContext> collaborationContext) {
 		Map<String, List<RecordIdWithVersion>> recordParentMap = new HashMap<>();
 		List<RecordProcessing> recordsToProcess = new ArrayList<>();
 
 		List<String> ids = this.getRecordIds(inputRecords, recordParentMap);
-		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids);
+		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids, collaborationContext);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
 		if(isOpaEnabled) {
@@ -198,7 +199,7 @@ public class IngestionServiceImpl implements IngestionService {
 		inputRecords.forEach(record -> {
 			RecordData recordData = new RecordData(record);
 			Map<String, String> hash = recordBlocks.hashForRecordData(recordData);
-			if (!existingRecords.containsKey(record.getId())) {
+			if (!existingRecords.containsKey(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext))) {
 				RecordMetadata recordMetadata = new RecordMetadata(record);
 				recordMetadata.setUser(transfer.getUser());
 				recordMetadata.setStatus(RecordState.active);
@@ -207,7 +208,7 @@ public class IngestionServiceImpl implements IngestionService {
 				recordMetadata.setHash(hash);
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
-				RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
+				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext));
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
 				if (!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {
 					updatedRecordMetadata.setPreviousVersionKind(existingRecordMetadata.getKind());
@@ -233,7 +234,7 @@ public class IngestionServiceImpl implements IngestionService {
 		recordUpdatesMap.putAll(recordUpdateWithoutVersions);
 
 		this.populateUpdatedRecords(recordUpdatesMap, recordsToProcess, transfer, currentTimestamp);
-		recordBlocks.populateRecordBlocksMetadata(existingRecords, recordsToProcess);
+		recordBlocks.populateRecordBlocksMetadata(existingRecords, recordsToProcess, collaborationContext);
 
 		if (skipDupes) {
 			// Skipdupes now compares both the data and metadata fields
@@ -241,10 +242,6 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 		return recordsToProcess;
 	}
-
-
-
-
 
 	private void validateUserAccessAndComplianceConstraints(
 			List<Record> inputRecords, Map<String, RecordMetadata> existingRecords,  Map<String, List<RecordIdWithVersion>> recordParentMap) {
@@ -345,9 +342,9 @@ public class IngestionServiceImpl implements IngestionService {
 		}
 	}
 
-	private void sendRecordsForProcessing(List<RecordProcessing> records, TransferInfo transferInfo) {
+	private void sendRecordsForProcessing(List<RecordProcessing> records, TransferInfo transferInfo, Optional<CollaborationContext> collaborationContext) {
 		if (!records.isEmpty()) {
-			this.persistenceService.persistRecordBatch(new TransferBatch(transferInfo, records));
+			this.persistenceService.persistRecordBatch(new TransferBatch(transferInfo, records), collaborationContext);
 			this.auditLogger.createOrUpdateRecordsSuccess(this.extractRecordIds(records));
 		}
 	}

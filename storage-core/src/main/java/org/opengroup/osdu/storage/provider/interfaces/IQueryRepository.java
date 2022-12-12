@@ -14,7 +14,10 @@
 
 package org.opengroup.osdu.storage.provider.interfaces;
 
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+
+import java.util.Optional;
 
 public interface IQueryRepository {
 
@@ -22,5 +25,5 @@ public interface IQueryRepository {
 
 	DatastoreQueryResult getAllKinds(Integer limit, String cursor);
 
-	DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor);
+	DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext);
 }

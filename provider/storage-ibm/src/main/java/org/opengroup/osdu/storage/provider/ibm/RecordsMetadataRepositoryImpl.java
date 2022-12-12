@@ -11,10 +11,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.ibm.auth.ServiceCredentials;
@@ -96,7 +98,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 	}
 
 	@Override
-	public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata) {
+	public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
 		
 		List<RecordMetadata> resultList = new ArrayList<RecordMetadata>();
 
@@ -140,12 +142,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 	}
 
 	@Override
-	public void delete(String id) {
+	public void delete(String id, Optional<CollaborationContext> collaborationContext) {
 		db.remove(db.find(RecordMetadataDoc.class, id));
 	}
 
 	@Override
-	public RecordMetadata get(String id) {
+	public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
 		try {
 			RecordMetadataDoc rm = db.find(RecordMetadataDoc.class, id);
 			return rm.getRecordMetadata();
@@ -155,7 +157,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 	}
 
 	@Override
-	public Map<String, RecordMetadata> get(List<String> ids) {
+	public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
 		Map<String, RecordMetadata> output = new HashMap<>();
 
 		for (String id : ids) {
