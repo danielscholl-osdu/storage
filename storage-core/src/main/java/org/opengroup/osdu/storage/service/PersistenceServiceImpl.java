@@ -19,11 +19,11 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.storage.IPersistenceService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -34,9 +34,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
-public class PersistenceServiceImpl implements IPersistenceService {
+public class PersistenceServiceImpl implements PersistenceService {
 
 	@Autowired
 	private IRecordsMetadataRepository recordRepository;
@@ -54,7 +55,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 	private JaxRsDpsLog logger;
 
 	@Override
-	public void persistRecordBatch(TransferBatch transfer) {
+	public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
 
 		List<RecordProcessing> recordsProcessing = transfer.getRecords();
 		List<RecordMetadata> recordsMetadata = new ArrayList<>(recordsProcessing.size());
@@ -68,27 +69,27 @@ public class PersistenceServiceImpl implements IPersistenceService {
 			if(processing.getOperationType() == OperationType.create) {
 				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.create).build();
 			} else {
-				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.update).build();
+				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.update).recordBlocks(processing.getRecordBlocks()).build();
 				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
 					pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
 				}
 			}
 		}
 
-		this.commitBatch(recordsProcessing, recordsMetadata);
-		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
+		this.pubSubClient.publishMessage(collaborationContext, this.headers, pubsubInfo);
 	}
 
-    private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata) {
+    private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
 
 		try {
 			this.commitCloudStorageTransaction(recordsProcessing);
-			this.commitDatastoreTransaction(recordsMetadata);
+			this.commitDatastoreTransaction(recordsMetadata, collaborationContext);
 		} catch (AppException e) {
 			try {
 				//try deleting the latest version of the record from blob storage and Datastore
 				this.tryCleanupCloudStorage(recordsProcessing);
-				this.tryCleanupDatastore(recordsMetadata);
+				this.tryCleanupDatastore(recordsMetadata, collaborationContext);
 			} catch (AppException innerException) {
 				e.addSuppressed(innerException);
 			}
@@ -98,19 +99,19 @@ public class PersistenceServiceImpl implements IPersistenceService {
 	}
 
 	@Override
-	public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap) {
+	public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
 		Map<String, Acl> originalAcls = new HashMap<>();
 		List<String> lockedRecords = new ArrayList<>();
 		List<RecordMetadata> validMetadata = new ArrayList<>();
 		try {
-			originalAcls = this.cloudStorage.updateObjectMetadata(recordMetadata, recordsId, validMetadata, lockedRecords, recordsIdMap);
-			this.commitDatastoreTransaction(validMetadata);
+			originalAcls = this.cloudStorage.updateObjectMetadata(recordMetadata, recordsId, validMetadata, lockedRecords, recordsIdMap, collaborationContext);
+			this.commitDatastoreTransaction(validMetadata, collaborationContext);
 		} catch (NotImplementedException e) {
 			throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
 		} catch (Exception e) {
 			this.logger.warning("Reverting meta data changes");
 			try {
-				this.cloudStorage.revertObjectMetadata(recordMetadata, originalAcls);
+				this.cloudStorage.revertObjectMetadata(recordMetadata, originalAcls, collaborationContext);
 			} catch (NotImplementedException innerEx) {
 				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
 			} catch (Exception innerEx) {
@@ -123,7 +124,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 			RecordMetadata metadata = recordMetadata.get(i);
 			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
 		}
-		this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		this.pubSubClient.publishMessage(collaborationContext, this.headers, pubsubInfo);
 		return lockedRecords;
 	}
 
@@ -131,7 +132,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		recordsProcessing.forEach(r -> this.cloudStorage.deleteVersion(r.getRecordMetadata(), r.getRecordMetadata().getLatestVersion()));
 	}
 
-	private void tryCleanupDatastore(List<RecordMetadata> recordsMetadata) {
+	private void tryCleanupDatastore(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
 		List<RecordMetadata> updatedRecordsMetadata = new ArrayList();
 		for(RecordMetadata recordMetadata : recordsMetadata) {
 			List<String> gcsVersionPathsWithoutLatestVersion = new ArrayList<>(recordMetadata.getGcsVersionPaths());
@@ -140,7 +141,7 @@ public class PersistenceServiceImpl implements IPersistenceService {
 			updatedRecordsMetadata.add(recordMetadata);
 		}
 		if(!updatedRecordsMetadata.isEmpty()) {
-			this.commitDatastoreTransaction(updatedRecordsMetadata);
+			this.commitDatastoreTransaction(updatedRecordsMetadata, collaborationContext);
 		}
 	}
 
@@ -148,9 +149,9 @@ public class PersistenceServiceImpl implements IPersistenceService {
 		this.cloudStorage.write(recordsProcessing.toArray(new RecordProcessing[recordsProcessing.size()]));
 	}
 
-	private void commitDatastoreTransaction(List<RecordMetadata> recordsMetadata) {
+	private void commitDatastoreTransaction(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
 		try {
-			this.recordRepository.createOrUpdate(recordsMetadata);
+			this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
 		} catch (Exception e) {
 			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
 					"The server could not process your request at the moment.", e);

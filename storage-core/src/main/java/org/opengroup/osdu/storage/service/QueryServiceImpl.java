@@ -18,8 +18,10 @@ import static java.util.Collections.singletonList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -68,9 +70,9 @@ public class QueryServiceImpl implements QueryService {
 	private DataAuthorizationService dataAuthorizationService;
 
 	@Override
-	public String getRecordInfo(String id, String[] attributes) {
+	public String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext) {
 		try {
-			String specificVersion = this.getRecord(id, null, attributes);
+			String specificVersion = this.getRecord(id, null, attributes, collaborationContext);
 			this.auditLogger.readLatestVersionOfRecordSuccess(singletonList(id));
 			return specificVersion;
 		} catch (AppException e) {
@@ -80,9 +82,9 @@ public class QueryServiceImpl implements QueryService {
 	}
 
 	@Override
-	public String getRecordInfo(String id, long version, String[] attributes) {
+	public String getRecordInfo(String id, long version, String[] attributes, Optional<CollaborationContext> collaborationContext) {
 		try {
-			String specificVersion = this.getRecord(id, version, attributes);
+			String specificVersion = this.getRecord(id, version, attributes, collaborationContext);
 			this.auditLogger.readSpecificVersionOfRecordSuccess(singletonList(id));
 			return specificVersion;
 		} catch (AppException e) {
@@ -92,9 +94,9 @@ public class QueryServiceImpl implements QueryService {
 	}
 
 	@Override
-	public RecordVersions listVersions(String recordId) {
+	public RecordVersions listVersions(String recordId, Optional<CollaborationContext> collaborationContext) {
 		// all the version numbers
-		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId);
+		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId, collaborationContext);
 
 		if(!this.dataAuthorizationService.hasAccess(recordMetadata, OperationType.view)) {
             this.auditLogger.readAllVersionsOfRecordFail(singletonList(recordId));
@@ -117,9 +119,9 @@ public class QueryServiceImpl implements QueryService {
 		return recordVersions;
 	}
 
-	private String getRecord(String recordId, Long version, String[] attributes) {
+	private String getRecord(String recordId, Long version, String[] attributes, Optional<CollaborationContext> collaborationContext) {
 
-		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId);
+		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId, collaborationContext);
 
 		if (!recordMetadata.hasVersion()) {
 			this.logger.warning(String.format("Record %s does not have versions available", recordMetadata.getId()));
@@ -131,7 +133,7 @@ public class QueryServiceImpl implements QueryService {
 		return this.fetchRecord(recordMetadata, actualVersion, attributes);
 	}
 
-	private RecordMetadata getRecordFromRepository(String recordId) {
+	private RecordMetadata getRecordFromRepository(String recordId, Optional<CollaborationContext> collaborationContext) {
 
 		String tenantName = tenant.getName();
 		if (!Record.isRecordIdValidFormatAndTenant(recordId, tenantName)) {
@@ -142,7 +144,7 @@ public class QueryServiceImpl implements QueryService {
 			throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record ID", msg);
 		}
 
-		RecordMetadata recordMetadata = this.recordRepository.get(recordId);
+		RecordMetadata recordMetadata = this.recordRepository.get(recordId, collaborationContext);
 
 		if (recordMetadata == null) {
 			throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found",

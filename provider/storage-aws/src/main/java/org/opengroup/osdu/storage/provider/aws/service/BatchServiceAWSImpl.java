@@ -13,18 +13,18 @@
 // limitations under the License.
 
 package org.opengroup.osdu.storage.provider.aws.service;
-
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.apache.http.HttpStatus;
-
 import org.opengroup.osdu.storage.service.BatchServiceImpl;
 import org.springframework.stereotype.Service;
-
 import javax.inject.Inject;
+
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
@@ -54,9 +54,9 @@ public class BatchServiceAWSImpl extends BatchServiceImpl {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecords(String cursor, String kind, Integer limit) {
+    public DatastoreQueryResult getAllRecords(String cursor, String kind, Integer limit, Optional<CollaborationContext> collaborationContext) {
         try {
-            DatastoreQueryResult result = this.queryRepository.getAllRecordIdsFromKind(kind, limit, cursor);
+            DatastoreQueryResult result = this.queryRepository.getAllRecordIdsFromKind(kind, limit, cursor, collaborationContext);
             if (!result.getResults().isEmpty()) {
                 this.auditLogger.readAllRecordsOfGivenKindSuccess(singletonList(kind));
             }
