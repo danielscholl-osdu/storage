@@ -19,11 +19,14 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.legal.jobs.*;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
+import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
+import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
+import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.azure.MessageBusImpl;
 import org.opengroup.osdu.storage.provider.azure.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -33,8 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-
-import static java.util.Collections.singletonList;
 
 @Component
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {
@@ -71,7 +72,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     List<RecordMetadata> recordsMetadata = results.getValue();
                     PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
                     try {
-                        this.recordsRepo.createOrUpdate(recordsMetadata);
+                        this.recordsRepo.createOrUpdate(recordsMetadata, Optional.empty());
                     } catch (Exception e) {
                         logOnFailedUpdateRecords(lt, e);
                         throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error updating records upon legaltag changed.",
@@ -80,7 +81,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     for (RecordMetadata recordMetadata : recordsMetadata) {
                         recordIds.add(recordMetadata.getId());
                     }
-                    this.pubSubclient.publishMessage(headers, pubsubInfos);
+                    this.pubSubclient.publishMessage(Optional.empty(), headers, pubsubInfos);
                     logOnSucceedUpdateRecords(lt, recordIds);
                 }
             } while (cursor != null);

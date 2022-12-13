@@ -103,6 +103,8 @@ spec:
           value: osdu-db
         - name: servicebus_topic_name
           value: recordstopic
+        - name: servicebus_v2_topic_name
+          value: recordstopic-v2
         - name: legal_servicebus_topic_name
           value: legaltagschangedtopiceg
         - name: legal_servicebus_topic_subscription

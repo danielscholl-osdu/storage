@@ -31,8 +31,8 @@ import static org.apache.http.HttpStatus.*;
 import static org.junit.Assert.*;
 
 public abstract class UpdateRecordsMetadataTest extends TestBase {
-    private static final String TAG_KEY = "tagkey1";
-    private static final String TAG_VALUE1 = "tagvalue1";
+    protected static final String TAG_KEY = "tagkey1";
+    protected static final String TAG_VALUE1 = "tagvalue1";
     private static final String TAG_VALUE2 = "tagvalue2";
 
     private static long NOW;
@@ -218,7 +218,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     @Test
     public void should_return200AndUpdateTagsMetadata_whenValidRecordsProvided() throws Exception {
         //add operation
-        JsonObject updateBody = buildUpdateTagBody(RECORD_ID, "add", TAG_KEY + ":" + TAG_VALUE1);
+        JsonObject updateBody = RecordUtil.buildUpdateTagBody(RECORD_ID, "add", TAG_KEY + ":" + TAG_VALUE1);
 
         ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
@@ -233,7 +233,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         assertEquals(TAG_VALUE1, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
 
         //replace operation
-        updateBody = buildUpdateTagBody(RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE2);
+        updateBody = RecordUtil.buildUpdateTagBody(RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE2);
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
@@ -241,7 +241,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         assertEquals(TAG_VALUE2, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
 
         //remove operation
-        updateBody = buildUpdateTagBody(RECORD_ID,"remove", TAG_KEY);
+        updateBody = RecordUtil.buildUpdateTagBody(RECORD_ID,"remove", TAG_KEY);
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
@@ -251,7 +251,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
     @Test
     public void should_return206andUpdateTagsMetadata_whenNotExistedRecordProvided() throws Exception {
-        JsonObject updateBody = buildUpdateTagBody(NOT_EXISTED_RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE1);
+        JsonObject updateBody = RecordUtil.buildUpdateTagBody(NOT_EXISTED_RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE1);
 
         ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
@@ -273,30 +273,6 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
     private JsonObject bodyToJsonObject(String json) {
         return new JsonParser().parse(json).getAsJsonObject();
-    }
-
-
-    private JsonObject buildUpdateTagBody(String id, String op, String val) {
-        JsonArray records = new JsonArray();
-        records.add(id);
-
-        JsonArray value = new JsonArray();
-        value.add(val);
-        JsonObject operation = new JsonObject();
-        operation.addProperty("op", op);
-        operation.addProperty("path", "/tags");
-        operation.add("value", value);
-        JsonArray ops = new JsonArray();
-        ops.add(operation);
-
-        JsonObject query = new JsonObject();
-        query.add("ids", records);
-
-        JsonObject updateBody = new JsonObject();
-        updateBody.add("query", query);
-        updateBody.add("ops", ops);
-
-        return updateBody;
     }
 
     @Test

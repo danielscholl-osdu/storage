@@ -10,12 +10,14 @@ import static com.cloudant.client.api.query.Operation.and;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -106,7 +108,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
     }
 
 	@Override
-    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor) {
+    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext) {
         
     	List<String> ids = new ArrayList<>();
         DatastoreQueryResult result = new DatastoreQueryResult();

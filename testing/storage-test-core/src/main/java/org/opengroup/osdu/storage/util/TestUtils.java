@@ -14,8 +14,11 @@
 
 package org.opengroup.osdu.storage.util;
 
+import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opengroup.osdu.storage.util.HeaderUtils.getHeadersWithxCollaboration;
+import static org.opengroup.osdu.storage.util.TestBase.GSON;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -34,15 +37,16 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.core.MediaType;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.http.HttpStatus;
 
 public abstract class TestUtils {
     protected static String token = null;
     protected static String noDataAccesstoken = null;
+    private static Gson gson = new Gson();
 
     protected static final String domain = System.getProperty("DOMAIN", System.getenv("DOMAIN"));
 
@@ -89,6 +93,23 @@ public abstract class TestUtils {
         URL mergedURL = new URL(baseUrl + api);
         System.out.println(mergedURL.toString());
         return mergedURL.toString();
+    }
+
+    public static void assertRecordVersion(ClientResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        String responseBody = response.getEntity(String.class);
+        DummyRecordsHelper.RecordResultMock result = gson.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
+        assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
+    }
+
+    public static String assertRecordVersionAndReturnResponseBody(ClientResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+        String responseBody = response.getEntity(String.class);
+        DummyRecordsHelper.RecordResultMock result = gson.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
+        assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
+        return responseBody;
     }
 
     public abstract String getToken() throws Exception;
@@ -140,8 +161,20 @@ public abstract class TestUtils {
             return (T) json;
         }
 
-        Gson gson = new Gson();
         return gson.fromJson(json, classOfT);
+    }
+
+    public static Long createRecordInCollaborationContext_AndReturnVersion(String recordId, String kind, String legaltag, String collaborationId, String applicationName, String tenant_name, String token) throws Exception {
+        String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, legaltag);
+
+        ClientResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, applicationName, tenant_name, token), jsonInput, "");
+        assertEquals(SC_CREATED, response.getStatus());
+        assertTrue(response.getType().toString().contains("application/json"));
+
+        String responseBody = response.getEntity(String.class);
+        DummyRecordsHelper.CreateRecordResponse result = GSON.fromJson(responseBody, DummyRecordsHelper.CreateRecordResponse.class);
+
+        return Long.parseLong(result.recordIdVersions[0].split(":")[3]);
     }
 
     protected static Client getClient() {

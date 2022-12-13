@@ -14,9 +14,12 @@
 
 package org.opengroup.osdu.storage.api;
 
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidKind;
+import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
@@ -29,12 +32,14 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("query")
@@ -51,10 +56,15 @@ public class QueryApi {
 	@Autowired
 	private SchemaEndpointsConfig schemaEndpointsConfig;
 
+	@Autowired
+	private CollaborationContextFactory collaborationContextFactory;
+
 	@PostMapping(value = "/records", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<MultiRecordInfo> getRecords(@Valid @RequestBody MultiRecordIds ids) {
-		return new ResponseEntity<MultiRecordInfo>(this.batchService.getMultipleRecords(ids), HttpStatus.OK);
+	public ResponseEntity<MultiRecordInfo> getRecords(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+													  @Valid @RequestBody MultiRecordIds ids) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		return new ResponseEntity<MultiRecordInfo>(this.batchService.getMultipleRecords(ids, collaborationContext), HttpStatus.OK);
 	}
 
 	/**
@@ -64,8 +74,10 @@ public class QueryApi {
 	 */
 	@PostMapping(value = "/records:batch", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<MultiRecordResponse> fetchRecords(@Valid @RequestBody MultiRecordRequest ids) {
-		return new ResponseEntity<MultiRecordResponse>(this.batchService.fetchMultipleRecords(ids), HttpStatus.OK);
+	public ResponseEntity<MultiRecordResponse> fetchRecords(@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+															@Valid @RequestBody MultiRecordRequest ids) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		return new ResponseEntity<MultiRecordResponse>(this.batchService.fetchMultipleRecords(ids, collaborationContext), HttpStatus.OK);
 	}
 
 	// This endpoint is deprecated as of M6, replaced by schema service. In M7 this endpoint will be deleted
@@ -81,10 +93,12 @@ public class QueryApi {
 	@GetMapping(value = "/records", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getAllRecords(
+			@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 			@RequestParam(required = false) String cursor,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam @ValidKind String kind) {
-		DatastoreQueryResult result = this.batchService.getAllRecords(encodeDecode.deserializeCursor(cursor), kind, limit);
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		DatastoreQueryResult result = this.batchService.getAllRecords(encodeDecode.deserializeCursor(cursor), kind, limit, collaborationContext);
 		result.setCursor(encodeDecode.serializeCursor(result.getCursor()));
 		return new ResponseEntity<DatastoreQueryResult>(result, HttpStatus.OK);
 	}
