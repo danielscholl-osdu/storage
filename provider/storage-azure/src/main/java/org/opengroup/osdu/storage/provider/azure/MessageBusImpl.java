@@ -24,6 +24,7 @@ import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -38,12 +39,16 @@ public class MessageBusImpl implements IMessageBus {
     private MessagePublisher messagePublisher;
     @Autowired
     private PublisherConfig publisherConfig;
+    @Value("${collaboration.enabled:false}")
+    private boolean isCollaborationEnabled;
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        publishMessageToRecordsEvent(collaborationContext, headers, messages);
-        if(collaborationContext.isPresent()){
-            return;
+        if (isCollaborationEnabled) {
+            publishMessageToRecordsTopicV2(collaborationContext, headers, messages);
+            if (collaborationContext.isPresent()) {
+                return;
+            }
         }
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
@@ -63,7 +68,7 @@ public class MessageBusImpl implements IMessageBus {
     }
 
 
-    public void publishMessageToRecordsEvent(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+    public void publishMessageToRecordsTopicV2(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for (int i = 0; i < messages.length; i += BATCH_SIZE) {

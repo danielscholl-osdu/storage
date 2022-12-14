@@ -99,7 +99,7 @@ public class MessageBusImplTest {
     public void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
         PubSubInfo[] pubSubInfo = setup();
         sut.publishMessage(Optional.empty(), dpsHeaders, pubSubInfo);
-        verify(messagePublisher, times(2)).publishMessage(any(), any(), any());
+        verify(messagePublisher, times(1)).publishMessage(any(), any(), any());
     }
 
     private PubSubInfo getPubsInfo(String id, String kind) {
