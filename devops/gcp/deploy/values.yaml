@@ -5,7 +5,7 @@
 # common
 data:
   requestsCpu: "0.25"
-  requestsMemory: "2048M"
+  requestsMemory: "1024M"
   limitsCpu: "1"
   limitsMemory: "3G"
   bootstrapImage: ""
