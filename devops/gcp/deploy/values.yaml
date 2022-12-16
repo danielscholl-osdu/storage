@@ -2,8 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# common
 data:
+  # configmaps
+  logLevel: "ERROR"
+  springProfilesActive: "gcp"
+  defaultDataCountry: "US"
+  storageServiceAccountEmail: "storage@service.local"
+  entitlementsHost: "http://entitlements"
+  partitionHost: "http://partition"
+  crsConverterHost: "http://crs-conversion"
+  legalHost: "http://legal"
+  redisGroupHost: "redis-group-master"
+  redisStorageHost: "redis-storage-master"
+  googleAudiences: ""
+  opaEnabled: true
+  opaEndpoint: "http://opa"
+  storageHost: "http://storage"
+  defaultLegalTag: "default-data-tag"
+  dataPartitionId: ""
+  # deployments
   requestsCpu: "0.25"
   requestsMemory: "1024M"
   limitsCpu: "1"
@@ -15,7 +32,6 @@ data:
   serviceAccountName: "storage"
 conf:
   appName: "storage"
-  configmap: "storage-config"
   keycloakSecretName: "storage-keycloak-secret"
   minioSecretName: "storage-minio-secret"
   postgresSecretName: "storage-postgres-secret"

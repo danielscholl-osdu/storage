@@ -3,36 +3,36 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: "{{ .Values.conf.appName }}-bootstrap"
-  name: "{{ .Values.conf.appName }}-bootstrap"
-  namespace: "{{ .Release.Namespace }}"
+    app: {{ printf "%s-bootstrap" .Values.conf.appName | quote }}
+  name: {{ printf "%s-bootstrap" .Values.conf.appName | quote }}
+  namespace: {{ .Release.Namespace | quote }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: "{{ .Values.conf.appName }}-bootstrap"
+      app: {{ printf "%s-bootstrap" .Values.conf.appName | quote }}
   template:
     metadata:
       labels:
-        app: "{{ .Values.conf.appName }}-bootstrap"
+        app: {{ printf "%s-bootstrap" .Values.conf.appName | quote }}
       annotations:
         rollme: {{ randAlphaNum 5 | quote }}
     spec:
       containers:
-        - name: "{{ .Values.conf.appName }}-bootstrap"
-          image: "{{ .Values.data.bootstrapImage }}"
+        - name: {{ printf "%s-bootstrap" .Values.conf.appName | quote }}
+          image: {{ .Values.data.bootstrapImage | quote }}
           readinessProbe:
             exec:
               command:
               - cat
               - /tmp/bootstrap_ready
-          imagePullPolicy: "{{ .Values.data.imagePullPolicy }}"
+          imagePullPolicy: {{ .Values.data.imagePullPolicy | quote }}
           envFrom:
           - configMapRef:
-              name: "{{ .Values.conf.configmap }}-bootstrap"
+              name: {{ printf "%s-config-bootstrap" .Values.conf.appName | quote }}
           {{- if .Values.conf.onPremEnabled }}
           - secretRef:
-              name: "{{ .Values.conf.bootstrapSecretName }}"
+              name: {{ .Values.conf.bootstrapSecretName | quote }}
           {{- end }}
-      serviceAccountName: "{{ .Values.data.bootstrapServiceAccountName }}"
+      serviceAccountName: {{ .Values.data.bootstrapServiceAccountName | quote }}
 {{- end }}
