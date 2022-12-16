@@ -2,6 +2,8 @@ variables:
   OSDU_GCP_SERVICE: storage
   OSDU_GCP_VENDOR: gcp
   NO_DATA_ACCESS_TESTER: $OSDU_GCP_NO_DATA_ACCESS_TESTER
+  # FIXME remove when all services are migrated to a single helm
+  OSDU_GCP_ENABLE_HELM_CONFIG: "false"
 
 .define_DATA_BRANCH:
   script:
