@@ -24,41 +24,59 @@ Packages are only needed for installation from a local computer.
 
 ## Installation
 
-Before installing deploy Helm chart you need to install [configmap Helm chart](../configmap).
 First you need to set variables in **values.yaml** file using any code editor. Some of the values are prefilled, but you need to specify some values as well. You can find more information about them below.
 
-### Common variables
+### Configmap variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**requestsCpu** | amount of requested CPU | string | 0.25 | yes
-**requestsMemory** | amount of requested memory| string | 2048M | yes
-**limitsCpu** | CPU limit | string | 1 | yes
-**limitsMemory** | memory limit | string | 3G | yes
-**image** | service image | string | - | yes
-**imagePullPolicy** | when to pull image | string | IfNotPresent | yes
-**serviceAccountName** | name of your service account | string | storage | yes
-**bootstrapImage** | bootstrap image | string | - | yes
-**bootstrapServiceAccountName** | service account that will be used for bootstrap | string | - | yes
+**logLevel** | logging level | string | `ERROR` | yes
+**springProfilesActive** | active spring profile | string | `gcp` | yes
+**defaultDataCountry** | Data storage region | string | `US` | yes
+**storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | `storage@service.local` | yes
+**entitlementsHost** | Entitlements service host address | string | `http://entitlements` | yes
+**partitionHost** | Partition service host address | string | `http://partition` | yes
+**crsConverterHost** | CRS Converter service host address | string | `http://crs-conversion` | yes
+**legalHost** | Legal service host address | string | `http://legal` | yes
+**redisGroupHost** | Redis host for groups | string | `redis-group-master` | yes
+**redisStorageHost** | Redis host for storage | string | `redis-storage-master` | yes
+**googleAudiences** | Client ID of Google Cloud Credentials, ex `123-abc123.apps.googleusercontent.com` | string | - | yes
+**opaEnabled** | whether OPA is enabled | boolean | true | yes
+**opaEndpoint** | OPA host address | string | `http://opa` | yes
+**storageHost** | Storage service host address | string | `http://storage` | only if `conf.bootstrapEnabled` is true
+**defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `conf.bootstrapEnabled` is true
+**dataPartitionId** | Data partition id | string | - | only if `conf.bootstrapEnabled` is true
 
-### Config variables
+### Deployment variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
+**requestsCpu** | amount of requested CPU | string | `0.25` | yes
+**requestsMemory** | amount of requested memory| string | `1024M` | yes
+**limitsCpu** | CPU limit | string | `1` | yes
+**limitsMemory** | memory limit | string | `3G` | yes
+**image** | path to the image in a registry | string | - | yes
+**imagePullPolicy** | when to pull the image | string | `IfNotPresent` | yes
+**serviceAccountName** | name of kubernetes service account | string | `storage` | yes
+**bootstrapImage** | path to the bootstrap image in a registry | string | - | only if `conf.bootstrapEnabled` is true
+**bootstrapServiceAccountName** | name of kubernetes service account that will be used for bootstrap | string | - | only if `conf.bootstrapEnabled` is true
 
-**appName** | name of the app | string | `storage` | yes
-**configmap** | configmap to be used | string | `storage-config` | yes
+### Configuration variables
+
+| Name | Description | Type | Default |Required |
+|------|-------------|------|---------|---------|
+**appName** | Service name | string | `storage` | yes
 **keycloakSecretName** | secret for keycloak | string | `storage-keycloak-secret` | yes
 **minioSecretName** | secret for minio | string | `storage-minio-secret` | yes
 **postgresSecretName** | secret for postgres | string | `storage-postgres-secret` | yes
 **rabbitmqSecretName** | secret for rabbitmq | string | `rabbitmq-secret` | yes
-**bootstrapSecretName** | secret for bootstrap to access opendi provider | string | `datafier-secret` | yes
+**bootstrapSecretName** | secret for bootstrap to access openid provider | string | `datafier-secret` | only if `conf.bootstrapEnabled` is true
 **replicas** | Number of replicas | integer | 3 | yes
 **onPremEnabled** | whether on-prem is enabled | boolean | false | yes
-**bootstrapEnabled** | whether to enable storage bootstrap (should be enabled also for config chart) | boolean | false | yes
-**domain** | your domain | string | - | yes
+**bootstrapEnabled** | whether storage bootstrap is enabled | boolean | false | yes
+**domain** | your domain, ex `example.com` | string | - | yes
 
-### Install the helm chart
+## Install the Helm chart
 
 Run this command from within this directory:
 
@@ -66,12 +84,14 @@ Run this command from within this directory:
 helm install gcp-storage-deploy .
 ```
 
-## Uninstalling the Chart
+## Uninstall the Helm chart
 
 To uninstall the helm deployment:
 
 ```console
 helm uninstall gcp-storage-deploy
 ```
+
+> Do not forget to delete all k8s secrets and PVCs accociated with the Service.
 
 [Move-to-Top](#deploy-helm-chart)
