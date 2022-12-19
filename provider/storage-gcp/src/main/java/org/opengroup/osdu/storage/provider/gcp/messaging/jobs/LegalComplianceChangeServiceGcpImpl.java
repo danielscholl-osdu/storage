@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
+import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -40,7 +40,6 @@ import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.provider.gcp.web.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.stereotype.Service;
@@ -53,7 +52,8 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
     private final IMessageBus messageBus;
     private final StorageAuditLogger auditLogger;
     private final JaxRsDpsLog logger;
-    private final LegalTagCache legalTagCache;
+    // not conventional field name due to bean qualifiers in a core module
+    private final ICache<String, String> LegalTagCache;
 
     private final long maxRunningTimeMills = 115000;
 
@@ -119,7 +119,7 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
         if (lt.getChangedTagStatus().equalsIgnoreCase("compliant")) {
             output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.update, RecordState.active);
         } else if (lt.getChangedTagStatus().equalsIgnoreCase("incompliant")) {
-            this.legalTagCache.delete(lt.getChangedTagName());
+            this.LegalTagCache.delete(lt.getChangedTagName());
             output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
         } else {
             this.logger.warning(String.format("Unknown LegalTag compliance status received %s %s",

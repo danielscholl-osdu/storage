@@ -23,20 +23,26 @@ Must have:
 
 ### Common properties for all environments
 
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `LOG_PREFIX` | `storage` | Logging prefix | no | - |
-| `SERVER_SERVLET_CONTEXPATH` | `/api/storage/v2/` | Servlet context path | no | - |
-| `AUTHORIZE_API` | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint | no | output of infrastructure deployment |
-| `LEGALTAG_API` | ex `https://legal.com/api/legal/v1` | Legal API endpoint | no | output of infrastructure deployment |
-| `PUBSUB_SEARCH_TOPIC` | ex `records-changed` | PubSub topic name | no | https://console.cloud.google.com/cloudpubsub/topic |
-| `REDIS_GROUP_HOST` | ex `127.0.0.1` | Redis host for groups | no | https://console.cloud.google.com/memorystore/redis/instances |
-| `REDIS_STORAGE_HOST` | ex `127.0.0.1` | Redis host for storage | no | https://console.cloud.google.com/memorystore/redis/instances |
-| `STORAGE_HOSTNAME` | ex `os-storage-dot-opendes.appspot.com` | Hostname | no | - |
-| `POLICY_API` | ex `http://localhost:8080/api/policy/v1/` | Police service endpoint | no | output of infrastructure deployment |
-| `POLICY_ID` | ex `storage` | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no | - |
-| `PARTITION_API` | ex `http://localhost:8081/api/partition/v1` | Partition service endpoint | no | - |
-| `GOOGLE_APPLICATION_CREDENTIALS` | ex `/path/to/directory/service-key.json` | Service account credentials, you only need this if running locally | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
+| name                             | value                                         | description                                                                           | sensitive? | source                                                     |
+|----------------------------------|-----------------------------------------------|---------------------------------------------------------------------------------------|------------|------------------------------------------------------------|
+| `LOG_PREFIX`                     | `storage`                                     | Logging prefix                                                                        | no         | -                                                          |
+| `SERVER_SERVLET_CONTEXPATH`      | `/api/storage/v2/`                            | Servlet context path                                                                  | no         | -                                                          |
+| `AUTHORIZE_API`                  | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint                                                             | no         | output of infrastructure deployment                        |
+| `LEGALTAG_API`                   | ex `https://legal.com/api/legal/v1`           | Legal API endpoint                                                                    | no         | output of infrastructure deployment                        |
+| `PUBSUB_SEARCH_TOPIC`            | ex `records-changed`                          | PubSub topic name                                                                     | no         | https://console.cloud.google.com/cloudpubsub/topic         |
+| `REDIS_GROUP_HOST`               | ex `127.0.0.1`                                | Redis host for groups                                                                 | no         |                                                            |
+| `REDIS_GROUP_PASSWORD`           | ex `*****`                                    | Redis groups host password                                                            | yes        |                                                            |
+| `REDIS_GROUP_WITH_SSL`           | ex `true` or `false`                          | Redis groups host ssl config                                                          | no         |                                                            |
+| `REDIS_GROUP_EXPIRATION`         | ex `30`                                       | Redis groups group cache expiration in seconds                                        | no         |                                                            |
+| `REDIS_STORAGE_HOST`             | ex `127.0.0.1`                                | Redis host for storage                                                                | no         |                                                            |
+| `REDIS_STORAGE_PASSWORD`         | ex `*****`                                    | Redis storage host password                                                           | yes        |                                                            |
+| `REDIS_STORAGE_WITH_SSL`         | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                                            |
+| `REDIS_STORAGE_EXPIRATION`       | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                                            |
+| `STORAGE_HOSTNAME`               | ex `os-storage-dot-opendes.appspot.com`       | Hostname                                                                              | no         | -                                                          |
+| `POLICY_API`                     | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment                        |
+| `POLICY_ID`                      | ex `storage`                                  | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                                          |
+| `PARTITION_API`                  | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                                          |
+| `GOOGLE_APPLICATION_CREDENTIALS` | ex `/path/to/directory/service-key.json`      | Service account credentials, you only need this if running locally                    | yes        | https://console.cloud.google.com/iam-admin/serviceaccounts |
 
 These variables define service behavior, and are used to switch between `anthos` or `gcp` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
