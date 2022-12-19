@@ -96,13 +96,13 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-gcp</artifactId>
-            <version>0.18.0-rc4</version>
+            <version>0.19.0-rc2</version>
         </dependency>
 
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>0.17.0-X-COLLABORATION</version>
+            <version>0.19.0-rc1</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>

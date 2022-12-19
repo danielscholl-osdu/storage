@@ -27,9 +27,17 @@ import org.springframework.context.annotation.Configuration;
 public class GcpAppServiceConfig {
 
     private String pubsubSearchTopic;
+
     private String redisGroupHost;
     private Integer redisGroupPort;
+    private String redisGroupPassword;
+    private Integer redisGroupExpiration = 30;
+    private Boolean redisGroupWithSsl = false;
+
     private String redisStorageHost;
     private Integer redisStoragePort;
+    private String redisStoragePassword;
+    private Integer redisStorageExpiration = 60 * 60;
+    private Boolean redisStorageWithSsl = false;
 
 }
