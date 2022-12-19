@@ -36,4 +36,6 @@ public class CrsConversionServiceErrorMessages {
     public static final String CRS_OTHER_ERROR = "Response from CRS converter: %s";
     public static final String ILLEGAL_DATA_IN_NESTED_PROPERTY = "CRS conversion: illegal value in nested property '%s', error message: %s, no conversion applied.";
     public static final String PAIR_FAILURE = "CRS conversion: Unknown coordinate pair '%s'.";
+    public static final String UNEXPECTED_DATA_FORMAT_JSON_OBJECT = "CRS conversion: unexpected data format. Field %s should be a JsonObject";
+    public static final String UNEXPECTED_DATA_FORMAT_JSON_ARRAY = "CRS conversion: unexpected data format. Field %s should be a JsonArray";
 }
