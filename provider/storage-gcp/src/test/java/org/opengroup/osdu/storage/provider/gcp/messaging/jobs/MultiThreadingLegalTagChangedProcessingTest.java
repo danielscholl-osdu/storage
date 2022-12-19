@@ -34,13 +34,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opengroup.osdu.core.auth.TokenProvider;
+import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.logging.DefaultLogger;
+import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagWithReason;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.gcp.oqm.driver.OqmDriver;
@@ -53,9 +56,7 @@ import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadDp
 import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadLegalTagConsistencyValidator;
 import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadStorageAuditLogger;
 import org.opengroup.osdu.storage.provider.gcp.messaging.thread.ThreadScopeContextHolder;
-import org.opengroup.osdu.storage.provider.gcp.web.cache.GroupCache;
-import org.opengroup.osdu.storage.provider.gcp.web.cache.LegalTagCache;
-import org.opengroup.osdu.storage.provider.gcp.web.cache.SchemaCache;
+import org.opengroup.osdu.storage.provider.gcp.web.cache.LegalTagMultiTenantCache;
 import org.opengroup.osdu.storage.provider.gcp.web.repository.OsmRecordsMetadataRepository;
 import org.opengroup.osdu.storage.service.LegalServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,13 +82,13 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     private final CountDownLatch latch = new CountDownLatch(numberOfAllRuns);
 
     @MockBean
-    private GroupCache groupCache;
+    private ICache<String, Groups> groupCache;
 
     @MockBean(name = "LegalTagCache")
-    private LegalTagCache legalTagCache;
+    private LegalTagMultiTenantCache legalTagMultiTenantCache;
 
     @MockBean
-    private SchemaCache schemaCache;
+    private ICache<String, Schema> schemaCache;
 
     @MockBean
     private TokenProvider tokenProvider;
