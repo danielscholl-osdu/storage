@@ -198,11 +198,10 @@ public class LegalServiceImplTest {
 
         LegalException legalException = new LegalException("service crashed", response);
 
+        when(this.headers.getPartitionId()).thenReturn("dp1");
         when(this.legalService.getLegalTagProperties()).thenThrow(legalException);
 
         try {
-            LegalServiceImpl.validCountryCodes = null;
-
             this.sut.validateOtherRelevantDataCountries(countries);
 
             fail("Should not succeed");

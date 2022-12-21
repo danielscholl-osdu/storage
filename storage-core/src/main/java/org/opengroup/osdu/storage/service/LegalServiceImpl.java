@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class LegalServiceImpl implements ILegalService {
     protected static final String LEGAL_PROPERTIES_KEY = "@legal-properties";
     protected static final String DEFAULT_DATA_COUNTRY = "US";
     private static final int LEGALTAG_PARTITION_COUNT = 25;
-    public static Map<String, String> validCountryCodes;
+    public static Map<String, Set<String>> validCountryCodes = new HashMap<>();
     @Autowired
     private DpsHeaders headers;
     @Autowired
@@ -79,12 +80,12 @@ public class LegalServiceImpl implements ILegalService {
     @Override
     public void validateOtherRelevantDataCountries(Set<String> ordc) {
 
-        Map<String, String> validCountries = this.getValidCountryCodes();
+        Set<String> validCountries = this.getValidCountryCodes(this.headers.getPartitionId());
 
         ordc.add(DEFAULT_DATA_COUNTRY);
 
         for (String country : ordc) {
-            if (!validCountries.containsKey(country)) {
+            if (!validCountries.contains(country)) {
                 throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid other relevant data countries",
                         String.format("The country code '%s' is invalid", country));
             }
@@ -120,19 +121,21 @@ public class LegalServiceImpl implements ILegalService {
         }
     }
 
-    public Map<String, String> getValidCountryCodes() {
-        if (validCountryCodes == null) {
+    public Set<String> getValidCountryCodes(String dataPartitionId) {
+        if (validCountryCodes.get(dataPartitionId) == null) {
             try {
                 ILegalProvider legalService = this.factory.create(this.headers);
                 LegalTagProperties legalTagProperties = legalService.getLegalTagProperties();
-                return validCountryCodes = legalTagProperties.getOtherRelevantDataCountries();
+                Set<String> validCountryCodeSet = legalTagProperties.getOtherRelevantDataCountries().keySet();
+                validCountryCodes.put(dataPartitionId, validCountryCodeSet);
+                return validCountryCodeSet;
             } catch (LegalException e) {
                 throw new AppException(e.getHttpResponse().getResponseCode(), "Error getting legal tag properties",
                         "An unexpected error occurred when getting legal tag properties", e);
             }
         }
 
-        return validCountryCodes;
+        return validCountryCodes.get(dataPartitionId);
     }
 
     @Override
