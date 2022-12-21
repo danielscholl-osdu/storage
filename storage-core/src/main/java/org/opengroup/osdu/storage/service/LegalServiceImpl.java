@@ -128,7 +128,6 @@ public class LegalServiceImpl implements ILegalService {
                 LegalTagProperties legalTagProperties = legalService.getLegalTagProperties();
                 Set<String> validCountryCodeSet = legalTagProperties.getOtherRelevantDataCountries().keySet();
                 validCountryCodes.put(dataPartitionId, validCountryCodeSet);
-                return validCountryCodeSet;
             } catch (LegalException e) {
                 throw new AppException(e.getHttpResponse().getResponseCode(), "Error getting legal tag properties",
                         "An unexpected error occurred when getting legal tag properties", e);
