@@ -30,7 +30,7 @@
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
 		<spring-security-core.version>5.7.4</spring-security-core.version>
-		<tomcat-embed-core.version>9.0.67</tomcat-embed-core.version>
+		<tomcat-embed-core.version>9.0.68</tomcat-embed-core.version>
 		<commons-compress.version>1.22</commons-compress.version>
 	</properties>
 
