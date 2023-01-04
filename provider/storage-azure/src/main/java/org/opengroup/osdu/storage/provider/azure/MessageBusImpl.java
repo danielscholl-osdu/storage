@@ -42,7 +42,7 @@ public class MessageBusImpl implements IMessageBus {
     private PublisherConfig publisherConfig;
     @Autowired
     private FeatureFlagUtil featureFlagUtil;
-    @Value("${collaboration.feature.flag.name:false}")
+    @Value("${collaborations-enabled:false}")
     private String collaborationFeatureFlagName;
 
     @Override
