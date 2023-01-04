@@ -23,7 +23,7 @@ public class CollaborationFilter implements Filter {
     public static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
     private static final String DATA_PARTITION_ID = "data-partition-id";
 
-    @Value("${collaboration.feature.flag.name}")
+    @Value("${collaboration.feature.flag.name:false}")
     private String collaborationFeatureFlagName;
     @Autowired
     private FeatureFlagUtil featureFlagUtil;
