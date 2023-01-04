@@ -17,13 +17,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CollaborationFilterTest {
     private static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
     private static final String COLLABORATION_DIRECTIVES = "id=8e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=Unit test";
-
+    private static final String DATA_PARTITION_ID = "data-partition-id";
+    private static final String DATA_PARTITION = "data-partition";
+    private static final String FEATURE_NAME = "feature-name";
     @Mock
     private HttpServletRequest httpServletRequest;
 
@@ -36,6 +40,8 @@ public class CollaborationFilterTest {
     @Mock
     private FilterChain filterChain;
 
+    @Mock
+    private FeatureFlagUtil featureFlagUtil;
     @InjectMocks
     private CollaborationFilter collaborationFilter;
 
@@ -43,19 +49,22 @@ public class CollaborationFilterTest {
     public void setup() {
         initMocks(this);
 
-        org.springframework.test.util.ReflectionTestUtils.setField(collaborationFilter, "isCollaborationEnabled", false);
+        org.springframework.test.util.ReflectionTestUtils.setField(collaborationFilter, "collaborationFeatureFlagName", FEATURE_NAME);
     }
     
     @Test
     public void shouldThrowException_ifCollaborationHeaderProvided_whenCollaborationFeatureFlagDisabled() throws IOException, ServletException {
-        Mockito.when(httpServletRequest.getHeader(X_COLLABORATION_HEADER_NAME)).thenReturn(COLLABORATION_DIRECTIVES);
-        Mockito.when(httpServletResponse.getWriter()).thenReturn(writer);
+        when(httpServletRequest.getHeader(DATA_PARTITION_ID)).thenReturn(DATA_PARTITION);
+        when(featureFlagUtil.isFeatureDisabled(FEATURE_NAME, DATA_PARTITION)).thenReturn(true);
+        when(httpServletRequest.getHeader(X_COLLABORATION_HEADER_NAME)).thenReturn(COLLABORATION_DIRECTIVES);
+        when(httpServletResponse.getWriter()).thenReturn(writer);
+
 
         collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
 
-        Mockito.verify(httpServletResponse).setContentType("application/json");
-        Mockito.verify(httpServletResponse).setStatus(HttpStatus.SC_LOCKED);
-        AppError errorResponse = new AppError(HttpStatus.SC_LOCKED, "Locked","Feature is not enabled on this environment");
-        Mockito.verify(writer).write(CollaborationFilter.appErrorToJson(errorResponse));
+        verify(httpServletResponse).setContentType("application/json");
+        verify(httpServletResponse).setStatus(HttpStatus.SC_LOCKED);
+        AppError errorResponse = new AppError(HttpStatus.SC_LOCKED, "Locked", "Feature is not enabled on this environment");
+        verify(writer).write(CollaborationFilter.appErrorToJson(errorResponse));
     }
 }
