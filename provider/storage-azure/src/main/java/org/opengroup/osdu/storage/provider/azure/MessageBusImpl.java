@@ -26,6 +26,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.opengroup.osdu.storage.util.FeatureFlagUtil;
 
 import java.util.*;
 
@@ -39,12 +40,14 @@ public class MessageBusImpl implements IMessageBus {
     private MessagePublisher messagePublisher;
     @Autowired
     private PublisherConfig publisherConfig;
-    @Value("${collaboration.enabled:false}")
-    private boolean isCollaborationEnabled;
+    @Autowired
+    private FeatureFlagUtil featureFlagUtil;
+    @Value("${collaboration.feature.flag.name:false}")
+    private String collaborationFeatureFlagName;
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        if (isCollaborationEnabled) {
+        if (featureFlagUtil.isFeatureEnabled(collaborationFeatureFlagName, headers.getPartitionId())) {
             publishMessageToRecordsTopicV2(collaborationContext, headers, messages);
             if (collaborationContext.isPresent()) {
                 return;
