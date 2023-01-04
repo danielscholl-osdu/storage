@@ -109,7 +109,7 @@
 			<dependency>
 				<groupId>org.opengroup.osdu</groupId>
 				<artifactId>os-core-common</artifactId>
-				<version>0.19.0-SNAPSHOT-FF</version>
+				<version>${os-core-common.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.fasterxml.woodstox</groupId>
