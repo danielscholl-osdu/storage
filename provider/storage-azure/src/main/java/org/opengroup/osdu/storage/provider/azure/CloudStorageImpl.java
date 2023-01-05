@@ -264,9 +264,8 @@ public class CloudStorageImpl implements ICloudStorage {
         }
     }
 
-    private void validateViewerAccessToRecord(RecordMetadata record)
-    {
-        if (!hasViewerAccessToRecord(record)) {
+    private void validateReadAccessToRecord(RecordMetadata record) {
+        if (!hasViewerAccessToRecord(record) && !hasOwnerAccessToRecord(record)) {
             logger.warning(String.format("%s has no viewer access to %s", headers.getUserEmail(), record.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN,  ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
@@ -274,7 +273,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
-        validateViewerAccessToRecord(record);
+        validateReadAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
         try {
             return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
