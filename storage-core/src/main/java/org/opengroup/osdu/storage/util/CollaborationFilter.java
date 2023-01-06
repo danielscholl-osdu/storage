@@ -27,14 +27,12 @@ public class CollaborationFilter implements Filter {
     @Autowired
     public ICollaborationFeatureFlag iCollaborationFeatureFlag;
 
-    String dataPartitionId;
-
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        dataPartitionId = ((HttpServletRequest) request).getHeader(DATA_PARTITION_ID);
+        String dataPartitionId = ((HttpServletRequest) request).getHeader(DATA_PARTITION_ID);
 
         if (!iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, dataPartitionId)) {
             String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
@@ -56,7 +54,4 @@ public class CollaborationFilter implements Filter {
         return "{\"code\": " + appError.getCode() + ",\"reason\": \"" + appError.getReason() + "\",\"message\": \"" + appError.getMessage() + "\"}";
     }
 
-    public String getDataPartitionId() {
-        return dataPartitionId;
-    }
 }
