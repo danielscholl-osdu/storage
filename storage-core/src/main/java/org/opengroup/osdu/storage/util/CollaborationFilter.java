@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
@@ -24,25 +23,20 @@ public class CollaborationFilter implements Filter {
     private static final String DATA_PARTITION_ID = "data-partition-id";
     private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
+
     @Autowired
-    private ApplicationContext applicationContext;
-    private ICollaborationFeatureFlag iCollaborationFeatureFlag;
-    private boolean collaborationsFeatureFlag;
+    public ICollaborationFeatureFlag iCollaborationFeatureFlag;
+
+    String dataPartitionId;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        String dataPartitionId = ((HttpServletRequest) request).getHeader(DATA_PARTITION_ID);
-        if (applicationContext.containsBean("dataPartitionFeatureFlag")) {
-            iCollaborationFeatureFlag = (ICollaborationFeatureFlag) applicationContext.getBean("dataPartitionFeatureFlag");
-            collaborationsFeatureFlag = iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, dataPartitionId);
-        } else {
-            iCollaborationFeatureFlag = (ICollaborationFeatureFlag) applicationContext.getBean("applicationPropertiesFeatureFlag");
-            collaborationsFeatureFlag = iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME);
-        }
-        if (!collaborationsFeatureFlag) {
+        dataPartitionId = ((HttpServletRequest) request).getHeader(DATA_PARTITION_ID);
+
+        if (!iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, dataPartitionId)) {
             String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
             if (!Strings.isNullOrEmpty(collaborationHeader)) {
                 httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -60,5 +54,9 @@ public class CollaborationFilter implements Filter {
 
     public static String appErrorToJson(AppError appError) {
         return "{\"code\": " + appError.getCode() + ",\"reason\": \"" + appError.getReason() + "\",\"message\": \"" + appError.getMessage() + "\"}";
+    }
+
+    public String getDataPartitionId() {
+        return dataPartitionId;
     }
 }
