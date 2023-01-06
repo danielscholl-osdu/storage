@@ -23,10 +23,11 @@ import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
 import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
+import org.opengroup.osdu.storage.util.ICollaborationFeatureFlag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.opengroup.osdu.storage.util.FeatureFlagUtil;
+import org.opengroup.osdu.storage.util.DataPartitionFeatureFlagImpl;
 
 import java.util.*;
 
@@ -40,14 +41,12 @@ public class MessageBusImpl implements IMessageBus {
     private MessagePublisher messagePublisher;
     @Autowired
     private PublisherConfig publisherConfig;
-    @Autowired
-    private FeatureFlagUtil featureFlagUtil;
-    @Value("${collaborations-enabled:false}")
-    private String collaborationFeatureFlagName;
+    private ICollaborationFeatureFlag iCollaborationFeatureFlag = new DataPartitionFeatureFlagImpl();
+    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled"; // To be moved to a common Contants class
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        if (featureFlagUtil.isFeatureEnabled(collaborationFeatureFlagName, headers.getPartitionId())) {
+        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, headers.getPartitionId())) {
             publishMessageToRecordsTopicV2(collaborationContext, headers, messages);
             if (collaborationContext.isPresent()) {
                 return;
@@ -55,7 +54,7 @@ public class MessageBusImpl implements IMessageBus {
         }
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
-        for (int i = 0; i < messages.length; i += BATCH_SIZE) {
+        for(int i = 0; i < messages.length; i += BATCH_SIZE) {
             PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
             PublisherInfo publisherInfo = PublisherInfo.builder()
                     .batch(batch)
