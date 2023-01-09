@@ -266,7 +266,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
     private void validateReadAccessToRecord(RecordMetadata record) {
         if (!hasViewerAccessToRecord(record) && !hasOwnerAccessToRecord(record)) {
-            logger.warning(String.format("%s has no viewer access to %s", headers.getUserEmail(), record.getId()));
+            logger.warning(String.format("%s has no owner/viewer access to %s", headers.getUserEmail(), record.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN,  ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
     }
