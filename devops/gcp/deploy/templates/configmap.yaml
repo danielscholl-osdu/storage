@@ -16,7 +16,6 @@ data:
   REDIS_STORAGE_HOST: {{ .Values.data.redisStorageHost | quote }}
   STORAGE_SERVICE_ACCOUNT_EMAIL: {{ .Values.data.storageServiceAccountEmail | quote }}
   SPRING_PROFILES_ACTIVE: {{ .Values.data.springProfilesActive | quote }}
-  OPA_ENABLED: {{ .Values.data.opaEnabled | quote }}
   OPA_ENDPOINT: {{ .Values.data.opaEndpoint | quote }}
   {{- if not .Values.conf.onPremEnabled }}
   GOOGLE_AUDIENCES: {{ .Values.data.googleAudiences | quote }}
