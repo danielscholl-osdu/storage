@@ -319,7 +319,7 @@ The following software have components provided under the terms of this license:
 - Apache Log4j JUL Adapter (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-jul)
 - Apache Log4j SLF4J Binding (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl)
 - Apache Log4j to SLF4J Adapter (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-to-slf4j)
-- AssertJ fluent assertions (from ${project.parent.url}#${project.artifactId}, https://repo1.maven.org/maven2/org/assertj/assertj-core)
+- AssertJ Core (from ${project.organization.url}#${project.artifactId})
 - Asynchronous Http Client (from https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client)
 - Asynchronous Http Client Netty Utils (from https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client-netty-utils)
 - AutoValue Annotations (from https://github.com/google/auto/tree/master/value, https://repo1.maven.org/maven2/com/google/auto/value/auto-value-annotations)
@@ -558,8 +558,8 @@ The following software have components provided under the terms of this license:
 - proto-google-cloud-iamcredentials-v1 (from https://github.com/googleapis/google-cloud-java, https://github.com/googleapis/java-iamcredentials/proto-google-cloud-iamcredentials-v1, https://repo1.maven.org/maven2/com/google/api/grpc/proto-google-cloud-iamcredentials-v1)
 - proto-google-cloud-logging-v2 (from https://github.com/googleapis/java-logging/proto-google-cloud-logging-v2, https://repo1.maven.org/maven2/com/google/api/grpc/proto-google-cloud-logging-v2)
 - proto-google-cloud-pubsub-v1 (from https://github.com/googleapis/googleapis, https://github.com/googleapis/java-pubsub/proto-google-cloud-pubsub-v1)
-- proto-google-common-protos (from https://github.com/googleapis/api-client-staging, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-common-protos)
-- proto-google-iam-v1 (from https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-iam-v1)
+- proto-google-common-protos (from https://github.com/googleapis/api-client-staging, https://github.com/googleapis/gapic-generator-java, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-common-protos)
+- proto-google-iam-v1 (from https://github.com/googleapis/gapic-generator-java, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-iam-v1)
 - resilience4j (from https://github.com/resilience4j/resilience4j, https://resilience4j.readme.io, ttps://resilience4j.readme.io)
 - spring-security-crypto (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-oauth2-client (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
@@ -583,7 +583,7 @@ BSD-2-Clause
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- API Common (from https://github.com/googleapis, https://github.com/googleapis/api-common-java)
+- API Common (from https://github.com/googleapis, https://github.com/googleapis/api-common-java, https://repo1.maven.org/maven2/com/google/api/api-common)
 - GAX (Google Api eXtensions) for Java (Core) (from https://repo1.maven.org/maven2/com/google/api/gax)
 - GAX (Google Api eXtensions) for Java (HTTP JSON) (from https://repo1.maven.org/maven2/com/google/api/gax-httpjson)
 - GAX (Google Api eXtensions) for Java (gRPC) (from https://repo1.maven.org/maven2/com/google/api/gax-grpc)
@@ -600,7 +600,7 @@ BSD-3-Clause
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- API Common (from https://github.com/googleapis, https://github.com/googleapis/api-common-java)
+- API Common (from https://github.com/googleapis, https://github.com/googleapis/api-common-java, https://repo1.maven.org/maven2/com/google/api/api-common)
 - ASM Core (from http://asm.ow2.io/, http://asm.ow2.org/)
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - GAX (Google Api eXtensions) for Java (Core) (from https://repo1.maven.org/maven2/com/google/api/gax)
