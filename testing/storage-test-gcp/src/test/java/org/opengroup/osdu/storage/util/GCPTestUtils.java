@@ -22,12 +22,7 @@ public class GCPTestUtils extends TestUtils{
 	public synchronized String getToken() throws Exception {
 		if (Strings.isNullOrEmpty(token)) {
 			String serviceAccountFile = System.getProperty("INTEGRATION_TESTER", System.getenv("INTEGRATION_TESTER"));
-			String audience = System.getProperty("INTEGRATION_TEST_AUDIENCE",
-					System.getenv("INTEGRATION_TEST_AUDIENCE"));
-			if (Strings.isNullOrEmpty(audience)) {
-				audience = "245464679631-ktfdfpl147m1mjpbutl00b3cmffissgq.apps.googleusercontent.com";
-			}
-			token = new GoogleServiceAccount(serviceAccountFile).getAuthToken(audience);
+			token = new GoogleServiceAccount(serviceAccountFile).getAuthToken();
 		}
 		return "Bearer " + token;
 	}
@@ -37,12 +32,7 @@ public class GCPTestUtils extends TestUtils{
 		if (Strings.isNullOrEmpty(noDataAccesstoken)) {
 			String serviceAccountFile = System.getProperty("NO_DATA_ACCESS_TESTER",
 					System.getenv("NO_DATA_ACCESS_TESTER"));
-			String audience = System.getProperty("INTEGRATION_TEST_AUDIENCE",
-					System.getenv("INTEGRATION_TEST_AUDIENCE"));
-			if (Strings.isNullOrEmpty(audience)) {
-				audience = "245464679631-ktfdfpl147m1mjpbutl00b3cmffissgq.apps.googleusercontent.com";
-			}
-			noDataAccesstoken = new GoogleServiceAccount(serviceAccountFile).getAuthToken(audience);
+			noDataAccesstoken = new GoogleServiceAccount(serviceAccountFile).getAuthToken();
 		}
 		return "Bearer " + noDataAccesstoken;
 	}
