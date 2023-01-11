@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.azure;
 
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
 import org.opengroup.osdu.azure.publisherFacade.PublisherInfo;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -23,30 +24,28 @@ import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
 import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
-import org.opengroup.osdu.storage.util.ICollaborationFeatureFlag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.opengroup.osdu.storage.util.DataPartitionFeatureFlagImpl;
 
 import java.util.*;
 
 @Component
 public class MessageBusImpl implements IMessageBus {
     @Autowired
-    ServiceBusConfig serviceBusConfig;
+    private ServiceBusConfig serviceBusConfig;
     @Autowired
     private EventGridConfig eventGridConfig;
     @Autowired
     private MessagePublisher messagePublisher;
     @Autowired
     private PublisherConfig publisherConfig;
-    private ICollaborationFeatureFlag iCollaborationFeatureFlag = new DataPartitionFeatureFlagImpl();
-    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled"; // To be moved to a common Contants class
+    @Autowired
+    private IFeatureFlag iCollaborationFeatureFlag;
+    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, headers.getPartitionId())) {
+        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             publishMessageToRecordsTopicV2(collaborationContext, headers, messages);
             if (collaborationContext.isPresent()) {
                 return;

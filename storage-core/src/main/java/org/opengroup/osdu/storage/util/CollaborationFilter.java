@@ -6,7 +6,7 @@ import org.opengroup.osdu.core.common.model.http.AppError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -25,16 +25,14 @@ public class CollaborationFilter implements Filter {
 
 
     @Autowired
-    public ICollaborationFeatureFlag iCollaborationFeatureFlag;
+    public IFeatureFlag iCollaborationFeatureFlag;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        String dataPartitionId = ((HttpServletRequest) request).getHeader(DATA_PARTITION_ID);
-
-        if (!iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME, dataPartitionId)) {
+        if (!iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
             if (!Strings.isNullOrEmpty(collaborationHeader)) {
                 httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
