@@ -16,23 +16,20 @@ package org.opengroup.osdu.storage.provider.azure;
 
 import com.microsoft.azure.servicebus.primitives.ServiceBusException;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
 import org.opengroup.osdu.azure.publisherFacade.PubsubConfiguration;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
 import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
-import org.opengroup.osdu.storage.util.FeatureFlagUtil;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -49,7 +46,7 @@ public class MessageBusImplTest {
     private final static String RECORDS_CHANGED_EVENT_DATA_VERSION = "1.0";
 
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
-    private final static String FEATURE_NAME = "feature-name";
+    private final static String FEATURE_NAME = "collaborations-enabled";
     private final static String PARTITION_ID = "partitionId";
 
     @Mock
@@ -60,13 +57,12 @@ public class MessageBusImplTest {
     private EventGridConfig eventGridConfig;
     @Mock
     private PublisherConfig publisherConfig;
-
+    @Mock
+    public IFeatureFlag iCollaborationFeatureFlag;
     @Mock
     private PubsubConfiguration pubsubConfiguration;
     @Mock
     private DpsHeaders dpsHeaders;
-    @Mock
-    private FeatureFlagUtil featureFlagUtil;
     @InjectMocks
     private MessageBusImpl sut;
 
@@ -79,7 +75,6 @@ public class MessageBusImplTest {
         doReturn(RECORDS_CHANGED_EVENT_SUBJECT).when(eventGridConfig).getEventSubject();
         doReturn(RECORDS_CHANGED_EVENT_DATA_VERSION).when(eventGridConfig).getEventDataVersion();
         doReturn(RECORDS_CHANGED_EVENT_TYPE).when(eventGridConfig).getEventType();
-        org.springframework.test.util.ReflectionTestUtils.setField(sut, "collaborationFeatureFlagName", FEATURE_NAME);
     }
 
     @Test
@@ -99,8 +94,7 @@ public class MessageBusImplTest {
     @Test
     public void should_publishToOnlyRecordsEventTopic_WhenCollaborationContextIsProvided() {
         PubSubInfo[] pubSubInfo = setup();
-        when(featureFlagUtil.isFeatureEnabled(FEATURE_NAME, PARTITION_ID)).thenReturn(true);
-        when(dpsHeaders.getPartitionId()).thenReturn(PARTITION_ID);
+        when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(true);
         sut.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, pubSubInfo);
         verify(messagePublisher, times(1)).publishMessage(any(), any(), any());
     }
@@ -108,8 +102,7 @@ public class MessageBusImplTest {
     @Test
     public void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
         PubSubInfo[] pubSubInfo = setup();
-        when(featureFlagUtil.isFeatureEnabled(FEATURE_NAME, PARTITION_ID)).thenReturn(true);
-        when(dpsHeaders.getPartitionId()).thenReturn(PARTITION_ID);
+        when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(true);
 
         sut.publishMessage(Optional.empty(), dpsHeaders, pubSubInfo);
         verify(messagePublisher, times(2)).publishMessage(any(), any(), any());
