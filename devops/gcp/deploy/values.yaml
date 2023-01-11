@@ -14,8 +14,6 @@ data:
   legalHost: "http://legal"
   redisGroupHost: "redis-group-master"
   redisStorageHost: "redis-storage-master"
-  googleAudiences: ""
-  opaEnabled: true
   opaEndpoint: "http://opa"
   storageHost: "http://storage"
   defaultLegalTag: "default-data-tag"

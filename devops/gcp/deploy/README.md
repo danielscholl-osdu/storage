@@ -40,8 +40,6 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **legalHost** | Legal service host address | string | `http://legal` | yes
 **redisGroupHost** | Redis host for groups | string | `redis-group-master` | yes
 **redisStorageHost** | Redis host for storage | string | `redis-storage-master` | yes
-**googleAudiences** | Client ID of Google Cloud Credentials, ex `123-abc123.apps.googleusercontent.com` | string | - | yes
-**opaEnabled** | whether OPA is enabled | boolean | true | yes
 **opaEndpoint** | OPA host address | string | `http://opa` | yes
 **storageHost** | Storage service host address | string | `http://storage` | only if `conf.bootstrapEnabled` is true
 **defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `conf.bootstrapEnabled` is true

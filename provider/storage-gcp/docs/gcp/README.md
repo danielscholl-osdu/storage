@@ -17,7 +17,6 @@ Must have:
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
-| `GOOGLE_AUDIENCES` | ex `*****.apps.googleusercontent.com` | Client ID for getting access to cloud resources | yes | https://console.cloud.google.com/apis/credentials |
 | `SPRING_PROFILES_ACTIVE` | ex `gcp` | Spring profile that activate default configuration for Google Cloud environment | false | - |
 | `STORAGE_SERVICE_ACCOUNT_EMAIL` | `workload-storage-gcp@nice-etching-277309.iam.gserviceaccount.com` |  Storage service account email, used during OQM events processing |no| - |
 
@@ -123,7 +122,6 @@ You will need to have the following environment variables defined.
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
-| `INTEGRATION_TEST_AUDIENCE` | `*****.apps.googleusercontent.com` | client application ID | yes | https://console.cloud.google.com/apis/credentials |
 | `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
 | `DOMAIN` | ex`opendes-gcp.projects.com` | OSDU R2 to run tests under | no | - |
 | `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | https://console.cloud.google.com/iam-admin/serviceaccounts |
