@@ -2,11 +2,11 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
