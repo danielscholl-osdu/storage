@@ -40,6 +40,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
 class GoogleServiceAccount {
+
+	private static final String DEFAULT_TARGET_AUDIENCE = "osdu";
+
 	public GoogleServiceAccount(String serviceAccountEncoded) throws IOException {
 		this(Base64.getDecoder().decode(serviceAccountEncoded));
 	}
@@ -57,7 +60,7 @@ class GoogleServiceAccount {
 		return this.serviceAccount.getClientEmail();
 	}
 
-	public String getAuthToken(String audience) throws IOException {
+	public String getAuthToken() throws IOException {
 		JwtBuilder jwtBuilder = Jwts.builder();
 
 		Map<String, Object> header = new HashMap<>();
@@ -66,7 +69,7 @@ class GoogleServiceAccount {
 		jwtBuilder.setHeader(header);
 
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("target_audience", audience);
+		claims.put("target_audience", DEFAULT_TARGET_AUDIENCE);
 		claims.put("exp", System.currentTimeMillis() / 1000 + 3600);
 		claims.put("iat", System.currentTimeMillis() / 1000);
 		claims.put("iss", this.getEmail());
