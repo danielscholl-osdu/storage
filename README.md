@@ -56,7 +56,7 @@ deploy resources to the AWS console, see the deployment section below.
     java -jar storage-service-byoc\target\storage-byoc-0.0.1-SNAPSHOT-spring-boot.jar
     
     # Running Google Cloud:
-    java -jar  -Dspring.profiles.active=local storage-service-gcp\target\storage-gcp-0.0.1-SNAPSHOT-spring-boot.jar
+    java -jar  -Dspring.profiles.active=local storage-service-gc\target\storage-gc-0.0.1-SNAPSHOT-spring-boot.jar
     
     # Running Azure:
     java -jar storage-service-azure\target\storage-azure-0.0.1-SNAPSHOT-spring-boot.jar
@@ -133,7 +133,7 @@ Instructions for running the Azure integration tests can be found [here](./provi
 
 ### Google Cloud
 
-Instructions for running the Google Cloud integration tests can be found [here](./provider/storage-gcp/README.md).
+Instructions for running the Google Cloud integration tests can be found [here](./provider/storage-gc/README.md).
 
 ### AWS
 
