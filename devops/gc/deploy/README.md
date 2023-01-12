@@ -79,7 +79,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 Run this command from within this directory:
 
 ```console
-helm install gcp-storage-deploy .
+helm install gc-storage-deploy .
 ```
 
 ## Uninstall the Helm chart
@@ -87,7 +87,7 @@ helm install gcp-storage-deploy .
 To uninstall the helm deployment:
 
 ```console
-helm uninstall gcp-storage-deploy
+helm uninstall gc-storage-deploy
 ```
 
 > Do not forget to delete all k8s secrets and PVCs accociated with the Service.
