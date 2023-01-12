@@ -3,7 +3,7 @@
 # Script that bootstraps storage service using Python scripts
 # It creates legal tag via request to Legal service
 # After that records are uploaded via requests to Storage service, using previously created Legal tag
-# Contains logic for both onprem and gcp version
+# Contains logic for both reference and google cloud version
 
 set -ex
 
@@ -30,7 +30,7 @@ if [ "${ONPREM_ENABLED}" == "true" ]; then
     python3 /opt/bootstrap_data.py
 
 else
-    # Check that all GCP env variables are provided
+    # Check that all Google Cloud env variables are provided
     export CLOUD_PROVIDER="gcp"
     
     python3 /opt/bootstrap_data.py
