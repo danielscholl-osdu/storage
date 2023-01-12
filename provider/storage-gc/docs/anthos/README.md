@@ -55,7 +55,7 @@ Must have:
 | `POLICY_ID`                 | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
 | `PARTITION_API`             | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
 
-These variables define service behavior, and are used to switch between `anthos` or `gcp` environments, their overriding and usage in mixed mode was not tested.
+These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
 
 | name                     | value                | description                                                                                                               | sensitive? | source |
@@ -131,13 +131,13 @@ For example, this is how **Datastore** OSM driver contains records for "RecordsC
 And this is how **Postgres** OSM driver does. Notice, the above hierarchy is kept, but Postgres uses alternative entities
 for it.
 
-| Datastore hierarchy level |     | Postgres alternative used  |
-|---------------------------|-----|----------------------------|
-| partition (GCP project)   | ==  | Postgres server URL        |
-| namespace                 | ==  | Schema                     |
-| kind                      | ==  | Table                      |
-| record                    | ==  | '<multiple table records>' |
-| columns                   | ==  | id, data (jsonb)           |
+| Datastore hierarchy level          |     | Postgres alternative used  |
+|------------------------------------|-----|----------------------------|
+| partition (Google Cloud project)   | ==  | Postgres server URL        |
+| namespace                          | ==  | Schema                     |
+| kind                               | ==  | Table                      |
+| record                             | ==  | '<multiple table records>' |
+| columns                            | ==  | id, data (jsonb)           |
 
 As we can see in the above table, Postgres uses different approach in storing business data in records. Not like
 Datastore, which segments data into multiple physical columns, Postgres organises them into the single JSONB "data"
@@ -435,7 +435,7 @@ You will need to have the following environment variables defined.
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
 | `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
-| `DOMAIN` | ex`opendes-gcp.projects.com` | OSDU R2 to run tests under | no | - |
+| `DOMAIN` | ex`opendes-gc.projects.com` | OSDU R2 to run tests under | no | - |
 | `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
 | `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
 | `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |

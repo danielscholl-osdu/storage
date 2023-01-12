@@ -31,7 +31,6 @@ variables:
   IBM_HELM_CONFIG_PATH: devops/ibm/ibm-storage-config
   IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
 
-
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
@@ -55,7 +54,7 @@ include:
     file: "cloud-providers/ibm.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/osdu-gcp-global.yml"
+    file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "publishing/pages.yml"
@@ -72,8 +71,7 @@ include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/ibm.yml"
 
-
-  - local: "devops/gcp/pipeline/override-stages.yml"
+  - local: "devops/gc/pipeline/override-stages.yml"
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there

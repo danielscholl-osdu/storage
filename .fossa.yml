@@ -8,31 +8,31 @@ cli:
   project: Storage
 analyze:
   modules:
-  - name: os-storage
-    type: mvn
-    target: pom.xml
-    path: .
-  - name: storage-core
-    type: mvn
-    target: storage-core/pom.xml
-    path: .
-  - name: storage-gcp
-    type: mvn
-    target: provider/storage-gcp/pom.xml
-    path: .
-  - name: storage-byoc
-    type: mvn
-    target: provider/storage-byoc/pom.xml
-    path: .
-  - name: storage-azure
-    type: mvn
-    target: provider/storage-azure/pom.xml
-    path: .
-  - name: storage-aws
-    type: mvn
-    target: provider/storage-aws/pom.xml
-    path: .
-  - name: storage-ibm
-    type: mvn
-    target: provider/storage-ibm/pom.xml
-    path: .
+    - name: os-storage
+      type: mvn
+      target: pom.xml
+      path: .
+    - name: storage-core
+      type: mvn
+      target: storage-core/pom.xml
+      path: .
+    - name: storage-gc
+      type: mvn
+      target: provider/storage-gc/pom.xml
+      path: .
+    - name: storage-byoc
+      type: mvn
+      target: provider/storage-byoc/pom.xml
+      path: .
+    - name: storage-azure
+      type: mvn
+      target: provider/storage-azure/pom.xml
+      path: .
+    - name: storage-aws
+      type: mvn
+      target: provider/storage-aws/pom.xml
+      path: .
+    - name: storage-ibm
+      type: mvn
+      target: provider/storage-ibm/pom.xml
+      path: .

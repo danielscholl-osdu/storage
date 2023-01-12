@@ -1,9 +1,9 @@
 variables:
-  OSDU_GCP_SERVICE: storage
-  OSDU_GCP_VENDOR: gcp
-  NO_DATA_ACCESS_TESTER: $OSDU_GCP_NO_DATA_ACCESS_TESTER
+  GC_SERVICE: storage
+  GC_VENDOR: gc
+  NO_DATA_ACCESS_TESTER: $GC_NO_DATA_ACCESS_TESTER
   # FIXME remove when all services are migrated to a single helm
-  OSDU_GCP_ENABLE_HELM_CONFIG: "false"
+  GC_ENABLE_HELM_CONFIG: "false"
 
 .define_DATA_BRANCH:
   script:
@@ -19,22 +19,22 @@ variables:
         REF_DATA_BRANCH="master";
       fi;
 
-osdu-gcp-anthos-test:
+gc-anthos-test:
   variables:
-    OSDU_GCP_VENDOR: anthos
+    GC_VENDOR: anthos
     TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID: storage-no-access-tester
     TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET: $OSDU_ANTHOS_STORAGE_NO_ACCESS_CLIENT_SECRET
 
-osdu-gcp-containerize-bootstrap-gitlab:
+gc-containerize-bootstrap-gitlab:
   variables:
-    OSDU_GCP_ENABLE_BOOTSTRAP: "true"
+    GC_ENABLE_BOOTSTRAP: "true"
     BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
   before_script:
     - !reference [.define_DATA_BRANCH, script]
 
-osdu-gcp-containerize-bootstrap-gcr:
+gc-containerize-bootstrap-gcr:
   variables:
-    OSDU_GCP_ENABLE_BOOTSTRAP: "true"
+    GC_ENABLE_BOOTSTRAP: "true"
     BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
   before_script:
     - !reference [.define_DATA_BRANCH, script]

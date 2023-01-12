@@ -7,7 +7,7 @@ WORKDIR /opt
 ENV MANIFESTS_DIR="./manifests"
 ENV DATA_BRANCH=${DATA_BRANCH}
 
-COPY ./provider/storage-gcp/bootstrap ./
+COPY ./provider/storage-gc/bootstrap ./
 
 RUN apt-get update \
     && apt-get install zip jq -y \ 
