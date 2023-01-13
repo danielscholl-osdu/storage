@@ -21,4 +21,4 @@ policy:
 schemaEndpoints:
   disabled: #{SCHEMA_ENDPOINTS_DISABLED}#
 
-istioDnsHost: #{ISTIO_DNS_HOST}#
+istioDnsHost: #{ISTIO_DNS_HOST}# 
