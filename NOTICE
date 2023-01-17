@@ -612,7 +612,7 @@ The following software have components provided under the terms of this license:
 - Hamcrest (from http://hamcrest.org/JavaHamcrest/)
 - Hamcrest Core (from http://hamcrest.org/, http://hamcrest.org/JavaHamcrest/, https://repo1.maven.org/maven2/org/hamcrest/hamcrest-core)
 - Jackson module: Afterburner (from http://wiki.fasterxml.com/JacksonHome, https://github.com/FasterXML/jackson-modules-base)
-- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
+- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - Jakarta XML Binding API (from https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api, https://repo1.maven.org/maven2/org/jboss/spec/javax/xml/bind/jboss-jaxb-api_2.3_spec)
 - Microsoft Application Insights Java Agent (from https://github.com/Microsoft/ApplicationInsights-Java)
@@ -685,7 +685,7 @@ The following software have components provided under the terms of this license:
 
 - Apache Log4j Core (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core)
 - HK2 Implementation Utilities (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-utils)
-- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
+- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Java Architecture for XML Binding (from http://jaxb.java.net/, https://repo1.maven.org/maven2/javax/xml/bind/jaxb-api)
 - JavaBeans Activation Framework (from https://repo1.maven.org/maven2/com/sun/activation/javax.activation)
 - OSGi resource locator (from https://repo1.maven.org/maven2/org/glassfish/hk2/osgi-resource-locator)
@@ -732,7 +732,7 @@ The following software have components provided under the terms of this license:
 - JUnit Jupiter Params (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Commons (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Engine API (from http://junit.org/junit5/, https://junit.org/junit5/)
-- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
+- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - Jakarta Bean Validation API (from https://beanvalidation.org)
 - Jakarta XML Binding API (from https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api, https://repo1.maven.org/maven2/org/jboss/spec/javax/xml/bind/jboss-jaxb-api_2.3_spec)
@@ -758,7 +758,7 @@ The following software have components provided under the terms of this license:
 - JUnit Jupiter Params (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Commons (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Engine API (from http://junit.org/junit5/, https://junit.org/junit5/)
-- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
+- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - Jakarta Bean Validation API (from https://beanvalidation.org)
 - Jakarta XML Binding API (from https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api, https://repo1.maven.org/maven2/org/jboss/spec/javax/xml/bind/jboss-jaxb-api_2.3_spec)
@@ -781,7 +781,7 @@ GPL-2.0-with-classpath-exception
 The following software have components provided under the terms of this license:
 
 - HK2 Implementation Utilities (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-utils)
-- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
+- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - Jakarta Bean Validation API (from https://beanvalidation.org)
 - Jakarta XML Binding API (from https://repo1.maven.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api, https://repo1.maven.org/maven2/org/jboss/spec/javax/xml/bind/jboss-jaxb-api_2.3_spec)
@@ -998,4 +998,4 @@ unknown
 The following software have components provided under the terms of this license:
 
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
-- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
+- Jakarta Activation API (from https://github.com/eclipse-ee4j/jaf, https://github.com/jakartaee/jaf-api, https://repo1.maven.org/maven2/jakarta/activation/jakarta.activation-api)
