@@ -51,7 +51,7 @@ In the current version, the mappers are equipped with several drivers to the sto
 ### Anthos Service Configuration:
 [Anthos service configuration ](docs/anthos/README.md)
 ### Google Cloud Service Configuration:
-[Google Cloud service configuration ](docs/gcp/README.md)
+[Google Cloud service configuration ](docs/gc/README.md)
 
 ## Run service
 
@@ -130,7 +130,7 @@ After configuring your environment as specified above, you can follow these step
 These steps should be invoked from the *repository root.*
 
 ```bash
-cd provider/storage-gcp/ && mvn spring-boot:run
+cd provider/storage-gc/ && mvn spring-boot:run
 ```
 
 ## Testing
@@ -142,7 +142,7 @@ This section describes how to run cloud OSDU E2E tests.
 ### Anthos test configuration:
 [Anthos service configuration ](docs/anthos/README.md)
 ### Google Cloud test configuration:
-[Google Cloud service configuration ](docs/gcp/README.md)
+[Google Cloud service configuration ](docs/gc/README.md)
 
 
 ## Deployment
