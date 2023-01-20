@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.azure;
 
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
 import org.opengroup.osdu.azure.publisherFacade.PublisherInfo;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -24,7 +25,6 @@ import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -32,19 +32,20 @@ import java.util.*;
 @Component
 public class MessageBusImpl implements IMessageBus {
     @Autowired
-    ServiceBusConfig serviceBusConfig;
+    private ServiceBusConfig serviceBusConfig;
     @Autowired
     private EventGridConfig eventGridConfig;
     @Autowired
     private MessagePublisher messagePublisher;
     @Autowired
     private PublisherConfig publisherConfig;
-    @Value("${collaboration.enabled:false}")
-    private boolean isCollaborationEnabled;
+    @Autowired
+    private IFeatureFlag iCollaborationFeatureFlag;
+    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        if (isCollaborationEnabled) {
+        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             publishMessageToRecordsTopicV2(collaborationContext, headers, messages);
             if (collaborationContext.isPresent()) {
                 return;
@@ -52,7 +53,7 @@ public class MessageBusImpl implements IMessageBus {
         }
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
-        for (int i = 0; i < messages.length; i += BATCH_SIZE) {
+        for(int i = 0; i < messages.length; i += BATCH_SIZE) {
             PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
             PublisherInfo publisherInfo = PublisherInfo.builder()
                     .batch(batch)
