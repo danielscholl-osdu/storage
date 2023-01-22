@@ -30,49 +30,60 @@ First you need to set variables in **values.yaml** file using any code editor. S
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**logLevel** | logging level | string | `ERROR` | yes
-**springProfilesActive** | active spring profile | string | `gcp` | yes
-**defaultDataCountry** | Data storage region | string | `US` | yes
-**storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | `storage@service.local` | yes
-**entitlementsHost** | Entitlements service host address | string | `http://entitlements` | yes
-**partitionHost** | Partition service host address | string | `http://partition` | yes
-**crsConverterHost** | CRS Converter service host address | string | `http://crs-conversion` | yes
-**legalHost** | Legal service host address | string | `http://legal` | yes
-**redisGroupHost** | Redis host for groups | string | `redis-group-master` | yes
-**redisStorageHost** | Redis host for storage | string | `redis-storage-master` | yes
-**opaEndpoint** | OPA host address | string | `http://opa` | yes
-**storageHost** | Storage service host address | string | `http://storage` | only if `conf.bootstrapEnabled` is true
-**defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `conf.bootstrapEnabled` is true
-**dataPartitionId** | Data partition id | string | - | only if `conf.bootstrapEnabled` is true
+**data.logLevel** | logging level | string | `ERROR` | yes
+**data.springProfilesActive** | active spring profile | string | `gcp` | yes
+**data.defaultDataCountry** | Data storage region | string | `US` | yes
+**data.storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | `storage@service.local` | yes
+**data.entitlementsHost** | Entitlements service host address | string | `http://entitlements` | yes
+**data.partitionHost** | Partition service host address | string | `http://partition` | yes
+**data.crsConverterHost** | CRS Converter service host address | string | `http://crs-conversion` | yes
+**data.legalHost** | Legal service host address | string | `http://legal` | yes
+**data.opaEndpoint** | OPA host address | string | `http://opa` | yes
+**data.storageHost** | Storage service host address | string | `http://storage` | only if `conf.bootstrapEnabled` is true
+**data.defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `conf.bootstrapEnabled` is true
+**data.dataPartitionId** | Data partition id | string | - | only if `conf.bootstrapEnabled` is true
+**data.redisStorageHost** | The host for redis instance. If empty (by default), helm installs an internal redis instance | string | - | yes
+**data.redisStoragePort** | The port for redis instance | digit | 6379 | yes
 
 ### Deployment variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**requestsCpu** | amount of requested CPU | string | `0.25` | yes
-**requestsMemory** | amount of requested memory| string | `1024M` | yes
-**limitsCpu** | CPU limit | string | `1` | yes
-**limitsMemory** | memory limit | string | `3G` | yes
-**image** | path to the image in a registry | string | - | yes
-**imagePullPolicy** | when to pull the image | string | `IfNotPresent` | yes
-**serviceAccountName** | name of kubernetes service account | string | `storage` | yes
-**bootstrapImage** | path to the bootstrap image in a registry | string | - | only if `conf.bootstrapEnabled` is true
-**bootstrapServiceAccountName** | name of kubernetes service account that will be used for bootstrap | string | - | only if `conf.bootstrapEnabled` is true
+**data.requestsCpu** | amount of requested CPU | string | `250m` | yes
+**data.requestsMemory** | amount of requested memory| string | `1024M` | yes
+**data.limitsCpu** | CPU limit | string | `1` | yes
+**data.limitsMemory** | memory limit | string | `3G` | yes
+**data.image** | path to the image in a registry | string | - | yes
+**data.imagePullPolicy** | when to pull the image | string | `IfNotPresent` | yes
+**data.serviceAccountName** | name of kubernetes service account | string | `storage` | yes
+**data.bootstrapImage** | path to the bootstrap image in a registry | string | - | only if `conf.bootstrapEnabled` is true
+**data.bootstrapServiceAccountName** | name of kubernetes service account that will be used for bootstrap | string | - | only if `conf.bootstrapEnabled` is true
+**data.redisImage** | service image | string | `redis:7` | yes
 
 ### Configuration variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**appName** | Service name | string | `storage` | yes
-**keycloakSecretName** | secret for keycloak | string | `storage-keycloak-secret` | yes
-**minioSecretName** | secret for minio | string | `storage-minio-secret` | yes
-**postgresSecretName** | secret for postgres | string | `storage-postgres-secret` | yes
-**rabbitmqSecretName** | secret for rabbitmq | string | `rabbitmq-secret` | yes
-**bootstrapSecretName** | secret for bootstrap to access openid provider | string | `datafier-secret` | only if `conf.bootstrapEnabled` is true
-**replicas** | Number of replicas | integer | 3 | yes
-**onPremEnabled** | whether on-prem is enabled | boolean | false | yes
-**bootstrapEnabled** | whether storage bootstrap is enabled | boolean | false | yes
-**domain** | your domain, ex `example.com` | string | - | yes
+**conf.appName** | Service name | string | `storage` | yes
+**conf.keycloakSecretName** | secret for keycloak | string | `storage-keycloak-secret` | yes
+**conf.minioSecretName** | secret for minio | string | `storage-minio-secret` | yes
+**conf.postgresSecretName** | secret for postgres | string | `storage-postgres-secret` | yes
+**conf.rabbitmqSecretName** | secret for rabbitmq | string | `rabbitmq-secret` | yes
+**conf.storageRedisSecretName** | secret for redis that contains redis password with REDIS_PASSWORD key | string | `storage-redis-secret` | yes
+**conf.bootstrapSecretName** | secret for bootstrap to access openid provider | string | `datafier-secret` | only if `conf.bootstrapEnabled` is true
+**conf.replicas** | Number of replicas | integer | 3 | yes
+**conf.onPremEnabled** | whether on-prem is enabled | boolean | false | yes
+**conf.bootstrapEnabled** | whether storage bootstrap is enabled | boolean | false | yes
+**conf.domain** | your domain, ex `example.com` | string | - | yes
+
+### Istio variables
+
+| Name | Description | Type | Default |Required |
+|------|-------------|------|---------|---------|
+**istio.proxyCPU** | CPU request for Envoy sidecars | string | 25m | yes
+**istio.proxyCPULimit** | CPU limit for Envoy sidecars | string | 200m | yes
+**istio.proxyMemory** | memory request for Envoy sidecars | string | 64Mi | yes
+**istio.proxyMemoryLimit** | memory limit for Envoy sidecars | string | 256Mi | yes
 
 ## Install the Helm chart
 

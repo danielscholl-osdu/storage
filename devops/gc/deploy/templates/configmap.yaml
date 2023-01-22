@@ -17,3 +17,12 @@ data:
   STORAGE_SERVICE_ACCOUNT_EMAIL: {{ .Values.data.storageServiceAccountEmail | quote }}
   SPRING_PROFILES_ACTIVE: {{ .Values.data.springProfilesActive | quote }}
   OPA_ENDPOINT: {{ .Values.data.opaEndpoint | quote }}
+  {{- if .Values.data.redisStorageHost }}
+  REDIS_GROUP_HOST: {{ .Values.data.redisStorageHost | quote }}
+  REDIS_STORAGE_HOST: {{ .Values.data.redisStorageHost | quote }}
+  {{- else }}
+  REDIS_GROUP_HOST: {{ printf "redis-%s" .Values.conf.appName | quote }}
+  REDIS_STORAGE_HOST: {{ printf "redis-%s" .Values.conf.appName | quote }}
+  {{- end }}
+  REDIS_STORAGE_PORT: {{ .Values.data.redisStoragePort | quote }}
+  REDIS_GROUP_PORT: {{ .Values.data.redisStoragePort | quote }}
