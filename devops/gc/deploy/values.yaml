@@ -12,14 +12,12 @@ data:
   partitionHost: "http://partition"
   crsConverterHost: "http://crs-conversion"
   legalHost: "http://legal"
-  redisGroupHost: "redis-group-master"
-  redisStorageHost: "redis-storage-master"
   opaEndpoint: "http://opa"
   storageHost: "http://storage"
   defaultLegalTag: "default-data-tag"
   dataPartitionId: ""
   # deployments
-  requestsCpu: "0.25"
+  requestsCpu: "250m"
   requestsMemory: "1024M"
   limitsCpu: "1"
   limitsMemory: "3G"
@@ -28,6 +26,11 @@ data:
   image: ""
   imagePullPolicy: "IfNotPresent"
   serviceAccountName: "storage"
+  # redis connection. Change it if you want to use external redis
+  redisStorageHost: ""
+  redisStoragePort: 6379
+  redisImage: "redis:7"
+
 conf:
   appName: "storage"
   keycloakSecretName: "storage-keycloak-secret"
@@ -39,10 +42,12 @@ conf:
   onPremEnabled: false
   bootstrapEnabled: false
   domain: ""
+  storageRedisSecretName: "storage-redis-secret"
+
 istio:
-  proxyCPU: "50m"
-  proxyCPULimit: "500m"
+  proxyCPU: "25m"
+  proxyCPULimit: "200m"
   proxyMemory: "64Mi"
-  proxyMemoryLimit: "512Mi"
+  proxyMemoryLimit: "256Mi"
   bootstrapProxyCPU: "10m"
   bootstrapProxyCPULimit: "100m"

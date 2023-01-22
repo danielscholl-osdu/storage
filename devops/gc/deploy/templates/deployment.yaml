@@ -25,6 +25,17 @@ spec:
       - name: {{ .Values.conf.appName | quote }}
         image: {{ .Values.data.image | quote }}
         imagePullPolicy: {{ .Values.data.imagePullPolicy | quote }}
+        env:
+        - name: REDIS_GROUP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.conf.storageRedisSecretName | quote }}
+              key: REDIS_PASSWORD
+        - name: REDIS_STORAGE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.conf.storageRedisSecretName | quote }}
+              key: REDIS_PASSWORD
         envFrom:
         - configMapRef:
             name: {{ printf "%s-config" .Values.conf.appName | quote }}
