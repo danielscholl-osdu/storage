@@ -1,5 +1,6 @@
 ## Collaboration Integration
-All APIs in storage service are collaboration context-aware in Azure CSP when the collaboration context feature flag is set to true.
+
+All APIs in storage service are [collaboration context-aware](CollaborationContext.md) in Azure CSP when the collaboration context feature flag is set to true.
 Meaning that any interface changes (that are implemented by all CSPs) have a "dummy" implementation that ignores the functionality related to collaboration.
 Other CSPs can implement this functionality at their own pace.
 
