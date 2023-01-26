@@ -29,7 +29,7 @@ data:
   # redis connection. Change it if you want to use external redis
   redisStorageHost: ""
   redisStoragePort: 6379
-  redisImage: "redis:7"
+  redisImage: "docker.io/library/redis:7"
 
 conf:
   appName: "storage"
