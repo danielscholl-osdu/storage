@@ -212,7 +212,7 @@ public class ObmStorage implements ICloudStorage {
                 throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
             } else if (e.getError().getHttpStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 String msg = String.format("Record with id '%s' does not exist", record.getId());
-                throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found", msg);
+                throw new AppException(HttpStatus.SC_UNPROCESSABLE_ENTITY, "Record not found", msg);
             } else {
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record retrieval",
                     "An unexpected error on retrieving the record has occurred", e);
