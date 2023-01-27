@@ -240,8 +240,11 @@ public class CloudStorageImpl implements ICloudStorage {
                 });
         boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
                 new HashSet<>(Arrays.asList(acls)));
-        boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
-        return isEntitledForViewing || isRecordOwner;
+        boolean isRecordCreator = record.getUser().equalsIgnoreCase(headers.getUserEmail());
+        if (!isEntitledForViewing && !isRecordCreator) {
+            return hasOwnerAccessToRecord(record);
+        }
+        return true;
     }
 
     private boolean hasOwnerAccessToRecord(RecordMetadata record)
