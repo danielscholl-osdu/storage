@@ -19,6 +19,61 @@ When it is set to true the old functionality is still not changed however you ca
 In order to use storage apis in a collaboration context, the API user needs to add a __x-collaboration HTTP header__ to the requests.
 The header holds directives instructing the OSDU to handle in context of the provided collaboration instance and not in the context of the promoted or trusted data.
 
+### Sample implementation to integrate with records changed messages
+Please refer to this MR for [implementation of Azure](https://community.opengroup.org/osdu/platform/system/storage/-/merge_requests/546).
+
+Consumers who want to integrate with record change messages that include changes made within a collaboration context need to register the records to the new topic "recordstopic-v2". Refer the [DataNotification.md](https://community.opengroup.org/osdu/platform/system/notification/-/blob/master/docs/tutorial/DataNotification.md) file for details about the recordstopics-v2.
+
+This topic replaces the current record changed topic and receives both collaboration and non collaboration messages when the collaborations feature flag is enabled.
+
+The current record changed topic however does not receive messages when collaboration context is provided. Meaning, the original functionality of storage should not be changed if collaboration context is not provided.
+
+In summary,
+1. If feature flag is set to true:
+   1. A request with x-collaboration header: should send a message to recordstopic-v2
+   2. A request without x-collaboration header: should send a message to recordstopic and recordstopic-v2
+2. If feature flag is set to false:
+   1. A request with x-collaboration header: should not send a message to any topic
+   2. A request without x-collaboration header: should send a message to recordstopic
+
+The message contains the collaboration context header as an atribute when a change is made in context of a collaboration.
+
+#### Example of a message when the x-collaboration header is provided -
+```json
+{
+   "message": {
+      "data": [
+         {
+            "id": "opendes:wellbore:f213e42d5fa848f592917a8df7fed132",
+            "kind": "common:welldb:wellbore:1.0.0",
+            "op": "create"
+         }
+      ],
+      "account-id": "opendes",
+      "data-partition-id": "opendes",
+      "correlation-id": "anfal-5t3c153e-8f03-4295-8b1a-edaae86dfafa",
+      "x-collaboration": "id=7d34b896-6b55-40e0-a628-e696f3c00000,application=app"
+   }
+}
+```
+#### Example of a message when the x-collaboration header is not provided -
+```json
+{
+   "message": {
+      "data": [
+         {
+            "id": "opendes:inttest:1674654754283",
+            "kind": "opendes:wks:inttest:1.0.1674654754283",
+            "op": "create"
+         }
+      ],
+      "account-id": "opendes",
+      "data-partition-id": "opendes",
+      "correlation-id": "2715a1b8-2ffb-406f-839c-6e6bfed27e5c"
+   }
+}
+```
+
 ### HTTP header syntax <a name="http-header-syntax"></a>
 * Caching directives are case-insensitive but lowercase is recommended
 * Multiple directives are comma-separated
