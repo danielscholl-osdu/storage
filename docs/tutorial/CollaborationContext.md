@@ -51,7 +51,7 @@ The message contains the collaboration context header as an atribute when a chan
       ],
       "account-id": "opendes",
       "data-partition-id": "opendes",
-      "correlation-id": "anfal-5t3c153e-8f03-4295-8b1a-edaae86dfafa",
+      "correlation-id": "5t3c153e-8f03-4295-8b1a-edaae86dfafa",
       "x-collaboration": "id=7d34b896-6b55-40e0-a628-e696f3c00000,application=app"
    }
 }
