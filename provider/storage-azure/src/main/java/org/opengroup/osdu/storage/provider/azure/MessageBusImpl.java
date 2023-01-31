@@ -20,6 +20,7 @@ import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
 import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
@@ -44,13 +45,8 @@ public class MessageBusImpl implements IMessageBus {
     private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
     @Override
-    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
-        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-            publishMessageToRecordsTopicV2(collaborationContext, headers, messages);
-            if (collaborationContext.isPresent()) {
-                return;
-            }
-        }
+    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for(int i = 0; i < messages.length; i += BATCH_SIZE) {
@@ -64,17 +60,17 @@ public class MessageBusImpl implements IMessageBus {
                     .serviceBusTopicName(serviceBusConfig.getServiceBusTopic())
                     .build();
 
-            messagePublisher.publishMessage(headers, publisherInfo, collaborationContext);
+            messagePublisher.publishMessage(headers, publisherInfo, Optional.empty());
         }
     }
 
 
-    public void publishMessageToRecordsTopicV2(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
         // The batch size is same for both Event grid and Service bus.
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for (int i = 0; i < messages.length; i += BATCH_SIZE) {
             String messageId = String.format("%s-%d",headers.getCorrelationId(), i);
-            PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
+            RecordChangedV2[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
             PublisherInfo publisherInfo = PublisherInfo.builder()
                     .batch(batch)
                     .eventGridTopicName(eventGridConfig.getEventGridTopic())

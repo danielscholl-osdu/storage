@@ -17,8 +17,10 @@ package org.opengroup.osdu.storage.service;
 import com.lambdaworks.redis.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -28,6 +30,7 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,12 +88,15 @@ public class SchemaServiceImpl implements SchemaService {
 
     @Autowired
     private StorageAuditLogger auditLogger;
+    @Autowired
+    private IFeatureFlag iCollaborationFeatureFlag;
+    private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 
     @Override
     public void createSchema(Schema inputSchema) {
         this.validateKindFromTenant(inputSchema.getKind());
         this.validateCircularReference(inputSchema, null);
-
+        Optional<CollaborationContext> collaborationContext = Optional.empty();
         Schema schema = this.validateSchema(inputSchema);
 
         try {
@@ -99,8 +105,16 @@ public class SchemaServiceImpl implements SchemaService {
             this.auditLogger.createSchemaSuccess(singletonList(inputSchema.getKind()));
 
             this.cache.put(this.getSchemaCacheKey(inputSchema.getKind()), schema);
-            this.pubSubClient.publishMessage(Optional.empty(), this.headers,
-                    new PubSubInfo(null, inputSchema.getKind(), OperationType.create_schema));
+
+            if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+                this.pubSubClient.publishMessage(Optional.empty(), this.headers,
+                        new RecordChangedV2(null, null, inputSchema.getKind(), OperationType.create_schema));
+
+            }
+            if (!collaborationContext.isPresent()) {
+                this.pubSubClient.publishMessage(this.headers,
+                        new PubSubInfo(null, inputSchema.getKind(), OperationType.create_schema));
+            }
 
         } catch (IllegalArgumentException e) {
             throw new AppException(HttpStatus.SC_CONFLICT, "Schema already registered",
@@ -119,6 +133,8 @@ public class SchemaServiceImpl implements SchemaService {
     @Override
     public void deleteSchema(String kind) {
 
+        Optional<CollaborationContext> collaborationContext = Optional.empty();
+
         this.validateKindFromTenant(kind);
 
         Schema schema = this.schemaRepository.get(kind);
@@ -131,8 +147,14 @@ public class SchemaServiceImpl implements SchemaService {
         this.auditLogger.deleteSchemaSuccess(singletonList(schema.getKind()));
 
         this.cache.delete(this.getSchemaCacheKey(kind));
-        this.pubSubClient.publishMessage(Optional.empty(), this.headers,
-                new PubSubInfo(null, schema.getKind(), OperationType.purge_schema));
+        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+            this.pubSubClient.publishMessage(Optional.empty(), this.headers,
+                    new RecordChangedV2(null, null, schema.getKind(), OperationType.purge_schema));
+        }
+        if (!collaborationContext.isPresent()) {
+            this.pubSubClient.publishMessage(this.headers,
+                    new PubSubInfo(null, schema.getKind(), OperationType.purge_schema));
+        }
     }
 
     @Override

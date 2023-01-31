@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.service;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -24,6 +25,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -53,7 +55,9 @@ public class PersistenceServiceImpl implements PersistenceService {
 
 	@Autowired
 	private JaxRsDpsLog logger;
-
+	@Autowired
+	private IFeatureFlag iCollaborationFeatureFlag;
+	private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 	@Override
 	public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
 
@@ -61,6 +65,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 		List<RecordMetadata> recordsMetadata = new ArrayList<>(recordsProcessing.size());
 
 		PubSubInfo[] pubsubInfo = new PubSubInfo[recordsProcessing.size()];
+		RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordsProcessing.size()];
 
 		for (int i = 0; i < recordsProcessing.size(); i++) {
 			RecordProcessing processing = recordsProcessing.get(i);
@@ -68,16 +73,24 @@ public class PersistenceServiceImpl implements PersistenceService {
 			recordsMetadata.add(recordMetadata);
 			if(processing.getOperationType() == OperationType.create) {
 				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.create).build();
+				recordChangedV2[i] = RecordChangedV2.builder().id(recordMetadata.getId()).version(recordMetadata.getLatestVersion()).kind(recordMetadata.getKind()).op(OperationType.create).build();
 			} else {
 				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.update).recordBlocks(processing.getRecordBlocks()).build();
+				recordChangedV2[i] = RecordChangedV2.builder().id(recordMetadata.getId()).version(recordMetadata.getLatestVersion()).kind(recordMetadata.getKind()).op(OperationType.update).recordBlocks(processing.getRecordBlocks()).build();
 				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
 					pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
+					recordChangedV2[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
 				}
 			}
 		}
 
 		this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
-		this.pubSubClient.publishMessage(collaborationContext, this.headers, pubsubInfo);
+		if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+		}
+		if (!collaborationContext.isPresent()) {
+			this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		}
 	}
 
     private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
@@ -120,11 +133,19 @@ public class PersistenceServiceImpl implements PersistenceService {
 			throw e;
 		}
 		PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
+		RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadata.size()];
 		for (int i = 0; i < recordMetadata.size(); i++) {
 			RecordMetadata metadata = recordMetadata.get(i);
 			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
+			recordChangedV2[i] = new RecordChangedV2(metadata.getId(), metadata.getLatestVersion(), metadata.getKind(), OperationType.update);
 		}
-		this.pubSubClient.publishMessage(collaborationContext, this.headers, pubsubInfo);
+		if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+		}
+		if (!collaborationContext.isPresent()) {
+			this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		}
+
 		return lockedRecords;
 	}
 
