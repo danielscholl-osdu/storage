@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import static java.util.Collections.singletonList;
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
 
 @Service
 public class SchemaServiceImpl implements SchemaService {
@@ -90,7 +91,6 @@ public class SchemaServiceImpl implements SchemaService {
     private StorageAuditLogger auditLogger;
     @Autowired
     private IFeatureFlag iCollaborationFeatureFlag;
-    private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 
     @Override
     public void createSchema(Schema inputSchema) {

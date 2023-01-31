@@ -17,11 +17,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+
 @Component
 public class CollaborationFilter implements Filter {
     public static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
     private static final String DATA_PARTITION_ID = "data-partition-id";
-    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
 
     @Autowired
