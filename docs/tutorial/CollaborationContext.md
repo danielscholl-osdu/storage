@@ -6,9 +6,6 @@
     - [HTTP header syntax <a name="http-header-syntax"></a>](#http-header-syntax)
     - [Request directives <a name="request-directives"></a>](#request-directives)
     - [Examples <a name="example-requests"></a>](#example-requests)
-- [Integration <a name="integration"></a>](#integration)
-    - [How to integrate collaboration context <a name="how-to-integrate-collaboration-context"></a>](#how-to-integrate-collaboration-context)
-    - [Sample implementation of Azure <a name="sample-implementation-of-azure"></a>](#sample-implementation-of-azure)
 - [Reference <a name="reference"></a>](#reference)
 
 ## Introduction <a name="introduction"></a>
@@ -16,11 +13,66 @@
 Collaboration enables domain users to always consume quality data from the OSDU, share data within your team and control how and what you want to share back. This maintains the data integrity of the OSDU while enabling teams to succeed in creating new value.
 
 ## Collaboration Context <a name="collaboration-context"></a>
-All APIs in storage service can be collaboration context-aware. Please refer to the '[Integration <a name="integration"></a>](#integration)' section for further implementation details. This functionality is behind a collaboration feature flag which is set to false by default. The functionality of the existing storage service will not be changed with this feature flag set to false.
+All APIs in storage service can be collaboration context-aware. Please refer to the [Collaboration Integration](CollaborationIntegration.md) tutorial for further implementation details. This functionality is behind a collaboration feature flag which is set to false by default. The functionality of the existing storage service will not be changed with this feature flag set to false.
 When it is set to true the old functionality is still not changed however you can work with Records in new contexts using the x-collaboration header when it is optionally provided.
 
 In order to use storage apis in a collaboration context, the API user needs to add a __x-collaboration HTTP header__ to the requests.
 The header holds directives instructing the OSDU to handle in context of the provided collaboration instance and not in the context of the promoted or trusted data.
+
+### Sample implementation to integrate with records changed messages
+Please refer to this MR for [implementation of Azure](https://community.opengroup.org/osdu/platform/system/storage/-/merge_requests/546).
+
+Consumers who want to integrate with record change messages that include changes made within a collaboration context need to register the records to the new topic "recordstopic-v2". Refer the [DataNotification.md](https://community.opengroup.org/osdu/platform/system/notification/-/blob/master/docs/tutorial/DataNotification.md) file for details about the recordstopics-v2.
+
+This topic replaces the current record changed topic and receives both collaboration and non collaboration messages when the collaborations feature flag is enabled.
+
+The current record changed topic however does not receive messages when collaboration context is provided. Meaning, the original functionality of storage should not be changed if collaboration context is not provided.
+
+In summary,
+1. If feature flag is set to true:
+   1. A request with x-collaboration header: should send a message to recordstopic-v2
+   2. A request without x-collaboration header: should send a message to recordstopic and recordstopic-v2
+2. If feature flag is set to false:
+   1. A request with x-collaboration header: should not send a message to any topic
+   2. A request without x-collaboration header: should send a message to recordstopic
+
+The message contains the collaboration context header as an atribute when a change is made in context of a collaboration.
+
+#### Example of a message when the x-collaboration header is provided -
+```json
+{
+   "message": {
+      "data": [
+         {
+            "id": "opendes:wellbore:f213e42d5fa848f592917a8df7fed132",
+            "kind": "common:welldb:wellbore:1.0.0",
+            "op": "create"
+         }
+      ],
+      "account-id": "opendes",
+      "data-partition-id": "opendes",
+      "correlation-id": "5t3c153e-8f03-4295-8b1a-edaae86dfafa",
+      "x-collaboration": "id=7d34b896-6b55-40e0-a628-e696f3c00000,application=app"
+   }
+}
+```
+#### Example of a message when the x-collaboration header is not provided -
+```json
+{
+   "message": {
+      "data": [
+         {
+            "id": "opendes:inttest:1674654754283",
+            "kind": "opendes:wks:inttest:1.0.1674654754283",
+            "op": "create"
+         }
+      ],
+      "account-id": "opendes",
+      "data-partition-id": "opendes",
+      "correlation-id": "2715a1b8-2ffb-406f-839c-6e6bfed27e5c"
+   }
+}
+```
 
 ### HTTP header syntax <a name="http-header-syntax"></a>
 * Caching directives are case-insensitive but lowercase is recommended
@@ -72,20 +124,6 @@ curl --request PUT \
     }]'
 ```
 </details>
-
-#Integration <a name="integration"></a>
-All APIs in storage service are collaboration context-aware in Azure CSP when the collaboration context feature flag is set to true.
-Meaning that any interface changes (that are implemented by all CSPs) have a "dummy" implementation that ignores the functionality related to collaboration. 
-Other CSPs can implement this functionality at their own pace. 
-
-### How to integrate collaboration context <a name="how-to-integrate-collaboration-context"></a>
-There are few things to consider when implementing APIs to support collaboration context.
-  1. The current record changed topic is not triggered by any changes when a collaboration context is provided.
-  2. There should be a new topic that is triggered for all requests regardless of collaboration context. Note that collaboration context should be sent as part of the message if provided.
-  3. The old functionality of storage should not be changed if collaboration context is not provided.
-
-### Sample implementation of Azure <a name="sample-implementation-of-azure"></a>
-Please refer to this MR for [implementation of Azure](https://community.opengroup.org/osdu/platform/system/storage/-/merge_requests/546).
 
 ##### Reference <a name="reference"></a>
 More info about __Namespacing storage records__ can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/issues/149).
