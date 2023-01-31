@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+
 @Service
 public class PersistenceServiceImpl implements PersistenceService {
 
@@ -57,7 +59,6 @@ public class PersistenceServiceImpl implements PersistenceService {
 	private JaxRsDpsLog logger;
 	@Autowired
 	private IFeatureFlag collaborationFeatureFlag;
-	private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 	@Override
 	public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
 

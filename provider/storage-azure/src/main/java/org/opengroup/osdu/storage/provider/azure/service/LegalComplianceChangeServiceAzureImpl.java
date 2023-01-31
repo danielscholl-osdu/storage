@@ -40,6 +40,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+
 @Component
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {
     private static final String LEGAL_STATUS_INVALID = "Invalid";
@@ -54,7 +56,6 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     private MessageBusImpl pubSubclient;
     @Autowired
     private IFeatureFlag collaborationFeatureFlag;
-    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
 
     @Override

@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
 
 @Service
 public class RecordServiceImpl implements RecordService {
@@ -78,7 +79,6 @@ public class RecordServiceImpl implements RecordService {
     private RecordUtil recordUtil;
     @Autowired
     private IFeatureFlag collaborationFeatureFlag;
-    private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 
     @Override
     public void purgeRecord(String recordId, Optional<CollaborationContext> collaborationContext) {
