@@ -77,7 +77,7 @@ public class RecordServiceImpl implements RecordService {
     @Autowired
     private RecordUtil recordUtil;
     @Autowired
-    private IFeatureFlag iCollaborationFeatureFlag;
+    private IFeatureFlag collaborationFeatureFlag;
     private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 
     @Override
@@ -110,7 +110,7 @@ public class RecordServiceImpl implements RecordService {
         }
 
         this.auditLogger.purgeRecordSuccess(singletonList(recordId));
-        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(collaborationContext, this.headers,
                     new RecordChangedV2Delete(recordId, recordMetadata.getLatestVersion(), recordMetadata.getKind(), DeletionType.hard));
         }
@@ -137,7 +137,7 @@ public class RecordServiceImpl implements RecordService {
         this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
         this.auditLogger.deleteRecordSuccess(singletonList(recordId));
 
-        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             RecordChangedV2Delete recordChangedV2Delete = new RecordChangedV2Delete(recordId, recordMetadata.getLatestVersion(), recordMetadata.getKind(), DeletionType.soft);
             this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2Delete);
         }
@@ -183,7 +183,7 @@ public class RecordServiceImpl implements RecordService {
 
     private void publishDeletedRecords(Optional<CollaborationContext> collaborationContext, List<RecordMetadata> records) {
 
-        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             List<RecordChangedV2Delete> messages = records.stream()
                     .map(recordMetadata -> new RecordChangedV2Delete(recordMetadata.getId(), recordMetadata.getLatestVersion(), recordMetadata.getKind(), DeletionType.soft))
                     .collect(Collectors.toList());

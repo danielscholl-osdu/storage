@@ -40,10 +40,6 @@ public class MessageBusImpl implements IMessageBus {
     private MessagePublisher messagePublisher;
     @Autowired
     private PublisherConfig publisherConfig;
-    @Autowired
-    private IFeatureFlag iCollaborationFeatureFlag;
-    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
-
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
 

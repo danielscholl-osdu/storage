@@ -56,7 +56,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 	@Autowired
 	private JaxRsDpsLog logger;
 	@Autowired
-	private IFeatureFlag iCollaborationFeatureFlag;
+	private IFeatureFlag collaborationFeatureFlag;
 	private static final String COLLABORATIONS_FEATURE_NAME="collaborations-enabled";
 	@Override
 	public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
@@ -85,7 +85,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 		}
 
 		this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
-		if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
 			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
 		}
 		if (!collaborationContext.isPresent()) {
@@ -139,7 +139,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
 			recordChangedV2[i] = new RecordChangedV2(metadata.getId(), metadata.getLatestVersion(), metadata.getKind(), OperationType.update);
 		}
-		if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
 			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
 		}
 		if (!collaborationContext.isPresent()) {

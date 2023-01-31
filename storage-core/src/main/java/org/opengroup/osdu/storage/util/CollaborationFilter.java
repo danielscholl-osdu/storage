@@ -25,14 +25,14 @@ public class CollaborationFilter implements Filter {
 
 
     @Autowired
-    public IFeatureFlag iCollaborationFeatureFlag;
+    public IFeatureFlag collaborationFeatureFlag;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        if (!iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+        if (!collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
             if (!Strings.isNullOrEmpty(collaborationHeader)) {
                 httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);

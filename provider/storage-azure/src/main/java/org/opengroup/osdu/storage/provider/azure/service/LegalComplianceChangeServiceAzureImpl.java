@@ -53,7 +53,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     @Autowired
     private MessageBusImpl pubSubclient;
     @Autowired
-    private IFeatureFlag iCollaborationFeatureFlag;
+    private IFeatureFlag collaborationFeatureFlag;
     private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
 
@@ -88,7 +88,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     for (RecordMetadata recordMetadata : recordsMetadata) {
                         recordIds.add(recordMetadata.getId());
                     }
-                    if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+                    if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
                         this.pubSubclient.publishMessage(Optional.empty(), headers, recordsChangedV2s);
                     }
                     if (!collaborationContext.isPresent()) {
