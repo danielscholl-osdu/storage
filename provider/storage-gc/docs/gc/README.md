@@ -122,10 +122,6 @@ You will need to have the following environment variables defined.
 
 | name | value | description | sensitive? | source |
 | ---  | ---   | ---         | ---        | ---    |
-<<<<<<< HEAD:provider/storage-gcp/docs/gcp/README.md
-=======
-| `INTEGRATION_TEST_AUDIENCE` | `*****.apps.googleusercontent.com` | client application ID | yes | <https://console.cloud.google.com/apis/credentials> |
->>>>>>> b8f67538 (GONRG-5894- gc rename):provider/storage-gc/docs/gc/README.md
 | `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
 | `DOMAIN` | ex`opendes-gc.projects.com` | OSDU R2 to run tests under | no | - |
 | `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
