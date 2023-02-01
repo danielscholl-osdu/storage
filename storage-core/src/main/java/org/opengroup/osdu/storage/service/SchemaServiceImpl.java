@@ -90,7 +90,7 @@ public class SchemaServiceImpl implements SchemaService {
     @Autowired
     private StorageAuditLogger auditLogger;
     @Autowired
-    private IFeatureFlag iCollaborationFeatureFlag;
+    private IFeatureFlag collaborationFeatureFlag;
 
     @Override
     public void createSchema(Schema inputSchema) {
@@ -106,7 +106,7 @@ public class SchemaServiceImpl implements SchemaService {
 
             this.cache.put(this.getSchemaCacheKey(inputSchema.getKind()), schema);
 
-            if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+            if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
                 this.pubSubClient.publishMessage(Optional.empty(), this.headers,
                         new RecordChangedV2(null, null, inputSchema.getKind(), OperationType.create_schema));
 
@@ -147,7 +147,7 @@ public class SchemaServiceImpl implements SchemaService {
         this.auditLogger.deleteSchemaSuccess(singletonList(schema.getKind()));
 
         this.cache.delete(this.getSchemaCacheKey(kind));
-        if (iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(Optional.empty(), this.headers,
                     new RecordChangedV2(null, null, schema.getKind(), OperationType.purge_schema));
         }
