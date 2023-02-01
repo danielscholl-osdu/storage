@@ -47,15 +47,8 @@ public class MessageBusImpl implements IMessageBus {
         final int BATCH_SIZE = Integer.parseInt(publisherConfig.getPubSubBatchSize());
         for(int i = 0; i < messages.length; i += BATCH_SIZE) {
             PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
-            PublisherInfo publisherInfo = PublisherInfo.builder()
-                    .batch(batch)
-                    .eventGridTopicName(eventGridConfig.getEventGridTopic())
-                    .eventGridEventSubject(eventGridConfig.getEventSubject())
-                    .eventGridEventType(eventGridConfig.getEventType())
-                    .eventGridEventDataVersion(eventGridConfig.getEventDataVersion())
-                    .serviceBusTopicName(serviceBusConfig.getServiceBusTopic())
-                    .build();
-
+            PublisherInfo publisherInfo = getPublisherInfo();
+            publisherInfo.setBatch(batch);
             messagePublisher.publishMessage(headers, publisherInfo, Optional.empty());
         }
     }
@@ -67,16 +60,20 @@ public class MessageBusImpl implements IMessageBus {
         for (int i = 0; i < messages.length; i += BATCH_SIZE) {
             String messageId = String.format("%s-%d",headers.getCorrelationId(), i);
             RecordChangedV2[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
-            PublisherInfo publisherInfo = PublisherInfo.builder()
-                    .batch(batch)
-                    .eventGridTopicName(eventGridConfig.getEventGridTopic())
-                    .eventGridEventSubject(eventGridConfig.getEventSubject())
-                    .eventGridEventType(eventGridConfig.getEventType())
-                    .eventGridEventDataVersion(eventGridConfig.getEventDataVersion())
-                    .serviceBusTopicName(serviceBusConfig.getServiceBusRecordsEventTopic())
-                    .messageId(messageId)
-                    .build();
+            PublisherInfo publisherInfo = getPublisherInfo();
+            publisherInfo.setBatch(batch);
+            publisherInfo.setMessageId(messageId);
             messagePublisher.publishMessage(headers, publisherInfo, collaborationContext);
         }
+    }
+
+    private PublisherInfo getPublisherInfo() {
+        return PublisherInfo.builder()
+                .eventGridTopicName(eventGridConfig.getEventGridTopic())
+                .eventGridEventSubject(eventGridConfig.getEventSubject())
+                .eventGridEventType(eventGridConfig.getEventType())
+                .eventGridEventDataVersion(eventGridConfig.getEventDataVersion())
+                .serviceBusTopicName(serviceBusConfig.getServiceBusRecordsEventTopic())
+                .build();
     }
 }

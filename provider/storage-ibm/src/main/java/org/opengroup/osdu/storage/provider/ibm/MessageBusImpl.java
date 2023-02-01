@@ -14,6 +14,7 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.ibm.messagebus.IMessageFactory;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,7 @@ public class MessageBusImpl implements IMessageBus {
 	@Inject
 	IMessageFactory mq;
 
-	public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+	public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
 
 		final int BATCH_SIZE = 50;
 		Map<String, String> message = new HashMap<>();
@@ -44,6 +45,11 @@ public class MessageBusImpl implements IMessageBus {
 			mq.sendMessage(gson.toJson(message));
 		}
 
+	}
+
+	@Override
+	public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
+		//TODO: to be implemented by ibm provider
 	}
 
 }

@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
 import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
@@ -71,7 +72,6 @@ public class MessageBusImplTest {
         initMocks(this);
         doReturn("10").when(publisherConfig).getPubSubBatchSize();
         doReturn(TOPIC_NAME).when(eventGridConfig).getEventGridTopic();
-        doReturn(TOPIC_NAME).when(serviceBusConfig).getServiceBusTopic();
         doReturn(RECORDS_CHANGED_EVENT_SUBJECT).when(eventGridConfig).getEventSubject();
         doReturn(RECORDS_CHANGED_EVENT_DATA_VERSION).when(eventGridConfig).getEventDataVersion();
         doReturn(RECORDS_CHANGED_EVENT_TYPE).when(eventGridConfig).getEventType();
@@ -88,24 +88,21 @@ public class MessageBusImplTest {
         for (int i = 0; i < ids.length; ++i) {
             pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
         }
-        sut.publishMessage(Optional.empty(), dpsHeaders, pubSubInfo);
+        sut.publishMessage(dpsHeaders, pubSubInfo);
     }
 
     @Test
     public void should_publishToOnlyRecordsEventTopic_WhenCollaborationContextIsProvided() {
-        PubSubInfo[] pubSubInfo = setup();
-        when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(true);
-        sut.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, pubSubInfo);
-        verify(messagePublisher, times(1)).publishMessage(any(), any(), any());
+        RecordChangedV2[] recordChangedV2s = setUpRecordsChangedV2();
+        sut.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, recordChangedV2s);
+        verify(messagePublisher, times(1)).publishMessage(any(), any(), eq(COLLABORATION_CONTEXT));
     }
 
     @Test
     public void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
-        PubSubInfo[] pubSubInfo = setup();
-        when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(true);
-
-        sut.publishMessage(Optional.empty(), dpsHeaders, pubSubInfo);
-        verify(messagePublisher, times(2)).publishMessage(any(), any(), any());
+        PubSubInfo[] pubSubInfo = setupPubSubInfo();
+        sut.publishMessage(dpsHeaders, pubSubInfo);
+        verify(messagePublisher, times(1)).publishMessage(any(), any(), eq(Optional.empty()));
     }
 
     private PubSubInfo getPubsInfo(String id, String kind) {
@@ -115,14 +112,32 @@ public class MessageBusImplTest {
         return pubSubInfo;
     }
 
-    private PubSubInfo[] setup() {
+    private RecordChangedV2 getRecordChangedV2(String id, String kind) {
+        RecordChangedV2 recordChangedV2 = new RecordChangedV2();
+        recordChangedV2.setId(id);
+        recordChangedV2.setKind(kind);
+        recordChangedV2.setVersion(1L);
+        return recordChangedV2;
+    }
+
+    private PubSubInfo[] setupPubSubInfo() {
         String[] ids = {"id1", "id2", "id3", "id4", "id5"};
         String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5"};
-        doReturn("id").when(dpsHeaders).getCorrelationId();
         PubSubInfo[] pubSubInfo = new PubSubInfo[5];
         for (int i = 0; i < ids.length; ++i) {
             pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
         }
         return pubSubInfo;
+    }
+
+    private RecordChangedV2[] setUpRecordsChangedV2() {
+        String[] ids = {"id1", "id2", "id3", "id4", "id5"};
+        String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5"};
+        doReturn("id").when(dpsHeaders).getCorrelationId();
+        RecordChangedV2[] recordChangedV2s = new RecordChangedV2[5];
+        for (int i = 0; i < ids.length; ++i) {
+            recordChangedV2s[i] = getRecordChangedV2(ids[i], kinds[i]);
+        }
+        return recordChangedV2s;
     }
 }

@@ -31,6 +31,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -45,9 +46,11 @@ import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.model.RecordChangedV2Delete;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.StringConstants;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
 import java.util.Arrays;
@@ -108,6 +111,9 @@ public class RecordServiceImplTest {
     @Mock
     private DataAuthorizationService dataAuthorizationService;
 
+    @Mock
+    private IFeatureFlag collaborationFeatureFlag;
+
     @Before
     public void setup() {
         mock(PersistenceHelper.class);
@@ -161,7 +167,7 @@ public class RecordServiceImplTest {
 
         PubSubDeleteInfo pubSubDeleteInfo = new PubSubDeleteInfo(RECORD_ID, "any kind", DeletionType.hard);
 
-        verify(this.pubSubClient).publishMessage(Optional.empty(), this.headers, pubSubDeleteInfo);
+        verify(this.pubSubClient).publishMessage(this.headers, pubSubDeleteInfo);
     }
 
 
@@ -312,7 +318,7 @@ public class RecordServiceImplTest {
 
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
 
-        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubMessageCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
 
         PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
         assertEquals(RECORD_ID, capturedMessage.getId());
@@ -378,6 +384,7 @@ public class RecordServiceImplTest {
             put(RECORD_ID, record);
         }};
 
+        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
         when(recordRepository.get(singletonList(RECORD_ID), Optional.empty())).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
@@ -402,6 +409,7 @@ public class RecordServiceImplTest {
             put(COLLABORATION_CONTEXT.get().getId() + RECORD_ID, record);
         }};
 
+        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(singletonList(RECORD_ID), COLLABORATION_CONTEXT)).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
@@ -422,6 +430,7 @@ public class RecordServiceImplTest {
     @Test
     public void shouldSoftDeleteRecords_successfully_inCollaborationContext() {
         RecordMetadata record = buildRecordMetadata();
+        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(RECORD_ID, COLLABORATION_CONTEXT)).thenReturn(record);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
         sut.deleteRecord(RECORD_ID, USER_NAME, COLLABORATION_CONTEXT);
@@ -527,18 +536,23 @@ public class RecordServiceImplTest {
 
     private void verifyPubSubPublished(Optional<CollaborationContext> collaborationContext) {
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
+        ArgumentCaptor<RecordChangedV2Delete> recordChangedV2DeleteArgumentCaptor = ArgumentCaptor.forClass(RecordChangedV2Delete.class);
 
         if (collaborationContext.isPresent()){
-            verify(this.pubSubClient).publishMessage(eq(collaborationContext), eq(this.headers), pubsubMessageCaptor.capture());
+            verify(this.pubSubClient).publishMessage(eq(collaborationContext), eq(this.headers), recordChangedV2DeleteArgumentCaptor.capture());
+            RecordChangedV2Delete capturedMessage = recordChangedV2DeleteArgumentCaptor.getValue();
+            assertEquals(RECORD_ID, capturedMessage.getId());
+            assertEquals(KIND, capturedMessage.getKind());
+            assertEquals(OperationType.delete, capturedMessage.getOp());
+            assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
         } else {
-            verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubMessageCaptor.capture());
+            verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubMessageCaptor.capture());
+            PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
+            assertEquals(RECORD_ID, capturedMessage.getId());
+            assertEquals(KIND, capturedMessage.getKind());
+            assertEquals(OperationType.delete, capturedMessage.getOp());
+            assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
         }
-
-        PubSubDeleteInfo capturedMessage = pubsubMessageCaptor.getValue();
-        assertEquals(RECORD_ID, capturedMessage.getId());
-        assertEquals(KIND, capturedMessage.getKind());
-        assertEquals(OperationType.delete, capturedMessage.getOp());
-        assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
     }
 
     private RecordMetadata buildRecordMetadata() {
