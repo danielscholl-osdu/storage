@@ -129,7 +129,7 @@ public class PersistenceServiceImplTest {
 
     @Test
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void should_persistRecords_when_noExceptionIsThrown_when_collaborationFFIsEnabled() {
+    public void should_persistRecords_when_noExceptionIsThrown_when_collaborationIsEmptyAndFFIsEnabled() {
 
         when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
 
@@ -168,7 +168,7 @@ public class PersistenceServiceImplTest {
 
     @Test
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void should_persistRecords_when_noExceptionIsThrown_when_collaborationFFIsEnabledButIsEmpty() {
+    public void should_persistRecords_when_noExceptionIsThrown_when_collaborationIsPresentAndFFIsEnabled() {
 
         when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
 
