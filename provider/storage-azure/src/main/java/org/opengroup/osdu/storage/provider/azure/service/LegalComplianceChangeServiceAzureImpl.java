@@ -90,7 +90,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                         recordIds.add(recordMetadata.getId());
                     }
                     if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-                        this.pubSubclient.publishMessage(Optional.empty(), headers, recordsChangedV2s);
+                        this.pubSubclient.publishMessage(collaborationContext, headers, recordsChangedV2s);
                     }
                     if (!collaborationContext.isPresent()) {
                         this.pubSubclient.publishMessage(headers, pubsubInfos);
