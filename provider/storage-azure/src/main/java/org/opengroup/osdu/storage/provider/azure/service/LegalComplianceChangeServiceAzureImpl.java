@@ -128,7 +128,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
         for (RecordMetadata rm : recordMetadata) {
             rm.getLegal().setStatus(complianceChangeInfo.getNewState());
             rm.setStatus(complianceChangeInfo.getNewRecordState());
-            recordChangedV2[i] = new RecordChangedV2(rm.getId(), rm.getLatestVersion(), rm.getKind(), complianceChangeInfo.getPubSubEvent());
+            recordChangedV2[i] = new RecordChangedV2(rm.getId(), rm.getLatestVersion(), rm.getModifyUser(), rm.getKind(), complianceChangeInfo.getPubSubEvent());
             output.put(rm.getId(), complianceChangeInfo.getNewState());
             i++;
         }

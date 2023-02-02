@@ -108,7 +108,7 @@ public class SchemaServiceImpl implements SchemaService {
 
             if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
                 this.pubSubClient.publishMessage(Optional.empty(), this.headers,
-                        new RecordChangedV2(null, null, inputSchema.getKind(), OperationType.create_schema));
+                        new RecordChangedV2(null, null, null, inputSchema.getKind(), OperationType.create_schema));
 
             }
             if (!collaborationContext.isPresent()) {
@@ -149,7 +149,7 @@ public class SchemaServiceImpl implements SchemaService {
         this.cache.delete(this.getSchemaCacheKey(kind));
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(Optional.empty(), this.headers,
-                    new RecordChangedV2(null, null, schema.getKind(), OperationType.purge_schema));
+                    new RecordChangedV2(null, null, null, schema.getKind(), OperationType.purge_schema));
         }
         if (!collaborationContext.isPresent()) {
             this.pubSubClient.publishMessage(this.headers,

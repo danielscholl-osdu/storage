@@ -73,11 +73,14 @@ public class PersistenceServiceImpl implements PersistenceService {
 			RecordMetadata recordMetadata = processing.getRecordMetadata();
 			recordsMetadata.add(recordMetadata);
 			if(processing.getOperationType() == OperationType.create) {
-				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.create).build();
-				recordChangedV2[i] = RecordChangedV2.builder().id(recordMetadata.getId()).version(recordMetadata.getLatestVersion()).kind(recordMetadata.getKind()).op(OperationType.create).build();
+				pubsubInfo[i] = getPubSubInfo(recordMetadata, OperationType.create);
+				recordChangedV2[i] = getRecordChangedV2(recordMetadata, OperationType.create);
 			} else {
-				pubsubInfo[i] = PubSubInfo.builder().id(recordMetadata.getId()).kind(recordMetadata.getKind()).op(OperationType.update).recordBlocks(processing.getRecordBlocks()).build();
-				recordChangedV2[i] = RecordChangedV2.builder().id(recordMetadata.getId()).version(recordMetadata.getLatestVersion()).kind(recordMetadata.getKind()).op(OperationType.update).recordBlocks(processing.getRecordBlocks()).build();
+				pubsubInfo[i] = getPubSubInfo(recordMetadata, OperationType.update);
+				pubsubInfo[i].setRecordBlocks(processing.getRecordBlocks());
+				recordChangedV2[i] = getRecordChangedV2(recordMetadata, OperationType.update);
+				recordChangedV2[i].setRecordBlocks(processing.getRecordBlocks());
+
 				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
 					pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
 					recordChangedV2[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
@@ -94,7 +97,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 		}
 	}
 
-    private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
+	private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
 
 		try {
 			this.commitCloudStorageTransaction(recordsProcessing);
@@ -138,7 +141,8 @@ public class PersistenceServiceImpl implements PersistenceService {
 		for (int i = 0; i < recordMetadata.size(); i++) {
 			RecordMetadata metadata = recordMetadata.get(i);
 			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
-			recordChangedV2[i] = new RecordChangedV2(metadata.getId(), metadata.getLatestVersion(), metadata.getKind(), OperationType.update);
+			recordChangedV2[i] = new RecordChangedV2(metadata.getId(), metadata.getLatestVersion(),
+					metadata.getModifyUser(), metadata.getKind(), OperationType.update);
 		}
 		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
 			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
@@ -148,6 +152,24 @@ public class PersistenceServiceImpl implements PersistenceService {
 		}
 
 		return lockedRecords;
+	}
+
+	private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata, OperationType operationType) {
+		return PubSubInfo.builder()
+				.id(recordMetadata.getId())
+				.kind(recordMetadata.getKind())
+				.op(operationType)
+				.build();
+	}
+
+	private RecordChangedV2 getRecordChangedV2(RecordMetadata recordMetadata, OperationType operationType) {
+		return RecordChangedV2.builder()
+				.id(recordMetadata.getId())
+				.version(recordMetadata.getLatestVersion())
+				.modifiedBy(recordMetadata.getModifyUser())
+				.kind(recordMetadata.getKind())
+				.op(operationType)
+				.build();
 	}
 
 	private void tryCleanupCloudStorage(List<RecordProcessing> recordsProcessing) {
