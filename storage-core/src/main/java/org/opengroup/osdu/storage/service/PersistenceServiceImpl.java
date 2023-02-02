@@ -140,9 +140,8 @@ public class PersistenceServiceImpl implements PersistenceService {
 		RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadata.size()];
 		for (int i = 0; i < recordMetadata.size(); i++) {
 			RecordMetadata metadata = recordMetadata.get(i);
-			pubsubInfo[i] = new PubSubInfo(metadata.getId(), metadata.getKind(), OperationType.update);
-			recordChangedV2[i] = new RecordChangedV2(metadata.getId(), metadata.getLatestVersion(),
-					metadata.getModifyUser(), metadata.getKind(), OperationType.update);
+			pubsubInfo[i] = getPubSubInfo(metadata, OperationType.update);
+			recordChangedV2[i] = getRecordChangedV2(metadata, OperationType.update);
 		}
 		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
 			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
@@ -168,7 +167,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 				.version(recordMetadata.getLatestVersion())
 				.modifiedBy(recordMetadata.getModifyUser())
 				.kind(recordMetadata.getKind())
-				.op(operationType)
+				.operationType(operationType)
 				.build();
 	}
 

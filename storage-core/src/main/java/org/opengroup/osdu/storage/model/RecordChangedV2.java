@@ -5,10 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 
 @Data
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 public class RecordChangedV2 {
@@ -16,7 +17,7 @@ public class RecordChangedV2 {
     private Long version;
     private String modifiedBy;
     private String kind;
-    private OperationType op;
+    private OperationType operationType;
 
     /**
      * This specifies the changes that have been made to the record
@@ -27,14 +28,5 @@ public class RecordChangedV2 {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Builder.Default
     private String previousVersionKind = null;
-
-    public RecordChangedV2(String id, Long version, String modifiedBy, String kind, OperationType operationType) {
-        this.id = id;
-        this.version = version;
-        this.modifiedBy = modifiedBy;
-        this.kind = kind;
-        this.op = operationType;
-    }
-
 
 }

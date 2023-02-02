@@ -108,8 +108,7 @@ public class SchemaServiceImpl implements SchemaService {
 
             if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
                 this.pubSubClient.publishMessage(Optional.empty(), this.headers,
-                        new RecordChangedV2(null, null, null, inputSchema.getKind(), OperationType.create_schema));
-
+                        getRecordChangedV2(inputSchema.getKind(), OperationType.create_schema));
             }
             if (!collaborationContext.isPresent()) {
                 this.pubSubClient.publishMessage(this.headers,
@@ -149,7 +148,7 @@ public class SchemaServiceImpl implements SchemaService {
         this.cache.delete(this.getSchemaCacheKey(kind));
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(Optional.empty(), this.headers,
-                    new RecordChangedV2(null, null, null, schema.getKind(), OperationType.purge_schema));
+                    getRecordChangedV2(schema.getKind(), OperationType.purge_schema));
         }
         if (!collaborationContext.isPresent()) {
             this.pubSubClient.publishMessage(this.headers,
@@ -218,6 +217,13 @@ public class SchemaServiceImpl implements SchemaService {
         }
 
         return new Schema(schema.getKind(), items.toArray(new SchemaItem[items.size()]), schema.getExt());
+    }
+
+    private RecordChangedV2 getRecordChangedV2(String kind, OperationType operationType) {
+        return RecordChangedV2.builder()
+                .kind(kind)
+                .operationType(operationType)
+                .build();
     }
 
     private Schema fetchSchema(String kind) {

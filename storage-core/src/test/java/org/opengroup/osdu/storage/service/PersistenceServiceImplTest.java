@@ -428,7 +428,7 @@ public class PersistenceServiceImplTest {
         for (int i = 0; i < recordChangedV2s.size(); i++) {
             RecordChangedV2 recordChangedV2 = recordChangedV2s.get(i);
             assertEquals("anyKind", recordChangedV2.getKind());
-            assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, recordChangedV2.getOp());
+            assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, recordChangedV2.getOperationType());
             assertNull(recordChangedV2.getPreviousVersionKind());
             assertTrue(recordChangedV2.getId().startsWith("ID"));
             assertNotNull(recordChangedV2.getVersion());

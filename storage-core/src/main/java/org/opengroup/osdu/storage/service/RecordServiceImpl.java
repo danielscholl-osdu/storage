@@ -111,13 +111,10 @@ public class RecordServiceImpl implements RecordService {
 
         this.auditLogger.purgeRecordSuccess(singletonList(recordId));
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-            this.pubSubClient.publishMessage(collaborationContext, this.headers,
-                    new RecordChangedV2Delete(recordId, recordMetadata.getLatestVersion(),
-                            recordMetadata.getModifyUser(), recordMetadata.getKind(), DeletionType.hard));
+            this.pubSubClient.publishMessage(collaborationContext, this.headers, getRecordChangedV2Delete(recordId, recordMetadata, DeletionType.hard));
         }
         if (!collaborationContext.isPresent()) {
-            this.pubSubClient.publishMessage(this.headers,
-                    new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.hard));
+            this.pubSubClient.publishMessage(this.headers, new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.hard));
         }
     }
 
@@ -139,8 +136,7 @@ public class RecordServiceImpl implements RecordService {
         this.auditLogger.deleteRecordSuccess(singletonList(recordId));
 
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-            RecordChangedV2Delete recordChangedV2Delete = new RecordChangedV2Delete(recordId, recordMetadata.getLatestVersion(),
-                    recordMetadata.getModifyUser(), recordMetadata.getKind(), DeletionType.soft);
+            RecordChangedV2Delete recordChangedV2Delete = getRecordChangedV2Delete(recordId, recordMetadata, DeletionType.soft);
             this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2Delete);
         }
         if (!collaborationContext.isPresent()) {
@@ -183,12 +179,22 @@ public class RecordServiceImpl implements RecordService {
         }
     }
 
+    private RecordChangedV2Delete getRecordChangedV2Delete(String recordId, RecordMetadata recordMetadata, DeletionType deletionType) {
+        return RecordChangedV2Delete.builder()
+                .id(recordId)
+                .version(recordMetadata.getLatestVersion())
+                .modifiedBy(recordMetadata.getModifyUser())
+                .kind(recordMetadata.getKind())
+                .operationType(OperationType.delete)
+                .deletionType(deletionType)
+                .build();
+    }
+
     private void publishDeletedRecords(Optional<CollaborationContext> collaborationContext, List<RecordMetadata> records) {
 
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             List<RecordChangedV2Delete> messages = records.stream()
-                    .map(recordMetadata -> new RecordChangedV2Delete(recordMetadata.getId(), recordMetadata.getLatestVersion(),
-                            recordMetadata.getModifyUser(), recordMetadata.getKind(), DeletionType.soft))
+                    .map(recordMetadata -> getRecordChangedV2Delete(recordMetadata.getId(), recordMetadata, DeletionType.soft))
                     .collect(Collectors.toList());
             pubSubClient.publishMessage(collaborationContext, headers, messages.toArray(new RecordChangedV2Delete[messages.size()]));
         }
