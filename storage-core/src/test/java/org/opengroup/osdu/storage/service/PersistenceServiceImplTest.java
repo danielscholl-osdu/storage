@@ -50,6 +50,7 @@ public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
     private static final String BUCKET = "anyBucket";
+    private static final String MODIFIED_BY = "modifyUser";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
@@ -382,6 +383,7 @@ public class PersistenceServiceImplTest {
             recordMetadata.setKind("anyKind");
             recordMetadata.setAcl(this.acl);
             recordMetadata.setUser("createUser");
+            recordMetadata.setModifyUser("modifyUser");
             Date date = new Date();
             recordMetadata.setGcsVersionPaths(Arrays.asList(String.format("%s/%s/%s", "anyKind", ("ID" + i), date.getTime())));
 
@@ -430,6 +432,7 @@ public class PersistenceServiceImplTest {
             assertNull(recordChangedV2.getPreviousVersionKind());
             assertTrue(recordChangedV2.getId().startsWith("ID"));
             assertNotNull(recordChangedV2.getVersion());
+            assertEquals(MODIFIED_BY, recordChangedV2.getModifiedBy());
         }
     }
 

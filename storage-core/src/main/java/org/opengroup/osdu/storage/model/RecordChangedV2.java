@@ -14,6 +14,7 @@ import org.opengroup.osdu.core.common.model.indexer.OperationType;
 public class RecordChangedV2 {
     private String id;
     private Long version;
+    private String modifiedBy;
     private String kind;
     private OperationType op;
 
@@ -27,9 +28,10 @@ public class RecordChangedV2 {
     @Builder.Default
     private String previousVersionKind = null;
 
-    public RecordChangedV2(String id, Long version, String kind, OperationType operationType) {
+    public RecordChangedV2(String id, Long version, String modifiedBy, String kind, OperationType operationType) {
         this.id = id;
         this.version = version;
+        this.modifiedBy = modifiedBy;
         this.kind = kind;
         this.op = operationType;
     }

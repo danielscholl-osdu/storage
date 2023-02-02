@@ -570,6 +570,7 @@ public class RecordServiceImplTest {
             assertEquals(KIND, capturedMessage.getKind());
             assertEquals(OperationType.delete, capturedMessage.getOp());
             assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
+            assertEquals(USER_NAME, capturedMessage.getModifiedBy());
         }
 
         if (!collaborationContext.isPresent()) {
