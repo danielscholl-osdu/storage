@@ -45,7 +45,7 @@ import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEA
 @Component
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {
     private static final String LEGAL_STATUS_INVALID = "Invalid";
-    private final static Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeServiceAzureImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeServiceAzureImpl.class);
     @Autowired
     private IRecordsMetadataRepository recordsRepo;
     @Autowired
@@ -128,7 +128,13 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
         for (RecordMetadata rm : recordMetadata) {
             rm.getLegal().setStatus(complianceChangeInfo.getNewState());
             rm.setStatus(complianceChangeInfo.getNewRecordState());
-            recordChangedV2[i] = new RecordChangedV2(rm.getId(), rm.getLatestVersion(), rm.getModifyUser(), rm.getKind(), complianceChangeInfo.getPubSubEvent());
+            recordChangedV2[i] = RecordChangedV2.builder()
+                    .id(rm.getId())
+                    .version(rm.getLatestVersion())
+                    .modifiedBy(rm.getModifyUser())
+                    .kind(rm.getKind())
+                    .operationType(complianceChangeInfo.getPubSubEvent())
+                    .build();
             output.put(rm.getId(), complianceChangeInfo.getNewState());
             i++;
         }
@@ -145,7 +151,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
             this.legalTagCache.delete(lt.getChangedTagName());
             output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
         } else {
-            this.LOGGER.warn(String.format("Unknown LegalTag compliance status received %s %s",
+            LOGGER.warn(String.format("Unknown LegalTag compliance status received %s %s",
                     lt.getChangedTagStatus(), lt.getChangedTagName()));
         }
         return output;
