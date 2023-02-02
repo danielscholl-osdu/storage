@@ -45,6 +45,8 @@ The message contains the collaboration context header as an atribute when a chan
       "data": [
          {
             "id": "opendes:wellbore:f213e42d5fa848f592917a8df7fed132",
+            "version": "1617915304347525",
+            "modifiedBy": "abc@xyz.com",
             "kind": "common:welldb:wellbore:1.0.0",
             "op": "create"
          }
