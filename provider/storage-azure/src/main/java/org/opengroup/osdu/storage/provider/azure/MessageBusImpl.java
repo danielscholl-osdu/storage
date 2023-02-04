@@ -16,7 +16,6 @@ package org.opengroup.osdu.storage.provider.azure;
 
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
 import org.opengroup.osdu.azure.publisherFacade.PublisherInfo;
-import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
