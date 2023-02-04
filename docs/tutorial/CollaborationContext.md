@@ -24,7 +24,7 @@ Please refer to this MR for [implementation of Azure](https://community.opengrou
 
 Consumers who want to integrate with record change messages that include changes made within a collaboration context need to register the records to the new topic "recordstopic-v2". Refer the [DataNotification.md](https://community.opengroup.org/osdu/platform/system/notification/-/blob/master/docs/tutorial/DataNotification.md) file for details about the recordstopics-v2.
 
-This topic replaces the current record changed topic and receives both collaboration and non collaboration messages when the collaborations feature flag is enabled.
+This topic exists in addition to the current record changed topic and receives both collaboration and non collaboration messages when the collaborations feature flag is enabled.
 
 The current record changed topic however does not receive messages when collaboration context is provided. Meaning, the original functionality of storage should not be changed if collaboration context is not provided.
 
