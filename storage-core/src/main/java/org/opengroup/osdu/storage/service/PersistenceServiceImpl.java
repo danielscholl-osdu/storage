@@ -167,7 +167,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 				.version(recordMetadata.getLatestVersion())
 				.modifiedBy(recordMetadata.getModifyUser())
 				.kind(recordMetadata.getKind())
-				.operationType(operationType)
+				.op(operationType)
 				.build();
 	}
 

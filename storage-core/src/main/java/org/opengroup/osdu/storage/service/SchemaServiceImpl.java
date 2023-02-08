@@ -222,7 +222,7 @@ public class SchemaServiceImpl implements SchemaService {
     private RecordChangedV2 getRecordChangedV2(String kind, OperationType operationType) {
         return RecordChangedV2.builder()
                 .kind(kind)
-                .operationType(operationType)
+                .op(operationType)
                 .build();
     }
 

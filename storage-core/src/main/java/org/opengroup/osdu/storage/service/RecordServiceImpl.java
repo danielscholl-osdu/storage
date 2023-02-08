@@ -185,7 +185,7 @@ public class RecordServiceImpl implements RecordService {
                 .version(recordMetadata.getLatestVersion())
                 .modifiedBy(recordMetadata.getModifyUser())
                 .kind(recordMetadata.getKind())
-                .operationType(OperationType.delete)
+                .op(OperationType.delete)
                 .deletionType(deletionType)
                 .build();
     }
