@@ -16,12 +16,15 @@ package org.opengroup.osdu.storage.api;
 
 import javax.validation.Valid;
 
+import com.github.fge.jsonpatch.JsonPatch;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.opengroup.osdu.storage.service.PatchRecordsService;
 import org.opengroup.osdu.storage.util.CollaborationFilter;
+import org.opengroup.osdu.storage.util.api.PatchUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,6 +39,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -74,7 +78,7 @@ public class PatchApi {
 	public ResponseEntity<PatchRecordsResponse> patchRecords(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 															 @RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		PatchRecordsResponse response = this.patchRecordsService.patchRecords(recordBulkUpdateParam, this.headers.getUserEmail(), collaborationContext);
+		PatchRecordsResponse response = this.patchRecordsService.patchRecords(recordBulkUpdateParam.getQuery().getIds(), PatchUtil.convertPatchOpsToJsonPatch(recordBulkUpdateParam.getOps()), this.headers.getUserEmail(), collaborationContext);
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
