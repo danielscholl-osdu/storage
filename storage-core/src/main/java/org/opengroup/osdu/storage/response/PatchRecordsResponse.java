@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class BulkUpdateRecordsResponse {
+public class PatchRecordsResponse {
 
     private Integer recordCount;
 

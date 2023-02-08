@@ -14,7 +14,7 @@ import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
+import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -97,7 +97,7 @@ public class PatchApiTest {
                 .query(RecordQuery.builder().ids(recordIds).build())
                 .ops(ops)
                 .build();
-        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
+        PatchRecordsResponse expectedResponse = PatchRecordsResponse.builder()
                 .recordCount(6)
                 .recordIds(validRecordIds)
                 .notFoundRecordIds(notFoundRecordIds)
@@ -107,7 +107,7 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
-        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+        ResponseEntity<PatchRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.PARTIAL_CONTENT, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
@@ -131,7 +131,7 @@ public class PatchApiTest {
                 .query(RecordQuery.builder().ids(recordIds).build())
                 .ops(ops)
                 .build();
-        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
+        PatchRecordsResponse expectedResponse = PatchRecordsResponse.builder()
                 .recordCount(6)
                 .recordIds(validRecordIds)
                 .notFoundRecordIds(notFoundRecordIds)
@@ -141,7 +141,7 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
-        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+        ResponseEntity<PatchRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
@@ -165,7 +165,7 @@ public class PatchApiTest {
                 .query(RecordQuery.builder().ids(recordIds).build())
                 .ops(ops)
                 .build();
-        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
+        PatchRecordsResponse expectedResponse = PatchRecordsResponse.builder()
                 .recordCount(6)
                 .recordIds(validRecordIds)
                 .notFoundRecordIds(notFoundRecordIds)
@@ -177,9 +177,60 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, COLLABORATION_CONTEXT)).thenReturn(expectedResponse);
 
-        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+        ResponseEntity<PatchRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
     }
+
+    @Test
+    public void should_returnUnauthorized_when_patchRecordsWithViewerPermissions() {
+
+    }
+
+    @Test
+    public void should_return400_when_patchRecordsAndOperationOtherThanAddRemoveOrReplace() {
+
+    }
+
+    @Test
+    public void should_return400_when_patchRecordsAndUpdatingMetadataOtherThanAclTagsAncestryLegalOrKind() {
+
+    }
+
+    @Test
+    public void should_return400_when_patchRecordsNoOperation() {
+
+    }
+
+    @Test
+    public void should_return200_when_patchRecordsIsSuccess() {
+
+    }
+
+    @Test
+    public void should_return206_when_patchRecordsIsPartialSuccess() {
+
+    }
+
+    @Test
+    public void should_returnIdWithVersion_when_patchRecordsDataIsUpdated() {
+
+    }
+
+    @Test
+    public void should_returnIdWithVersion_when_patchRecordsDataAndMetadataIsUpdated() {
+
+    }
+
+    @Test
+    public void should_returnIdWithoutVersion_when_patchRecordsDataIsNotUpdated() {
+
+    }
+
+    @Test
+    public void should_return200_when_patchRecordsIsSuccessWithCollaborationContext() {
+
+    }
+
 }

@@ -33,7 +33,7 @@ import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
+import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -114,7 +114,7 @@ public class BulkUpdateRecordServiceImplTest {
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
         commonSetup(recordMetadataMap, param.getOps(), true, false);
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         commonVerify(singletonList(TEST_ID), param.getOps());
         verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty());
@@ -132,7 +132,7 @@ public class BulkUpdateRecordServiceImplTest {
 
         commonSetup(new HashMap<>(), param.getOps(), false, false);
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
@@ -153,7 +153,7 @@ public class BulkUpdateRecordServiceImplTest {
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
         commonSetup(recordMetadataMap, param.getOps(), false, false);
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
@@ -173,7 +173,7 @@ public class BulkUpdateRecordServiceImplTest {
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
         commonSetup(recordMetadataMap, param.getOps(), true, true);
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty());
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
@@ -206,7 +206,7 @@ public class BulkUpdateRecordServiceImplTest {
         validationOutputRecords.add(validationOutputRecord1);
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         commonVerify(singletonList(TEST_ID), param.getOps());
         verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty());
@@ -238,7 +238,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, COLLABORATION_CONTEXT);
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, COLLABORATION_CONTEXT);
 
         verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
@@ -273,7 +273,7 @@ public class BulkUpdateRecordServiceImplTest {
         validationOutputRecords.add(validationOutputRecord1);
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
@@ -307,7 +307,7 @@ public class BulkUpdateRecordServiceImplTest {
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
 
-        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
         verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty());
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);

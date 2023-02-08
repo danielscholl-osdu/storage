@@ -16,12 +16,12 @@ package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
-import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
+import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 
 import java.util.Optional;
 
 public interface BulkUpdateRecordService {
 
-  BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user, Optional<CollaborationContext> collaborationContext);
+  PatchRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user, Optional<CollaborationContext> collaborationContext);
 
 }
