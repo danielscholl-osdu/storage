@@ -17,7 +17,7 @@ public class RecordChangedV2 {
     private Long version;
     private String modifiedBy;
     private String kind;
-    private OperationType operationType;
+    private OperationType op;
 
     /**
      * This specifies the changes that have been made to the record

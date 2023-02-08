@@ -568,7 +568,7 @@ public class RecordServiceImplTest {
             RecordChangedV2Delete capturedMessage = recordChangedV2DeleteArgumentCaptor.getValue();
             assertEquals(RECORD_ID, capturedMessage.getId());
             assertEquals(KIND, capturedMessage.getKind());
-            assertEquals(OperationType.delete, capturedMessage.getOperationType());
+            assertEquals(OperationType.delete, capturedMessage.getOp());
             assertEquals(DeletionType.soft, capturedMessage.getDeletionType());
             assertEquals(USER_NAME, capturedMessage.getModifiedBy());
         }

@@ -133,7 +133,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     .version(rm.getLatestVersion())
                     .modifiedBy(rm.getModifyUser())
                     .kind(rm.getKind())
-                    .operationType(complianceChangeInfo.getPubSubEvent())
+                    .op(complianceChangeInfo.getPubSubEvent())
                     .build();
             output.put(rm.getId(), complianceChangeInfo.getNewState());
             i++;
