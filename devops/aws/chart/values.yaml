@@ -58,8 +58,6 @@ environmentVariables:
     value: "true"
   - name: PARAMETER_MOUNT_PATH
     value: "/mnt/params"
-podAnnotations: 
-  seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
 
 # Resource Config
 maxConnections: 200
@@ -102,9 +100,13 @@ securityContext:
   capabilities:
     drop:
     - ALL
+podSecurityContext: 
+  fsGroup: 1337
+  seccompProfile:
+    type: RuntimeDefault
 
 allowedPrincipals:
-  - cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account
+  - cluster.local/ns/istio-system/sa/istio-ingressgateway
   - cluster.local/ns/{{ .Release.Namespace }}/sa/compliance-queue
   - cluster.local/ns/{{ .Release.Namespace }}/sa/indexer-queue
   - cluster.local/ns/{{ .Release.Namespace }}/sa/os-crs-conversion
