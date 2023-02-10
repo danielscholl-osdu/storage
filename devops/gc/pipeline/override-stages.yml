@@ -2,8 +2,6 @@ variables:
   GC_SERVICE: storage
   GC_VENDOR: gc
   NO_DATA_ACCESS_TESTER: $GC_NO_DATA_ACCESS_TESTER
-  # FIXME remove when all services are migrated to a single helm
-  GC_ENABLE_HELM_CONFIG: "false"
 
 .define_DATA_BRANCH:
   script:
