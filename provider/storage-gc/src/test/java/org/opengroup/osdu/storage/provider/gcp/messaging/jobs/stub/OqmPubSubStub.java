@@ -27,6 +27,7 @@ import lombok.Getter;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 
 @Getter
@@ -35,7 +36,12 @@ public class OqmPubSubStub implements IMessageBus {
     private final List<Map<DpsHeaders, PubSubInfo[]>> collector = new ArrayList<>();
 
     @Override
-    public synchronized void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+    public synchronized void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
         collector.add(ImmutableMap.of(DpsHeaders.createFromMap(headers.getHeaders()), messages));
+    }
+
+    @Override
+    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
+        //TODO: to be implemented by gcp provider
     }
 }
