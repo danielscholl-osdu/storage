@@ -22,6 +22,7 @@ import com.amazonaws.services.sns.AmazonSNS;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
@@ -57,7 +58,7 @@ public class MessageBusImpl implements IMessageBus {
     }
 
     @Override
-    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
         final int BATCH_SIZE = 50;
         Gson gson = new Gson();
         for (int i =0; i < messages.length; i+= BATCH_SIZE){
@@ -90,5 +91,10 @@ public class MessageBusImpl implements IMessageBus {
             snsClient.publish(publishRequest);
 
         }
+    }
+
+    @Override
+    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
+        //TODO: To be implemented by aws provider
     }
 }

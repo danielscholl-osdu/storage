@@ -17,22 +17,23 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+
 @Component
 public class CollaborationFilter implements Filter {
     public static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
     private static final String DATA_PARTITION_ID = "data-partition-id";
-    private static final String COLLABORATIONS_FEATURE_NAME = "collaborations-enabled";
 
 
     @Autowired
-    public IFeatureFlag iCollaborationFeatureFlag;
+    public IFeatureFlag collaborationFeatureFlag;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        if (!iCollaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+        if (!collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
             if (!Strings.isNullOrEmpty(collaborationHeader)) {
                 httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
