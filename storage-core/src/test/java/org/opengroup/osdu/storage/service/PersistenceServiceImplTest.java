@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -30,12 +31,11 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-//import com.google.cloud.datastore.DatastoreException;
 import org.apache.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -43,12 +43,14 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
     private static final String BUCKET = "anyBucket";
+    private static final String MODIFIED_BY = "modifyUser";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
@@ -68,6 +70,9 @@ public class PersistenceServiceImplTest {
 
     @Mock
     private JaxRsDpsLog logger;
+
+    @Mock
+    private IFeatureFlag collaborationFeatureFlag;
 
     @InjectMocks
     private PersistenceServiceImpl sut;
@@ -90,6 +95,8 @@ public class PersistenceServiceImplTest {
     @Test
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void should_persistRecords_when_noExceptionIsThrown() {
+
+        when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
 
         this.setupRecordRepository(25, 23, 25);
 
@@ -115,9 +122,86 @@ public class PersistenceServiceImplTest {
 
         ArgumentCaptor<PubSubInfo[]> pubsubCaptor = ArgumentCaptor.forClass(PubSubInfo[].class);
 
-        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), pubsubCaptor.capture());
+        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubCaptor.capture());
 
         this.assertPubsubInfo(48, pubsubCaptor.getAllValues());
+        verify(this.cloudStorage, times(0)).delete(any(RecordMetadata.class));
+    }
+
+    @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void should_persistRecords_when_noExceptionIsThrown_when_collaborationIsEmptyAndFFIsEnabled() {
+
+        when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
+
+        this.setupRecordRepository(25, 23, 25);
+
+        TransferBatch batch = this.createBatchTransfer();
+
+        this.sut.persistRecordBatch(batch, Optional.empty());
+
+        for (int i = 0; i < BATCH_SIZE; i++) {
+            verify(this.cloudStorage)
+                    .write(batch.getRecords().toArray(new RecordProcessing[batch.getRecords().size()]));
+        }
+
+        ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
+
+        List<List> capturedDatastoreList = datastoreCaptor.getAllValues();
+
+        assertEquals(1, capturedDatastoreList.size());
+
+        List list1 = capturedDatastoreList.get(0);
+        assertEquals(48, list1.size());
+
+        ArgumentCaptor<PubSubInfo[]> pubsubCaptor = ArgumentCaptor.forClass(PubSubInfo[].class);
+        ArgumentCaptor<RecordChangedV2[]> recordChangedV2Captor = ArgumentCaptor.forClass(RecordChangedV2[].class);
+
+        verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), recordChangedV2Captor.capture());
+        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubCaptor.capture());
+
+        this.assertPubsubInfo(48, pubsubCaptor.getAllValues());
+        this.assertRecordChangedV2Info(48, recordChangedV2Captor.getAllValues());
+        verify(this.cloudStorage, times(0)).delete(any(RecordMetadata.class));
+    }
+
+    @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void should_persistRecords_when_noExceptionIsThrown_when_collaborationIsPresentAndFFIsEnabled() {
+
+        when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
+
+        this.setupRecordRepository(25, 23, 25);
+
+        TransferBatch batch = this.createBatchTransfer();
+
+        this.sut.persistRecordBatch(batch, COLLABORATION_CONTEXT);
+
+        for (int i = 0; i < BATCH_SIZE; i++) {
+            verify(this.cloudStorage)
+                    .write(batch.getRecords().toArray(new RecordProcessing[batch.getRecords().size()]));
+        }
+
+        ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
+
+        List<List> capturedDatastoreList = datastoreCaptor.getAllValues();
+
+        assertEquals(1, capturedDatastoreList.size());
+
+        List list1 = capturedDatastoreList.get(0);
+        assertEquals(48, list1.size());
+
+        ArgumentCaptor<RecordChangedV2[]> recordChangedV2Captor = ArgumentCaptor.forClass(RecordChangedV2[].class);
+        ArgumentCaptor<PubSubInfo[]> pubSubInfoCaptor = ArgumentCaptor.forClass(PubSubInfo[].class);
+
+        verify(this.pubSubClient).publishMessage(eq(COLLABORATION_CONTEXT), eq(this.headers), recordChangedV2Captor.capture());
+        verify(this.pubSubClient, never()).publishMessage(eq(this.headers), pubSubInfoCaptor.capture());
+
+        this.assertRecordChangedV2Info(48, recordChangedV2Captor.getAllValues());
         verify(this.cloudStorage, times(0)).delete(any(RecordMetadata.class));
     }
 
@@ -299,6 +383,7 @@ public class PersistenceServiceImplTest {
             recordMetadata.setKind("anyKind");
             recordMetadata.setAcl(this.acl);
             recordMetadata.setUser("createUser");
+            recordMetadata.setModifyUser("modifyUser");
             Date date = new Date();
             recordMetadata.setGcsVersionPaths(Arrays.asList(String.format("%s/%s/%s", "anyKind", ("ID" + i), date.getTime())));
 
@@ -331,6 +416,23 @@ public class PersistenceServiceImplTest {
             assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, pubSubInfo.getOp());
             assertNull(pubSubInfo.getPreviousVersionKind());
             assertTrue(pubSubInfo.getId().startsWith("ID"));
+        }
+    }
+
+    private void assertRecordChangedV2Info(int successfullRecords, Object capturedRecordChangedV2List) {
+
+        LinkedList<RecordChangedV2> recordChangedV2s = (LinkedList<RecordChangedV2>) capturedRecordChangedV2List;
+
+        assertEquals(successfullRecords, recordChangedV2s.size());
+
+        for (int i = 0; i < recordChangedV2s.size(); i++) {
+            RecordChangedV2 recordChangedV2 = recordChangedV2s.get(i);
+            assertEquals("anyKind", recordChangedV2.getKind());
+            assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, recordChangedV2.getOp());
+            assertNull(recordChangedV2.getPreviousVersionKind());
+            assertTrue(recordChangedV2.getId().startsWith("ID"));
+            assertNotNull(recordChangedV2.getVersion());
+            assertEquals(MODIFIED_BY, recordChangedV2.getModifiedBy());
         }
     }
 
