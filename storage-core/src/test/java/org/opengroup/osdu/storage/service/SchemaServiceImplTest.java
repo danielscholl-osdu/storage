@@ -25,6 +25,7 @@ import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Optional;
 
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
@@ -73,6 +74,9 @@ public class SchemaServiceImplTest {
 
     @Mock
     private StorageAuditLogger auditLogger;
+
+    @Mock
+    private IFeatureFlag collaborationFeatureFlag;
 
     @InjectMocks
     private SchemaServiceImpl sut;
@@ -139,7 +143,7 @@ public class SchemaServiceImplTest {
 
         verify(this.schemaRepository).add(schema, USER);
         verify(this.cacheService).put("EUerYg==", schema);
-        verify(this.pubSubClient).publishMessage(Optional.empty(), this.headers,
+        verify(this.pubSubClient).publishMessage(this.headers,
                 new PubSubInfo(null, KIND, OperationType.create_schema));
     }
 
