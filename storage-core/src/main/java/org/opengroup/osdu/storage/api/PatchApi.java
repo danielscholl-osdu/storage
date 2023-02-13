@@ -21,6 +21,7 @@ import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
+import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.opengroup.osdu.storage.service.PatchRecordsService;
 import org.opengroup.osdu.storage.util.CollaborationFilter;
@@ -76,9 +77,9 @@ public class PatchApi {
 	@PatchMapping(consumes = "application/json-patch+json", produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<PatchRecordsResponse> patchRecords(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
-															 @RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
+															 @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		PatchRecordsResponse response = this.patchRecordsService.patchRecords(recordBulkUpdateParam.getQuery().getIds(), PatchUtil.convertPatchOpsToJsonPatch(recordBulkUpdateParam.getOps()), this.headers.getUserEmail(), collaborationContext);
+		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), PatchUtil.convertPatchOpsToJsonPatch(patchRecordsRequest.getOps()), this.headers.getUserEmail(), collaborationContext);
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
