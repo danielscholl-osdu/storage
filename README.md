@@ -7,7 +7,7 @@ Instructions for running the Azure implementation locally can be found [here](./
 
 ## Google Cloud Implementation
 
-All documentation for the Google Cloud implementation of Storage service lives [here](./provider/storage-gcp/README.md)
+All documentation for the Google Cloud implementation of Storage service lives [here](./provider/storage-gc/README.md)
 
 ## AWS
 
