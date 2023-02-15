@@ -74,6 +74,20 @@ Example:
 
 ![Screenshot](./pics/namespace.PNG)
 
+
+```yaml
+indexes:
+  
+- kind: StorageRecord
+  ancestor: no
+  properties:
+    - name: status
+      direction: asc
+    - name: kind
+      direction: asc
+```
+
+
 ## PubSub configuration
 
 At PubSub should be created topic with name:
