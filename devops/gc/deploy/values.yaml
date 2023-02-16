@@ -17,8 +17,8 @@ data:
   defaultLegalTag: "default-data-tag"
   dataPartitionId: ""
   # deployments
-  requestsCpu: "250m"
-  requestsMemory: "1024M"
+  requestsCpu: "10m"
+  requestsMemory: "650Mi"
   limitsCpu: "1"
   limitsMemory: "3G"
   bootstrapImage: ""
@@ -45,9 +45,9 @@ conf:
   storageRedisSecretName: "storage-redis-secret"
 
 istio:
-  proxyCPU: "25m"
+  proxyCPU: "10m"
   proxyCPULimit: "200m"
-  proxyMemory: "64Mi"
+  proxyMemory: "100Mi"
   proxyMemoryLimit: "256Mi"
   bootstrapProxyCPU: "10m"
   bootstrapProxyCPULimit: "100m"
