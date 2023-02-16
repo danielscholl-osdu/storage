@@ -71,26 +71,34 @@ public class CollaborationFilterTest {
     }
 
     @Test
-    public void shouldSkipFilter_ifUrlContainsHealthEndpoint() {
+    public void shouldSkipFilter_ifUrlContainsHealthEndpoint() throws IOException, ServletException {
         when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/health");
+        when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
+        collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
         verify(iCollaborationFeatureFlag, never()).isFeatureEnabled(FEATURE_NAME);
     }
 
     @Test
-    public void shouldSkipFilter_ifUrlContainsInfoEndpoint() {
+    public void shouldSkipFilter_ifUrlContainsInfoEndpoint() throws IOException, ServletException {
         when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/info");
+        when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
+        collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
         verify(iCollaborationFeatureFlag, never()).isFeatureEnabled(FEATURE_NAME);
     }
 
     @Test
-    public void shouldSkipFilter_ifUrlContainsSwaggerEndpoint() {
+    public void shouldSkipFilter_ifUrlContainsSwaggerEndpoint() throws IOException, ServletException {
         when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/swagger-ui/index.html");
+        when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
+        collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
         verify(iCollaborationFeatureFlag, never()).isFeatureEnabled(FEATURE_NAME);
     }
 
     @Test
-    public void shouldSkipFilter_ifUrlContainsApiDocsEndpoint() {
+    public void shouldSkipFilter_ifUrlContainsApiDocsEndpoint() throws IOException, ServletException {
         when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/v3/api-docs");
+        when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
+        collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
         verify(iCollaborationFeatureFlag, never()).isFeatureEnabled(FEATURE_NAME);
     }
 }
