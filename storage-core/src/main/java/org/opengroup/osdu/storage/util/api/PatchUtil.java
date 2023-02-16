@@ -11,20 +11,23 @@ import com.github.fge.jsonpatch.RemoveOperation;
 import com.github.fge.jsonpatch.ReplaceOperation;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.model.RecordPatchOperation;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 public class PatchUtil {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
-    public static JsonPatch convertPatchOpsToJsonPatch(List<RecordPatchOperation> patchOps) {
-
-        List<JsonPatchOperation> operations = patchOps.stream()
+    public JsonPatch convertPatchOpsToJsonPatch(PatchRecordsRequestModel patchRecordsRequestModel) {
+        List<JsonPatchOperation> operations = patchRecordsRequestModel.getOps().stream()
                 .map(PatchUtil::mapper)
                 .collect(Collectors.toList());
+
         return new JsonPatch(operations);
     }
 
