@@ -22,8 +22,6 @@ import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEA
 @Component
 public class CollaborationFilter implements Filter {
     public static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
-    private static final String DATA_PARTITION_ID = "data-partition-id";
-
 
     @Autowired
     public IFeatureFlag collaborationFeatureFlag;
@@ -31,10 +29,18 @@ public class CollaborationFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        if(httpRequest.getRequestURI().contains("info") ||
+                httpRequest.getRequestURI().contains("swagger") ||
+                httpRequest.getRequestURI().contains("health") ||
+                httpRequest.getRequestURI().contains("api-docs"))
+            return;
+
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         if (!collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-            String collaborationHeader = ((HttpServletRequest) request).getHeader(X_COLLABORATION_HEADER_NAME);
+            String collaborationHeader = httpRequest.getHeader(X_COLLABORATION_HEADER_NAME);
             if (!Strings.isNullOrEmpty(collaborationHeader)) {
                 httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
                 httpResponse.setStatus(HttpStatus.SC_LOCKED);
