@@ -16,16 +16,13 @@ package org.opengroup.osdu.storage.api;
 
 import javax.validation.Valid;
 
-import com.github.fge.jsonpatch.JsonPatch;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.opengroup.osdu.storage.service.PatchRecordsService;
 import org.opengroup.osdu.storage.util.CollaborationFilter;
-import org.opengroup.osdu.storage.util.api.PatchUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,7 +37,6 @@ import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -60,9 +56,6 @@ public class PatchApi {
 
 	@Autowired
 	private CollaborationContextFactory collaborationContextFactory;
-
-	@Autowired
-	private PatchUtil patchUtil;
 
 	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
