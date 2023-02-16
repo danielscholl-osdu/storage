@@ -2,7 +2,6 @@ package org.opengroup.osdu.storage.util;
 
 import org.apache.http.HttpStatus;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -10,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.AppError;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -48,13 +49,15 @@ public class CollaborationFilterTest {
     public IFeatureFlag iCollaborationFeatureFlag;
     @Before
     public void setup() {
+        ReflectionTestUtils.setField(collaborationFilter, "excludedPaths", Arrays.asList("info", "swagger", "health", "api-docs"));
         initMocks(this);
     }
 
     @Test
     public void shouldThrowException_ifCollaborationHeaderProvided_whenCollaborationFeatureFlagDisabled() throws IOException, ServletException {
         when(httpServletRequest.getHeader(DATA_PARTITION_ID)).thenReturn(DATA_PARTITION);
-        when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url");
+        when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/");
+        when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
         when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(false);
         when(httpServletRequest.getHeader(X_COLLABORATION_HEADER_NAME)).thenReturn(COLLABORATION_DIRECTIVES);
         when(httpServletResponse.getWriter()).thenReturn(writer);
