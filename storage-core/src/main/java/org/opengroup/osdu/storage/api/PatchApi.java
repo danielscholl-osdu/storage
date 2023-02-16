@@ -61,6 +61,9 @@ public class PatchApi {
 	@Autowired
 	private CollaborationContextFactory collaborationContextFactory;
 
+	@Autowired
+	private PatchUtil patchUtil;
+
 	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
 	public ResponseEntity<PatchRecordsResponse> updateRecordsMetadata(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
@@ -79,7 +82,7 @@ public class PatchApi {
 	public ResponseEntity<PatchRecordsResponse> patchRecords(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 															 @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), PatchUtil.convertPatchOpsToJsonPatch(patchRecordsRequest.getOps()), this.headers.getUserEmail(), collaborationContext);
+		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest, this.headers.getUserEmail(), collaborationContext);
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
