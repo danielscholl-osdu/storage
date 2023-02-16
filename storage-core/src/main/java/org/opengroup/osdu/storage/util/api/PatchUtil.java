@@ -14,6 +14,7 @@ import org.opengroup.osdu.storage.model.RecordPatchOperation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,8 @@ public class PatchUtil {
                 break;
             case REMOVE:
                 //We can only delete values by a specific index, not the value itself (existing contract)
+                jsonPatchOperations.addAll(getRemoveOperations(operation));
+                break;
             case UNDEFINED:
                 throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid operation", "Add, replace and remove operations are supported");
         }
@@ -54,33 +57,51 @@ public class PatchUtil {
     private static List<JsonPatchOperation> getAddOperations(RecordPatchOperation operation) {
 
         return Arrays.stream(operation.getValue())
-                .map(value -> new AddOperation(getPath(operation.getPath() + REFERENCE_TO_THE_END_OF_THE_ARRAY),
-                        objectMapper.convertValue(value, JsonNode.class)))
+                .map(value -> new AddOperation(getPath(operation), objectMapper.convertValue(value, JsonNode.class)))
                 .collect(Collectors.toList());
     }
 
     private static List<JsonPatchOperation> getReplaceOperations(RecordPatchOperation operation) {
+        //For replace operation we use adding array of all values in place of the existing array
+        JsonNode targetValue;
+        if (isOperationOnArrayValue(operation.getPath())) {
+            targetValue = objectMapper.convertValue(operation.getValue(), JsonNode.class);
+        } else {
+            targetValue = objectMapper.convertValue(operation.getValue()[0], JsonNode.class);
+        }
 
-        //For replace operation we use two operations instead: create empty array operation and then add operations
-        List<JsonPatchOperation> resultOperation = new ArrayList<>();
-        resultOperation.add(new AddOperation(getPath(operation.getPath()), objectMapper.createArrayNode()));
-
-        List<JsonPatchOperation> addAllOperations = Arrays.stream(operation.getValue())
-                .map(value -> new AddOperation(getPath(operation.getPath() + REFERENCE_TO_THE_END_OF_THE_ARRAY),
-                        objectMapper.convertValue(value, JsonNode.class)))
-                .collect(Collectors.toList());
-        resultOperation.addAll(addAllOperations);
-
-        return resultOperation;
+        return Collections.singletonList(new AddOperation(getPath(operation), targetValue));
     }
 
-    private static JsonPointer getPath(String operationPath) {
-        JsonPointer path;
+    private static List<JsonPatchOperation> getRemoveOperations(RecordPatchOperation operation) {
+
+        return null;
+    }
+
+    private static JsonPointer getPath(RecordPatchOperation operation) {
+        String path = operation.getPath();
+        String operationPath;
+
+        if (isOperationOnArrayValue(path) && PatchOperations.forOperation(operation.getOp()).equals(PatchOperations.ADD)) {
+            operationPath = path.concat(REFERENCE_TO_THE_END_OF_THE_ARRAY);
+        } else {
+            operationPath = path;
+        }
+
+        JsonPointer jsonPointer;
         try {
-            path = new JsonPointer(operationPath);
+            jsonPointer = new JsonPointer(operationPath);
         } catch (JsonPointerException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid path", e.getMessage());
         }
-        return path;
+        return jsonPointer;
     }
+
+    private static boolean isOperationOnArrayValue(String path) {
+        return path.equals("/acl/viewers")
+                || path.equals("/acl/owners")
+                || path.equals("/legal/legaltags")
+                || path.equals("/tags");
+    }
+
 }
