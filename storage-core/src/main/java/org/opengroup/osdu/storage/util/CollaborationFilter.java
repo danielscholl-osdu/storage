@@ -61,7 +61,7 @@ public class CollaborationFilter implements Filter {
 
     private boolean isExcludedPath(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length() + 1);
-        return excludedPaths.contains(path);
+        return excludedPaths.stream().anyMatch(path::contains);
     }
 
 }
