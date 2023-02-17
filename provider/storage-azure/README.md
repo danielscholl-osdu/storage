@@ -121,7 +121,7 @@ $ mvn spring-boot:run
 
 ### Test the application
 
-After the service has started it should be accessible via a web browser by visiting [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html). If the request does not fail, you can then run the integration tests.
+After the service has started it should be accessible via a web browser by visiting [http://localhost:8080/api/storage/v2/swagger](http://localhost:8080/api/storage/v2/swagger). If the request does not fail, you can then run the integration tests.
 
 ```bash
 # build + install integration test core
