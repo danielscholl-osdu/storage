@@ -6,6 +6,7 @@
     - [HTTP header syntax <a name="http-header-syntax"></a>](#http-header-syntax)
     - [Request directives <a name="request-directives"></a>](#request-directives)
     - [Examples <a name="example-requests"></a>](#example-requests)
+    - [Excluded Paths <a name="excluded-paths"></a>](#excluded-paths)
 - [Reference <a name="reference"></a>](#reference)
 
 ## Introduction <a name="introduction"></a>
@@ -126,6 +127,15 @@ curl --request PUT \
     }]'
 ```
 </details>
+
+### Excluded Paths <a name="excluded-paths"></a> 
+CollaborationFilter, when enabled with data partition _feature flag strategy_, makes a call to Partition service. This call requires `data-partition-id` header, which is not passed/required for certain apis (_info, swagger, health, etc_)
+We can short-circuit the CollaborationFilter class when url contains one of these paths.
+
+Property used (CSP Specific)
+- Default paths if not specified : [ _info,swagger,health,api-docs_ ]
+- customized using ``collaborationFilter.excludedPaths=info,swagger,health,api-docs``
+
 
 ##### Reference <a name="reference"></a>
 More info about __Namespacing storage records__ can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/issues/149).

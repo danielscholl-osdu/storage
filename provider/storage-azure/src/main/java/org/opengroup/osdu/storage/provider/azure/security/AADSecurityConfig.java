@@ -40,15 +40,16 @@ public class AADSecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
             .authorizeRequests()
                 .antMatchers("/", "/index.html",
-                        "/v2/api-docs",
-                        "/v3/api-docs",
-                        "/configuration/ui",
-                        "/swagger-resources/**",
-                        "/configuration/security",
-                        "/swagger",
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/webjars/**").permitAll()
+                    "/api-docs.yaml",
+                    "/api-docs/swagger-config",
+                    "/api-docs/**",
+                    "/configuration/security",
+                    "/configuration/ui",
+                    "/swagger",
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/swagger-resources/**",
+                    "/webjars/**").permitAll()
                 .anyRequest().authenticated()
             .and()
             .addFilterBefore(appRoleAuthFilter, UsernamePasswordAuthenticationFilter.class);
