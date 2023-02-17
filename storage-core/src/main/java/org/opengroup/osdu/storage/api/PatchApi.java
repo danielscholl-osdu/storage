@@ -19,12 +19,12 @@ import javax.validation.Valid;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.opengroup.osdu.storage.service.PatchRecordsService;
 import org.opengroup.osdu.storage.util.CollaborationFilter;
+import org.opengroup.osdu.storage.util.PatchUtilImpl;
 import org.opengroup.osdu.storage.util.api.PatchUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,6 +41,7 @@ import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -57,6 +58,9 @@ public class PatchApi {
 
 	@Autowired
 	private PatchRecordsService patchRecordsService;
+
+	@Autowired
+	private PatchUtil patchUtil;
 
 	@Autowired
 	private CollaborationContextFactory collaborationContextFactory;
@@ -79,7 +83,9 @@ public class PatchApi {
 	public ResponseEntity<PatchRecordsResponse> patchRecords(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 															 @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), PatchUtil.convertPatchOpsToJsonPatch(patchRecordsRequest.getOps()), this.headers.getUserEmail(), collaborationContext);
+		List<String> ids = patchRecordsRequest.getQuery().getIds();
+		Map<String, JsonPatch> jsonPatch = patchUtil.convertPatchOpsToJsonPatch(ids, patchRecordsRequest.getOps(), collaborationContext);
+		PatchRecordsResponse response = this.patchRecordsService.patchRecords(ids, jsonPatch, this.headers.getUserEmail(), collaborationContext);
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
