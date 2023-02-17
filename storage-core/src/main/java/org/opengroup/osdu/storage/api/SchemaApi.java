@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.api;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidKind;
 import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
@@ -34,6 +35,7 @@ import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.service.SchemaService;
 import org.springframework.web.context.annotation.RequestScope;
 
+@Hidden
 @RestController
 @RequestMapping("schemas")
 @RequestScope
