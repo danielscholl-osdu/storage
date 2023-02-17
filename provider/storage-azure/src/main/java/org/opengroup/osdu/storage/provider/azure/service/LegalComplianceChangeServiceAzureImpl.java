@@ -15,7 +15,9 @@
 package org.opengroup.osdu.storage.provider.azure.service;
 
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -27,6 +29,7 @@ import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.azure.MessageBusImpl;
 import org.opengroup.osdu.storage.provider.azure.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -37,11 +40,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+
 @Component
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {
     private static final String LEGAL_STATUS_INVALID = "Invalid";
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeServiceAzureImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeServiceAzureImpl.class);
     @Autowired
     private IRecordsMetadataRepository recordsRepo;
     @Autowired
@@ -50,12 +54,15 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     private LegalTagCache legalTagCache;
     @Autowired
     private MessageBusImpl pubSubclient;
+    @Autowired
+    private IFeatureFlag collaborationFeatureFlag;
+
 
     @Override
     public Map<String, LegalCompliance> updateComplianceOnRecords(LegalTagChangedCollection legalTagsChanged,
                                                                   DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
-
+        Optional<CollaborationContext> collaborationContext = Optional.empty();
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
             ComplianceChangeInfo complianceChangeInfo = this.getComplianceChangeInfo(lt);
             if (complianceChangeInfo == null) {
@@ -71,6 +78,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                 if (results.getValue() != null && !results.getValue().isEmpty()) {
                     List<RecordMetadata> recordsMetadata = results.getValue();
                     PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
+                    RecordChangedV2[] recordsChangedV2s = this.updateComplianceStatusRecordsChangedV2(complianceChangeInfo, recordsMetadata, output);
                     try {
                         this.recordsRepo.createOrUpdate(recordsMetadata, Optional.empty());
                     } catch (Exception e) {
@@ -81,7 +89,12 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     for (RecordMetadata recordMetadata : recordsMetadata) {
                         recordIds.add(recordMetadata.getId());
                     }
-                    this.pubSubclient.publishMessage(Optional.empty(), headers, pubsubInfos);
+                    if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+                        this.pubSubclient.publishMessage(collaborationContext, headers, recordsChangedV2s);
+                    }
+                    if (!collaborationContext.isPresent()) {
+                        this.pubSubclient.publishMessage(headers, pubsubInfos);
+                    }
                     logOnSucceedUpdateRecords(lt, recordIds);
                 }
             } while (cursor != null);
@@ -106,6 +119,29 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
         return pubsubInfo;
     }
 
+    private RecordChangedV2[] updateComplianceStatusRecordsChangedV2(ComplianceChangeInfo complianceChangeInfo,
+                                                                     List<RecordMetadata> recordMetadata, Map<String, LegalCompliance> output) {
+
+        RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadata.size()];
+
+        int i = 0;
+        for (RecordMetadata rm : recordMetadata) {
+            rm.getLegal().setStatus(complianceChangeInfo.getNewState());
+            rm.setStatus(complianceChangeInfo.getNewRecordState());
+            recordChangedV2[i] = RecordChangedV2.builder()
+                    .id(rm.getId())
+                    .version(rm.getLatestVersion())
+                    .modifiedBy(rm.getModifyUser())
+                    .kind(rm.getKind())
+                    .op(complianceChangeInfo.getPubSubEvent())
+                    .build();
+            output.put(rm.getId(), complianceChangeInfo.getNewState());
+            i++;
+        }
+
+        return recordChangedV2;
+    }
+
     private ComplianceChangeInfo getComplianceChangeInfo(LegalTagChanged lt) {
         ComplianceChangeInfo output = null;
 
@@ -115,7 +151,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
             this.legalTagCache.delete(lt.getChangedTagName());
             output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
         } else {
-            this.LOGGER.warn(String.format("Unknown LegalTag compliance status received %s %s",
+            LOGGER.warn(String.format("Unknown LegalTag compliance status received %s %s",
                     lt.getChangedTagStatus(), lt.getChangedTagName()));
         }
         return output;

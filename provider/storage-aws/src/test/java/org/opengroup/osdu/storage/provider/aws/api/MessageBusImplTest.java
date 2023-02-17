@@ -106,7 +106,7 @@ public class MessageBusImplTest {
         }
 
         // act
-        messageBus.publishMessage(Optional.empty(), headers, message);
+        messageBus.publishMessage(headers, message);
 
         // assert
         Mockito.verify(snsClient, Mockito.times(1)).publish(Mockito.eq(publishRequest));

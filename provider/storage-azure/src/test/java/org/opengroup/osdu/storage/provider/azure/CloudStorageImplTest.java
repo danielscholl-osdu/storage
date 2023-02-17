@@ -18,10 +18,10 @@ import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
+import org.opengroup.osdu.storage.provider.azure.util.EntitlementsHelper;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
-import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 
@@ -32,9 +32,6 @@ public class CloudStorageImplTest {
     private JaxRsDpsLog logger;
 
     @Mock
-    private EntitlementsAndCacheServiceAzure entitlementsAndCacheServiceAzure;
-
-    @Mock
     private DpsHeaders headers;
 
     @Mock
@@ -42,6 +39,9 @@ public class CloudStorageImplTest {
 
     @Mock
     private RecordMetadataRepository recordRepository;
+
+    @Mock
+    private EntitlementsHelper entitlementsHelper;
 
     @InjectMocks
     private CloudStorageImpl cloudStorage;
@@ -66,7 +66,7 @@ public class CloudStorageImplTest {
     public void shouldNotInvokeDeleteOnBlobStoreWhenReferencedFromOtherDocuments() {
         RecordMetadata recordMetadata = setUpRecordMetadata();
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1"));
-        Mockito.when(entitlementsAndCacheServiceAzure.hasAccessToData(any(DpsHeaders.class), any(Set.class))).thenReturn(true);
+        Mockito.when(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata)).thenReturn(true);
         Mockito.when(recordRepository.getMetadataDocumentCountForBlob("path1")).thenReturn(1);
         cloudStorage.delete(recordMetadata);
         Mockito.verify(blobStore, Mockito.never()).deleteFromStorageContainer(any(String.class), any(String.class), any(String.class));
@@ -76,7 +76,7 @@ public class CloudStorageImplTest {
     public void shouldThrowAppExceptionWhenDeleteWithNoOwnerAccess() {
         RecordMetadata recordMetadata = setUpRecordMetadata();
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1", "path2"));
-        Mockito.when(entitlementsAndCacheServiceAzure.hasAccessToData(any(DpsHeaders.class), any(Set.class))).thenReturn(false);
+        Mockito.when(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata)).thenReturn(false);
         cloudStorage.delete(recordMetadata);
     }
 
@@ -84,7 +84,7 @@ public class CloudStorageImplTest {
     public void shouldDeleteAllVersionsFromBlobStoreUponDeleteAction() {
         RecordMetadata recordMetadata = setUpRecordMetadata();
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1", "path2"));
-        Mockito.when(entitlementsAndCacheServiceAzure.hasAccessToData(any(DpsHeaders.class), any(Set.class))).thenReturn(true);
+        Mockito.when(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata)).thenReturn(true);
         Mockito.when(recordRepository.getMetadataDocumentCountForBlob("path1")).thenReturn(0);
         Mockito.when(recordRepository.getMetadataDocumentCountForBlob("path2")).thenReturn(0);
         cloudStorage.delete(recordMetadata);
