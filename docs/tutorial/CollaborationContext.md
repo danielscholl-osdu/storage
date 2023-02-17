@@ -6,6 +6,7 @@
     - [HTTP header syntax <a name="http-header-syntax"></a>](#http-header-syntax)
     - [Request directives <a name="request-directives"></a>](#request-directives)
     - [Examples <a name="example-requests"></a>](#example-requests)
+    - [Excluded Paths <a name="excluded-paths"></a>](#excluded-paths)
 - [Reference <a name="reference"></a>](#reference)
 
 ## Introduction <a name="introduction"></a>
@@ -24,7 +25,7 @@ Please refer to this MR for [implementation of Azure](https://community.opengrou
 
 Consumers who want to integrate with record change messages that include changes made within a collaboration context need to register the records to the new topic "recordstopic-v2". Refer the [DataNotification.md](https://community.opengroup.org/osdu/platform/system/notification/-/blob/master/docs/tutorial/DataNotification.md) file for details about the recordstopics-v2.
 
-This topic replaces the current record changed topic and receives both collaboration and non collaboration messages when the collaborations feature flag is enabled.
+This topic exists in addition to the current record changed topic and receives both collaboration and non collaboration messages when the collaborations feature flag is enabled.
 
 The current record changed topic however does not receive messages when collaboration context is provided. Meaning, the original functionality of storage should not be changed if collaboration context is not provided.
 
@@ -45,6 +46,8 @@ The message contains the collaboration context header as an atribute when a chan
       "data": [
          {
             "id": "opendes:wellbore:f213e42d5fa848f592917a8df7fed132",
+            "version": "1617915304347525",
+            "modifiedBy": "abc@xyz.com",
             "kind": "common:welldb:wellbore:1.0.0",
             "op": "create"
          }
@@ -124,6 +127,15 @@ curl --request PUT \
     }]'
 ```
 </details>
+
+### Excluded Paths <a name="excluded-paths"></a> 
+CollaborationFilter, when enabled with data partition _feature flag strategy_, makes a call to Partition service. This call requires `data-partition-id` header, which is not passed/required for certain apis (_info, swagger, health, etc_)
+We can short-circuit the CollaborationFilter class when url contains one of these paths.
+
+Property used (CSP Specific)
+- Default paths if not specified : [ _info,swagger,health,api-docs_ ]
+- customized using ``collaborationFilter.excludedPaths=info,swagger,health,api-docs``
+
 
 ##### Reference <a name="reference"></a>
 More info about __Namespacing storage records__ can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/issues/149).

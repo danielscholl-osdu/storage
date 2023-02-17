@@ -32,6 +32,7 @@ import org.opengroup.osdu.core.gcp.oqm.driver.OqmDriver;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmDestination;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmMessage;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmTopic;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.stereotype.Repository;
@@ -53,7 +54,7 @@ public class OqmPubSub implements IMessageBus {
     }
 
     @Override
-    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, PubSubInfo... messages) {
+    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
 
         OqmDestination oqmDestination = OqmDestination.builder().partitionId(headers.getPartitionId()).build();
 
@@ -74,5 +75,10 @@ public class OqmPubSub implements IMessageBus {
 
             driver.publish(oqmMessage, oqmTopic, oqmDestination);
         }
+    }
+
+    @Override
+    public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
+        //TODO: to be implemented by gcp provider
     }
 }
