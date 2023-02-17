@@ -6,6 +6,7 @@ import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -13,7 +14,7 @@ import java.util.Optional;
 public class PatchRecordsServiceImpl implements PatchRecordsService {
 
     @Override
-    public PatchRecordsResponse patchRecords(List<String> recordIds, JsonPatch patchPayload, String user, Optional<CollaborationContext> collaborationContext) {
+    public PatchRecordsResponse patchRecords(List<String> recordIds, Map<String, JsonPatch> patchPayload, String user, Optional<CollaborationContext> collaborationContext) {
         //assuming input validation on allowed operations and allowed paths is done
 
         //TODO: additional validation on recordIds and metadata properties

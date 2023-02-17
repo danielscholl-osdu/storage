@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -21,7 +22,7 @@ public class PatchRecordsServiceAzureImpl extends PatchRecordsServiceImpl {
         this.recordUtil = recordUtil;
     }
 
-    public PatchRecordsResponse patchRecords(List<String> recordIds, JsonPatch patchPayload, String user, Optional<CollaborationContext> collaborationContext) {
+    public PatchRecordsResponse patchRecords(List<String> recordIds, Map<String, JsonPatch> patchPayload, String user, Optional<CollaborationContext> collaborationContext) {
         recordUtil.validateIds(recordIds);
         return super.patchRecords(recordIds, patchPayload, user, collaborationContext);
     }
