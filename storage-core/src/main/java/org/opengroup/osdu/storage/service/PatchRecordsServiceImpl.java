@@ -124,6 +124,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         if(dataUpdate) {
             String[] attributes = {};
             MultiRecordIds multiRecordIds = new MultiRecordIds(idsWithoutVersion, attributes);
+            //TODO: should we set a max limit of 100 records on the input list, since query records API, which also uses
+            //getMultipleRecords from batchService, has a limit of 100 records at a time
             MultiRecordInfo multiRecordInfo = batchService.getMultipleRecords(multiRecordIds, collaborationContext);
             notFoundRecordIds = multiRecordInfo.getInvalidRecords();
 
