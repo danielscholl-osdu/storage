@@ -18,4 +18,6 @@ public class PatchRecordsResponse {
     private List<String> unAuthorizedRecordIds;
 
     private List<String> lockedRecordIds;
+
+    private List<String> failedRecordIds;
 }
