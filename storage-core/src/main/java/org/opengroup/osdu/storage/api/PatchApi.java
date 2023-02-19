@@ -32,6 +32,7 @@ import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.opengroup.osdu.storage.service.PatchRecordsService;
 import org.opengroup.osdu.storage.util.CollaborationFilter;
+import org.opengroup.osdu.storage.util.api.PatchUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -61,6 +62,9 @@ public class PatchApi {
 
 	@Autowired
 	private PatchRecordsService patchRecordsService;
+
+	@Autowired
+	private PatchUtil patchUtil;
 
 	@Autowired
 	private CollaborationContextFactory collaborationContextFactory;
