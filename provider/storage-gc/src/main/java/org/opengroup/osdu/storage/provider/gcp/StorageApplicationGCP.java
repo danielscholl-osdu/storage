@@ -22,8 +22,10 @@ import org.opengroup.osdu.storage.provider.gcp.web.config.WebAppMainContextConfi
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.annotation.PropertySource;
 
 @SpringBootConfiguration
+@PropertySource("classpath:swagger.properties")
 public class StorageApplicationGCP {
 
     /**
