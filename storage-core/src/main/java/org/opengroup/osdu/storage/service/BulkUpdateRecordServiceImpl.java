@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -26,7 +25,6 @@ import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
-import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
@@ -73,15 +71,6 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
 
     @Autowired
     private Clock clock;
-
-    @Autowired
-    private DataAuthorizationService dataAuthorizationService;
-
-    @Autowired(required = false)
-    private IPolicyService policyService;
-
-    @Autowired
-    private JaxRsDpsLog logger;
 
     @Autowired
     private IOPAService opaService;

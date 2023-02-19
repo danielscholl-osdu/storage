@@ -70,12 +70,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     private Clock clock;
 
     @Autowired
-    private IOPAService opaService;
-
-    @Value("${opa.enabled}")
-    private boolean isOpaEnabled;
-
-    @Autowired
     private IEntitlementsAndCacheService entitlementsAndCacheService;
 
     @Autowired
@@ -86,6 +80,12 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
     @Autowired
     private JaxRsDpsLog logger;
+
+    @Autowired
+    private IOPAService opaService;
+
+    @Value("#{new Boolean('${opa.enabled}')}")
+    private boolean isOpaEnabled;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
