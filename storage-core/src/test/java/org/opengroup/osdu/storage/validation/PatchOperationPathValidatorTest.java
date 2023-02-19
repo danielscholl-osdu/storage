@@ -51,6 +51,9 @@ public class PatchOperationPathValidatorTest {
 
         String invalidTags = "/tags/123";
         assertFalse(this.sut.isValid(invalidTags, this.context));
+
+        String invalidAncestry = "/ancestry";
+        assertFalse(this.sut.isValid(invalidAncestry, this.context));
     }
 
     @Test
@@ -70,7 +73,7 @@ public class PatchOperationPathValidatorTest {
         String kind = "/kind";
         assertTrue(this.sut.isValid(kind, this.context));
 
-        String ancestry = "/ancestry";
+        String ancestry = "/ancestry/parents";
         assertTrue(this.sut.isValid(ancestry, this.context));
 
         String data1 = "/data";

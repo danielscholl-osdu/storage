@@ -16,7 +16,7 @@ public class PatchValidator implements ConstraintValidator<ValidPatchOperation, 
     private static final String OPERATION_ADD = "add";
     private static final String OPERATION_REMOVE = "remove";
     private static final String OPERATION_REPLACE = "replace";
-    private static final Set<String> VALID_PATHS_FOR_PATCH = new HashSet<>(Arrays.asList("tags", "acl", "legal", "ancestry", "kind", "data"));
+    private static final Set<String> VALID_PATHS_FOR_PATCH = new HashSet<>(Arrays.asList("tags", "acl", "legal", "ancestry", "kind", "data", "meta"));
 
     @Override
     public void initialize(ValidPatchOperation constraintAnnotation) {

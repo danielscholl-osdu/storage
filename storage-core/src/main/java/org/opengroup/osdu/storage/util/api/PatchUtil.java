@@ -20,14 +20,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
 public class PatchUtil {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String REFERENCE_TO_THE_END_OF_THE_ARRAY = "/-";
 
-    public JsonPatch convertPatchOpsToJsonPatch(PatchRecordsRequestModel patchRecordsRequestModel) {
-        List<JsonPatchOperation> operations = patchRecordsRequestModel.getOps().stream()
+    public static JsonPatch convertPatchOpsToJsonPatch(List<RecordPatchOperation> patchOps) {
+        List<JsonPatchOperation> operations = patchOps.stream()
                 .map(PatchUtil::mapper)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());

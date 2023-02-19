@@ -20,8 +20,9 @@ public class PatchOperationPathValidator implements ConstraintValidator<ValidPat
                 && !path.equals("/legal/legaltags")
                 && !path.equals("/tags")
                 && !path.equals("/kind")
-                && !path.equals("/ancestry")
-                && !path.contains("/data")) {
+                && !path.equals("/ancestry/parents")
+                && !path.contains("/data")
+                && !path.contains("/meta")) {
             context.buildConstraintViolationWithTemplate(ValidationDoc.INVALID_PATCH_PATH).addConstraintViolation();
             return false;
         }
