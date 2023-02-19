@@ -1,4 +1,4 @@
-package org.opengroup.osdu.storage.util.api;
+package org.opengroup.osdu.storage.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -8,27 +8,39 @@ import com.github.fge.jsonpatch.JsonPatchException;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.storage.model.RecordPatchOperation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+@RunWith(MockitoJUnitRunner.class)
+public class PatchUtilImplTest {
 
-public class PatchUtilTest {
-
+    public static final String RECORD_ID = "recordId";
     public static final String TEST_STRING_1 = "test string #1";
     public static final String TEST_STRING_2 = "test string #2";
     public static final String TEST_STRING_3 = "test string #3";
     public static final String TEST_STRING_4 = "test string #4";
     private static final String PREVIOUS_KIND = "previous kind" ;
     private static final String NEW_KIND = "new kind" ;
+    private static final Optional<CollaborationContext> collaborationContext = Optional.empty();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<RecordPatchOperation> patchOperations = new ArrayList<>();
+
+    @InjectMocks
+    private PatchUtilImpl sut;
 
     @Test
     public void shouldConvertPatchOperationToJsonPatchForAddAclViewersOperation() throws JsonProcessingException, JsonPatchException {
@@ -41,8 +53,8 @@ public class PatchUtilTest {
                 .value(new String[]{TEST_STRING_2, TEST_STRING_3})
                 .build());
 
-        JsonPatch result = PatchUtil.convertPatchOpsToJsonPatch(patchOperations);
-        Record recordPatched = applyPatch(record, result);
+        Map<String, JsonPatch> result = sut.convertPatchOpsToJsonPatch(Collections.singletonList(RECORD_ID), patchOperations, collaborationContext);
+        Record recordPatched = applyPatch(record, result.get(RECORD_ID));
 
         assertThat(recordPatched.getAcl().getViewers())
                 .hasSize(3)
@@ -59,8 +71,8 @@ public class PatchUtilTest {
                 .value(new String[]{NEW_KIND})
                 .build());
 
-        JsonPatch result = PatchUtil.convertPatchOpsToJsonPatch(patchOperations);
-        Record recordPatched = applyPatch(record, result);
+        Map<String, JsonPatch> result = sut.convertPatchOpsToJsonPatch(Collections.singletonList(RECORD_ID), patchOperations, collaborationContext);
+        Record recordPatched = applyPatch(record, result.get(RECORD_ID));
 
         assertThat(recordPatched.getKind()).isEqualTo(NEW_KIND);
     }
@@ -78,8 +90,8 @@ public class PatchUtilTest {
                 .value(new String[]{TEST_STRING_3, TEST_STRING_4})
                 .build());
 
-        JsonPatch result = PatchUtil.convertPatchOpsToJsonPatch(patchOperations);
-        Record recordPatched = applyPatch(record, result);
+        Map<String, JsonPatch> result = sut.convertPatchOpsToJsonPatch(Collections.singletonList(RECORD_ID), patchOperations, collaborationContext);
+        Record recordPatched = applyPatch(record, result.get(RECORD_ID));
 
         assertThat(recordPatched.getLegal().getLegaltags())
                 .hasSize(4)
@@ -97,8 +109,8 @@ public class PatchUtilTest {
                 .value(new String[]{TEST_STRING_2, TEST_STRING_3})
                 .build());
 
-        JsonPatch result = PatchUtil.convertPatchOpsToJsonPatch(patchOperations);
-        Record recordPatched = applyPatch(record, result);
+        Map<String, JsonPatch> result = sut.convertPatchOpsToJsonPatch(Collections.singletonList(RECORD_ID), patchOperations, collaborationContext);
+        Record recordPatched = applyPatch(record, result.get(RECORD_ID));
 
         assertThat(recordPatched.getAcl().getViewers())
                 .hasSize(2)
@@ -115,8 +127,8 @@ public class PatchUtilTest {
                 .value(new String[]{NEW_KIND})
                 .build());
 
-        JsonPatch result = PatchUtil.convertPatchOpsToJsonPatch(patchOperations);
-        Record recordPatched = applyPatch(record, result);
+        Map<String, JsonPatch> result = sut.convertPatchOpsToJsonPatch(Collections.singletonList(RECORD_ID), patchOperations, collaborationContext);
+        Record recordPatched = applyPatch(record, result.get(RECORD_ID));
 
         assertThat(recordPatched.getKind()).isEqualTo(NEW_KIND);
     }
@@ -133,8 +145,8 @@ public class PatchUtilTest {
                 .value(new String[]{TEST_STRING_2})
                 .build());
 
-        JsonPatch result = PatchUtil.convertPatchOpsToJsonPatch(patchOperations);
-        Record recordPatched = applyPatch(record, result);
+        Map<String, JsonPatch> result = sut.convertPatchOpsToJsonPatch(Collections.singletonList(RECORD_ID), patchOperations, collaborationContext);
+        Record recordPatched = applyPatch(record, result.get(RECORD_ID));
 
         assertThat(recordPatched.getAcl().getViewers())
                 .hasSize(1)

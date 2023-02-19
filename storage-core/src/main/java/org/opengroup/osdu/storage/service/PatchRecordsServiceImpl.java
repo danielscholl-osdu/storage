@@ -20,10 +20,10 @@ import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.model.RecordPatchOperation;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
-import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
+import org.opengroup.osdu.storage.util.api.PatchUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +47,9 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
     @Autowired
     private RecordUtil recordUtil;
+
+    @Autowired
+    private PatchUtil patchUtil;
 
     @Autowired
     private PatchOperationValidator patchOperationValidator;
@@ -116,7 +119,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
         Map<String, String> idMap = recordIds.stream().collect(Collectors.toMap(identity(), identity()));
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
-        Map<String, JsonPatch> jsonPatchForRecordIds = null; //get this value from patchUtil
+        Map<String, JsonPatch> jsonPatchForRecordIds = patchUtil.convertPatchOpsToJsonPatch(recordIds, patchRecordsRequest.getOps(), collaborationContext);
 
         if(dataUpdate) {
             String[] attributes = {};
