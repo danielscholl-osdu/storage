@@ -3,6 +3,7 @@ package org.opengroup.osdu.storage.response;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -17,7 +18,8 @@ public class PatchRecordsResponse {
 
     private List<String> unAuthorizedRecordIds;
 
-    private List<String> lockedRecordIds;
+    @Builder.Default
+    private List<String> lockedRecordIds = new ArrayList<>();
 
     private List<String> failedRecordIds;
 }
