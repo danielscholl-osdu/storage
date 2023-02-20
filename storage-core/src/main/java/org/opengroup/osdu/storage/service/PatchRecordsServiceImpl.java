@@ -98,6 +98,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         //TODO: validate kind?
         //TODO: validate ancestry?
 
+        //TODO: set dataUpdate to true if we are updating "data" or "meta" property
+
         Map<String, String> idMap = recordIds.stream().collect(Collectors.toMap(identity(), identity()));
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
 
@@ -135,9 +137,9 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         } else {
             List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
             List<String> validRecordsId = new ArrayList<>();
-            Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
             notFoundRecordIds = new ArrayList<>();
             //validate owner access before patch
+            Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
             unauthorizedRecordIds = isOpaEnabled
                     ? this.validateUserAccessAndCompliancePolicyConstraints(jsonPatch, idMap, existingRecords, user)
                     : this.validateUserAccessAndComplianceConstraints(jsonPatch, idMap, existingRecords);
@@ -175,7 +177,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             if (!validRecordsId.isEmpty()) {
                 lockedRecordsId = persistenceService.updateMetadata(validRecordsMetadata, validRecordsId, idMap, collaborationContext);
             }
-
             for (String lockedId : lockedRecordsId) {
                 recordIds.remove(lockedId);
             }

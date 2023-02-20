@@ -1,5 +1,6 @@
 package org.opengroup.osdu.storage.validation.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.fge.jsonpatch.JsonPatch;
 
 public interface PatchInputValidator {
