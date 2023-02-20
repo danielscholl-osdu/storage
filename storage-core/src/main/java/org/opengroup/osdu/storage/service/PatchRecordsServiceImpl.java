@@ -95,8 +95,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         recordUtil.validateRecordIds(recordIds);
         patchInputValidator.validateAcls(jsonPatch);
         patchInputValidator.validateTags(jsonPatch);
-        //TODO: validate kind?
-        //TODO: validate ancestry?
+        //TODO: validate kind? (regex validation static)
+        //TODO: validate ancestry? => RecordAncestryValidator (static validation)
 
         //TODO: set dataUpdate to true if we are updating "data" or "meta" property
 
@@ -131,7 +131,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     logger.error("Json processing exception when updating record: "+validRecord.getId(), e);
                 }
             }
-            //TODO: how to set lockedRecordsId?
+            //TODO: how to set lockedRecordsId? => set to empty by default
 
             ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
         } else {
