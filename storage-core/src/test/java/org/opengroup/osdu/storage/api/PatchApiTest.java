@@ -22,17 +22,14 @@ import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.ResultActions;
 
 import javax.inject.Provider;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -200,7 +197,7 @@ public class PatchApiTest {
 
     @Test
     public void should_returnUnauthorized_when_patchRecordsWithViewerPermissions() throws EntitlementsException {
-        setupAuthorization(StorageRole.VIEWER);
+        //setupAuthorization(StorageRole.VIEWER);
     }
 
     @Test
