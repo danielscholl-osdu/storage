@@ -3,25 +3,37 @@ package org.opengroup.osdu.storage.api;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
+import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
+import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
+import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
+import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.ResultActions;
 
 import javax.inject.Provider;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,6 +64,9 @@ public class PatchApiTest {
     
     @Mock
     private CollaborationContextFactory collaborationContextFactory;
+
+    @Mock
+    protected IEntitlementsFactory iEntitlementsFactory;
 
     @InjectMocks
     private PatchApi sut;
@@ -184,8 +199,8 @@ public class PatchApiTest {
     }
 
     @Test
-    public void should_returnUnauthorized_when_patchRecordsWithViewerPermissions() {
-
+    public void should_returnUnauthorized_when_patchRecordsWithViewerPermissions() throws EntitlementsException {
+        setupAuthorization(StorageRole.VIEWER);
     }
 
     @Test
@@ -214,7 +229,7 @@ public class PatchApiTest {
     }
 
     @Test
-    public void should_returnIdWithVersion_when_patchRecordsDataIsUpdated() {
+    public void should_returnIdWithVersion_when_patchRecordsOnlyDataIsUpdated() {
 
     }
 
@@ -232,5 +247,26 @@ public class PatchApiTest {
     public void should_return200_when_patchRecordsIsSuccessWithCollaborationContext() {
 
     }
+
+    protected void setupAuthorization(String role) throws EntitlementsException {
+        IEntitlementsService iEntitlementsService = Mockito.mock(IEntitlementsService.class);
+        GroupInfo groupInfo = new GroupInfo();
+        groupInfo.setName(role);
+        Groups groups = new Groups();
+        groups.setGroups(Collections.singletonList(groupInfo));
+        groups.setMemberEmail("a@b");
+        Mockito.when(iEntitlementsService.getGroups()).thenReturn(groups);
+        Mockito.when(iEntitlementsFactory.create(ArgumentMatchers.any())).thenReturn(iEntitlementsService);
+    }
+
+//    private ResultActions sendPatchRequest() {
+//        RecordQuery recordQuery = RecordQuery.builder().ids(Arrays.asList(new String[]{"id1"})).build();
+//        PatchRecordsRequestModel requestPayload = PatchRecordsRequestModel.builder()
+//                .query(recordQuery)
+//                .ops(patchOps)
+//                .build();
+//
+//        return sendRequest(requestPayload);
+//    }
 
 }
