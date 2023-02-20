@@ -18,7 +18,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
 
     @Override
     public void initialize(ValidJsonPatch constraintAnnotation) {
-        ConstraintValidator.super.initialize(constraintAnnotation);
+        //do nothing
     }
 
     @Override
