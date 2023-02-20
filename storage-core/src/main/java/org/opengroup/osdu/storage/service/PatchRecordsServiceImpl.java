@@ -94,7 +94,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         // validate record ids and metadata properties if they are being patched (acl, legalTags, kind, ancestry, etc)
         recordUtil.validateRecordIds(recordIds);
         patchInputValidator.validateAcls(jsonPatch);
-        patchInputValidator.validateLegalTags(jsonPatch);
         patchInputValidator.validateTags(jsonPatch);
         //TODO: validate kind?
         //TODO: validate ancestry?
