@@ -12,20 +12,16 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
-import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
-import org.opengroup.osdu.storage.model.RecordPatchOperation;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
-import org.opengroup.osdu.storage.util.api.PatchUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
-import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
+import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -49,10 +45,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     private RecordUtil recordUtil;
 
     @Autowired
-    private PatchUtil patchUtil;
-
-    @Autowired
-    private PatchOperationValidator patchOperationValidator;
+    private PatchInputValidator patchInputValidator;
 
     @Autowired
     private IRecordsMetadataRepository recordRepository;
@@ -90,36 +83,24 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public PatchRecordsResponse patchRecords(PatchRecordsRequestModel patchRecordsRequest, String user, Optional<CollaborationContext> collaborationContext) {
+    public PatchRecordsResponse patchRecords(List<String> recordIds, JsonPatch jsonPatch, String user, Optional<CollaborationContext> collaborationContext) {
         List<String> lockedRecordsId = new ArrayList<>();
         List<String> failedRecordIds = new ArrayList<>();
         List<String> notFoundRecordIds;
-        List<String> unauthorizedRecordIds;
+        List<String> unauthorizedRecordIds = new ArrayList<>();
 
         boolean dataUpdate = false;
 
-        List<PatchOperation> patchOperations = new ArrayList<>();
-        for(RecordPatchOperation recordPatchOperation : patchRecordsRequest.getOps()) {
-            patchOperations.add(PatchOperation.builder()
-                    .op(recordPatchOperation.getOp())
-                    .path(recordPatchOperation.getPath())
-                    .value(recordPatchOperation.getValue())
-                    .build());
-            if(recordPatchOperation.getPath().startsWith("/data") || recordPatchOperation.getPath().startsWith("/meta"))
-                dataUpdate = true;
-        }
-
-        List<String> recordIds = patchRecordsRequest.getQuery().getIds();
-        // validate record ids and properties
+        // validate record ids and metadata properties if they are being patched (acl, legalTags, kind, ancestry, etc)
         recordUtil.validateRecordIds(recordIds);
-        patchOperationValidator.validateAcls(patchOperations);
-        patchOperationValidator.validateTags(patchOperations);
-        //validate kind?
-        //validate ancestry?
+        patchInputValidator.validateAcls(jsonPatch);
+        patchInputValidator.validateLegalTags(jsonPatch);
+        patchInputValidator.validateTags(jsonPatch);
+        //TODO: validate kind?
+        //TODO: validate ancestry?
 
         Map<String, String> idMap = recordIds.stream().collect(Collectors.toMap(identity(), identity()));
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
-        Map<String, JsonPatch> jsonPatchForRecordIds = patchUtil.convertPatchOpsToJsonPatch(recordIds, patchRecordsRequest.getOps(), collaborationContext);
 
         if(dataUpdate) {
             String[] attributes = {};
@@ -132,14 +113,13 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             //validate owner access before patch
             Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
             unauthorizedRecordIds = isOpaEnabled
-                    ? this.validateUserAccessAndCompliancePolicyConstraints(patchOperations, idMap, existingRecords, user)
-                    : this.validateUserAccessAndComplianceConstraints(patchOperations, idMap, existingRecords);
+                    ? this.validateUserAccessAndCompliancePolicyConstraints(jsonPatch, idMap, existingRecords, user)
+                    : this.validateUserAccessAndComplianceConstraints(jsonPatch, idMap, existingRecords);
 
             List<Record> recordsToPersist = new ArrayList<>();
             for(Record validRecord : multiRecordInfo.getRecords()) {
                 try {
-                    JsonPatch patchOperationForRecord = jsonPatchForRecordIds.get(validRecord.getId());
-                    JsonNode patched = patchOperationForRecord.apply(objectMapper.convertValue(validRecord, JsonNode.class));
+                    JsonNode patched = jsonPatch.apply(objectMapper.convertValue(validRecord, JsonNode.class));
                     Record patchedRecord = objectMapper.treeToValue(patched, Record.class);
                     recordsToPersist.add(patchedRecord);
                 } catch (JsonPatchException e) {
@@ -158,9 +138,10 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             List<String> validRecordsId = new ArrayList<>();
             Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
             notFoundRecordIds = new ArrayList<>();
-            unauthorizedRecordIds= isOpaEnabled
-                    ? this.validateUserAccessAndCompliancePolicyConstraints(patchOperations, idMap, existingRecords, user)
-                    : this.validateUserAccessAndComplianceConstraints(patchOperations, idMap, existingRecords);
+            //validate owner access before patch
+            unauthorizedRecordIds = isOpaEnabled
+                    ? this.validateUserAccessAndCompliancePolicyConstraints(jsonPatch, idMap, existingRecords, user)
+                    : this.validateUserAccessAndComplianceConstraints(jsonPatch, idMap, existingRecords);
 
             final long currentTimestamp = clock.millis();
             for (String id : idsWithoutVersion) {
@@ -175,8 +156,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                         recordIds.remove(idWithVersion);
                     } else {
                         try {
-                            JsonPatch patchOperationForRecord = jsonPatchForRecordIds.get(id);
-                            JsonNode patched = patchOperationForRecord.apply(objectMapper.convertValue(metadata, JsonNode.class));
+                            JsonNode patched = jsonPatch.apply(objectMapper.convertValue(metadata, JsonNode.class));
                             RecordMetadata patchedRecord = objectMapper.treeToValue(patched, RecordMetadata.class);
                             patchedRecord.setModifyUser(user);
                             patchedRecord.setModifyTime(currentTimestamp);
@@ -230,13 +210,13 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     }
 
     private List<String> validateUserAccessAndComplianceConstraints(
-            List<PatchOperation> patchOps, Map<String, String> idMap, Map<String, RecordMetadata> existingRecords) {
-        this.patchOperationValidator.validateLegalTags(patchOps);
-        return this.validateOwnerAccess(idMap, existingRecords);
+            JsonPatch jsonPatch, Map<String, String> idMap, Map<String, RecordMetadata> existingRecords) {
+        patchInputValidator.validateLegalTags(jsonPatch);
+        return validateOwnerAccess(idMap, existingRecords);
     }
 
     private List<String> validateUserAccessAndCompliancePolicyConstraints(
-            List<PatchOperation> patchOps, Map<String, String> idMap, Map<String, RecordMetadata> existingRecords, String user) {
+            JsonPatch jsonPatch, Map<String, String> idMap, Map<String, RecordMetadata> existingRecords, String user) {
         List<String> unauthorizedRecordIds = new ArrayList<>();
         List<RecordMetadata> updatedRecordsMetadata = new ArrayList<>();
         for (String id : idMap.keySet()) {
@@ -244,7 +224,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             if (metadata == null) continue;
 
             //TODO: Why do we update metadata here in the original patch impl? Find out if we really need this
-            //metadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, patchOps, user, currentTimestamp);
+            //metadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, jsonPatch, user, currentTimestamp);
             updatedRecordsMetadata.add(metadata);
         }
 
