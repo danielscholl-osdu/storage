@@ -10,7 +10,8 @@ import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.model.storage.SwaggerDoc;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidBulkQuery;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
-import org.opengroup.osdu.storage.validation.api.ValidJsonPatch;
+import org.opengroup.osdu.storage.validation.api.ValidJsonPatchOperation;
+import org.opengroup.osdu.storage.validation.api.ValidJsonPatchPath;
 
 import javax.validation.constraints.NotNull;
 
@@ -28,6 +29,7 @@ public class PatchRecordsRequestModel {
 
     @ApiModelProperty(value = org.opengroup.osdu.storage.swagger.SwaggerDoc.PATCH_RECORD_OPERATIONS, required = true)
     @NotNull(message = org.opengroup.osdu.storage.validation.ValidationDoc.PATCH_RECORD_OPERATIONS_NOT_EMPTY)
-    @ValidJsonPatch
+    @ValidJsonPatchOperation(message = org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_PATCH_OPERATION)
+    @ValidJsonPatchPath(message = org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_PATCH_PATH)
     private JsonPatch ops;
 }
