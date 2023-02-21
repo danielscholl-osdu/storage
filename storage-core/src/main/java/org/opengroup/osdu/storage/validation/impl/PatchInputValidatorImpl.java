@@ -11,6 +11,10 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
     private ObjectMapper mapper = new ObjectMapper();
 
     @Override
+    public void validateDuplicates(JsonPatch jsonPatch) {
+    }
+
+    @Override
     public void validateAcls(JsonPatch jsonPatch) {
         //TODO: apply validation logic similar to MetadataPatchValidator.validateAcls()
     }
