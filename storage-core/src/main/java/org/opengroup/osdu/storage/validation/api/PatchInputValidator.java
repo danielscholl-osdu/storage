@@ -7,6 +7,8 @@ public interface PatchInputValidator {
 
     //TODO: Do we need duplicates validator, or is it handled automatically by JsonPatch.apply()
 
+    void validateDuplicates(JsonPatch jsonPatch);
+
     void validateAcls(JsonPatch jsonPatch);
 
     void validateLegalTags(JsonPatch jsonPatch);
