@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -45,11 +45,10 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
-    private static final String BUCKET = "anyBucket";
     private static final String MODIFIED_BY = "modifyUser";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
@@ -406,7 +405,7 @@ public class PersistenceServiceImplTest {
     @SuppressWarnings("unchecked")
     private void assertPubsubInfo(int successfullRecords, Object capturedPubsubList) {
 
-        LinkedList<PubSubInfo> pubsubList = (LinkedList<PubSubInfo>) capturedPubsubList;
+        List<PubSubInfo> pubsubList = (ArrayList<PubSubInfo>) capturedPubsubList;
 
         assertEquals(successfullRecords, pubsubList.size());
 
@@ -421,7 +420,7 @@ public class PersistenceServiceImplTest {
 
     private void assertRecordChangedV2Info(int successfullRecords, Object capturedRecordChangedV2List) {
 
-        LinkedList<RecordChangedV2> recordChangedV2s = (LinkedList<RecordChangedV2>) capturedRecordChangedV2List;
+        List<RecordChangedV2> recordChangedV2s = (ArrayList<RecordChangedV2>) capturedRecordChangedV2List;
 
         assertEquals(successfullRecords, recordChangedV2s.size());
 
