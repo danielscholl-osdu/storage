@@ -25,6 +25,7 @@ import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Optional;
 
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
@@ -45,9 +46,8 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class SchemaServiceImplTest {
 
     private static final String USER = null;
