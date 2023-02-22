@@ -44,8 +44,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class SchemaApiTest {
 
-    private final String USER = "testUser";
-
     @Mock
     private SchemaService schemaService;
 
@@ -61,9 +59,6 @@ public class SchemaApiTest {
     @Before
     public void setup() {
         initMocks(this);
-
-        when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
-
     }
 
     @Test

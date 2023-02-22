@@ -32,7 +32,7 @@ import com.google.common.collect.Sets;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordAncestry;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.legal.validation.LegalValidator;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 

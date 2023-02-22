@@ -150,7 +150,6 @@ public class EntitlementsAndCacheServiceImplTest {
         final String ERROR_MSG = "FATAL ERROR";
 
         HttpResponse response = mock(HttpResponse.class);
-        when(response.isServerErrorCode()).thenReturn(true);
         when(response.getResponseCode()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
         EntitlementsException expectedException = new EntitlementsException(ERROR_MSG, response);
