@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -224,19 +224,12 @@ public class BulkUpdateRecordServiceImplTest {
 
         Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
         ReflectionTestUtils.setField(service, "isOpaEnabled", true);
-        when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
-        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, COLLABORATION_CONTEXT))
-                .thenReturn(emptyList());
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
-        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
-                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
 
         List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
-
 
         PatchRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, COLLABORATION_CONTEXT);
 
@@ -259,8 +252,6 @@ public class BulkUpdateRecordServiceImplTest {
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
         ReflectionTestUtils.setField(service, "isOpaEnabled", true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
-        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
-                .thenReturn(emptyList());
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
@@ -348,7 +339,6 @@ public class BulkUpdateRecordServiceImplTest {
         when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
-        when(dataAuthorizationService.policyEnabled()).thenReturn(false);
     }
 
     private void commonVerify(List<String> ids, List<PatchOperation> ops) {

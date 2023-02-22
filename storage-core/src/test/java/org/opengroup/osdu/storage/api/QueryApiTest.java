@@ -46,7 +46,7 @@ import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.BatchService;
 import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.http.ResponseEntity;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -173,7 +173,6 @@ public class QueryApiTest {
         DatastoreQueryResult allKinds = new DatastoreQueryResult();
         allKinds.setCursor("new cursor");
         allKinds.setResults(kinds);
-        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
         when(this.batchService.getAllKinds(CURSOR, LIMIT)).thenReturn(allKinds);
         ResponseEntity response = this.sut.getKinds(ENCODED_CURSOR, LIMIT);
         assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
