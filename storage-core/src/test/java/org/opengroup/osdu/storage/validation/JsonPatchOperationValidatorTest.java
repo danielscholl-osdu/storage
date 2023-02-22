@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.storage.validation.impl.JsonPatchOperationValidator;
 
 import javax.validation.ConstraintValidatorContext;
@@ -31,7 +31,6 @@ public class JsonPatchOperationValidatorTest {
     public void setup() {
         sut = new JsonPatchOperationValidator();
         ConstraintValidatorContext.ConstraintViolationBuilder builder = mock(ConstraintValidatorContext.ConstraintViolationBuilder.class);
-        when(context.buildConstraintViolationWithTemplate(ValidationDoc.INVALID_PATCH_OPERATION)).thenReturn(builder);
     }
 
     @Test

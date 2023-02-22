@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -49,7 +49,6 @@ import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEA
 public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
-    private static final String BUCKET = "anyBucket";
     private static final String MODIFIED_BY = "modifyUser";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
@@ -307,7 +306,6 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
         doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
-        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
             this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
@@ -329,7 +327,6 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
-        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
         List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
@@ -341,13 +338,11 @@ public class PersistenceServiceImplTest {
         List<Record> entities2 = new ArrayList<>();
         for (int i = 0; i < batch1Size; i++) {
             Record mock = mock(Record.class);
-            when(mock.getId()).thenReturn("ID" + i);
             entities1.add(mock);
         }
 
         for (int i = 0; i < batch2Size; i++) {
             Record mock = mock(Record.class);
-            when(mock.getId()).thenReturn("ID" + (i + idStartPoint));
             entities2.add(mock);
         }
 
@@ -406,7 +401,7 @@ public class PersistenceServiceImplTest {
     @SuppressWarnings("unchecked")
     private void assertPubsubInfo(int successfullRecords, Object capturedPubsubList) {
 
-        LinkedList<PubSubInfo> pubsubList = (LinkedList<PubSubInfo>) capturedPubsubList;
+        List<PubSubInfo> pubsubList = (ArrayList<PubSubInfo>) capturedPubsubList;
 
         assertEquals(successfullRecords, pubsubList.size());
 
@@ -421,7 +416,7 @@ public class PersistenceServiceImplTest {
 
     private void assertRecordChangedV2Info(int successfullRecords, Object capturedRecordChangedV2List) {
 
-        LinkedList<RecordChangedV2> recordChangedV2s = (LinkedList<RecordChangedV2>) capturedRecordChangedV2List;
+        List<RecordChangedV2> recordChangedV2s = (ArrayList<RecordChangedV2>) capturedRecordChangedV2List;
 
         assertEquals(successfullRecords, recordChangedV2s.size());
 
