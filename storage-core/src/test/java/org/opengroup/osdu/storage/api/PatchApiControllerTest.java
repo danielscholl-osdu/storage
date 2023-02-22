@@ -32,8 +32,8 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     private final ObjectMapper mapper = new ObjectMapper();
     private Gson gson = new Gson();
 
-    @Ignore
     @Test
+    @Ignore //TODO: fix this test
     public void should_returnUnauthorized_when_patchRecordsWithViewerPermissions() throws Exception {
         setupAuthorization(StorageRole.VIEWER);
         ResultActions result = sendPatchRequest();

@@ -42,7 +42,6 @@ import org.opengroup.osdu.core.common.model.storage.PubSubDeleteInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
@@ -88,16 +87,10 @@ public class RecordServiceImplTest {
     private IEntitlementsAndCacheService entitlementsAndCacheService;
 
     @Mock
-    private PersistenceService persistenceService;
-
-    @Mock
     private DpsHeaders headers;
 
     @Mock
     private TenantInfo tenant;
-
-    @Mock
-    private ITenantFactory tenantFactory;
 
     @Mock
     private RecordUtil recordUtil;
@@ -119,9 +112,6 @@ public class RecordServiceImplTest {
         mock(PersistenceHelper.class);
 
         when(this.tenant.getName()).thenReturn(TENANT_NAME);
-        when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT_NAME);
-        when(this.tenantFactory.exists(TENANT_NAME)).thenReturn(true);
-        when(this.tenantFactory.getTenantInfo(TENANT_NAME)).thenReturn(this.tenant);
     }
 
     @Test
@@ -155,7 +145,6 @@ public class RecordServiceImplTest {
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
-        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         this.sut.purgeRecord(RECORD_ID, Optional.empty());
@@ -187,7 +176,6 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
 
-        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(false);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
         try {
@@ -219,7 +207,6 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
-        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(originalException).when(this.recordRepository).delete(RECORD_ID, Optional.empty());
 
@@ -268,7 +255,6 @@ public class RecordServiceImplTest {
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
-        when(this.entitlementsAndCacheService.hasOwnerAccess(any(), any())).thenReturn(true);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         doThrow(new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
@@ -295,9 +281,7 @@ public class RecordServiceImplTest {
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
         when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
-        when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(true);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
-        when(this.cloudStorage.hasAccess(record)).thenReturn(true);
 
         this.sut.deleteRecord(RECORD_ID, "anyUserName", Optional.empty());
         verify(this.auditLogger).deleteRecordSuccess(any());
@@ -337,8 +321,6 @@ public class RecordServiceImplTest {
 
         when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(record);
 
-        when(this.cloudStorage.hasAccess(record)).thenReturn(false);
-        when(this.dataAuthorizationService.hasAccess(any(), any())).thenReturn(false);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
 

@@ -306,7 +306,6 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
         doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
-        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
             this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
@@ -328,7 +327,6 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
-        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
         List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
@@ -340,13 +338,11 @@ public class PersistenceServiceImplTest {
         List<Record> entities2 = new ArrayList<>();
         for (int i = 0; i < batch1Size; i++) {
             Record mock = mock(Record.class);
-            when(mock.getId()).thenReturn("ID" + i);
             entities1.add(mock);
         }
 
         for (int i = 0; i < batch2Size; i++) {
             Record mock = mock(Record.class);
-            when(mock.getId()).thenReturn("ID" + (i + idStartPoint));
             entities2.add(mock);
         }
 

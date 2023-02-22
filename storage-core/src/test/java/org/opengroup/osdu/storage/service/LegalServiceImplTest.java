@@ -113,7 +113,6 @@ public class LegalServiceImplTest {
         InvalidTagsWithReason invalidTags = new InvalidTagsWithReason();
         invalidTags.setInvalidLegalTags(new InvalidTagWithReason[] { invalidTag });
 
-        when(this.cache.get("yxJYdg==")).thenReturn(null);
         when(this.legalService.validate("tag3")).thenReturn(invalidTags);
 
         try {
@@ -139,7 +138,6 @@ public class LegalServiceImplTest {
 
         LegalException legalException = new LegalException("service crashed", response);
 
-        when(this.cache.get("yxJYdg==")).thenReturn(null);
         when(this.legalService.validate("tag3")).thenThrow(legalException);
 
         try {

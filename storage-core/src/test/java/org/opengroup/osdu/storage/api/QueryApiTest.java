@@ -171,7 +171,6 @@ public class QueryApiTest {
         DatastoreQueryResult allKinds = new DatastoreQueryResult();
         allKinds.setCursor("new cursor");
         allKinds.setResults(kinds);
-        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
         when(this.batchService.getAllKinds(CURSOR, LIMIT)).thenReturn(allKinds);
         ResponseEntity response = this.sut.getKinds(ENCODED_CURSOR, LIMIT);
         assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());

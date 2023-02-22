@@ -90,7 +90,6 @@ public class RecordApiTest {
 
         when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
-        when(this.httpHeaders.getPartitionIdWithFallbackToAccountId()).thenReturn(this.TENANT);
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
     }
@@ -214,7 +213,6 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp204_when_purgingRecordSuccessfullyWithCollaborationContext() {
-        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
         doNothing().when(recordService).purgeRecord(RECORD_ID, COLLABORATION_CONTEXT);
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
         ResponseEntity response = this.sut.purgeRecord(COLLABORATION_DIRECTIVES, RECORD_ID);
@@ -224,7 +222,6 @@ public class RecordApiTest {
 
     @Test
     public void should_returnHttp204_when_deletingRecordSuccessfullyWithCollaborationContext() {
-        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
         doNothing().when(recordService).deleteRecord(RECORD_ID, USER,COLLABORATION_CONTEXT);
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
         ResponseEntity response = this.sut.deleteRecord(COLLABORATION_DIRECTIVES, RECORD_ID);

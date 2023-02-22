@@ -31,7 +31,6 @@ public class JsonPatchOperationValidatorTest {
     public void setup() {
         sut = new JsonPatchOperationValidator();
         ConstraintValidatorContext.ConstraintViolationBuilder builder = mock(ConstraintValidatorContext.ConstraintViolationBuilder.class);
-        when(context.buildConstraintViolationWithTemplate(ValidationDoc.INVALID_PATCH_OPERATION)).thenReturn(builder);
     }
 
     @Test
