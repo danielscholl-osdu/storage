@@ -95,7 +95,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         recordUtil.validateRecordIds(recordIds);
         patchInputValidator.validateDuplicates(jsonPatch);
         patchInputValidator.validateAcls(jsonPatch);
-        patchInputValidator.validateTags(jsonPatch);
         //TODO: validate kind? (regex validation static)
         //TODO: validate ancestry? => RecordAncestryValidator (static validation)
 

@@ -23,7 +23,7 @@ public class JsonPatchPathValidator implements ConstraintValidator<ValidJsonPatc
     @Override
     public boolean isValid(JsonPatch jsonPatch, ConstraintValidatorContext context) {
         boolean isValid;
-        isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), true)
+        isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .map(operation -> operation.get("path").toString().replace("\"", ""))
                 .allMatch(getAllowedPaths());
         if(!isValid)

@@ -12,10 +12,8 @@ import org.opengroup.osdu.storage.validation.impl.JsonPatchOperationValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class JsonPatchOperationValidatorTest {
