@@ -24,7 +24,7 @@ public class JsonPatchOperationValidator implements ConstraintValidator<ValidJso
     @Override
     public boolean isValid(JsonPatch jsonPatch, ConstraintValidatorContext context) {
         boolean isValid;
-        isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), true)
+        isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .map(operation -> operation.get("op").toString().replace("\"", ""))
                 .map(PatchOperations::forOperation)
                 .allMatch(getAllowedOperations());

@@ -13,5 +13,4 @@ public interface PatchInputValidator {
 
     void validateLegalTags(JsonPatch jsonPatch);
 
-    void validateTags(JsonPatch jsonPatch);
 }

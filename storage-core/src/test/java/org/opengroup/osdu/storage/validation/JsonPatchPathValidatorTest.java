@@ -12,10 +12,8 @@ import org.opengroup.osdu.storage.validation.impl.JsonPatchPathValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class JsonPatchPathValidatorTest {
@@ -44,7 +42,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/invalid_path\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
@@ -55,7 +53,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/acl/viewers\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
@@ -66,7 +64,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/legal/legaltags\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
@@ -77,7 +75,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/ancestry/parents\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
@@ -88,7 +86,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/kind\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
@@ -99,7 +97,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/data\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
@@ -110,7 +108,7 @@ public class JsonPatchPathValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/meta\"," +
-                "             \"value\": \"/some_value\"" +
+                "             \"value\": \"some_value\"" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
