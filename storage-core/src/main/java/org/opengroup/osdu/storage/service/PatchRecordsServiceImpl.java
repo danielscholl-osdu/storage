@@ -1,6 +1,7 @@
 package org.opengroup.osdu.storage.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -157,6 +158,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                         recordIds.remove(idWithVersion);
                     } else {
                         try {
+                            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                             JsonNode patched = jsonPatch.apply(objectMapper.convertValue(metadata, JsonNode.class));
                             RecordMetadata patchedRecord = objectMapper.treeToValue(patched, RecordMetadata.class);
                             patchedRecord.setModifyUser(user);
