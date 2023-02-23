@@ -1,13 +1,13 @@
 package org.opengroup.osdu.storage.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -26,7 +26,6 @@ import org.opengroup.osdu.storage.service.QueryServiceImpl;
 import org.opengroup.osdu.storage.service.RecordServiceImpl;
 import org.opengroup.osdu.storage.service.SchemaServiceImpl;
 import org.opengroup.osdu.storage.util.RecordBlocks;
-import org.opengroup.osdu.storage.util.StringConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpMethod;
@@ -89,6 +88,12 @@ public abstract class ApiTest<T> {
     @MockBean
     protected IFeatureFlag collaborationFeatureFlag;
 
+    @MockBean
+    protected DpsHeaders dpsHeaders;
+
+    @MockBean
+    private CollaborationContextFactory collaborationContextFactory;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -97,11 +102,6 @@ public abstract class ApiTest<T> {
 
     protected abstract HttpMethod getHttpMethod();
     protected abstract String getUriTemplate();
-
-    @Before
-    public void setup() {
-        Mockito.when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
-    }
 
     protected void setupAuthorization(String role) throws EntitlementsException {
         IEntitlementsService iEntitlementsService = Mockito.mock(IEntitlementsService.class);
@@ -120,7 +120,7 @@ public abstract class ApiTest<T> {
                 .characterEncoding(StandardCharsets.UTF_8)
                 .header(DpsHeaders.AUTHORIZATION, "Bearer token")
                 .header(DpsHeaders.DATA_PARTITION_ID, "opendes")
-                .header(DpsHeaders.USER_ID, "a@b.com")
+                .header(DpsHeaders.USER_EMAIL, "a@b.com")
                 .content(objectMapper.writeValueAsString(dto)));
     }
 
