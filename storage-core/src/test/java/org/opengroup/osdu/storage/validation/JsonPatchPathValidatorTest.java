@@ -39,7 +39,7 @@ public class JsonPatchPathValidatorTest {
         this.sut.initialize(null);
     }
 
-    @Test
+    @Test(expected = RequestValidationException.class)
     public void should_returnFalse_ifPatchHasInvalidPath() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
@@ -47,7 +47,7 @@ public class JsonPatchPathValidatorTest {
                 "             \"value\": \"/some_value\"" +
                 "            }]";
 
-        assertFalse(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }
 
     @Test

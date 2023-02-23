@@ -110,7 +110,8 @@ public class PatchApi {
 															 @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
 		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), patchRecordsRequest.getOps(), this.headers.getUserEmail(), collaborationContext);
-		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
+		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty() || !response.getFailedRecordIds().isEmpty()) {
+			//TODO: what to return if all records failed to patch
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
 			return new ResponseEntity<>(response, HttpStatus.OK);

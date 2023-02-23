@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
+import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
@@ -16,7 +17,6 @@ import org.opengroup.osdu.storage.logging.ReadAuditLogsConsumer;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordServiceImpl;
 import org.opengroup.osdu.storage.service.DataAuthorizationService;
-import org.opengroup.osdu.storage.service.EntitlementsAndCacheServiceImpl;
 import org.opengroup.osdu.storage.service.IngestionServiceImpl;
 import org.opengroup.osdu.storage.service.LegalServiceImpl;
 import org.opengroup.osdu.storage.service.PartitionServiceImpl;
@@ -39,7 +39,7 @@ import java.util.Collections;
 
 public abstract class ApiTest<T> {
     @MockBean
-    protected EntitlementsAndCacheServiceImpl entitlementsAndCacheService;
+    protected ICache cache;
 
     @MockBean
     protected IEntitlementsFactory iEntitlementsFactory;
