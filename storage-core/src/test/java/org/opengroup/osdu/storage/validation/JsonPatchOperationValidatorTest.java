@@ -39,7 +39,7 @@ public class JsonPatchOperationValidatorTest {
         this.sut.initialize(null);
     }
 
-    @Test
+    @Test(expected = RequestValidationException.class)
     public void should_returnFalse_ifPatchHasMoveOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"move\"," +
@@ -47,10 +47,10 @@ public class JsonPatchOperationValidatorTest {
                 "             \"path\": \"/acl/owners\"" +
                 "            }]";
 
-        assertFalse(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }
 
-    @Test
+    @Test(expected = RequestValidationException.class)
     public void should_returnFalse_ifPatchHasCopyOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"copy\"," +
@@ -58,10 +58,10 @@ public class JsonPatchOperationValidatorTest {
                 "             \"path\": \"/acl/owners\"" +
                 "            }]";
 
-        assertFalse(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }
 
-    @Test
+    @Test(expected = RequestValidationException.class)
     public void should_returnFalse_ifPatchHasTestOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"test\"," +
@@ -69,7 +69,7 @@ public class JsonPatchOperationValidatorTest {
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        assertFalse(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }
 
     @Test

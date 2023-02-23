@@ -14,12 +14,12 @@ public class PatchRecordsResponse {
 
     private List<String> recordIds;
 
-    private List<String> notFoundRecordIds;
-
-    private List<String> unAuthorizedRecordIds;
-
+    @Builder.Default
+    private List<String> notFoundRecordIds = new ArrayList<>();
+    @Builder.Default
+    private List<String> unAuthorizedRecordIds = new ArrayList<>();
     @Builder.Default
     private List<String> lockedRecordIds = new ArrayList<>();
-
-    private List<String> failedRecordIds;
+    @Builder.Default
+    private List<String> failedRecordIds = new ArrayList<>();
 }

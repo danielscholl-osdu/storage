@@ -3,7 +3,10 @@ package org.opengroup.osdu.storage.validation.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
+import org.opengroup.osdu.storage.validation.RequestValidationException;
+import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.api.ValidJsonPatchPath;
+import org.springframework.http.HttpStatus;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -18,15 +21,17 @@ public class JsonPatchPathValidator implements ConstraintValidator<ValidJsonPatc
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void initialize(ValidJsonPatchPath constraintAnnotation) {
-        //do nothing
-    }
-
-    @Override
     public boolean isValid(JsonPatch jsonPatch, ConstraintValidatorContext context) {
-        return StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), true)
+        boolean isValid;
+        isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), true)
                 .map(operation -> operation.get("path").toString().replace("\"", ""))
                 .allMatch(getAllowedPaths());
+        if(!isValid)
+            throw RequestValidationException.builder()
+                    .status(HttpStatus.BAD_REQUEST)
+                    .message(ValidationDoc.INVALID_PATCH_PATH)
+                    .build();
+        return isValid;
     }
 
     private Predicate<String> getAllowedPaths() {
