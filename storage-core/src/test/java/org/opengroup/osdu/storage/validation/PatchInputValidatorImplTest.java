@@ -21,10 +21,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PatchInputValidatorImplTest {
@@ -131,6 +135,70 @@ public class PatchInputValidatorImplTest {
 
         sut.validateLegalTags(JsonPatch.fromJson(mapper.readTree(jsonString)));
         verify(legalService).validateLegalTags(valueSet);
+    }
+
+    @Test
+    public void shouldValidateLegalTags_forRemoveOperation_whenValueIsAbsent() throws IOException {
+        String jsonString = "[{ \"op\": \"remove\", \"path\": \"/legal/legaltags/0\"}]";
+
+        sut.validateLegalTags(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        verify(legalService, never()).validateLegalTags(anySet());
+    }
+
+    @Test
+    public void shouldValidateAcls_forRemoveOperation_whenValueIsAbsent() throws IOException {
+        String jsonString = "[{ \"op\": \"remove\", \"path\": \"/acl/viewers/0\"}]";
+
+        sut.validateLegalTags(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        verify(entitlementsAndCacheService, never()).isValidAcl(eq(headers), anySet());
+    }
+
+    @Test
+    public void shouldFail_onInvalidKindOperationAdd() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
+
+        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldFail_onInvalidKindOperationRemove() throws IOException {
+        String jsonString = "[{ \"op\": \"remove\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
+
+        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldFail_whenValuesPresentedAsArray() throws IOException {
+        String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": [\"kindValue\"]}]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND);
+
+        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldFail_whenKindDoesNotFollowNamingConvention() throws IOException {
+        String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        String message = String.format(KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION, "kindValue");
+        exceptionRule.expectMessage(message);
+
+        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldNotFail_onValidPatchKindOperation() throws IOException {
+        String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"opendes:test:test:01.01.01\"}]";
+
+        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
     }
 
 }

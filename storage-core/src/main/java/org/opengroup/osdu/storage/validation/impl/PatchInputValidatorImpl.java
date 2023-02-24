@@ -10,6 +10,9 @@ import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.util.api.PatchOperations;
+import org.opengroup.osdu.storage.validation.RequestValidationException;
+import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +22,15 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.opengroup.osdu.storage.util.api.PatchOperations.ADD;
+import static org.opengroup.osdu.storage.util.api.PatchOperations.REMOVE;
+
 @Component
 public class PatchInputValidatorImpl implements PatchInputValidator {
 
     private static final String VALUE = "value";
     private static final String PATH = "path";
+    private static final String OP = "op";
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final ILegalService legalService;
@@ -53,7 +60,7 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
     @Override
     public void validateAcls(JsonPatch jsonPatch) {
         Set<String> valueSet = getValueSet(jsonPatch, "/acl");
-        if (!entitlementsAndCacheService.isValidAcl(headers, valueSet)) {
+        if (!valueSet.isEmpty() && !entitlementsAndCacheService.isValidAcl(headers, valueSet)) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid ACLs", "Invalid ACLs provided in acl path.");
         }
     }
@@ -61,16 +68,43 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
     @Override
     public void validateLegalTags(JsonPatch jsonPatch) {
         Set<String> valueSet = getValueSet(jsonPatch, "/legal");
-        legalService.validateLegalTags(valueSet);
+        if (!valueSet.isEmpty()) {
+            legalService.validateLegalTags(valueSet);
+        }
     }
 
     @Override
     public void validateKind(JsonPatch jsonPatch) {
-        //TODO: impl
-        //every record must have exactly 1 current kind. With this in mind, we should not add or remove kind via patch
-        //only 'replace' is allowed
-        //only 1 value is allowed
-        //value must match ValidationDoc.KIND_REGEX from core common (plz refer to IngestionServiceImpl.validateKindFormat() method)
+        Set<String> valueSet = new HashSet<>();
+        StreamSupport.stream(mapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+                .filter(pathStartsWith("/kind"))
+                .forEach(operation -> {
+                    String operationType = removeExtraQuotes(operation.get(OP));
+                    if (ADD.equals(PatchOperations.forOperation(operationType)) ||
+                            REMOVE.equals(PatchOperations.forOperation(operationType))) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND)
+                                .build();
+                    }
+
+                    JsonNode valueNode = operation.get(VALUE);
+                    if (valueNode.getClass() == ArrayNode.class) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND)
+                                .build();
+                    } else if (valueNode.getClass() == TextNode.class) {
+                        valueSet.add(removeExtraQuotes(valueNode));
+                    }
+
+                });
+        for (String kind : valueSet) {
+            if (!kind.matches(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.KIND_REGEX)) {
+                throw RequestValidationException.builder()
+                        .message(String.format(ValidationDoc.KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION, kind))
+                        .build();
+            }
+        }
+
     }
 
     @Override
@@ -92,21 +126,27 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
         Set<String> valueSet = new HashSet<>();
         StreamSupport.stream(mapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .filter(pathStartsWith(path))
+                .filter(notRemoveOperation())
                 .forEach(operation -> {
-                    JsonNode nodeValue = operation.get(VALUE);
-                    if (nodeValue.getClass() == ArrayNode.class) {
-                        StreamSupport.stream(mapper.convertValue(nodeValue, ArrayNode.class).spliterator(), false)
+                    JsonNode valueNode = operation.get(VALUE);
+                    if (valueNode.getClass() == ArrayNode.class) {
+                        StreamSupport.stream(mapper.convertValue(valueNode, ArrayNode.class).spliterator(), false)
                                 .map(this::removeExtraQuotes)
                                 .forEach(valueSet::add);
-                    } else if (nodeValue.getClass() == TextNode.class) {
-                        valueSet.add(removeExtraQuotes(nodeValue));
+                    } else if (valueNode.getClass() == TextNode.class) {
+                        valueSet.add(removeExtraQuotes(valueNode));
                     }
                 });
 
         return valueSet;
     }
+
     private Predicate<JsonNode> pathStartsWith(String path) {
         return operation -> removeExtraQuotes(operation.get(PATH)).startsWith(path);
+    }
+
+    private Predicate<JsonNode> notRemoveOperation() {
+        return operation -> !REMOVE.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
     }
 
     private String removeExtraQuotes(JsonNode jsonNode) {
