@@ -13,4 +13,8 @@ public interface PatchInputValidator {
 
     void validateLegalTags(JsonPatch jsonPatch);
 
+    void validateKind(JsonPatch jsonPatch);
+
+    void validateAncestry(JsonPatch jsonPatch);
+
 }

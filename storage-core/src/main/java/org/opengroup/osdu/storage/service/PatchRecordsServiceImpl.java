@@ -90,16 +90,14 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         List<String> notFoundRecordIds;
         List<String> unauthorizedRecordIds = new ArrayList<>();
 
-        boolean dataUpdate = false;
-
         // validate record ids and metadata properties if they are being patched (acl, legalTags, kind, ancestry, etc)
         recordUtil.validateRecordIds(recordIds);
         patchInputValidator.validateDuplicates(jsonPatch);
         patchInputValidator.validateAcls(jsonPatch);
-        //TODO: validate kind? (regex validation static)
-        //TODO: validate ancestry? => RecordAncestryValidator (static validation)
+        patchInputValidator.validateKind(jsonPatch);
+        patchInputValidator.validateAncestry(jsonPatch);
 
-        //TODO: set dataUpdate to true if we are updating "data" or "meta" property
+        boolean dataUpdate = isDataOrMetaBeingUpdated(jsonPatch);
 
         Map<String, String> idMap = recordIds.stream().collect(Collectors.toMap(identity(), identity()));
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
@@ -259,5 +257,10 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
         }
         return unauthorizedRecordIds;
+    }
+
+    private boolean isDataOrMetaBeingUpdated(JsonPatch jsonPatch) {
+        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
+        return (patchNode.has("data") || patchNode.has("meta"));
     }
 }

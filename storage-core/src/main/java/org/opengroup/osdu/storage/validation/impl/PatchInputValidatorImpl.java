@@ -64,6 +64,30 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
         legalService.validateLegalTags(valueSet);
     }
 
+    @Override
+    public void validateKind(JsonPatch jsonPatch) {
+        //TODO: impl
+        //every record must have exactly 1 current kind. With this in mind, we should not add or remove kind via patch
+        //only 'replace' is allowed
+        //only 1 value is allowed
+        //value must match ValidationDoc.KIND_REGEX from core common (plz refer to IngestionServiceImpl.validateKindFormat() method)
+    }
+
+    @Override
+    public void validateAncestry(JsonPatch jsonPatch) {
+        //TODO: impl
+//        "ancestry": {
+//            "parents": [
+//                  "opendes:well:rawHavingWksCreated1:1624008140672245"
+//            ]
+//        }
+        //ancestry looks something like this. Some basic validation we can do is:
+        // if any of the ops contains 'ancestry' in the path, then
+        // if 'add' => at least one parent is present (all parents must have valid record ID. Check out RecordAncestryValidator from os-core-common library)
+        // if 'replace' => at least one parent is present (same constraint as above)
+        // if 'remove' => acc to RFC spec, remove shouldn't have 'value'. We must respect this constraint
+    }
+
     private Set<String> getValueSet(JsonPatch jsonPatch, String path) {
         Set<String> valueSet = new HashSet<>();
         StreamSupport.stream(mapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)

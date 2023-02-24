@@ -24,7 +24,6 @@ public class PatchRecordsRequestModel {
     @ApiModelProperty(value = SwaggerDoc.RECORD_QUERY_CONDITION, required = true)
     @NotNull(message = ValidationDoc.RECORD_QUERY_CONDITION_NOT_EMPTY)
     @ValidBulkQuery
-    //TODO: do we put a limit on number of ids allowed?
     private RecordQuery query;
 
     @ApiModelProperty(value = org.opengroup.osdu.storage.swagger.SwaggerDoc.PATCH_RECORD_OPERATIONS, required = true)
