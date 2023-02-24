@@ -31,11 +31,13 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class CacheConfig {
 
+    private final RedisCacheBuilder<String, Groups> groupsRedisCacheBuilder;
+    private final RedisCacheBuilder<String, String> legalRedisCacheBuilder;
+    private final RedisCacheBuilder<String, Schema> schemaRedisCacheBuilder;
 
     @Bean
     public ICache<String, Groups> groupCache(GcpAppServiceConfig gcpAppServiceConfig) {
-        RedisCacheBuilder<String, Groups> cacheBuilder = new RedisCacheBuilder<>();
-        return cacheBuilder.buildRedisCache(
+        return groupsRedisCacheBuilder.buildRedisCache(
             gcpAppServiceConfig.getRedisGroupHost(),
             gcpAppServiceConfig.getRedisGroupPort(),
             gcpAppServiceConfig.getRedisGroupPassword(),
@@ -48,8 +50,7 @@ public class CacheConfig {
 
     @Bean("LegalTagCache")
     public ICache<String, String> legalTagCache(GcpAppServiceConfig gcpAppServiceConfig) {
-        RedisCacheBuilder<String, String> cacheBuilder = new RedisCacheBuilder<>();
-        RedisCache<String, String> storageCache = cacheBuilder.buildRedisCache(
+        RedisCache<String, String> storageCache = legalRedisCacheBuilder.buildRedisCache(
             gcpAppServiceConfig.getRedisStorageHost(),
             gcpAppServiceConfig.getRedisStoragePort(),
             gcpAppServiceConfig.getRedisStoragePassword(),
@@ -63,8 +64,7 @@ public class CacheConfig {
 
     @Bean
     public ICache<String, Schema> schemaCache(GcpAppServiceConfig gcpAppServiceConfig) {
-        RedisCacheBuilder<String, Schema> cacheBuilder = new RedisCacheBuilder<>();
-        return cacheBuilder.buildRedisCache(
+        return schemaRedisCacheBuilder.buildRedisCache(
             gcpAppServiceConfig.getRedisStorageHost(),
             gcpAppServiceConfig.getRedisStoragePort(),
             gcpAppServiceConfig.getRedisStoragePassword(),
