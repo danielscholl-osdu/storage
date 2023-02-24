@@ -26,11 +26,12 @@ public class JsonPatchPathValidator implements ConstraintValidator<ValidJsonPatc
         isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .map(operation -> operation.get("path").toString().replace("\"", ""))
                 .allMatch(getAllowedPaths());
-        if(!isValid)
+        if (!isValid) {
             throw RequestValidationException.builder()
                     .status(HttpStatus.BAD_REQUEST)
                     .message(ValidationDoc.INVALID_PATCH_PATH)
                     .build();
+        }
         return isValid;
     }
 
