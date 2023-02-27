@@ -51,9 +51,11 @@ public abstract class PatchRecordsTest extends TestBase {
     }
 
     @After
-    public void teardown() throws Exception {
+    public void tearDown() throws Exception {
         LegalTagUtils.delete(LEGAL_TAG, testUtils.getToken());
+        LegalTagUtils.delete(LEGAL_TAG_TO_BE_PATCHED, testUtils.getToken());
         TestUtils.send("records/" + RECORD_ID1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        TestUtils.send("records/" + RECORD_ID2, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
     }
 
     @Test
