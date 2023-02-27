@@ -29,7 +29,7 @@ public abstract class PatchRecordsTest extends TestBase {
 
     private static long NOW = System.currentTimeMillis();
     private static String LEGAL_TAG = LegalTagUtils.createRandomName();
-    private static String LEGAL_TAG_TO_BE_PATCHED = LegalTagUtils.createRandomName();
+    private static String LEGAL_TAG_TO_BE_PATCHED = LegalTagUtils.createRandomName() + "1";
     private static String KIND = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.1." + NOW;
     private static String RECORD_ID1 = TenantUtils.getFirstTenantName() + ":test:1.1." + NOW;
     private static String RECORD_ID2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
