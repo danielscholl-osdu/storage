@@ -25,6 +25,7 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -85,7 +86,10 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     @Override
     public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
         GetQuery<RecordMetadata> osmQuery = new GetQuery<>(RecordMetadata.class, getDestination(), eq("id", id));
-        return context.getResultsAsList(osmQuery).stream().findFirst().orElse(null);
+        return context.getResultsAsList(osmQuery).stream()
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
     }
 
     @Override
