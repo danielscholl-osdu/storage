@@ -27,6 +27,8 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.INVALID_PARENT_RECORD_ID_FORMAT;
+import static org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.INVALID_PARENT_RECORD_VERSION_FORMAT;
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION;
 
@@ -199,6 +201,35 @@ public class PatchInputValidatorImplTest {
         String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"opendes:test:test:01.01.01\"}]";
 
         sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldFail_whenAncestryParentsDoesNotFollowBaseNamingConvention() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/ancestry/parents\", \"value\": \"invalidValue\"}]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        String message = String.format(INVALID_PARENT_RECORD_ID_FORMAT, "invalidValue");
+        exceptionRule.expectMessage(message);
+
+        sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldFail_whenAncestryParentsDoesNotFollowVersionNamingConvention() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/ancestry/parents\", \"value\": \"opendes:test:test:invalidVersion\"}]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        String message = String.format(INVALID_PARENT_RECORD_VERSION_FORMAT, "opendes:test:test:invalidVersion");
+        exceptionRule.expectMessage(message);
+
+        sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
+    }
+
+    @Test
+    public void shouldNotFail_onValidPatchAncestryOperation() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/ancestry/parents\", \"value\": \"opendes:test:test:12345678\"}]";
+
+        sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
     }
 
 }
