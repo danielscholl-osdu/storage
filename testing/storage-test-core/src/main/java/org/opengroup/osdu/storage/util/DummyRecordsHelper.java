@@ -91,6 +91,7 @@ public class DummyRecordsHelper {
 		public Map<String, Object> data;
 		public RecordLegalMock legal;
 		public RecordAncestryMock ancestry;
+		public String tags;
 	}
 
 	public class RecordAclMock {

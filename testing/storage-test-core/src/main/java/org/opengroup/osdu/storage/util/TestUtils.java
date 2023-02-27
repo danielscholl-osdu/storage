@@ -116,6 +116,20 @@ public abstract class TestUtils {
 
     public abstract String getNoDataAccessToken() throws Exception;
 
+    public static ClientResponse sendWithCustomMediaType(String path, String httpMethod, Map<String, String> headers, String contentType, String requestBody,
+                                                         String query) throws Exception {
+
+        log(httpMethod, TestUtils.getApiPath(path + query), headers, requestBody);
+        Client client = TestUtils.getClient();
+
+        WebResource webResource = client.resource(TestUtils.getApiPath(path + query));
+
+        WebResource.Builder builder = webResource.accept(MediaType.APPLICATION_JSON).type(contentType);
+        headers.forEach(builder::header);
+
+        return builder.method(httpMethod, ClientResponse.class, requestBody);
+    }
+
     public static ClientResponse send(String path, String httpMethod, Map<String, String> headers, String requestBody,
                                       String query) throws Exception {
 
