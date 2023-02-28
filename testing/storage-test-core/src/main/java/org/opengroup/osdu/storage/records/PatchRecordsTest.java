@@ -92,14 +92,14 @@ public abstract class PatchRecordsTest extends TestBase {
         assertTrue(Arrays.stream(queryResponseObject.records[1].legal.legaltags).anyMatch(LEGAL_TAG::equals));
         assertTrue(Arrays.stream(queryResponseObject.records[0].legal.legaltags).anyMatch(LEGAL_TAG_TO_BE_PATCHED::equals));
         assertTrue(Arrays.stream(queryResponseObject.records[1].legal.legaltags).anyMatch(LEGAL_TAG_TO_BE_PATCHED::equals));
-        JsonObject tags = bodyToJsonObject(queryResponseObject.records[0].tags);
-        assertTrue(tags.has("tag1"));
-        assertTrue(tags.has("tag2"));
+        Map<String, String> tags = queryResponseObject.records[0].tags;
+        assertTrue(tags.containsKey("tag1"));
+        assertTrue(tags.containsKey("tag2"));
         assertEquals("value1", tags.get("tag1"));
         assertEquals("value2", tags.get("tag2"));
-        tags = bodyToJsonObject(queryResponseObject.records[1].tags);
-        assertTrue(tags.has("tag1"));
-        assertTrue(tags.has("tag2"));
+        tags = queryResponseObject.records[1].tags;
+        assertTrue(tags.containsKey("tag1"));
+        assertTrue(tags.containsKey("tag2"));
         assertEquals("value1", tags.get("tag1"));
         assertEquals("value2", tags.get("tag2"));
     }
@@ -124,8 +124,8 @@ public abstract class PatchRecordsTest extends TestBase {
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertNotEquals(currentVersionRecord1, queryResponseObject.records[0].version);
         assertEquals(KIND, queryResponseObject.records[0].kind);
-        assertTrue(queryResponseObject.records[0].data.containsKey("message"));
-        assertEquals("test data", queryResponseObject.records[0].data.get("message"));
+        assertTrue(queryResponseObject.records[0].data.containsKey("data"));
+        assertTrue(queryResponseObject.records[0].data.get("data").toString().equals("{message=test data}"));
         assertQueryResponse(queryResponseObject, 1);
     }
 
@@ -154,13 +154,13 @@ public abstract class PatchRecordsTest extends TestBase {
         assertEquals(TestUtils.getIntegrationTesterAcl(), queryResponseObject.records[0].acl.owners[0]);
         assertTrue(Arrays.stream(queryResponseObject.records[0].legal.legaltags).anyMatch(LEGAL_TAG::equals));
         assertTrue(Arrays.stream(queryResponseObject.records[0].legal.legaltags).anyMatch(LEGAL_TAG_TO_BE_PATCHED::equals));
-        JsonObject tags = bodyToJsonObject(queryResponseObject.records[0].tags);
-        assertTrue(tags.has("tag1"));
-        assertTrue(tags.has("tag2"));
+        Map<String, String> tags = queryResponseObject.records[0].tags;
+        assertTrue(tags.containsKey("tag1"));
+        assertTrue(tags.containsKey("tag2"));
         assertEquals("value1", tags.get("tag1"));
         assertEquals("value2", tags.get("tag2"));
-        assertTrue(queryResponseObject.records[0].data.containsKey("message"));
-        assertEquals("test data", queryResponseObject.records[0].data.get("message"));
+        assertTrue(queryResponseObject.records[0].data.containsKey("data"));
+        assertTrue(queryResponseObject.records[0].data.get("data").toString().equals("{message=test data}"));
 
     }
 
