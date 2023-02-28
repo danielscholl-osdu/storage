@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright 2020-2023 Google LLC
+ *  Copyright 2020-2023 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,21 +31,12 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class CacheConfig {
 
-    private final RedisCacheBuilder<String, Groups> groupsRedisCacheBuilder;
     private final RedisCacheBuilder<String, String> legalRedisCacheBuilder;
     private final RedisCacheBuilder<String, Schema> schemaRedisCacheBuilder;
 
     @Bean
-    public ICache<String, Groups> groupCache(GcpAppServiceConfig gcpAppServiceConfig) {
-        return groupsRedisCacheBuilder.buildRedisCache(
-            gcpAppServiceConfig.getRedisGroupHost(),
-            gcpAppServiceConfig.getRedisGroupPort(),
-            gcpAppServiceConfig.getRedisGroupPassword(),
-            gcpAppServiceConfig.getRedisGroupExpiration(),
-            gcpAppServiceConfig.getRedisGroupWithSsl(),
-            String.class,
-            Groups.class
-        );
+    public ICache<String, Groups> groupCache() {
+        return new GroupCache();
     }
 
     @Bean("LegalTagCache")
