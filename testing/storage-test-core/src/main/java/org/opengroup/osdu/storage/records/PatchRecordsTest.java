@@ -71,6 +71,7 @@ public abstract class PatchRecordsTest extends TestBase {
         String currentVersionRecord1 = queryResponseObject.records[0].version;
         String currentVersionRecord2 = queryResponseObject.records[1].version;
 
+        //TODO: update kind as well and assert that kind has changed and previous kind is set in metadata
         ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, false), "");
         assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
 
