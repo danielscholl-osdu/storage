@@ -31,6 +31,7 @@ public abstract class PatchRecordsTest extends TestBase {
     private static String LEGAL_TAG = LegalTagUtils.createRandomName();
     private static String LEGAL_TAG_TO_BE_PATCHED = LegalTagUtils.createRandomName() + "1";
     private static String KIND = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.1." + NOW;
+    private static String KIND_TO_BE_PATCHED = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.2." + NOW;
     private static String RECORD_ID1 = TenantUtils.getFirstTenantName() + ":test:1.1." + NOW;
     private static String RECORD_ID2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
 
@@ -71,7 +72,6 @@ public abstract class PatchRecordsTest extends TestBase {
         String currentVersionRecord1 = queryResponseObject.records[0].version;
         String currentVersionRecord2 = queryResponseObject.records[1].version;
 
-        //TODO: update kind as well and assert that kind has changed and previous kind is set in metadata
         ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, false), "");
         assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
 
@@ -82,6 +82,8 @@ public abstract class PatchRecordsTest extends TestBase {
         assertEquals(currentVersionRecord1, queryResponseObject.records[0].version);
         assertEquals(currentVersionRecord2, queryResponseObject.records[1].version);
         assertEquals(2, queryResponseObject.records.length);
+        assertEquals(KIND_TO_BE_PATCHED, queryResponseObject.records[0].kind);
+        assertEquals(KIND_TO_BE_PATCHED, queryResponseObject.records[1].kind);
         assertEquals(TestUtils.getAcl(), queryResponseObject.records[0].acl.viewers[0]);
         assertEquals(TestUtils.getAcl(), queryResponseObject.records[1].acl.viewers[0]);
         assertEquals(TestUtils.getIntegrationTesterAcl(), queryResponseObject.records[0].acl.owners[0]);
@@ -121,6 +123,7 @@ public abstract class PatchRecordsTest extends TestBase {
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertNotEquals(currentVersionRecord1, queryResponseObject.records[0].version);
+        assertEquals(KIND, queryResponseObject.records[0].kind);
         assertTrue(queryResponseObject.records[0].data.containsKey("message"));
         assertEquals("test data", queryResponseObject.records[0].data.get("message"));
         assertQueryResponse(queryResponseObject, 1);
@@ -146,6 +149,7 @@ public abstract class PatchRecordsTest extends TestBase {
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertEquals(1, queryResponseObject.records.length);
         assertNotEquals(currentVersionRecord, queryResponseObject.records[0].version);
+        assertEquals(KIND_TO_BE_PATCHED, queryResponseObject.records[0].kind);
         assertEquals(TestUtils.getAcl(), queryResponseObject.records[0].acl.viewers[0]);
         assertEquals(TestUtils.getIntegrationTesterAcl(), queryResponseObject.records[0].acl.owners[0]);
         assertTrue(Arrays.stream(queryResponseObject.records[0].legal.legaltags).anyMatch(LEGAL_TAG::equals));
@@ -190,6 +194,7 @@ public abstract class PatchRecordsTest extends TestBase {
             ops.add(getAddTagsPatchOp());
             ops.add(getReplaceAclOwnersPatchOp());
             ops.add(getAddLegaltagsPatchOp());
+            ops.add(getReplaceKindPatchOp());
         }
         if(isDataUpdate) {
             ops.add(getReplaceDataPatchOp());
@@ -225,6 +230,14 @@ public abstract class PatchRecordsTest extends TestBase {
         replaceAclPatch.addProperty("path", "/legal/legaltags/-");
         replaceAclPatch.addProperty("value", LEGAL_TAG_TO_BE_PATCHED);
         return replaceAclPatch;
+    }
+
+    private JsonObject getReplaceKindPatchOp() {
+        JsonObject replaeKindPatch = new JsonObject();
+        replaeKindPatch.addProperty("op", "replace");
+        replaeKindPatch.addProperty("path", "/kind");
+        replaeKindPatch.addProperty("value", KIND_TO_BE_PATCHED);
+        return replaeKindPatch;
     }
 
     private JsonObject getReplaceDataPatchOp() {
