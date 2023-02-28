@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -243,11 +244,23 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
     private boolean isDataOrMetaBeingUpdated(JsonPatch jsonPatch) {
         JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        return (patchNode.findPath("path").toString().contains("data") || patchNode.findPath("path").toString().contains("meta"));
+        Iterator<JsonNode> nodes = patchNode.elements();
+        while(nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            if(currentNode.findPath("path").toString().contains("data") || currentNode.findPath("path").toString().contains("meta"))
+                return true;
+        }
+        return false;
     }
 
     private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
         JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        return patchNode.findPath("path").toString().contains("kind");
+        Iterator<JsonNode> nodes = patchNode.elements();
+        while(nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            if(currentNode.findPath("path").toString().contains("kind"))
+                return true;
+        }
+        return false;
     }
 }
