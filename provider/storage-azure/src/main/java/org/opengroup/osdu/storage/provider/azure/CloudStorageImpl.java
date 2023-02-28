@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
+import org.opengroup.osdu.storage.provider.azure.util.EntitlementsHelper;
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
@@ -47,9 +48,6 @@ import static java.util.Optional.ofNullable;
 public class CloudStorageImpl implements ICloudStorage {
     @Autowired
     private JaxRsDpsLog logger;
-
-    @Autowired
-    private EntitlementsAndCacheServiceAzure dataEntitlementsService;
 
     @Autowired
     private DpsHeaders headers;
@@ -71,6 +69,9 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Autowired
     private CrcHashGenerator crcHashGenerator;
+
+    @Autowired
+    private EntitlementsHelper entitlementsHelper;
 
     @Autowired
     @Named("STORAGE_CONTAINER_NAME")
@@ -223,49 +224,24 @@ public class CloudStorageImpl implements ICloudStorage {
             }
 
             hasAtLeastOneActiveRecord = true;
-            if (hasViewerAccessToRecord(record))
+            if (entitlementsHelper.hasViewerAccessToRecord(record))
                 return true;
         }
 
         return !hasAtLeastOneActiveRecord;
     }
 
-    private boolean hasViewerAccessToRecord(RecordMetadata record)
-    {
-        String [] acls = ofNullable(record.getAcl())
-                .map(Acl::getViewers).
-                orElseGet(() -> {
-                    logger.error("Record {} doesn't contain acl viewers or acl block has wrong structure", record.getId());
-                    return new String[]{};
-                });
-        boolean isEntitledForViewing = dataEntitlementsService.hasAccessToData(headers,
-                new HashSet<>(Arrays.asList(acls)));
-        boolean isRecordOwner = record.getUser().equalsIgnoreCase(headers.getUserEmail());
-        return isEntitledForViewing || isRecordOwner;
-    }
-
-    private boolean hasOwnerAccessToRecord(RecordMetadata record)
-    {
-        String [] acls = ofNullable(record.getAcl())
-                .map(Acl::getOwners).
-                orElseGet(() -> {
-                    logger.error("Record {} doesn't contain acl owners or acl block has wrong structure",  record.getId());
-                    return new String[]{};
-                });
-        return dataEntitlementsService.hasAccessToData(headers,
-                new HashSet<>(Arrays.asList(acls)));
-    }
 
     private void validateOwnerAccessToRecord(RecordMetadata record)
     {
-        if (!hasOwnerAccessToRecord(record)) {
+        if (!entitlementsHelper.hasOwnerAccessToRecord(record)) {
             logger.warning(String.format("%s has no owner access to %s", headers.getUserEmail(), record.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
     }
 
     private void validateReadAccessToRecord(RecordMetadata record) {
-        if (!hasViewerAccessToRecord(record) && !hasOwnerAccessToRecord(record)) {
+        if (!entitlementsHelper.hasViewerAccessToRecord(record) && !entitlementsHelper.hasOwnerAccessToRecord(record)) {
             logger.warning(String.format("%s has no owner/viewer access to %s", headers.getUserEmail(), record.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN,  ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG);
         }
@@ -305,7 +281,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
         for (String recordId : recordIds) {
             RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
-            if (!hasViewerAccessToRecord(recordMetadata)) {
+            if (!entitlementsHelper.hasViewerAccessToRecord(recordMetadata)) {
                 continue;
             }
             String path = objects.get(recordId);

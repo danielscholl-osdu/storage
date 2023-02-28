@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.api;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceMessagePushReceiver;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
@@ -27,6 +28,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
+
+@Hidden
 @RestController
 @RequestMapping("push-handlers")
 @RequestScope

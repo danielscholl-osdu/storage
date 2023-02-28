@@ -15,23 +15,32 @@
  *  limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp.web.config;
+package org.opengroup.osdu.storage.provider.gcp.web.cache;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.model.entitlements.Groups;
 
-@Configuration
-@ConfigurationProperties
-@Data
-public class GcpAppServiceConfig {
+// Group cache is used in common part. According to the current Google Cloud architecture, we don't
+// use cache. Thus, methods are empty.
+public class GroupCache implements ICache<String, Groups> {
 
-    private String pubsubSearchTopic;
+  @Override
+  public void put(String s, Groups o) {
+    // do nothing
+  }
 
-    private String redisStorageHost;
-    private Integer redisStoragePort;
-    private String redisStoragePassword;
-    private Integer redisStorageExpiration = 60 * 60;
-    private Boolean redisStorageWithSsl = false;
+  @Override
+  public Groups get(String s) {
+    return null;
+  }
 
+  @Override
+  public void delete(String s) {
+    // do nothing
+  }
+
+  @Override
+  public void clearAll() {
+    // do nothing
+  }
 }
