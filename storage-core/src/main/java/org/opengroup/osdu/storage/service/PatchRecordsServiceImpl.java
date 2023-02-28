@@ -140,6 +140,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     ? this.validateUserAccessAndCompliancePolicyConstraints(idMap, updatedRecordsMetadata)
                     : this.validateUserAccessAndComplianceConstraints(jsonPatch, idMap, existingRecordsMetadata);
             if (!recordIds.isEmpty()) {
+                //TODO: should be able to perform partial update on cosmos document (implement/re-use cosmos upsert(patch)
                 lockedRecordsId = persistenceService.updateMetadata(new ArrayList<>(updatedRecordsMetadata.values()), recordIds, idMap, collaborationContext);
                 recordIds.removeAll(lockedRecordsId);
             }
@@ -162,13 +163,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                   boolean isKindBeingUpdated, Map<String, RecordMetadata> existingRecordsMetadata) {
         Map<String, RecordMetadata> recordsMetadata = new HashMap<>();
         for(Record record : records) {
-            RecordMetadata recordMetadata = new RecordMetadata();
-            recordMetadata.setId(record.getId());
-            recordMetadata.setAcl(record.getAcl());
-            recordMetadata.setTags(record.getTags());
-            recordMetadata.setLegal(record.getLegal());
-            recordMetadata.setAncestry(record.getAncestry());
-            recordMetadata.setKind(record.getKind());
+            RecordMetadata recordMetadata = new RecordMetadata(record);
             recordMetadata.setHash(recordBlocks.hashForRecordData(new RecordData(record)));
             if(isUpdate) {
                 long currentTimestamp = clock.millis();
