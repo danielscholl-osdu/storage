@@ -17,11 +17,13 @@ package org.opengroup.osdu.storage;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.PropertySource;
 
 import javax.annotation.PostConstruct;
 
 
 @SpringBootApplication
+@PropertySource("classpath:swagger.properties")
 @ComponentScan({"org.opengroup.osdu"})
 public class StorageApplication {
     @PostConstruct

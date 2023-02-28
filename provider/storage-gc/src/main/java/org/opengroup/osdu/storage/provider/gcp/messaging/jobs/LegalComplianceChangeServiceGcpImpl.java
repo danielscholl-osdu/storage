@@ -19,7 +19,6 @@ package org.opengroup.osdu.storage.provider.gcp.messaging.jobs;
 
 import static java.util.Collections.singletonList;
 
-import com.google.cloud.datastore.Cursor;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
@@ -70,8 +69,7 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
             if (complianceChangeInfo == null) {
                 continue;
             }
-
-            AbstractMap.SimpleEntry<Cursor, List<RecordMetadata>> results = this.recordsRepo
+            AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = this.recordsRepo
                 .queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);
 
             while (results.getValue() != null && !results.getValue().isEmpty()) {
@@ -86,7 +84,7 @@ public class LegalComplianceChangeServiceGcpImpl implements ILegalComplianceChan
                     recordsId.append(", ").append(recordMetadata.getId());
                 }
                 this.recordsRepo.createOrUpdate(recordsMetadata, Optional.empty());
-                this.messageBus.publishMessage(Optional.empty(), headers, pubsubInfos);
+                this.messageBus.publishMessage(headers, pubsubInfos);
                 this.auditLogger.updateRecordsComplianceStateSuccess(
                     singletonList("[" + recordsId.substring(2) + "]"));
                 results = this.recordsRepo.queryByLegal(lt.getChangedTagName(), complianceChangeInfo.getCurrent(), 500);

@@ -18,6 +18,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.PropertySource;
 
 /**
  * Note: these exclusions are the result of duplicate dependencies being introduced in the
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.FilterType;
                 @ComponentScan.Filter(type = FilterType.REGEX, pattern = "org.opengroup.osdu.is.*"),
         }
 )
+@PropertySource("classpath:swagger.properties")
 @SpringBootApplication
 public class StorageApplication {
 

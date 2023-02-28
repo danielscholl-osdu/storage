@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.swagger;
+package org.opengroup.osdu.storage.misc;
 
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+public class TestSwaggerIntegration extends SwaggerIntegrationTests {
 
-@Controller
-@Profile("!noswagger")
-public class HomeController {
-    @RequestMapping(value = "/swagger")
-    public String swagger() {
-        System.out.println("swagger-ui.html");
-        return "redirect:swagger-ui.html";
+
+    @Override
+    public void setup() throws Exception {
+
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+
     }
 }

@@ -7,14 +7,20 @@ Instructions for running the Azure implementation locally can be found [here](./
 
 ## Google Cloud Implementation
 
-All documentation for the Google Cloud implementation of Storage service lives [here](./provider/storage-gcp/README.md)
+All documentation for the Google Cloud implementation of Storage service lives [here](./provider/storage-gc/README.md)
 
 ## AWS
 
 Instructions for running and testing this service can be found [here](./provider/storage-aws/README.md)
 
+### Open API 3.0 - Swagger
+- Swagger UI : https://host/context-path/swagger (will redirect to https://host/context-path/swagger-ui/index.html)
+- api-docs (JSON) : https://host/context-path/api-docs
+- api-docs (YAML) : https://host/context-path/api-docs.yaml
 
+All the Swagger and OpenAPI related common properties are managed here [swagger.properties](./storage-core/src/main/resources/swagger.properties)
 
+_Note: For Collaboration Filter exclusion, refer 'excluded paths' section in  [docs/tutorial/CollaborationContext.md](./docs/tutorial/CollaborationContext.md#excluded-paths-a-nameexcluded-pathsa)_
 ### Other platforms
 
 1. Navigate to the module of the cloud of interest, for example, ```storage-azure```. Configure ```application.properties``` and optionally ```logback-spring.xml```. Intead of changing these files in the source, you can also provide external files at run time. 
