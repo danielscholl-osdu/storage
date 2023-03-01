@@ -7,4 +7,6 @@ public class ValidationDoc {
     public static final String INVALID_PATCH_OPERATION_TYPE_FOR_KIND = "Invalid Patch Operation: for patching '/kind' only 'replace' operation is allowed";
     public static final String INVALID_PATCH_VALUES_FORMAT_FOR_KIND = "Invalid Patch Operation: for patching '/kind' only one value is allowed";
     public static final String KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION = "Invalid kind: '%s', does not follow the required naming convention";
+
+    public static final String INVALID_INPUT_SIZE = "Invalid input size: Exceeds limit of 100 record ids";
 }
