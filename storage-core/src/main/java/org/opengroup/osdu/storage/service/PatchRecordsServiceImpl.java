@@ -1,7 +1,6 @@
 package org.opengroup.osdu.storage.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -14,6 +13,7 @@ import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
@@ -21,7 +21,7 @@ import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
+import org.opengroup.osdu.storage.util.RecordBlocks;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,6 +84,9 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     @Value("#{new Boolean('${opa.enabled}')}")
     private boolean isOpaEnabled;
 
+    @Autowired
+    private RecordBlocks recordBlocks;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String[] attributes = new String[0];
@@ -130,12 +134,13 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             TransferInfo recordsUpdateResponse = ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
             // what category is recordsUpdateResponse.getSkippedRecords()?? (skipped/failed records)
         } else {
-            Map<String, RecordMetadata> existingRecordsMetadata = getRecordsMetadataFromRecords(multiRecordInfo.getRecords(), false, user);
-            Map<String, RecordMetadata> updatedRecordsMetadata = getRecordsMetadataFromRecords(recordsToPersist, true, user);
+            Map<String, RecordMetadata> existingRecordsMetadata = getRecordsMetadataFromRecords(multiRecordInfo.getRecords(), false, user, false, null);
+            Map<String, RecordMetadata> updatedRecordsMetadata = getRecordsMetadataFromRecords(recordsToPersist, true, user, isKindBeingUpdated(jsonPatch), existingRecordsMetadata);
             unauthorizedRecordIds = isOpaEnabled
                     ? this.validateUserAccessAndCompliancePolicyConstraints(idMap, updatedRecordsMetadata)
                     : this.validateUserAccessAndComplianceConstraints(jsonPatch, idMap, existingRecordsMetadata);
             if (!recordIds.isEmpty()) {
+                //TODO: should be able to perform partial update on cosmos document (implement/re-use cosmos upsert(patch)
                 lockedRecordsId = persistenceService.updateMetadata(new ArrayList<>(updatedRecordsMetadata.values()), recordIds, idMap, collaborationContext);
                 recordIds.removeAll(lockedRecordsId);
             }
@@ -154,20 +159,19 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         return recordsResponse;
     }
 
-    private Map<String, RecordMetadata> getRecordsMetadataFromRecords(List<Record> records, boolean isUpdate, String user) {
+    private Map<String, RecordMetadata> getRecordsMetadataFromRecords(List<Record> records, boolean isUpdate, String user,
+                  boolean isKindBeingUpdated, Map<String, RecordMetadata> existingRecordsMetadata) {
         Map<String, RecordMetadata> recordsMetadata = new HashMap<>();
         for(Record record : records) {
-            RecordMetadata recordMetadata = new RecordMetadata();
-            recordMetadata.setId(record.getId());
-            recordMetadata.setAcl(record.getAcl());
-            recordMetadata.setTags(record.getTags());
-            recordMetadata.setLegal(record.getLegal());
-            recordMetadata.setAncestry(record.getAncestry());
-            recordMetadata.setKind(record.getKind());
+            RecordMetadata recordMetadata = new RecordMetadata(record);
+            recordMetadata.setHash(recordBlocks.hashForRecordData(new RecordData(record)));
             if(isUpdate) {
                 long currentTimestamp = clock.millis();
                 recordMetadata.setModifyUser(user);
                 recordMetadata.setModifyTime(currentTimestamp);
+                if(isKindBeingUpdated) {
+                    recordMetadata.setPreviousVersionKind(existingRecordsMetadata.get(record.getId()).getKind());
+                }
             }
             recordsMetadata.put(record.getId(), recordMetadata);
         }
@@ -235,6 +239,23 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
     private boolean isDataOrMetaBeingUpdated(JsonPatch jsonPatch) {
         JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        return (patchNode.has("data") || patchNode.has("meta"));
+        Iterator<JsonNode> nodes = patchNode.elements();
+        while(nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            if(currentNode.findPath("path").toString().contains("data") || currentNode.findPath("path").toString().contains("meta"))
+                return true;
+        }
+        return false;
+    }
+
+    private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
+        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
+        Iterator<JsonNode> nodes = patchNode.elements();
+        while(nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            if(currentNode.findPath("path").toString().contains("kind"))
+                return true;
+        }
+        return false;
     }
 }
