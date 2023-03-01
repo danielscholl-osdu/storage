@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.GCPTestUtils;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
@@ -49,6 +50,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     @Override
     public void setup() throws Exception {
         this.testUtils = new GCPTestUtils();
+        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
@@ -59,6 +61,12 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
 
     @Override
     public void should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord() throws Exception {
+      boolean opaIntegrationEnabled = Boolean.parseBoolean(
+          System.getProperty("opa.integration.enabled",
+              System.getenv("OPA_INTEGRATION_ENABLED")));
+      if (!opaIntegrationEnabled) {
+        super.should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord();
+      } else {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
             testUtils.getNoDataAccessToken());
 
@@ -70,5 +78,6 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         assertEquals(401, json.get("code").getAsInt());
         assertEquals("Error from compliance service", json.get("reason").getAsString());
         assertEquals("Legal response 401 {\"code\":401,\"reason\":\"Unauthorized\",\"message\":\"The user is not authorized to perform this action\"}", json.get("message").getAsString());
+        }
     }
 }
