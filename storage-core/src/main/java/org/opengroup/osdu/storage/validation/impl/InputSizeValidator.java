@@ -21,10 +21,11 @@ public class InputSizeValidator implements ConstraintValidator<ValidInputSize, R
     public boolean isValid(RecordQuery recordQuery, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
         boolean isValid;
+        int min_input_size = 1;
         int max_input_size = 100;
         List<String> recordIds = recordQuery.getIds();
 
-        isValid = recordIds.size() <= max_input_size;
+        isValid = recordIds.size() >= min_input_size && recordIds.size() <= max_input_size;
 
         if (!isValid) {
             throw RequestValidationException.builder()
