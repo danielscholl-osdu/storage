@@ -51,13 +51,22 @@ public class InputSizeValidatorTest {
     }
 
     @Test(expected = RequestValidationException.class)
-    public void shouldFail_ifInvalidInputSize() {
+    public void shouldFail_ifInputSizeExceeds100() {
         RecordQuery recordQuery = new RecordQuery();
         List<String> ids = new ArrayList<>();
 
         for (int i = 1; i <= max_input_size + 1; i++) {
             ids.add(recordId + i);
         }
+        recordQuery.setIds(ids);
+
+        sut.isValid(recordQuery, context);
+    }
+
+    @Test(expected = RequestValidationException.class)
+    public void shouldFail_ifInputSizeIsZero() {
+        RecordQuery recordQuery = new RecordQuery();
+        List<String> ids = new ArrayList<>();
         recordQuery.setIds(ids);
 
         sut.isValid(recordQuery, context);
