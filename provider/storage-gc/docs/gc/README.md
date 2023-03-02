@@ -130,16 +130,17 @@ TBD
 
 You will need to have the following environment variables defined.
 
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
-| `DOMAIN` | ex`opendes-gc.projects.com` | OSDU R2 to run tests under | no | - |
-| `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
-| `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
-| `NO_DATA_ACCESS_TESTER` | `********` | Service account base64 encoded string without data access | yes | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
-| `PUBSUB_TOKEN` | `****` | ? | no | - |
-| `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
-| `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
+| name                      | value                                     | description                                                                                                    | sensitive? | source                                                       |
+|---------------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------|------------|--------------------------------------------------------------|
+| `DEPLOY_ENV`              | `empty`                                   | Required but not used, should be set up with string "empty"                                                    | no         | -                                                            |
+| `DOMAIN`                  | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                                                                     | no         | -                                                            |
+| `INTEGRATION_TESTER`      | `********`                                | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
+| `LEGAL_URL`               | ex`http://localhsot:8080/api/legal/v1/`   | Legal API endpoint                                                                                             | no         | -                                                            |
+| `NO_DATA_ACCESS_TESTER`   | `********`                                | Service account base64 encoded string without data access                                                      | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
+| `PUBSUB_TOKEN`            | `****`                                    | ?                                                                                                              | no         | -                                                            |
+| `STORAGE_URL`             | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service                                                                                    | no         | -                                                            |
+| `TENANT_NAME`             | ex `opendes`                              | OSDU tenant used for testing                                                                                   | no         | --                                                           |
+| `OPA_INTEGRATION_ENABLED` | `true` OR `false`                         | Should be update if integration with OPA\Policy enabled\disabled                                               | no         | --                                                           |
 
 **Entitlements configuration for integration accounts**
 

@@ -16,7 +16,6 @@ package org.opengroup.osdu.storage.records;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.ClientResponse;
@@ -26,9 +25,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.opengroup.osdu.storage.util.AnthosTestUtils;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
+import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
@@ -52,6 +50,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     @Override
     public void setup() throws Exception {
         this.testUtils = new AnthosTestUtils();
+        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
@@ -62,16 +61,26 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
 
     @Override
     public void should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord() throws Exception {
-        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
-            testUtils.getNoDataAccessToken());
+        boolean opaIntegrationEnabled = Boolean.parseBoolean(
+            System.getProperty("opa.integration.enabled",
+                System.getenv("OPA_INTEGRATION_ENABLED")));
+        if(!opaIntegrationEnabled){
+            super.should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord();
+        }else {
+            Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+                testUtils.getNoDataAccessToken());
 
-        ClientResponse response = TestUtils.send("records", "PUT", headers,
-            RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
+            ClientResponse response = TestUtils.send("records", "PUT", headers,
+                RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatus());
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
-        assertEquals(401, json.get("code").getAsInt());
-        assertEquals("Error from compliance service", json.get("reason").getAsString());
-        assertEquals("Legal response 401 {\"code\":401,\"reason\":\"Unauthorized\",\"message\":\"The user is not authorized to perform this action\"}", json.get("message").getAsString());
+            assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatus());
+            JsonObject json = new JsonParser().parse(response.getEntity(String.class))
+                .getAsJsonObject();
+            assertEquals(401, json.get("code").getAsInt());
+            assertEquals("Error from compliance service", json.get("reason").getAsString());
+            assertEquals(
+                "Legal response 401 {\"code\":401,\"reason\":\"Unauthorized\",\"message\":\"The user is not authorized to perform this action\"}",
+                json.get("message").getAsString());
+        }
     }
 }

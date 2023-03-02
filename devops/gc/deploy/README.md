@@ -38,6 +38,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **data.partitionHost** | Partition service host address | string | `http://partition` | yes
 **data.crsConverterHost** | CRS Converter service host address | string | `http://crs-conversion` | yes
 **data.legalHost** | Legal service host address | string | `http://legal` | yes
+**data.opaEnabled** | whether OPA is enabled | boolean | false | yes
 **data.opaEndpoint** | OPA host address | string | `http://opa` | yes
 **data.storageHost** | Storage service host address | string | `http://storage` | only if `conf.bootstrapEnabled` is true
 **data.defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `conf.bootstrapEnabled` is true
