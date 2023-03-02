@@ -19,22 +19,35 @@ import static org.opengroup.osdu.storage.util.api.PatchOperations.REMOVE;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.REPLACE;
 
 public class JsonPatchOperationValidator implements ConstraintValidator<ValidJsonPatchOperation, JsonPatch> {
+    public static final int MIN_NUMBER = 1;
+    public static final int MAX_NUMBER = 100;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public boolean isValid(JsonPatch jsonPatch, ConstraintValidatorContext context) {
-        boolean isValid;
-        isValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+        boolean isNumberOfOperationsValid;
+        boolean isOperationTypeValid;
+
+        long operationsNumber = objectMapper.convertValue(jsonPatch, JsonNode.class).size();
+        isNumberOfOperationsValid = operationsNumber >= MIN_NUMBER && operationsNumber <= MAX_NUMBER;
+        if (!isNumberOfOperationsValid) {
+            throw RequestValidationException.builder()
+                    .status(HttpStatus.BAD_REQUEST)
+                    .message(ValidationDoc.INVALID_PATCH_OPERATION_SIZE)
+                    .build();
+        }
+
+        isOperationTypeValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .map(operation -> operation.get("op").toString().replace("\"", ""))
                 .map(PatchOperations::forOperation)
                 .allMatch(getAllowedOperations());
-        if(!isValid) {
+        if (!isOperationTypeValid) {
             throw RequestValidationException.builder()
                     .status(HttpStatus.BAD_REQUEST)
                     .message(ValidationDoc.INVALID_PATCH_OPERATION)
                     .build();
         }
-        return isValid;
+        return true;
     }
 
     private Predicate<PatchOperations> getAllowedOperations() {
