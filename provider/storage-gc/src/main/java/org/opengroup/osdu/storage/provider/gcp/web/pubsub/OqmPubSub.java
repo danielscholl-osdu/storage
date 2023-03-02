@@ -18,11 +18,6 @@
 package org.opengroup.osdu.storage.provider.gcp.web.pubsub;
 
 import com.google.gson.Gson;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -36,6 +31,12 @@ import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.stereotype.Repository;
+
+import javax.annotation.PostConstruct;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
