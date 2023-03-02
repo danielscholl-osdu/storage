@@ -60,7 +60,7 @@ public class TestPubsubEndpoint extends PubsubEndpointTest {
     public void should_deleteIncompliantLegaltagAndInvalidateRecordsAndNotIngestAgain_whenIncompliantMessageSentToEndpoint() throws Exception {
         LegalTagUtils.delete(LEGAL_TAG_1, testUtils.getToken());
         // wait until cache of opa is rebuilt
-        Thread.sleep(70000);
+        Thread.sleep(100000);
 
         List<String> legalTagNames = new ArrayList<>();
         legalTagNames.add(LEGAL_TAG_1);

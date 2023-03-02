@@ -46,7 +46,6 @@ Must have:
 | `REDIS_STORAGE_PASSWORD`    | ex `*****`                                    | Redis storage host password                                                           | yes        |                                     |
 | `REDIS_STORAGE_WITH_SSL`    | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                     |
 | `REDIS_STORAGE_EXPIRATION`  | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                     |
-| `STORAGE_HOSTNAME`          | ex `os-storage-dot-opendes.appspot.com`       | Hostname                                                                              | no         | -                                   |
 | `POLICY_API`                | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment |
 | `POLICY_ID`                 | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
 | `PARTITION_API`             | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
@@ -384,16 +383,14 @@ curl -L -X PATCH 'https://api/partition/v1/partitions/opendes' -H 'data-partitio
 
 </details>
 
-#### Exchanges and queues configuration
+## Exchanges and queues configuration
 
-At RabbitMq should be created exchange with name:
+At RabbitMq should be created set of exchanges and queues.
 
-**name:** `legaltags_changed`
-
-It can be overridden by:
-
-- through the Spring Boot property `pub-sub-legal-tags-topic`
-- environment variable `PUB_SUB_LEGAL_TAGS_TOPIC`
+| topic name          | subscription name               | description                   | sensitive? | env var to override                                                     |
+|---------------------|---------------------------------|-------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`   | -                               | Search topic for pushing      | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed` | `storage-oqm-legaltags-changed` | Legaltags topic for consuming | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
 
 ![Screenshot](./pics/rabbit.PNG)
 
