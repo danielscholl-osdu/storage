@@ -10,17 +10,15 @@ import org.opengroup.osdu.storage.validation.impl.InputSizeValidator;
 
 import javax.validation.ConstraintValidatorContext;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class InputSizeValidatorTest {
     private final String recordId = "tenant:test:record:123";
-    private final int max_input_size = 100;
+    private final int maxInputSize = 100;
 
     @Mock
     private ConstraintValidatorContext context;
@@ -42,7 +40,7 @@ public class InputSizeValidatorTest {
     public void should_returnTrue_ifValidInputSize() {
         RecordQuery recordQuery = new RecordQuery();
         List<String> ids = new ArrayList<>();
-        for (int i = 1; i <= max_input_size; i++) {
+        for (int i = 1; i <= maxInputSize; i++) {
             ids.add(recordId + i);
         }
         recordQuery.setIds(ids);
@@ -55,7 +53,7 @@ public class InputSizeValidatorTest {
         RecordQuery recordQuery = new RecordQuery();
         List<String> ids = new ArrayList<>();
 
-        for (int i = 1; i <= max_input_size + 1; i++) {
+        for (int i = 1; i <= maxInputSize + 1; i++) {
             ids.add(recordId + i);
         }
         recordQuery.setIds(ids);
