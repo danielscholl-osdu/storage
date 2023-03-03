@@ -1,7 +1,6 @@
 package org.opengroup.osdu.storage.validation.impl;
 
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
-import org.opengroup.osdu.core.common.model.storage.validation.ValidBulkQuery;
 import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.api.ValidInputSize;
@@ -21,11 +20,11 @@ public class InputSizeValidator implements ConstraintValidator<ValidInputSize, R
     public boolean isValid(RecordQuery recordQuery, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
         boolean isValid;
-        int min_input_size = 1;
-        int max_input_size = 100;
+        int minInputSize = 1;
+        int maxInputSize = 100;
         List<String> recordIds = recordQuery.getIds();
 
-        isValid = recordIds.size() >= min_input_size && recordIds.size() <= max_input_size;
+        isValid = recordIds.size() >= minInputSize && recordIds.size() <= maxInputSize;
 
         if (!isValid) {
             throw RequestValidationException.builder()
