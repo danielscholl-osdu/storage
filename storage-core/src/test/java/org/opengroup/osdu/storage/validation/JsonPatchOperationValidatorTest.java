@@ -3,7 +3,9 @@ package org.opengroup.osdu.storage.validation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -17,13 +19,15 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class JsonPatchOperationValidatorTest {
-
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Mock
     private ConstraintValidatorContext context;
 
     private JsonPatchOperationValidator sut;
+
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none();
 
     @Before
     public void setup() {
@@ -38,7 +42,7 @@ public class JsonPatchOperationValidatorTest {
     }
 
     @Test(expected = RequestValidationException.class)
-    public void should_returnFalse_ifPatchHasMoveOperation() throws IOException {
+    public void shouldThrowException_ifPatchHasMoveOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"move\"," +
                 "             \"from\": \"/acl/viewers\"," +
@@ -49,7 +53,7 @@ public class JsonPatchOperationValidatorTest {
     }
 
     @Test(expected = RequestValidationException.class)
-    public void should_returnFalse_ifPatchHasCopyOperation() throws IOException {
+    public void shouldThrowException_ifPatchHasCopyOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"copy\"," +
                 "             \"from\": \"/acl/viewers\"," +
@@ -60,7 +64,7 @@ public class JsonPatchOperationValidatorTest {
     }
 
     @Test(expected = RequestValidationException.class)
-    public void should_returnFalse_ifPatchHasTestOperation() throws IOException {
+    public void shouldThrowException_ifPatchHasTestOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"test\"," +
                 "             \"path\": \"/acl/viewers\"," +
@@ -100,6 +104,29 @@ public class JsonPatchOperationValidatorTest {
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasEmptyOperations() throws IOException {
+        String jsonString = "[]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_SIZE);
+
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchExceedLimitOfOperations() throws IOException {
+        StringBuilder jsonString = new StringBuilder("[");
+        for (int i = 0; i <= JsonPatchOperationValidator.MAX_NUMBER; i++) {
+            jsonString.append("{\"op\": \"add\", \"path\": \"/acl/viewers\", \"value\": \"value\"},");
+        }
+        jsonString.deleteCharAt(jsonString.length() - 1).append("]");
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_SIZE);
+
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString.toString())), context);
     }
 
 }

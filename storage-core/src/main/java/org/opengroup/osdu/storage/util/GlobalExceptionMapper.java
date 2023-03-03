@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonArray;
@@ -42,6 +43,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -155,6 +157,19 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
         return this.getErrorResponse(
                 new AppException(org.apache.http.HttpStatus.SC_METHOD_NOT_ALLOWED, "Method not found.",
                         "Method not found.", e));
+    }
+
+    @Override
+    @NonNull
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException e,
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatus status,
+                                                                  @NonNull WebRequest request) {
+        if (e.getCause() instanceof ValueInstantiationException) {
+            return this.getErrorResponse(
+                    new AppException(HttpStatus.BAD_REQUEST.value(), "Validation error", e.getMessage(), e));
+        }
+        return super.handleHttpMessageNotReadable(e, headers, status, request);
     }
 
     public ResponseEntity<Object> getErrorResponse(AppException e) {
