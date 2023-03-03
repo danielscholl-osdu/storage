@@ -275,19 +275,20 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     private CosmosPatchOperations getCosmosPatchOperations(JsonPatch jsonPatch) {
+        String metadataPathPrefix = "/metadata";
         CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
         List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .collect(Collectors.toList());
         for(JsonNode patchOp : patchNodes) {
             switch (patchOp.get("op").textValue()) {
                 case "add":
-                    cosmosPatchOperations.add(patchOp.get("path").textValue(), patchOp.get("value"));
+                    cosmosPatchOperations.add(metadataPathPrefix+patchOp.get("path").textValue(), patchOp.get("value"));
                     break;
                 case "replace":
-                    cosmosPatchOperations.replace(patchOp.get("path").textValue(), patchOp.get("value"));
+                    cosmosPatchOperations.replace(metadataPathPrefix+patchOp.get("path").textValue(), patchOp.get("value"));
                     break;
                 case "remove":
-                    cosmosPatchOperations.remove(patchOp.get("path").textValue());
+                    cosmosPatchOperations.remove(metadataPathPrefix+patchOp.get("path").textValue());
                     break;
             }
         }
