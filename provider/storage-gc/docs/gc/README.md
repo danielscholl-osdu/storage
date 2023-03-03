@@ -34,7 +34,6 @@ Must have:
 | `REDIS_STORAGE_PASSWORD`         | ex `*****`                                    | Redis storage host password                                                           | yes        |                                                            |
 | `REDIS_STORAGE_WITH_SSL`         | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                                            |
 | `REDIS_STORAGE_EXPIRATION`       | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                                            |
-| `STORAGE_HOSTNAME`               | ex `os-storage-dot-opendes.appspot.com`       | Hostname                                                                              | no         | -                                                          |
 | `POLICY_API`                     | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment                        |
 | `POLICY_ID`                      | ex `storage`                                  | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                                          |
 | `PARTITION_API`                  | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                                          |
@@ -86,16 +85,12 @@ indexes:
 
 ## PubSub configuration
 
-At PubSub should be created topic with name:
+At PubSub should be created set of topics and subscriptions.
 
-**name:** `record_changed`
-
-It can be overridden by:
-
-* through the Spring Boot property `pubsub-search-topic`
-* environment variable `PUBSUB_SEARCH_TOPIC`
-
-<!-- Yay, no errors, warnings, or alerts! -->
+| topic name          | subscription name               | description                   | sensitive? | env var to override                                                     |
+|---------------------|---------------------------------|-------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`   | -                               | Search topic for pushing      | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed` | `storage-oqm-legaltags-changed` | Legaltags topic for consuming | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
 
 ## GCS configuration <a name="ObjectStoreConfig"></a>
 
@@ -130,16 +125,17 @@ TBD
 
 You will need to have the following environment variables defined.
 
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
-| `DOMAIN` | ex`opendes-gc.projects.com` | OSDU R2 to run tests under | no | - |
-| `INTEGRATION_TESTER` | `********` | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
-| `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
-| `NO_DATA_ACCESS_TESTER` | `********` | Service account base64 encoded string without data access | yes | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
-| `PUBSUB_TOKEN` | `****` | ? | no | - |
-| `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
-| `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
+| name                      | value                                     | description                                                                                                    | sensitive? | source                                                       |
+|---------------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------|------------|--------------------------------------------------------------|
+| `DEPLOY_ENV`              | `empty`                                   | Required but not used, should be set up with string "empty"                                                    | no         | -                                                            |
+| `DOMAIN`                  | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                                                                     | no         | -                                                            |
+| `INTEGRATION_TESTER`      | `********`                                | Service account base64 encoded string for API calls. Note: this user must have entitlements configured already | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
+| `LEGAL_URL`               | ex`http://localhsot:8080/api/legal/v1/`   | Legal API endpoint                                                                                             | no         | -                                                            |
+| `NO_DATA_ACCESS_TESTER`   | `********`                                | Service account base64 encoded string without data access                                                      | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
+| `PUBSUB_TOKEN`            | `****`                                    | ?                                                                                                              | no         | -                                                            |
+| `STORAGE_URL`             | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service                                                                                    | no         | -                                                            |
+| `TENANT_NAME`             | ex `opendes`                              | OSDU tenant used for testing                                                                                   | no         | --                                                           |
+| `OPA_INTEGRATION_ENABLED` | `true` OR `false`                         | Should be update if integration with OPA\Policy enabled\disabled                                               | no         | --                                                           |
 
 **Entitlements configuration for integration accounts**
 
