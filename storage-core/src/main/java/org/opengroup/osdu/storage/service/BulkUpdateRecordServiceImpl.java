@@ -26,7 +26,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.response.PatchRecordsResponse;
+import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
@@ -79,7 +79,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     private boolean isOpaEnabled;
 
     @Override
-    public PatchRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user, Optional<CollaborationContext> collaborationContext) {
+    public BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> validRecordsMetadata = new ArrayList<>();
         List<String> validRecordsId = new ArrayList<>();
         List<String> lockedRecordsId = new ArrayList<>();
@@ -130,7 +130,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
             ids.remove(lockedId);
         }
 
-        PatchRecordsResponse recordsResponse = PatchRecordsResponse.builder()
+        BulkUpdateRecordsResponse recordsResponse = BulkUpdateRecordsResponse.builder()
                 .notFoundRecordIds(notFoundRecordIds)
                 .unAuthorizedRecordIds(unauthorizedRecordIds)
                 .recordIds(ids)
@@ -142,7 +142,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         return recordsResponse;
     }
 
-    private void auditCreateOrUpdateRecords(PatchRecordsResponse recordsResponse) {
+    private void auditCreateOrUpdateRecords(BulkUpdateRecordsResponse recordsResponse) {
         List<String> successfulUpdates = recordsResponse.getRecordIds();
         if (!successfulUpdates.isEmpty()) {
             auditLogger.createOrUpdateRecordsSuccess(successfulUpdates);

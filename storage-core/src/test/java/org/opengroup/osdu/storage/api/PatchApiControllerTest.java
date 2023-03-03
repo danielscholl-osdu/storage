@@ -96,8 +96,6 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         PatchRecordsResponse recordsResponse = gson.fromJson(mockResponse.getContentAsString(), PatchRecordsResponse.class);
         assertEquals(2, recordsResponse.getRecordIds().size());
         assertEquals(0, recordsResponse.getFailedRecordIds().size());
-        assertEquals(0, recordsResponse.getLockedRecordIds().size());
-        assertEquals(0, recordsResponse.getUnAuthorizedRecordIds().size());
         assertEquals(0, recordsResponse.getNotFoundRecordIds().size());
     }
 
@@ -110,7 +108,6 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
                 .recordCount(3)
                 .recordIds(recordIds)
                 .failedRecordIds(Arrays.asList(new String[] {"opendes:npe:123"}))
-                .lockedRecordIds(Arrays.asList(new String[] {"opendes:npe:125"}))
                 .build();
         Mockito.when(patchRecordsService.patchRecords(eq(recordIds), any(JsonPatch.class), eq("a@b"), eq(Optional.empty()))).thenReturn(response);
         ResultActions result = sendRequest(getRequestPayloadMultipleIds(recordQuery, getValidInputJson()));
@@ -118,8 +115,6 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         PatchRecordsResponse recordsResponse = gson.fromJson(mockResponse.getContentAsString(), PatchRecordsResponse.class);
         assertEquals(3, recordsResponse.getRecordIds().size());
         assertEquals(1, recordsResponse.getFailedRecordIds().size());
-        assertEquals(1, recordsResponse.getLockedRecordIds().size());
-        assertEquals(0, recordsResponse.getUnAuthorizedRecordIds().size());
         assertEquals(0, recordsResponse.getNotFoundRecordIds().size());
     }
 

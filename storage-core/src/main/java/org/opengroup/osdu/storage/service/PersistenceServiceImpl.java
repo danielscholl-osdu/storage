@@ -14,6 +14,9 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
@@ -34,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +63,8 @@ public class PersistenceServiceImpl implements PersistenceService {
 	private JaxRsDpsLog logger;
 	@Autowired
 	private IFeatureFlag collaborationFeatureFlag;
+
+	private ObjectMapper objectMapper = new ObjectMapper();
 	@Override
 	public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
 
@@ -153,6 +159,45 @@ public class PersistenceServiceImpl implements PersistenceService {
 		return lockedRecords;
 	}
 
+	@Override
+	public void patchRecordsMetadata(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+		try {
+			this.commitPatchDatastoreTransaction(recordMetadataList, jsonPatch, collaborationContext);
+		} catch (NotImplementedException e) {
+			throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+		} catch (Exception e) {
+			this.logger.warning("Reverting meta data changes");
+			try {
+				//TODO: restore to original document metadata state
+			} catch (NotImplementedException innerEx) {
+				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+			} catch (Exception innerEx) {
+				e.addSuppressed(innerEx);
+			}
+			throw e;
+		}
+		PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadataList.size()];
+		RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadataList.size()];
+		for (int i = 0; i < recordMetadataList.size(); i++) {
+			RecordMetadata metadata = recordMetadataList.get(i);
+			pubsubInfo[i] = getPubSubInfo(metadata, OperationType.update);
+			recordChangedV2[i] = getRecordChangedV2(metadata, OperationType.update);
+			if(isKindBeingUpdated(jsonPatch)) {
+				String newKind = getNewKindFromPatchInput(jsonPatch);
+				pubsubInfo[i].setPreviousVersionKind(recordMetadataList.get(i).getKind());
+				pubsubInfo[i].setKind(newKind);
+				recordChangedV2[i].setPreviousVersionKind(recordMetadataList.get(i).getKind());
+				recordChangedV2[i].setKind(newKind);
+			}
+		}
+		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+		}
+		if (!collaborationContext.isPresent()) {
+			this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+		}
+	}
+
 	private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata, OperationType operationType) {
 		return PubSubInfo.builder()
 				.id(recordMetadata.getId())
@@ -199,5 +244,37 @@ public class PersistenceServiceImpl implements PersistenceService {
 			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
 					"The server could not process your request at the moment.", e);
 		}
+	}
+
+	private void commitPatchDatastoreTransaction(List<RecordMetadata> recordsMetadata, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+		try {
+			this.recordRepository.patch(recordsMetadata, jsonPatch, collaborationContext);
+		} catch (Exception e) {
+			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error patching records.",
+					"The server could not process your request at the moment.", e);
+		}
+	}
+
+	private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
+		JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
+		Iterator<JsonNode> nodes = patchNode.elements();
+		while(nodes.hasNext()) {
+			JsonNode currentNode = nodes.next();
+			if(currentNode.findPath("path").toString().contains("kind"))
+				return true;
+		}
+		return false;
+	}
+
+	private String getNewKindFromPatchInput(JsonPatch jsonPatch) {
+		JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
+		Iterator<JsonNode> nodes = patchNode.elements();
+		while(nodes.hasNext()) {
+			JsonNode currentNode = nodes.next();
+			if(currentNode.findPath("path").toString().contains("kind")) {
+				return currentNode.findPath("value").textValue();
+			}
+		}
+		throw new RuntimeException("Failed to retrieve kind value from jsonpatch: "+jsonPatch.toString());
 	}
 }

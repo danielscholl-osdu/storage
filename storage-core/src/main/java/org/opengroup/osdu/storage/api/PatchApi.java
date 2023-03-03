@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
+import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.opengroup.osdu.storage.service.PatchRecordsService;
 import org.opengroup.osdu.storage.util.CollaborationFilter;
@@ -68,8 +69,8 @@ public class PatchApi {
 	@Operation(summary = "${patchApi.updateRecordsMetadata.summary}", description = "${patchApi.updateRecordsMetadata.description}",
 			security = {@SecurityRequirement(name = "Authorization")}, tags = { "records" })
 	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Records updated successfully.", content = { @Content(schema = @Schema(implementation = PatchRecordsResponse.class)) }),
-			@ApiResponse(responseCode = "206", description = "Records updated successful partially.", content = { @Content(schema = @Schema(implementation = PatchRecordsResponse.class)) }),
+			@ApiResponse(responseCode = "200", description = "Records updated successfully.", content = { @Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class)) }),
+			@ApiResponse(responseCode = "206", description = "Records updated successful partially.", content = { @Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class)) }),
 			@ApiResponse(responseCode = "400", description = "Bad Request",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
 			@ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
 			@ApiResponse(responseCode = "403", description = "User not authorized to perform the action.",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
@@ -80,10 +81,10 @@ public class PatchApi {
 	})
 	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<PatchRecordsResponse> updateRecordsMetadata(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
 																	  @RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		PatchRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), collaborationContext);
+		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), collaborationContext);
 		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
@@ -110,8 +111,7 @@ public class PatchApi {
 															 @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
 		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), patchRecordsRequest.getOps(), this.headers.getUserEmail(), collaborationContext);
-		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty() || !response.getFailedRecordIds().isEmpty()) {
-			//TODO: what to return if all records failed to patch
+		if (!response.getNotFoundRecordIds().isEmpty() || !response.getFailedRecordIds().isEmpty()) {
 			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
 		} else {
 			return new ResponseEntity<>(response, HttpStatus.OK);
