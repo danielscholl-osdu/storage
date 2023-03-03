@@ -21,12 +21,18 @@ import java.util.Map;
 import java.util.Optional;
 
 
+import com.github.fge.jsonpatch.JsonPatch;
+import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 // <K> is a serializable (e.g a Cursor, com.google.cloud.datastore.Cursor in case of gcp implementation)
 public interface IRecordsMetadataRepository<K extends Serializable> {
+
+	default void patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+		throw new NotImplementedException("TODO");
+	}
 	List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext);
 
 	void delete(String id, Optional<CollaborationContext> collaborationContext);

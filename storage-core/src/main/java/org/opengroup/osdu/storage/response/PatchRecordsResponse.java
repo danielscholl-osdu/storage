@@ -17,9 +17,5 @@ public class PatchRecordsResponse {
     @Builder.Default
     private List<String> notFoundRecordIds = new ArrayList<>();
     @Builder.Default
-    private List<String> unAuthorizedRecordIds = new ArrayList<>();
-    @Builder.Default
-    private List<String> lockedRecordIds = new ArrayList<>();
-    @Builder.Default
     private List<String> failedRecordIds = new ArrayList<>();
 }

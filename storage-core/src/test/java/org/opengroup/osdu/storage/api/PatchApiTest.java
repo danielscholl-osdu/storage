@@ -14,7 +14,7 @@ import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.opengroup.osdu.storage.response.PatchRecordsResponse;
+import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -93,7 +93,7 @@ public class PatchApiTest {
                 .query(RecordQuery.builder().ids(recordIds).build())
                 .ops(ops)
                 .build();
-        PatchRecordsResponse expectedResponse = PatchRecordsResponse.builder()
+        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
                 .recordCount(6)
                 .recordIds(validRecordIds)
                 .notFoundRecordIds(notFoundRecordIds)
@@ -103,7 +103,7 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
-        ResponseEntity<PatchRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.PARTIAL_CONTENT, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
@@ -127,7 +127,7 @@ public class PatchApiTest {
                 .query(RecordQuery.builder().ids(recordIds).build())
                 .ops(ops)
                 .build();
-        PatchRecordsResponse expectedResponse = PatchRecordsResponse.builder()
+        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
                 .recordCount(6)
                 .recordIds(validRecordIds)
                 .notFoundRecordIds(notFoundRecordIds)
@@ -137,7 +137,7 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, Optional.empty())).thenReturn(expectedResponse);
 
-        ResponseEntity<PatchRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
@@ -161,7 +161,7 @@ public class PatchApiTest {
                 .query(RecordQuery.builder().ids(recordIds).build())
                 .ops(ops)
                 .build();
-        PatchRecordsResponse expectedResponse = PatchRecordsResponse.builder()
+        BulkUpdateRecordsResponse expectedResponse = BulkUpdateRecordsResponse.builder()
                 .recordCount(6)
                 .recordIds(validRecordIds)
                 .notFoundRecordIds(notFoundRecordIds)
@@ -173,7 +173,7 @@ public class PatchApiTest {
 
         when(this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.USER, COLLABORATION_CONTEXT)).thenReturn(expectedResponse);
 
-        ResponseEntity<PatchRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
+        ResponseEntity<BulkUpdateRecordsResponse> response = this.sut.updateRecordsMetadata(COLLABORATION_DIRECTIVES, recordBulkUpdateParam);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());

@@ -16,8 +16,12 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 
 
 import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.CosmosPatchOperations;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
@@ -41,6 +45,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Repository
 public class RecordMetadataRepository extends SimpleCosmosStoreRepository<RecordMetadataDoc> implements IRecordsMetadataRepository<String> {
@@ -69,8 +75,23 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Autowired
     private int minBatchSizeToUseBulkUpload;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     public RecordMetadataRepository() {
         super(RecordMetadataDoc.class);
+    }
+
+    @Override
+    public void patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+        List<String> docIds = new ArrayList<>();
+        List<String> partitionKeys = new ArrayList<>();
+        for(RecordMetadata recordMetadata : recordMetadataList) {
+            docIds.add(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
+            partitionKeys.add(recordMetadata.getId());
+        }
+        CosmosPatchOperations cosmosPatchOperations = getCosmosPatchOperations(jsonPatch);
+
+        cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docIds, cosmosPatchOperations, partitionKeys, 1);
     }
 
     @Override
@@ -251,5 +272,25 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         sb.deleteCharAt(sb.lastIndexOf(","));
         sb.append(")");
         return sb.toString();
+    }
+
+    private CosmosPatchOperations getCosmosPatchOperations(JsonPatch jsonPatch) {
+        CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
+        List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+                .collect(Collectors.toList());
+        for(JsonNode patchOp : patchNodes) {
+            switch (patchOp.get("op").textValue()) {
+                case "add":
+                    cosmosPatchOperations.add(patchOp.get("path").textValue(), patchOp.get("value"));
+                    break;
+                case "replace":
+                    cosmosPatchOperations.replace(patchOp.get("path").textValue(), patchOp.get("value"));
+                    break;
+                case "remove":
+                    cosmosPatchOperations.remove(patchOp.get("path").textValue());
+                    break;
+            }
+        }
+        return cosmosPatchOperations;
     }
 }
