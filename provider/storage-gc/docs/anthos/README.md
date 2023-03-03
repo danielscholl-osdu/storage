@@ -46,7 +46,6 @@ Must have:
 | `REDIS_STORAGE_PASSWORD`    | ex `*****`                                    | Redis storage host password                                                           | yes        |                                     |
 | `REDIS_STORAGE_WITH_SSL`    | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                     |
 | `REDIS_STORAGE_EXPIRATION`  | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                     |
-| `STORAGE_HOSTNAME`          | ex `os-storage-dot-opendes.appspot.com`       | Hostname                                                                              | no         | -                                   |
 | `POLICY_API`                | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment |
 | `POLICY_ID`                 | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
 | `PARTITION_API`             | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
@@ -384,16 +383,14 @@ curl -L -X PATCH 'https://api/partition/v1/partitions/opendes' -H 'data-partitio
 
 </details>
 
-#### Exchanges and queues configuration
+## Exchanges and queues configuration
 
-At RabbitMq should be created exchange with name:
+At RabbitMq should be created set of exchanges and queues.
 
-**name:** `legaltags_changed`
-
-It can be overridden by:
-
-- through the Spring Boot property `pub-sub-legal-tags-topic`
-- environment variable `PUB_SUB_LEGAL_TAGS_TOPIC`
+| topic name          | subscription name               | description                   | sensitive? | env var to override                                                     |
+|---------------------|---------------------------------|-------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`   | -                               | Search topic for pushing      | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed` | `storage-oqm-legaltags-changed` | Legaltags topic for consuming | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
 
 ![Screenshot](./pics/rabbit.PNG)
 
@@ -428,18 +425,19 @@ Give `client-id` and `client-secret` to services, which should be authorized wit
 
 You will need to have the following environment variables defined.
 
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `DEPLOY_ENV` | `empty` | Required but not used, should be set up with string "empty"| no | - |
-| `DOMAIN` | ex`opendes-gc.projects.com` | OSDU R2 to run tests under | no | - |
-| `LEGAL_URL` | ex`http://localhsot:8080/api/legal/v1/` | Legal API endpoint | no | - |
-| `STORAGE_URL` | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service | no | - |
-| `TENANT_NAME` | ex `opendes` | OSDU tenant used for testing | no | -- |
-| `TEST_OPENID_PROVIDER_CLIENT_ID` | `********` | Client Id for `$INTEGRATION_TESTER` | yes | -- |
-| `TEST_OPENID_PROVIDER_CLIENT_SECRET` | `********` |  | Client secret for `$INTEGRATION_TESTER` | -- |
-| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID` | `********` | Client Id for `$NO_ACCESS_INTEGRATION_TESTER` | yes | -- |
-| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET` | `********` |  | Client secret for `$NO_ACCESS_INTEGRATION_TESTER` | -- |
-| `TEST_OPENID_PROVIDER_URL` | `https://keycloak.com/auth/realms/osdu` | OpenID provider url | yes | -- |
+| name                                           | value                                     | description                                                      | sensitive?                                        | source |
+|------------------------------------------------|-------------------------------------------|------------------------------------------------------------------|---------------------------------------------------|--------|
+| `DEPLOY_ENV`                                   | `empty`                                   | Required but not used, should be set up with string "empty"      | no                                                | -      |
+| `DOMAIN`                                       | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                       | no                                                | -      |
+| `LEGAL_URL`                                    | ex`http://localhsot:8080/api/legal/v1/`   | Legal API endpoint                                               | no                                                | -      |
+| `STORAGE_URL`                                  | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service                                      | no                                                | -      |
+| `TENANT_NAME`                                  | ex `opendes`                              | OSDU tenant used for testing                                     | no                                                | --     |
+| `TEST_OPENID_PROVIDER_CLIENT_ID`               | `********`                                | Client Id for `$INTEGRATION_TESTER`                              | yes                                               | --     |
+| `TEST_OPENID_PROVIDER_CLIENT_SECRET`           | `********`                                |                                                                  | Client secret for `$INTEGRATION_TESTER`           | --     |
+| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID`     | `********`                                | Client Id for `$NO_ACCESS_INTEGRATION_TESTER`                    | yes                                               | --     |
+| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET` | `********`                                |                                                                  | Client secret for `$NO_ACCESS_INTEGRATION_TESTER` | --     |
+| `TEST_OPENID_PROVIDER_URL`                     | `https://keycloak.com/auth/realms/osdu`   | OpenID provider url                                              | yes                                               | --     |
+| `OPA_INTEGRATION_ENABLED`                      | `true` OR `false`                         | Should be update if integration with OPA\Policy enabled\disabled | no                                                | --     |
 
 **Entitlements configuration for integration accounts**
 
