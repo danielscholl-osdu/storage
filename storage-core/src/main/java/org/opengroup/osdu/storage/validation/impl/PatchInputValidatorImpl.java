@@ -59,29 +59,28 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
 
     @Override
     public void validateAcls(JsonPatch jsonPatch) {
-        Set<String> valueSet = getValueSet(jsonPatch, "/acl");
-        if (!valueSet.isEmpty() && !entitlementsAndCacheService.isValidAcl(headers, valueSet)) {
+        Set<String> acls = getValueSet(jsonPatch, "/acl");
+        if (!acls.isEmpty() && !entitlementsAndCacheService.isValidAcl(headers, acls)) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid ACLs", "Invalid ACLs provided in acl path.");
         }
     }
 
     @Override
     public void validateLegalTags(JsonPatch jsonPatch) {
-        Set<String> valueSet = getValueSet(jsonPatch, "/legal");
-        if (!valueSet.isEmpty()) {
-            legalService.validateLegalTags(valueSet);
+        Set<String> legalTags = getValueSet(jsonPatch, "/legal");
+        if (!legalTags.isEmpty()) {
+            legalService.validateLegalTags(legalTags);
         }
     }
 
     @Override
     public void validateKind(JsonPatch jsonPatch) {
-        Set<String> valueSet = new HashSet<>();
+        Set<String> kinds = new HashSet<>();
         StreamSupport.stream(mapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .filter(pathStartsWith("/kind"))
                 .forEach(operation -> {
-                    String operationType = removeExtraQuotes(operation.get(OP));
-                    if (ADD.equals(PatchOperations.forOperation(operationType)) ||
-                            REMOVE.equals(PatchOperations.forOperation(operationType))) {
+                    PatchOperations patchOperation = PatchOperations.forOperation(removeExtraQuotes(operation.get(OP)));
+                    if (ADD.equals(patchOperation) || REMOVE.equals(patchOperation)) {
                         throw RequestValidationException.builder()
                                 .message(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND)
                                 .build();
@@ -93,33 +92,36 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
                                 .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND)
                                 .build();
                     } else if (valueNode.getClass() == TextNode.class) {
-                        valueSet.add(removeExtraQuotes(valueNode));
+                        kinds.add(removeExtraQuotes(valueNode));
                     }
 
                 });
-        for (String kind : valueSet) {
+        for (String kind : kinds) {
             if (!kind.matches(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.KIND_REGEX)) {
                 throw RequestValidationException.builder()
                         .message(String.format(ValidationDoc.KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION, kind))
                         .build();
             }
         }
-
     }
 
     @Override
     public void validateAncestry(JsonPatch jsonPatch) {
-        //TODO: impl
-//        "ancestry": {
-//            "parents": [
-//                  "opendes:well:rawHavingWksCreated1:1624008140672245"
-//            ]
-//        }
-        //ancestry looks something like this. Some basic validation we can do is:
-        // if any of the ops contains 'ancestry' in the path, then
-        // if 'add' => at least one parent is present (all parents must have valid record ID. Check out RecordAncestryValidator from os-core-common library)
-        // if 'replace' => at least one parent is present (same constraint as above)
-        // if 'remove' => acc to RFC spec, remove shouldn't have 'value'. We must respect this constraint
+        Set<String> parents = getValueSet(jsonPatch, "/ancestry/parents");
+
+        for (String parent : parents) {
+            if (!parent.matches(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.RECORD_ID_REGEX)) {
+                throw RequestValidationException.builder()
+                        .message(String.format(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.INVALID_PARENT_RECORD_ID_FORMAT, parent))
+                        .build();
+            }
+
+            if (!parent.matches(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.RECORD_ID_WITH_VERSION_REGEX)) {
+                throw RequestValidationException.builder()
+                        .message(String.format(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.INVALID_PARENT_RECORD_VERSION_FORMAT, parent))
+                        .build();
+            }
+        }
     }
 
     private Set<String> getValueSet(JsonPatch jsonPatch, String path) {
