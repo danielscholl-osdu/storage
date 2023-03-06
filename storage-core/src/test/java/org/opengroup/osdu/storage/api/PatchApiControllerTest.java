@@ -14,6 +14,7 @@ import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.StringConstants;
+import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpMethod;
@@ -66,7 +67,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
         Assert.assertEquals(400, appError.getCode());
         Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals("Invalid Patch Operation: can only be 'replace' or 'add' or 'remove'", appError.getMessage());
+        Assert.assertEquals(ValidationDoc.INVALID_PATCH_OPERATION, appError.getMessage());
     }
 
     @Test
@@ -77,7 +78,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
         Assert.assertEquals(400, appError.getCode());
         Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals("Invalid Patch Path: can only be '/acl', '/legal/legaltags', '/tags', '/kind', '/ancestry/parents', '/data' or '/meta'", appError.getMessage());
+        Assert.assertEquals(ValidationDoc.INVALID_PATCH_PATH, appError.getMessage());
     }
 
     @Test
