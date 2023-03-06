@@ -554,7 +554,7 @@ paths:
         schema:
           type: "array"
           items:
-            $ref: "#/definitions/RecordBulkUpdateParam"  
+            $ref: "#/definitions/RecordBulkUpdateParam"
       responses:
         200:
           description: "Records updated successfully."
@@ -572,6 +572,51 @@ paths:
           description: "User not authorized to perform the action."
           schema:
             $ref: "#/definitions/AppError"
+#    patch:
+#      tags:
+#        - "records"
+#      summary: "Modify record data block using patch operations"
+#      description: "The API represents the patch update mechanism for record's data block. It allows\
+#        \ updating multiple records in one request. The currently supported operations are replace,\
+#        \ add, and remove. \
+#        \ Required roles: 'users.datalake.editors' or 'users.datalake.admins'."
+#      operationId: "Patch update records"
+#      consumes:
+#        - "application/json-patch+json"
+#      produces:
+#        - "application/json"
+#      parameters:
+#        - name: "OSDU-Account-Id"
+#          in: "header"
+#          description: "Account ID is the active OSDU account (OSDU account or customer's\
+#          \ account) which the users choose to use with the Search API."
+#          required: true
+#          type: "string"
+#          default: "tenant1"
+#        - in: "body"
+#          name: "body"
+#          required: false
+#          schema:
+#            type: "array"
+#            items:
+#              $ref: "#/definitions/JsonPatchDataBlock"
+#      responses:
+#        200:
+#          description: "Records updated successfully."
+#          schema:
+#            $ref: "#/definitions/JsonPatchRecordsResponse"
+#        206:
+#          description: "Records updated successful partially."
+#          schema:
+#            $ref: "#/definitions/JsonPatchRecordsResponse"
+#        400:
+#          description: "Bad Request"
+#          schema:
+#            $ref: "#/definitions/AppError"
+#        403:
+#          description: "User not authorized to perform the action."
+#          schema:
+#            $ref: "#/definitions/AppError"
       security:
       - datalake_auth:
         - "email"
@@ -1039,6 +1084,32 @@ definitions:
           - "key1"
           - "key2"
           - "key3"
+  JsonPatchDataBlock:
+    type: "object"
+    required:
+      - "query"
+      - "ops"
+    properties:
+      query:
+        description: "Patch update query information"
+        $ref: "#/definitions/RecordQuery"
+      ops:
+        type: "array"
+        description: "List of operations for records path update"
+        items:
+          $ref: "#/definitions/PatchOperation"
+    description: "Patch update input information"
+    example:
+      query:
+        - ids:
+            - "tenant:type:unique-identifier:version"
+      ops:
+        - op: "replace or add"
+          path: "/data/SpatialLocation/SpatialGeometryTypeID"
+          value:
+            - "value1"
+        - op: "remove"
+          path: "/data/ExtensionProperties/1"
   RecordQuery:
     type: "object"
     required:
@@ -1098,6 +1169,29 @@ definitions:
       lockedRecordIds:
         type: "array"
         description: "List of locked record ids"
+        items:
+          type: "string"
+    description: "Result of the record batch update request."
+  JsonPatchRecordsResponse:
+    type: "object"
+    properties:
+      recordCount:
+        type: "integer"
+        format: "int32"
+        description: "Number of records which updated successfully."
+      recordIds:
+        type: "array"
+        description: "List of successfully updated record ids."
+        items:
+          type: "string"
+      notFoundRecordIds:
+        type: "array"
+        description: "List of record ids for whom data block was not found"
+        items:
+          type: "string"
+      failedRecordIds:
+        type: "array"
+        description: "List of record ids that failed"
         items:
           type: "string"
     description: "Result of the record batch update request."
