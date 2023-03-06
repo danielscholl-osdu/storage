@@ -33,7 +33,6 @@ public class JsonPatchPathValidatorTest {
     @Before
     public void setup() {
         sut = new JsonPatchPathValidator();
-        ConstraintValidatorContext.ConstraintViolationBuilder builder = mock(ConstraintValidatorContext.ConstraintViolationBuilder.class);
     }
 
     @Test

@@ -9,9 +9,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.http.AppError;
-import org.opengroup.osdu.core.common.model.storage.RecordQuery;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
+import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.StringConstants;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
@@ -84,14 +84,14 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Test
     public void should_return200_when_patchRecordsIsSuccess() throws Exception {
         setupAuthorization(StorageRole.CREATOR);
-        RecordQuery recordQuery = RecordQuery.builder().ids(Arrays.asList(new String[]{"opendes:npe:123", "opendes:npe:124"})).build();
-        List<String> recordIds = recordQuery.getIds();
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123", "opendes:npe:124"})).build();
+        List<String> recordIds = recordQueryPatch.getIds();
         PatchRecordsResponse response = PatchRecordsResponse.builder()
                 .recordCount(2)
                 .recordIds(recordIds)
                 .build();
         Mockito.when(patchRecordsService.patchRecords(eq(recordIds), any(JsonPatch.class), eq("a@b"), eq(Optional.empty()))).thenReturn(response);
-        ResultActions result = sendRequest(getRequestPayloadMultipleIds(recordQuery, getValidInputJson()));
+        ResultActions result = sendRequest(getRequestPayloadMultipleIds(recordQueryPatch, getValidInputJson()));
         MockHttpServletResponse mockResponse = result.andExpect(MockMvcResultMatchers.status().isOk()).andReturn().getResponse();
         assertEquals(200, mockResponse.getStatus());
         PatchRecordsResponse recordsResponse = gson.fromJson(mockResponse.getContentAsString(), PatchRecordsResponse.class);
@@ -103,15 +103,15 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Test
     public void should_return206_when_patchRecordsIsPartialSuccess() throws Exception {
         setupAuthorization(StorageRole.CREATOR);
-        RecordQuery recordQuery = RecordQuery.builder().ids(Arrays.asList(new String[]{"opendes:npe:123", "opendes:npe:124", "opendes:npe:125"})).build();
-        List<String> recordIds = recordQuery.getIds();
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123", "opendes:npe:124", "opendes:npe:125"})).build();
+        List<String> recordIds = recordQueryPatch.getIds();
         PatchRecordsResponse response = PatchRecordsResponse.builder()
                 .recordCount(3)
                 .recordIds(recordIds)
                 .failedRecordIds(Arrays.asList(new String[] {"opendes:npe:123"}))
                 .build();
         Mockito.when(patchRecordsService.patchRecords(eq(recordIds), any(JsonPatch.class), eq("a@b"), eq(Optional.empty()))).thenReturn(response);
-        ResultActions result = sendRequest(getRequestPayloadMultipleIds(recordQuery, getValidInputJson()));
+        ResultActions result = sendRequest(getRequestPayloadMultipleIds(recordQueryPatch, getValidInputJson()));
         MockHttpServletResponse mockResponse = result.andExpect(MockMvcResultMatchers.status().isPartialContent()).andReturn().getResponse();
         PatchRecordsResponse recordsResponse = gson.fromJson(mockResponse.getContentAsString(), PatchRecordsResponse.class);
         assertEquals(3, recordsResponse.getRecordIds().size());
@@ -120,17 +120,17 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     }
 
     private PatchRecordsRequestModel getRequestPayload(String inputJson) throws Exception {
-        RecordQuery recordQuery = RecordQuery.builder().ids(Arrays.asList(new String[]{"opendes:npe:123"})).build();
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123"})).build();
         PatchRecordsRequestModel requestPayload = PatchRecordsRequestModel.builder()
-                .query(recordQuery)
+                .query(recordQueryPatch)
                 .ops(getJsonPatchFromJsonString(inputJson))
                 .build();
         return requestPayload;
     }
 
-    private PatchRecordsRequestModel getRequestPayloadMultipleIds(RecordQuery recordQuery, String inputJson) throws Exception {
+    private PatchRecordsRequestModel getRequestPayloadMultipleIds(RecordQueryPatch recordQueryPatch, String inputJson) throws Exception {
         PatchRecordsRequestModel requestPayload = PatchRecordsRequestModel.builder()
-                .query(recordQuery)
+                .query(recordQueryPatch)
                 .ops(getJsonPatchFromJsonString(inputJson))
                 .build();
         return requestPayload;
