@@ -35,7 +35,7 @@ environmentVariables:
   - name: ENVIRONMENT
     value: "{{ .Values.global.resourcePrefix }}"
   - name: JAVA_OPTS
-    value: "-Xms50M -Xmx900M"
+    value: "-Xms50M -Xmx1800M"
   - name: LOG_LEVEL
     value: "{{ default `INFO` .Values.global.logLevel }}"
   - name: SSM_ENABLED
@@ -64,10 +64,10 @@ maxConnections: 200
 replicaCount: 1
 resources:
   limits:
-    memory: 900M
+    memory: 1800M
   requests:
     cpu: 500m
-    memory: 900M
+    memory: 1800M
 autoscaling:
   minReplicas: 1
   maxReplicas: 100
