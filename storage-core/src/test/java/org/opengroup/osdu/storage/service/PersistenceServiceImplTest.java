@@ -348,6 +348,7 @@ public class PersistenceServiceImplTest {
             fail("expected exception");
         } catch (AppException e) {
             verify(this.logger, times(1)).warning("Reverting meta data changes");
+            verify(recordRepository, times(1)).createOrUpdate(recordMetadataList, Optional.empty());
             PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
             for(int i = 0; i < recordMetadataList.size(); i++) {
                 pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));

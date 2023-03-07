@@ -168,10 +168,11 @@ public class PersistenceServiceImpl implements PersistenceService {
 		} catch (Exception e) {
 			this.logger.warning("Reverting meta data changes");
 			try {
-				//TODO: restore to original document metadata state
+				this.commitDatastoreTransaction(recordMetadataList, collaborationContext);
 			} catch (NotImplementedException innerEx) {
 				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
 			} catch (Exception innerEx) {
+				logger.error("Error reverting metadata to its original state", innerEx);
 				e.addSuppressed(innerEx);
 			}
 			throw e;
