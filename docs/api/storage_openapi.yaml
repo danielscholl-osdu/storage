@@ -575,12 +575,14 @@ paths:
 #    patch:
 #      tags:
 #        - "records"
-#      summary: "Modify record data block using patch operations"
-#      description: "The API represents the patch update mechanism for record's data block. It allows\
+#      summary: "Modify record data and/or metadata using patch operations"
+#      description: "The API represents the patch update mechanism for record's data and/or metadata block. It allows\
 #        \ updating multiple records in one request. The currently supported operations are replace,\
-#        \ add, and remove. \
+#        \ add, and remove for Legal Tags, ACLs, Tags, Kind, Ancestry metadata properties \
+#        \ as well as 'data' and 'meta' blob properties. \
+#        \ The API performs patch based on the https://www.rfc-editor.org/rfc/rfc6902.html spec
 #        \ Required roles: 'users.datalake.editors' or 'users.datalake.admins'."
-#      operationId: "Patch update records"
+#      operationId: "Patch update records data and/or metadata"
 #      consumes:
 #        - "application/json-patch+json"
 #      produces:
@@ -595,11 +597,9 @@ paths:
 #          default: "tenant1"
 #        - in: "body"
 #          name: "body"
-#          required: false
+#          required: true
 #          schema:
-#            type: "array"
-#            items:
-#              $ref: "#/definitions/JsonPatchDataBlock"
+#            $ref: "#/definitions/PatchRecordsRequestModel"
 #      responses:
 #        200:
 #          description: "Records updated successfully."
@@ -1084,7 +1084,7 @@ definitions:
           - "key1"
           - "key2"
           - "key3"
-  JsonPatchDataBlock:
+  PatchRecordsRequestModel:
     type: "object"
     required:
       - "query"
@@ -1092,10 +1092,10 @@ definitions:
     properties:
       query:
         description: "Patch update query information"
-        $ref: "#/definitions/RecordQuery"
+        $ref: "#/definitions/RecordQueryPatch"
       ops:
         type: "array"
-        description: "List of operations for records path update"
+        description: "JsonPatch operations to be applied to all records"
         items:
           $ref: "#/definitions/PatchOperation"
     description: "Patch update input information"
@@ -1104,12 +1104,19 @@ definitions:
         - ids:
             - "tenant:type:unique-identifier:version"
       ops:
-        - op: "replace or add"
-          path: "/data/SpatialLocation/SpatialGeometryTypeID"
+        - op: 'replace'
+          path: '/data/SpatialLocation/SpatialGeometryTypeID'
           value:
-            - "value1"
-        - op: "remove"
-          path: "/data/ExtensionProperties/1"
+            - 'value1'
+        - op: 'remove'
+          path: '/data/ExtensionProperties/1'
+        - op: 'add'
+          path: "/tags"
+          value:
+            {
+              "tag1" : "value1",
+              "tag2" : "value2"
+            }
   RecordQuery:
     type: "object"
     required:
@@ -1121,6 +1128,17 @@ definitions:
         items:
           type: "string"
     description: "Patch api query specific information"
+  RecordQueryPatch:
+    type: "object"
+    required:
+      - "ids"
+    properties:
+      ids:
+        type: "array"
+        description: "Records ids to be patched"
+        items:
+          type: "string"
+    description: "Record IDs to apply patch to"
   PatchOperation:
     type: "object"
     required:
