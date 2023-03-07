@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -37,6 +39,9 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.apache.http.HttpStatus;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -81,6 +86,8 @@ public class PersistenceServiceImplTest {
     private RecordData recordsData;
 
     private Acl acl;
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Before
     public void setup() {
@@ -330,6 +337,84 @@ public class PersistenceServiceImplTest {
         List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
+    }
+
+    @Test
+    public void should_throwException_whenDatastoreErrorOccurs() throws IOException {
+        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).patch(anyList(), any(JsonPatch.class), any(Optional.class));
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+        try {
+            this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+            fail("expected exception");
+        } catch (AppException e) {
+            verify(this.logger, times(1)).warning("Reverting meta data changes");
+            PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
+            for(int i = 0; i < recordMetadataList.size(); i++) {
+                pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
+            }
+            verify(pubSubClient, never()).publishMessage(headers, pubSubInfos);
+        }
+    }
+
+    @Test
+    public void should_patchRecords_whenNoErrorOccurs_withoutKindUpdate() throws IOException {
+        doNothing().when(recordRepository).patch(anyList(), any(JsonPatch.class), any(Optional.class));
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+        PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
+        for(int i = 0; i < recordMetadataList.size(); i++) {
+            pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
+        }
+        this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+        verify(pubSubClient, times(1)).publishMessage(headers, pubSubInfos);
+    }
+
+    @Test
+    public void should_patchRecords_whenNoErrorOccurs_withKindUpdate() throws IOException {
+        doNothing().when(recordRepository).patch(anyList(), any(JsonPatch.class), any(Optional.class));
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+        PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
+        for(int i = 0; i < recordMetadataList.size(); i++) {
+            pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
+            pubSubInfos[i].setPreviousVersionKind(pubSubInfos[i].getKind());
+            pubSubInfos[i].setKind("newKind");
+        }
+        this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatchKindUpdate()), Optional.empty());
+        verify(pubSubClient, times(1)).publishMessage(headers, pubSubInfos);
+    }
+
+    private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata) {
+        return PubSubInfo.builder()
+                .id(recordMetadata.getId())
+                .kind(recordMetadata.getKind())
+                .op(OperationType.update)
+                .build();
+    }
+
+    private JsonPatch getJsonPatchFromJsonString(String jsonString) throws IOException {
+        final InputStream in = new ByteArrayInputStream(jsonString.getBytes());
+        return mapper.readValue(in, JsonPatch.class);
+    }
+
+    private String getValidInputJsonForPatch() {
+        return "[\n" +
+                "    {\n" +
+                "        \"op\": \"add\",\n" +
+                "        \"path\": \"/tags\",\n" +
+                "        \"value\": {\n" +
+                "            \"tag3\" : \"value3\"\n" +
+                "        }\n" +
+                "    }\n" +
+                "]";
+    }
+
+    private String getValidInputJsonForPatchKindUpdate() {
+        return "[\n" +
+                "    {\n" +
+                "         \"op\": \"replace\",\n" +
+                "         \"path\": \"/kind\",\n" +
+                "         \"value\": \"newKind\"\n" +
+                "    }\n" +
+                "]";
     }
 
     @SuppressWarnings("unchecked")
