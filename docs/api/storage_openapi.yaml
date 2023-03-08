@@ -6,7 +6,7 @@ info:
   title: "Storage APIs"
   contact:
     name: "OSDU Data Platform Team team"
-    email: "dps@[OSDU].org"
+    email: "dps@OSDU.org"
 host: "storage-[OSDU].appspot.com"
 basePath: "/api/storage/v2"
 tags:
@@ -577,13 +577,17 @@ paths:
 #        - "records"
 #      summary: "Modify record data and/or metadata using patch operations"
 #      description: "The API represents the patch update mechanism for record's data and/or metadata block. It allows\
-#        \ updating multiple records in one request. The currently supported operations are replace,\
-#        \ add, and remove for Legal Tags, ACLs, Tags, Kind, Ancestry metadata properties \
-#        \ as well as 'data' and 'meta' blob properties. \
-#        \ The API performs patch based on the https://www.rfc-editor.org/rfc/rfc6902.html spec
+#        \ updating multiple records in one request. Supported operations are replace, add and remove.\
+#        \ The record properties that can be updated depends on the 'Content-Type' header in the request.\
+#        \ If the Content-Type is 'application/json', only metadata updates are allowed on Legal tags, ACLs and Tags.\
+#        \ If the Content-Type is 'application/json-patch+json', metadata and data block updates are allowed. Allowed metadata\
+#        \ properties are Legal tags, ACLs, Tags, Kind, and Ancestry. Allowed data properties are 'data' and 'meta'.\
+#        \ When the Content-Type is 'application/json-patch+json', the API performs patch based on the\
+#        \ https://www.rfc-editor.org/rfc/rfc6902.html spec
 #        \ Required roles: 'users.datalake.editors' or 'users.datalake.admins'."
 #      operationId: "Patch update records data and/or metadata"
 #      consumes:
+#        - "application/json"
 #        - "application/json-patch+json"
 #      produces:
 #        - "application/json"
@@ -596,10 +600,17 @@ paths:
 #          type: "string"
 #          default: "tenant1"
 #        - in: "body"
-#          name: "body"
-#          required: true
+#          name: "Request payload for data and/or metadata update"
+#          description: "Use this payload with Content-Type 'application/json-patch+json'"
+#          required: false
 #          schema:
 #            $ref: "#/definitions/PatchRecordsRequestModel"
+#        - in: "body"
+#          name: "Request payload for metadata update only"
+#          description: "Use this payload with Content-Type 'application/json'"
+#          required: false
+#          schema:
+#            $ref: "#/definitions/RecordBulkUpdateParam"
 #      responses:
 #        200:
 #          description: "Records updated successfully."
@@ -1057,9 +1068,9 @@ definitions:
         $ref: "#/definitions/RecordQuery"
       ops:
         type: "array"
-        description: "List of operations for records pathc update"
+        description: "List of operations for records patch update"
         items:
-          $ref: "#/definitions/PatchOperation"
+          $ref: "#/definitions/MetadataBulkUpdateOperation"
     description: "Patch update input information"
     example:
       query:
@@ -1092,7 +1103,7 @@ definitions:
     properties:
       query:
         description: "Patch update query information"
-        $ref: "#/definitions/RecordQueryPatch"
+        $ref: "#/definitions/RecordQuery"
       ops:
         type: "array"
         description: "JsonPatch operations to be applied to all records"
@@ -1124,21 +1135,36 @@ definitions:
     properties:
       ids:
         type: "array"
-        description: "Records ids for whom patch operations going to be applied"
-        items:
-          type: "string"
-    description: "Patch api query specific information"
-  RecordQueryPatch:
-    type: "object"
-    required:
-      - "ids"
-    properties:
-      ids:
-        type: "array"
         description: "Records ids to be patched"
         items:
           type: "string"
-    description: "Record IDs to apply patch to"
+    description: "Patch api query specific information"
+  MetadataBulkUpdateOperation:
+    type: "object"
+    required:
+      - "op"
+      - "path"
+      - "value"
+    properties:
+      op:
+        type: "string"
+        description: "Type of the patch operation"
+        enum:
+        - "add"
+        - "replace"
+        - "remove"
+      path:
+        type: "string"
+        description: "Path for the patch operation"
+        example:
+          - '/tags'
+          - '/acl/viewers'
+      value:
+        type: "array"
+        description: "Value for the patch operation"
+        items:
+          type: "string"
+    description: "Metadata bulk update patch operation specific information"
   PatchOperation:
     type: "object"
     required:
@@ -1148,20 +1174,27 @@ definitions:
     properties:
       op:
         type: "string"
-        description: "Type of patch operation"
+        description: "Type of the patch operation"
         enum:
-        - "add"
-        - "replace"
-        - "remove"
+          - "add"
+          - "replace"
+          - "remove"
       path:
         type: "string"
-        description: "Path for batch operation"
+        description: "Path for the patch operation"
+        example:
+          - '/tags'
+          - '/acl/viewers'
+          - '/acl/owners'
+          - '/kind'
+          - '/legal/legaltags'
+          - '/ancestry/parents'
+          - '/data'
+          - '/meta'
       value:
-        type: "array"
-        description: "Path for batch operation"
-        items:
-          type: "string"
-    description: "Patch api operation specific information"
+        type: "object"
+        description: "Value for the patch operation depends on the operation and path attributes. Value can be an object, an array or a primitive value, depending on the path location"
+    description: "Data and/or metadata patch operation specific information"
   BulkUpdateRecordsResponse:
     type: "object"
     properties:
@@ -1189,7 +1222,7 @@ definitions:
         description: "List of locked record ids"
         items:
           type: "string"
-    description: "Result of the record batch update request."
+    description: "Result of the record metadata bulk update request."
   JsonPatchRecordsResponse:
     type: "object"
     properties:
@@ -1212,7 +1245,7 @@ definitions:
         description: "List of record ids that failed"
         items:
           type: "string"
-    description: "Result of the record batch update request."
+    description: "Result of the record data and/or metadata patch request."
   VersionInfo:
     type: "object"
     properties:
