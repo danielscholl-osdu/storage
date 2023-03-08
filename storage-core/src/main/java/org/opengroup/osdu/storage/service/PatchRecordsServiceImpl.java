@@ -15,9 +15,7 @@ import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
@@ -34,7 +32,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -158,25 +155,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         return recordsResponse;
     }
 
-    private Map<String, RecordMetadata> getRecordsMetadataFromRecords(List<Record> records, boolean isUpdate, String user,
-                  boolean isKindBeingUpdated, Map<String, RecordMetadata> existingRecordsMetadata) {
-        Map<String, RecordMetadata> recordsMetadata = new HashMap<>();
-        for(Record record : records) {
-            RecordMetadata recordMetadata = new RecordMetadata(record);
-            recordMetadata.setHash(recordBlocks.hashForRecordData(new RecordData(record)));
-            if(isUpdate) {
-                long currentTimestamp = clock.millis();
-                recordMetadata.setModifyUser(user);
-                recordMetadata.setModifyTime(currentTimestamp);
-                if(isKindBeingUpdated) {
-                    recordMetadata.setPreviousVersionKind(existingRecordsMetadata.get(record.getId()).getKind());
-                }
-            }
-            recordsMetadata.put(record.getId(), recordMetadata);
-        }
-        return recordsMetadata;
-    }
-
     private void auditCreateOrUpdateRecords(PatchRecordsResponse recordsResponse) {
         List<String> successfulUpdates = recordsResponse.getRecordIds();
         if (!successfulUpdates.isEmpty()) {
@@ -232,17 +210,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         while(nodes.hasNext()) {
             JsonNode currentNode = nodes.next();
             if(currentNode.findPath("path").toString().contains("data") || currentNode.findPath("path").toString().contains("meta"))
-                return true;
-        }
-        return false;
-    }
-
-    private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
-        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        Iterator<JsonNode> nodes = patchNode.elements();
-        while(nodes.hasNext()) {
-            JsonNode currentNode = nodes.next();
-            if(currentNode.findPath("path").toString().contains("kind"))
                 return true;
         }
         return false;
