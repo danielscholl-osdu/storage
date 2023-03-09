@@ -3,8 +3,6 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -54,9 +52,8 @@ public class PatchRecordsServiceImplTest {
 
     private static final String RECORD_ID1 = "tenant:record:Id1";
     private static final String RECORD_ID2 = "tenant:record:Id2";
-    private static final List<String> RECORD_IDS = new LinkedList<>(Arrays.asList(RECORD_ID1, RECORD_ID2));
-    private static final String[] OWNERS = new String[]{"owner1@slb.com", "owner2@slb.com"};
-    private static final String[] VIEWERS = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+    private static final String[] OWNERS = new String[]{"owner1@company.com", "owner2@company.com"};
+    private static final String[] VIEWERS = new String[]{"viewer1@company.com", "viewer2@company.com"};
     private static final String USER = "user";
     private static final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.empty();
 
@@ -87,6 +84,7 @@ public class PatchRecordsServiceImplTest {
     private PatchRecordsServiceImpl sut;
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final List<String> recordIds = new LinkedList<>(Arrays.asList(RECORD_ID1, RECORD_ID2));
 
     @Test
     public void shouldSuccessfullyPatchRecordData() throws IOException {
@@ -94,12 +92,14 @@ public class PatchRecordsServiceImplTest {
         MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
         when(batchService.getMultipleRecords(any(MultiRecordIds.class), eq(COLLABORATION_CONTEXT))).thenReturn(multiRecordInfo);
 
-        PatchRecordsResponse result = sut.patchRecords(RECORD_IDS, jsonPatch, USER, COLLABORATION_CONTEXT);
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
         verifyValidatorsWereInvocated(jsonPatch);
         assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
         assertEquals(Collections.emptyList(), result.getFailedRecordIds());
-        assertEquals(RECORD_IDS, result.getRecordIds());
+        assertEquals(Collections.emptyList(), result.getErrors());
+        assertEquals(recordIds, result.getRecordIds());
+        assertThat(result.getRecordCount(), is(2));
         Record patchedRecord1 = getRecord(RECORD_ID1);
         patchedRecord1.setData(Collections.singletonMap("Hello", "world"));
         Record patchedRecord2 = getRecord(RECORD_ID2);
@@ -113,44 +113,47 @@ public class PatchRecordsServiceImplTest {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"value\"}]"));
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
-        when(recordRepository.get(RECORD_IDS, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
         List<RecordMetadata> recordMetadataList = new ArrayList<>(existingRecords.values());
         when(opaService.validateUserAccessToRecords(recordMetadataList, OperationType.update)).thenReturn(Collections.emptyList());
         List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
         recordMetadataToBePatched.add(existingRecords.get(RECORD_ID1));
         recordMetadataToBePatched.add(existingRecords.get(RECORD_ID2));
 
-        PatchRecordsResponse result = sut.patchRecords(RECORD_IDS, jsonPatch, USER, COLLABORATION_CONTEXT);
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
         verifyValidatorsWereInvocated(jsonPatch);
         assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
         assertEquals(Collections.emptyList(), result.getFailedRecordIds());
-        assertEquals(RECORD_IDS, result.getRecordIds());
+        assertEquals(Collections.emptyList(), result.getErrors());
+        assertEquals(recordIds, result.getRecordIds());
+        assertThat(result.getRecordCount(), is(2));
         verify(persistenceService).patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, COLLABORATION_CONTEXT);
         verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
 
     }
 
     @Test
-    @Ignore("is passes separately, but not together with other tests")
     public void shouldSuccessfullyPatchRecordMetaData_whenOpaIsDisabled() throws IOException {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"value\"}]"));
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
-        when(recordRepository.get(RECORD_IDS, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
         when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(true);
         List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
         recordMetadataToBePatched.add(existingRecords.get(RECORD_ID1));
         recordMetadataToBePatched.add(existingRecords.get(RECORD_ID2));
 
-        PatchRecordsResponse result = sut.patchRecords(RECORD_IDS, jsonPatch, USER, COLLABORATION_CONTEXT);
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
         verifyValidatorsWereInvocated(jsonPatch);
         verify(patchInputValidator).validateLegalTags(jsonPatch);
         verify(entitlementsAndCacheService, times(2)).hasOwnerAccess(headers, OWNERS);
         assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
         assertEquals(Collections.emptyList(), result.getFailedRecordIds());
-        assertEquals(RECORD_IDS, result.getRecordIds());
+        assertEquals(Collections.emptyList(), result.getErrors());
+        assertEquals(recordIds, result.getRecordIds());
+        assertThat(result.getRecordCount(), is(2));
         verify(persistenceService).patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, COLLABORATION_CONTEXT);
         verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
     }
@@ -161,28 +164,30 @@ public class PatchRecordsServiceImplTest {
         MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
         when(batchService.getMultipleRecords(any(MultiRecordIds.class), eq(COLLABORATION_CONTEXT))).thenReturn(multiRecordInfo);
 
-        PatchRecordsResponse result = sut.patchRecords(RECORD_IDS, inValidJsonPatch, USER, COLLABORATION_CONTEXT);
+        PatchRecordsResponse result = sut.patchRecords(recordIds, inValidJsonPatch, USER, COLLABORATION_CONTEXT);
 
         verifyValidatorsWereInvocated(inValidJsonPatch);
         assertThat(result.getFailedRecordIds(), containsInAnyOrder(RECORD_ID1, RECORD_ID2));
         assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
         assertEquals(Collections.emptyList(), result.getRecordIds());
         assertThat(result.getRecordCount(), is(0));
+        assertThat(result.getFailedRecordIds().size(), is(2));
+        assertThat(result.getErrors().size(), is(2));
+        assertThat(result.getErrors(), contains("Json processing error for record: "+RECORD_ID1, "Json processing error for record: "+RECORD_ID2));
         verify(logger).error(eq("Json processing exception when updating record: " + RECORD_ID1), any(JsonProcessingException.class));
         verify(logger).error(eq("Json processing exception when updating record: " + RECORD_ID2), any(JsonProcessingException.class));
         verify(ingestionService, never()).createUpdateRecords(eq(false), any(), eq(USER), eq(COLLABORATION_CONTEXT));
     }
 
     @Test
-    @Ignore("Need to fix PatchRecordsResponse.recordIds for data update")
     public void shouldPatchPartiallyRecordDataPatch_ifOneRecordIsNotFound() throws IOException {
-        JsonPatch inValidJsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\":\"world\"}}]"));
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\":\"world\"}}]"));
         MultiRecordInfo multiRecordInfo = getMultiRecordInfoWithInvalidRecords();
         when(batchService.getMultipleRecords(any(MultiRecordIds.class), eq(COLLABORATION_CONTEXT))).thenReturn(multiRecordInfo);
 
-        PatchRecordsResponse result = sut.patchRecords(RECORD_IDS, inValidJsonPatch, USER, COLLABORATION_CONTEXT);
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
-        verifyValidatorsWereInvocated(inValidJsonPatch);
+        verifyValidatorsWereInvocated(jsonPatch);
         assertThat(result.getNotFoundRecordIds(), contains(RECORD_ID2));
         assertThat(result.getRecordIds(), contains(RECORD_ID1));
         assertThat(result.getRecordCount(), is(1));
@@ -239,7 +244,7 @@ public class PatchRecordsServiceImplTest {
     }
 
     private void verifyValidatorsWereInvocated(JsonPatch jsonPatch) {
-        verify(recordUtil).validateRecordIds(RECORD_IDS);
+        verify(recordUtil).validateRecordIds(recordIds);
         verify(patchInputValidator).validateDuplicates(jsonPatch);
         verify(patchInputValidator).validateAcls(jsonPatch);
         verify(patchInputValidator).validateKind(jsonPatch);
