@@ -127,7 +127,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     errors.add("Json processing error for record: "+validRecord.getId());
                 }
             }
-            if(!recordsToPersist.isEmpty()) {
+            if (!recordsToPersist.isEmpty()) {
                 ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
             }
         } else {
