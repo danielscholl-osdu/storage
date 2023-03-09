@@ -29,8 +29,25 @@ public class CollaborationUtilTest {
     }
 
     @Test
-    public void shouldGetOnlyId_IfEmptyCollaborationContextIsProvided() {
+    public void shouldGetCorrectIdWithoutNamespace_IfCollaborationContextIsProvided() {
+        UUID CollaborationId = UUID.randomUUID();
+        CollaborationContext collaborationContext= CollaborationContext.builder().id(CollaborationId).application("unit testing").build();
+
+        String result = CollaborationUtil.getIdWithoutNamespace(collaborationContext.getId()+RECORD_ID, Optional.of(collaborationContext));
+
+        assertEquals(result, RECORD_ID);
+    }
+
+    @Test
+    public void shouldGetOnlyId_IfEmptyCollaborationContextIsProvided_whenGetIdWithNamespace() {
         String result = CollaborationUtil.getIdWithNamespace(RECORD_ID, Optional.empty());
+
+        assertEquals(result, RECORD_ID);
+    }
+
+    @Test
+    public void shouldGetOnlyId_IfEmptyCollaborationContextIsProvided_whenGetIdWithoutNamespace() {
+        String result = CollaborationUtil.getIdWithoutNamespace(RECORD_ID, Optional.empty());
 
         assertEquals(result, RECORD_ID);
     }

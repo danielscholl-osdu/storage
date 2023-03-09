@@ -82,7 +82,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public void patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+    public Map<String, String> patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
         List<String> docIds = new ArrayList<>();
         List<String> partitionKeys = new ArrayList<>();
         for(RecordMetadata recordMetadata : recordMetadataList) {
@@ -90,8 +90,23 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
             partitionKeys.add(recordMetadata.getId());
         }
         CosmosPatchOperations cosmosPatchOperations = getCosmosPatchOperations(jsonPatch);
+        Map<String, String> recordIdToError = new HashMap<>();
+        try {
+            cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docIds, cosmosPatchOperations, partitionKeys, 1);
+        } catch (AppException e) {
+            if(e.getOriginalException()!= null && e.getOriginalException() instanceof AppException) {
+                AppException originalException = (AppException)e.getOriginalException();
+                String[] originalExceptionErrors = originalException.getError().getErrors();
+                for(String cosmosError : originalExceptionErrors) {
+                    String[] idAndError = cosmosError.split(":", 2);
+                    recordIdToError.put(CollaborationUtil.getIdWithoutNamespace(idAndError[0], collaborationContext), idAndError[1]);
+                }
+            } else {
+                throw e;
+            }
+        }
 
-        cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docIds, cosmosPatchOperations, partitionKeys, 1);
+        return recordIdToError;
     }
 
     @Override

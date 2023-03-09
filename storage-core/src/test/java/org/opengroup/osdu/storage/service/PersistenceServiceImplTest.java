@@ -358,20 +358,41 @@ public class PersistenceServiceImplTest {
     }
 
     @Test
+    public void should_returnErrors_whenDatastoreErrorOccurs() throws IOException {
+        Map<String, String> patchErrors = new HashMap<>();
+        patchErrors.put("id123", "basic error");
+        when(this.recordRepository.patch(anyList(), any(JsonPatch.class), any(Optional.class))).thenReturn(patchErrors);
+        List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
+        Map<String, String> response = this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+        verify(this.logger, times(1)).warning("Reverting meta data changes");
+        PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
+        for(int i = 0; i < recordMetadataList.size(); i++) {
+            pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
+        }
+        verify(pubSubClient, never()).publishMessage(headers, pubSubInfos);
+        verify(recordRepository, times(1)).createOrUpdate(recordMetadataList, Optional.empty());
+        assertTrue(response.containsKey("id123"));
+        assertTrue(response.get("id123").equals("basic error"));
+    }
+
+    @Test
     public void should_patchRecords_whenNoErrorOccurs_withoutKindUpdate() throws IOException {
-        doNothing().when(recordRepository).patch(anyList(), any(JsonPatch.class), any(Optional.class));
+        Map<String, String> patchErrors = new HashMap<>();
+        when(recordRepository.patch(anyList(), any(JsonPatch.class), any(Optional.class))).thenReturn(patchErrors);
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
         PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
         for(int i = 0; i < recordMetadataList.size(); i++) {
             pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
         }
-        this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+        patchErrors = this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
         verify(pubSubClient, times(1)).publishMessage(headers, pubSubInfos);
+        assertTrue(patchErrors.isEmpty());
     }
 
     @Test
     public void should_patchRecords_whenNoErrorOccurs_withKindUpdate() throws IOException {
-        doNothing().when(recordRepository).patch(anyList(), any(JsonPatch.class), any(Optional.class));
+        Map<String, String> patchErrors = new HashMap<>();
+        when(recordRepository.patch(anyList(), any(JsonPatch.class), any(Optional.class))).thenReturn(patchErrors);
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
         PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
         for(int i = 0; i < recordMetadataList.size(); i++) {
@@ -379,8 +400,9 @@ public class PersistenceServiceImplTest {
             pubSubInfos[i].setPreviousVersionKind(pubSubInfos[i].getKind());
             pubSubInfos[i].setKind("newKind");
         }
-        this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatchKindUpdate()), Optional.empty());
+        patchErrors = this.sut.patchRecordsMetadata(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatchKindUpdate()), Optional.empty());
         verify(pubSubClient, times(1)).publishMessage(headers, pubSubInfos);
+        assertTrue(patchErrors.isEmpty());
     }
 
     private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata) {
