@@ -18,4 +18,6 @@ public class PatchRecordsResponse {
     private List<String> notFoundRecordIds = new ArrayList<>();
     @Builder.Default
     private List<String> failedRecordIds = new ArrayList<>();
+    @Builder.Default
+    private List<String> errors = new ArrayList<>();
 }

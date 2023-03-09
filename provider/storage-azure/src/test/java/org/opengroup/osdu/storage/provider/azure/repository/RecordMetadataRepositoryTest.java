@@ -17,6 +17,8 @@ import org.opengroup.osdu.azure.cosmosdb.CosmosStore;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.AppError;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -24,6 +26,7 @@ import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayInputStream;
@@ -31,14 +34,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -149,8 +157,9 @@ public class RecordMetadataRepositoryTest {
         recordMetadataList.add(recordMetadata);
         List<String> partitionKeys = new ArrayList<>();
         partitionKeys.add(RECORD_ID1);
-        recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.of(collaborationContext));
+        Map<String, String> recordErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.of(collaborationContext));
         verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        assertTrue((recordErrors.isEmpty()));
     }
 
     @Test
@@ -162,8 +171,86 @@ public class RecordMetadataRepositoryTest {
         recordMetadataList.add(recordMetadata);
         List<String> partitionKeys = new ArrayList<>();
         partitionKeys.add(RECORD_ID1);
-        recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+        Map<String, String> recordErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
         verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        assertTrue((recordErrors.isEmpty()));
+    }
+
+    @Test
+    public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
+        List<String> docIds = new ArrayList<>();
+        docIds.add(RECORD_ID1);
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        RecordMetadata recordMetadata = createRecord(RECORD_ID1);
+        recordMetadataList.add(recordMetadata);
+        List<String> partitionKeys = new ArrayList<>();
+        partitionKeys.add(RECORD_ID1);
+
+        AppException appException = mock(AppException.class);
+        AppException originalException = mock(AppException.class);
+        AppError appError = mock(AppError.class);
+        String[] errors = new String[2];
+        errors[0] = "recordId123:unknown error";
+        errors[1] = "recordId456:cosmos error";
+        when(appError.getErrors()).thenReturn(errors);
+        when(originalException.getError()).thenReturn(appError);
+        when(appException.getOriginalException()).thenReturn(originalException);
+
+        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        Map<String, String> patchErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+        assertEquals(2, patchErrors.size());
+        assertEquals("unknown error", patchErrors.get("recordId123"));
+        assertEquals("cosmos error", patchErrors.get("recordId456"));
+    }
+
+    @Test
+    public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithCollaborationContext() throws IOException {
+        UUID CollaborationId = UUID.randomUUID();
+        CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
+        String expectedDocId = CollaborationId + RECORD_ID1;
+        List<String> docIds = new ArrayList<>();
+        docIds.add(expectedDocId);
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        RecordMetadata recordMetadata = createRecord(RECORD_ID1);
+        recordMetadataList.add(recordMetadata);
+        List<String> partitionKeys = new ArrayList<>();
+        partitionKeys.add(RECORD_ID1);
+
+        AppException appException = mock(AppException.class);
+        AppException originalException = mock(AppException.class);
+        AppError appError = mock(AppError.class);
+        String[] errors = new String[2];
+        errors[0] = CollaborationId+"recordId123:unknown error";
+        errors[1] = CollaborationId+"recordId456:cosmos error";
+        when(appError.getErrors()).thenReturn(errors);
+        when(originalException.getError()).thenReturn(appError);
+        when(appException.getOriginalException()).thenReturn(originalException);
+
+        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        Map<String, String> patchErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.of(collaborationContext));
+        assertEquals(2, patchErrors.size());
+        assertEquals("unknown error", patchErrors.get("recordId123"));
+        assertEquals("cosmos error", patchErrors.get("recordId456"));
+    }
+
+    @Test
+    public void shouldThrowException_whenPatchFailsWithOtherException() throws IOException {
+        List<String> docIds = new ArrayList<>();
+        docIds.add(RECORD_ID1);
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        RecordMetadata recordMetadata = createRecord(RECORD_ID1);
+        recordMetadataList.add(recordMetadata);
+        List<String> partitionKeys = new ArrayList<>();
+        partitionKeys.add(RECORD_ID1);
+
+        AppException appException = mock(AppException.class);
+        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        try {
+            recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+            fail("expected exception");
+        } catch (AppException e) {
+
+        }
     }
 
     @Test

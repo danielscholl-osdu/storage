@@ -94,6 +94,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     public PatchRecordsResponse patchRecords(List<String> recordIds, JsonPatch jsonPatch, String user, Optional<CollaborationContext> collaborationContext) {
         List<String> failedRecordIds = new ArrayList<>();
         List<String> notFoundRecordIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
 
         recordUtil.validateRecordIds(recordIds);
         patchInputValidator.validateDuplicates(jsonPatch);
@@ -106,6 +107,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         if(dataUpdate) {
             MultiRecordInfo multiRecordInfo = batchService.getMultipleRecords(new MultiRecordIds(recordIds, attributes), collaborationContext);
             notFoundRecordIds = multiRecordInfo.getInvalidRecords();
+            recordIds.removeAll(notFoundRecordIds);
 
             List<Record> recordsToPersist = new ArrayList<>();
             for(Record validRecord : multiRecordInfo.getRecords()) {
@@ -117,13 +119,17 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     recordIds.remove(validRecord.getId());
                     failedRecordIds.add(validRecord.getId());
                     logger.error("Json patch exception when updating record: "+validRecord.getId(), e);
+                    errors.add("Json patch error for record: "+validRecord.getId());
                 } catch (JsonProcessingException e) {
                     recordIds.remove(validRecord.getId());
                     failedRecordIds.add(validRecord.getId());
                     logger.error("Json processing exception when updating record: "+validRecord.getId(), e);
+                    errors.add("Json processing error for record: "+validRecord.getId());
                 }
             }
-            ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
+            if(!recordsToPersist.isEmpty()) {
+                ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
+            }
         } else {
             Map<String, RecordMetadata> existingRecords = recordRepository.get(recordIds, collaborationContext);
             if(isOpaEnabled) {
@@ -141,13 +147,20 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     recordMetadataToBePatched.add(metadata);
                 }
             }
-            persistenceService.patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, collaborationContext);
+            if(!recordMetadataToBePatched.isEmpty()) {
+                Map<String, String> recordIdPatchError = persistenceService.patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, collaborationContext);
+                for(String currentRecordId : recordIdPatchError.keySet()) {
+                    recordIds.remove(recordIdPatchError.remove(currentRecordId));
+                    errors.add(recordIdPatchError.get(currentRecordId));
+                }
+            }
         }
 
         PatchRecordsResponse recordsResponse = PatchRecordsResponse.builder()
                 .notFoundRecordIds(notFoundRecordIds)
                 .recordIds(recordIds)
                 .failedRecordIds(failedRecordIds)
+                .errors(errors)
                 .recordCount(recordIds.size()).build();
 
         auditCreateOrUpdateRecords(recordsResponse);
