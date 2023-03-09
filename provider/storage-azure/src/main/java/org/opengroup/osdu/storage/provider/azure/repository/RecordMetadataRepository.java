@@ -98,7 +98,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 AppException originalException = (AppException)e.getOriginalException();
                 String[] originalExceptionErrors = originalException.getError().getErrors();
                 for(String cosmosError : originalExceptionErrors) {
-                    String[] idAndError = cosmosError.split(":", 2);
+                    String[] idAndError = cosmosError.split("\\|");
+                    //assuming azure library throws an error in the format of "recordId|<message with responseCode>|<exception>"
                     recordIdToError.put(CollaborationUtil.getIdWithoutNamespace(idAndError[0], collaborationContext), idAndError[1]);
                 }
             } else {

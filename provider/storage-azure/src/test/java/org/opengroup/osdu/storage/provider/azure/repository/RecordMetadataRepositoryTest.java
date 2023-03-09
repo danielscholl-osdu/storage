@@ -190,8 +190,8 @@ public class RecordMetadataRepositoryTest {
         AppException originalException = mock(AppException.class);
         AppError appError = mock(AppError.class);
         String[] errors = new String[2];
-        errors[0] = "recordId123:unknown error";
-        errors[1] = "recordId456:cosmos error";
+        errors[0] = "recordId:123|unknown error with status 500|unknown exception: reason is|also-unknown";
+        errors[1] = "recordId456|cosmos error with status 400";
         when(appError.getErrors()).thenReturn(errors);
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);
@@ -199,8 +199,8 @@ public class RecordMetadataRepositoryTest {
         doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
         Map<String, String> patchErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
         assertEquals(2, patchErrors.size());
-        assertEquals("unknown error", patchErrors.get("recordId123"));
-        assertEquals("cosmos error", patchErrors.get("recordId456"));
+        assertEquals("unknown error with status 500", patchErrors.get("recordId:123"));
+        assertEquals("cosmos error with status 400", patchErrors.get("recordId456"));
     }
 
     @Test
@@ -220,8 +220,8 @@ public class RecordMetadataRepositoryTest {
         AppException originalException = mock(AppException.class);
         AppError appError = mock(AppError.class);
         String[] errors = new String[2];
-        errors[0] = CollaborationId+"recordId123:unknown error";
-        errors[1] = CollaborationId+"recordId456:cosmos error";
+        errors[0] = CollaborationId+"recordId:123|unknown error with status 500|unknown exception";
+        errors[1] = CollaborationId+"recordId456|cosmos error with status 400";
         when(appError.getErrors()).thenReturn(errors);
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);
@@ -229,8 +229,8 @@ public class RecordMetadataRepositoryTest {
         doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
         Map<String, String> patchErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.of(collaborationContext));
         assertEquals(2, patchErrors.size());
-        assertEquals("unknown error", patchErrors.get("recordId123"));
-        assertEquals("cosmos error", patchErrors.get("recordId456"));
+        assertEquals("unknown error with status 500", patchErrors.get("recordId:123"));
+        assertEquals("cosmos error with status 400", patchErrors.get("recordId456"));
     }
 
     @Test
