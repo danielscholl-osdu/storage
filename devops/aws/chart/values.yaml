@@ -64,10 +64,10 @@ maxConnections: 200
 replicaCount: 1
 resources:
   limits:
-    memory: 1800M
+    memory: 2300M
   requests:
     cpu: 500m
-    memory: 1800M
+    memory: 2300M
 autoscaling:
   minReplicas: 1
   maxReplicas: 100
