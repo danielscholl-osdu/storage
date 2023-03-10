@@ -15,7 +15,6 @@ import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JsonPatchPathValidatorTest {
@@ -56,7 +55,7 @@ public class JsonPatchPathValidatorTest {
     public void should_returnTrue_ifPatchHasValidAclPath() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
-                "             \"path\": \"/acl/viewers\"," +
+                "             \"path\": \"/acl/viewers/0\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
@@ -64,14 +63,36 @@ public class JsonPatchPathValidatorTest {
     }
 
     @Test
+    public void should_fail_ifPatchHasInValidAclPathFoAddOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/acl/viewers\"," +
+                "             \"value\": \"some_value\"" +
+                "            }]";
+
+        exceptionRulesAndMethodRun(jsonString);
+    }
+
+    @Test
     public void should_returnTrue_ifPatchHasValidLegalPath() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/legal/legaltags/-\"," +
+                "             \"value\": \"some_value\"" +
+                "            }]";
+
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void should_fail_ifPatchHasInValidLegalPathForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/legal/legaltags\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+        exceptionRulesAndMethodRun(jsonString);
     }
 
     @Test
@@ -159,7 +180,7 @@ public class JsonPatchPathValidatorTest {
 
     private void exceptionRulesAndMethodRun(String jsonString) throws IOException {
         exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_PATH_FOR_REMOVE_OPERATION);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OR_REMOVE_OPERATION);
 
         sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }
