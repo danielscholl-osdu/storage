@@ -5,6 +5,7 @@ import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.opengroup.osdu.storage.validation.api.ValidBulkQueryPatch;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.CollectionUtils;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -13,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_RECORD_ID_PATCH;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.PATCH_RECORDS_MAX;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.RECORD_ID_LIST_NOT_EMPTY;
 
 public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQueryPatch, RecordQueryPatch> {
 
@@ -32,6 +35,21 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
         }
 
         List<String> recordIds = value.getIds();
+
+        if(CollectionUtils.isEmpty(recordIds)) {
+            throw RequestValidationException.builder()
+                    .status(HttpStatus.BAD_REQUEST)
+                    .message(RECORD_ID_LIST_NOT_EMPTY)
+                    .build();
+        }
+
+        if(recordIds.size() > 100) {
+            throw RequestValidationException.builder()
+                    .status(HttpStatus.BAD_REQUEST)
+                    .message(PATCH_RECORDS_MAX)
+                    .build();
+        }
+
         Set<String> ids = new HashSet<>();
         for (String recordId : recordIds) {
             if (ids.contains(recordId)) {

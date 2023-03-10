@@ -18,6 +18,8 @@ import static org.junit.Assert.assertTrue;
 import static org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.DUPLICATE_RECORD_ID;
 import static org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.INVALID_PAYLOAD;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_RECORD_ID_PATCH;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.PATCH_RECORDS_MAX;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.RECORD_ID_LIST_NOT_EMPTY;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BulkQueryPatchValidatorTest {
@@ -43,6 +45,32 @@ public class BulkQueryPatchValidatorTest {
     @Test
     public void should_throwValidationException_ifNullInput() {
         exceptionRulesAndMethodRun(null, INVALID_PAYLOAD);
+    }
+
+    @Test
+    public void should_throwValidationException_ifRecordListIsNull() {
+        RecordQueryPatch recordQueryPatch = new RecordQueryPatch();
+        recordQueryPatch.setIds(null);
+        exceptionRulesAndMethodRun(recordQueryPatch, RECORD_ID_LIST_NOT_EMPTY);
+    }
+
+    @Test
+    public void should_throwValidationException_ifRecordListIsEmpty() {
+        RecordQueryPatch recordQueryPatch = new RecordQueryPatch();
+        List<String> recordIds = new ArrayList<>();
+        recordQueryPatch.setIds(recordIds);
+        exceptionRulesAndMethodRun(recordQueryPatch, RECORD_ID_LIST_NOT_EMPTY);
+    }
+
+    @Test
+    public void should_throwValidationException_ifRecordListHasMoreThan100Ids() {
+        RecordQueryPatch recordQueryPatch = new RecordQueryPatch();
+        List<String> recordIds = new ArrayList<>();
+        for(int i = 0; i < 101; i++) {
+            recordIds.add("id"+i);
+        }
+        recordQueryPatch.setIds(recordIds);
+        exceptionRulesAndMethodRun(recordQueryPatch, PATCH_RECORDS_MAX);
     }
 
     @Test

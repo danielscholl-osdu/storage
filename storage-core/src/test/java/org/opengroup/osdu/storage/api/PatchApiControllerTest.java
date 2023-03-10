@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +52,8 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Test
     public void should_returnUnauthorized_when_patchRecordsWithViewerPermissions() throws Exception {
         setupAuthorization(StorageRole.VIEWER);
-        ResultActions result = sendRequest(getRequestPayload(getValidInputJson()));
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123"})).build();
+        ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isForbidden()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
         Assert.assertEquals(403, appError.getCode());
@@ -62,7 +64,8 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Test
     public void should_return400_when_patchRecordsAndOperationOtherThanAddRemoveOrReplace() throws Exception {
         setupAuthorization(StorageRole.CREATOR);
-        ResultActions result = sendRequest(getRequestPayload(getInvalidInputJsonOp()));
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123"})).build();
+        ResultActions result = sendRequest(getRequestPayload(getInValidInputJsonBadOp(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
         Assert.assertEquals(400, appError.getCode());
@@ -73,12 +76,49 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Test
     public void should_return400_when_patchRecordsAndUpdatingMetadataOtherThanAclTagsAncestryLegalOrKind() throws Exception {
         setupAuthorization(StorageRole.ADMIN);
-        ResultActions result = sendRequest(getRequestPayload(getInvalidInputJsonPath()));
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123"})).build();
+        ResultActions result = sendRequest(getRequestPayload(getInValidInputJsonBadPath(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
         Assert.assertEquals(400, appError.getCode());
         Assert.assertEquals("Validation failed", appError.getReason());
         Assert.assertEquals(ValidationDoc.INVALID_PATCH_PATH, appError.getMessage());
+    }
+
+    @Test
+    public void should_return400_when_patchingMoreThan100Records() throws Exception {
+        setupAuthorization(StorageRole.ADMIN);
+        RecordQueryPatch recordQueryPatch = getRecordQueryPatchFor101Records();
+        ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
+        MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
+        AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
+        Assert.assertEquals(400, appError.getCode());
+        Assert.assertEquals("Validation failed", appError.getReason());
+        Assert.assertEquals(ValidationDoc.PATCH_RECORDS_MAX, appError.getMessage());
+    }
+
+    @Test
+    public void should_return400_when_patchingZeroRecords() throws Exception {
+        setupAuthorization(StorageRole.ADMIN);
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{})).build();
+        ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
+        MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
+        AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
+        Assert.assertEquals(400, appError.getCode());
+        Assert.assertEquals("Validation failed", appError.getReason());
+        Assert.assertEquals(ValidationDoc.RECORD_ID_LIST_NOT_EMPTY, appError.getMessage());
+    }
+
+    @Test
+    public void should_return400_when_patchingNullRecords() throws Exception {
+        setupAuthorization(StorageRole.ADMIN);
+        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(null).build();
+        ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
+        MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
+        AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
+        Assert.assertEquals(400, appError.getCode());
+        Assert.assertEquals("Validation failed", appError.getReason());
+        Assert.assertEquals(ValidationDoc.RECORD_ID_LIST_NOT_EMPTY, appError.getMessage());
     }
 
     @Test
@@ -119,8 +159,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         assertEquals(0, recordsResponse.getNotFoundRecordIds().size());
     }
 
-    private PatchRecordsRequestModel getRequestPayload(String inputJson) throws Exception {
-        RecordQueryPatch recordQueryPatch = RecordQueryPatch.builder().ids(Arrays.asList(new String[]{"opendes:npe:123"})).build();
+    private PatchRecordsRequestModel getRequestPayload(String inputJson, RecordQueryPatch recordQueryPatch) throws Exception {
         PatchRecordsRequestModel requestPayload = PatchRecordsRequestModel.builder()
                 .query(recordQueryPatch)
                 .ops(getJsonPatchFromJsonString(inputJson))
@@ -153,7 +192,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
                 "]";
     }
 
-    private String getInvalidInputJsonOp() {
+    private String getInValidInputJsonBadOp() {
         return "[\n" +
                 "    {\n" +
                 "        \"op\": \"test\",\n" +
@@ -165,16 +204,24 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
                 "]";
     }
 
-    private String getInvalidInputJsonPath() {
+    private String getInValidInputJsonBadPath() {
         return "[\n" +
                 "    {\n" +
-                "        \"op\": \"replace\",\n" +
+                "        \"op\": \"add\",\n" +
                 "        \"path\": \"/other\",\n" +
                 "        \"value\": {\n" +
                 "            \"tag3\" : \"value3\"\n" +
                 "        }\n" +
                 "    }\n" +
                 "]";
+    }
+
+    private RecordQueryPatch getRecordQueryPatchFor101Records() {
+        List<String> recordIds = new ArrayList<>();
+        for(int i = 0; i < 101; i++) {
+            recordIds.add("opendes:npe:123"+i);
+        }
+        return RecordQueryPatch.builder().ids(recordIds).build();
     }
 
     @Override
