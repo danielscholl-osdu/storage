@@ -36,6 +36,7 @@ import java.util.List;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opengroup.osdu.storage.conversion.CrsConversionServiceErrorMessages.UNEXPECTED_DATA_FORMAT_JSON_OBJECT;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConversionServiceTest {
@@ -81,6 +82,7 @@ public class ConversionServiceTest {
     private static final String COMBINED_ANY_CRS_META_FOR_RECORD = "{\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpudDate\":\"03/28/2012\",\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"bbox\":null,\"type\":\"AnyCrsPoint\"},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}},\"meta\":[{\"propertyValues\":[\"MM/dd/yyyy\"],\"persistableReference\":\"{\\\"type\\\": \\\"DAT\\\", \\\"format\\\": \\\"MM/dd/yyyy\\\"}\",\"uncertainty\":0,\"kind\":\"DateTime\",\"propertyNames\":[\"SpudDate\"]}]}";
     private static final String COMBINED_ANY_CRS_CONVERTED_RECORD = "{\"acl\":{\"owners\":[\"owners@unittest.com\"],\"viewers\":[\"viewers@unittest.com\"]},\"data\":{\"SpudDate\":\"03/28/2012\",\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"type\":\"AnyCrsPoint\"},\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"Wgs84Coordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[5.7500000010406245,59.000000000399105,1.9999999999999998],\"type\":\"Point\"},\"properties\":{},\"type\":\"Feature\"}],\"persistableReferenceCrs\":null,\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"FeatureCollection\"},\"X\":16,\"Y\":10,\"Z\":0}},\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"meta\":[{\"propertyValues\":[\"MM/dd/yyyy\"],\"persistableReference\":\"{\\\"type\\\": \\\"DAT\\\", \\\"format\\\": \\\"MM/dd/yyyy\\\"}\",\"uncertainty\":0,\"kind\":\"DateTime\",\"propertyNames\":[\"SpudDate\"]}]}";
     private static final String COMBINED_ANY_CRS_META_FOR_CONVERTED_RECORD = "{\"acl\":{\"owners\":[\"owners@unittest.com\"],\"viewers\":[\"viewers@unittest.com\"]},\"data\":{\"SpudDate\":\"2012-03-28\",\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"type\":\"AnyCrsPoint\"},\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"Wgs84Coordinates\":{\"bbox\":null,\"features\":[{\"bbox\":null,\"geometry\":{\"bbox\":null,\"coordinates\":[5.7500000010406245,59.000000000399105,1.9999999999999998],\"type\":\"Point\"},\"properties\":{},\"type\":\"Feature\"}],\"persistableReferenceCrs\":null,\"persistableReferenceUnitZ\":\"reference\",\"properties\":{},\"type\":\"FeatureCollection\"},\"X\":16,\"Y\":10,\"Z\":0}},\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"meta\":[{\"propertyValues\":[\"MM/dd/yyyy\"],\"persistableReference\":\"{\\\"format\\\":\\\"yyyy-MM-dd\\\",\\\"type\\\":\\\"DAT\\\"}\",\"uncertainty\":0,\"kind\":\"DateTime\",\"propertyNames\":[\"SpudDate\"]}]}";
+    private static final String SPATIAL_LOCATION_ARRAY_RECORD = "{\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":[{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"bbox\":null,\"type\":\"AnyCrsPoint\"},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"CrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}]}}";
 
     @Test
     public void should_returnOriginalRecordsAndStatusesAsNoMetaBlock_whenProvidedRecordsWithoutMetaBlock() {
@@ -298,6 +300,18 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(GEO_JSON_RECORD_1));
         Assert.assertEquals(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, type), result.getConversionStatuses().get(0).getErrors().get(0));
+    }
+
+    @Test
+    public void should_returnOriginalRecordsAndStatusesAsNoMetaAndAsIngestedCoordinatesBlocks_whenProvidedRecordsWithNonJsonObjectAttribute() {
+        this.originalRecords.add(this.jsonParser.parse(SPATIAL_LOCATION_ARRAY_RECORD).getAsJsonObject());
+        String type = "SpatialLocation";
+
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+        Assert.assertEquals(1, result.getConversionStatuses().size());
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(SPATIAL_LOCATION_ARRAY_RECORD));
+        Assert.assertEquals(String.format(UNEXPECTED_DATA_FORMAT_JSON_OBJECT, type), result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
