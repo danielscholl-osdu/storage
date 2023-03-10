@@ -31,6 +31,7 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
     private static final String VALUE = "value";
     private static final String PATH = "path";
     private static final String OP = "op";
+    private static final String KIND = "/kind";
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final ILegalService legalService;
@@ -77,12 +78,19 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
     public void validateKind(JsonPatch jsonPatch) {
         Set<String> kinds = new HashSet<>();
         StreamSupport.stream(mapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(pathStartsWith("/kind"))
+                .filter(pathStartsWith(KIND))
                 .forEach(operation -> {
                     PatchOperations patchOperation = PatchOperations.forOperation(removeExtraQuotes(operation.get(OP)));
                     if (ADD.equals(patchOperation) || REMOVE.equals(patchOperation)) {
                         throw RequestValidationException.builder()
                                 .message(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND)
+                                .build();
+                    }
+
+                    boolean isValidPath = removeExtraQuotes(operation.get(PATH)).equals(KIND);
+                    if (!isValidPath) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_PATH_FOR_KIND)
                                 .build();
                     }
 
