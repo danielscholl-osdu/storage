@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.conversion;
 
+import static org.opengroup.osdu.storage.conversion.CrsConversionServiceErrorMessages.UNEXPECTED_DATA_FORMAT_JSON_OBJECT;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -212,6 +214,11 @@ public class DpsConversionService {
             String attribute = (String) var.next();
             JsonElement property = getDataSubProperty(attribute, dataObject);
             if (property == null || property instanceof JsonNull) continue;
+
+            if (!property.isJsonObject()) {
+                validationErrors.add(String.format(UNEXPECTED_DATA_FORMAT_JSON_OBJECT, attribute));
+                continue;
+            }
 
             JsonObject recordObj = property.getAsJsonObject();
             if (recordObj.has(Constants.WGS84_COORDINATES) && !recordObj.get(Constants.WGS84_COORDINATES).isJsonNull()) {
