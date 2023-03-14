@@ -93,6 +93,7 @@ public abstract class PatchRecordsTest extends TestBase {
         assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
+        //TODO: assert on modifyTime and modifyUser as these are expected to be updated
         assertEquals(currentVersionRecord1, queryResponseObject.records[0].version);
         assertEquals(currentVersionRecord2, queryResponseObject.records[1].version);
         assertEquals(2, queryResponseObject.records.length);
