@@ -132,7 +132,12 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                 }
             }
             if(!errors.isEmpty()) {
-                logger.warning(errors);
+                StringBuilder errorBuilder = new StringBuilder();
+                for(String error : errors) {
+                    errorBuilder.append(error).append("|");
+                }
+                errorBuilder.setLength(errorBuilder.length() - 1);
+                logger.error(errorBuilder.toString());
             }
             if (!recordsToPersist.isEmpty()) {
                 ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
@@ -232,7 +237,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         Iterator<JsonNode> nodes = patchNode.elements();
         while(nodes.hasNext()) {
             JsonNode currentNode = nodes.next();
-            if(currentNode.findPath("path").toString().contains("data") || currentNode.findPath("path").toString().contains("meta"))
+            if(currentNode.findPath("path").textValue().startsWith("/data") || currentNode.findPath("path").textValue().startsWith("/meta"))
                 return true;
         }
         return false;
