@@ -109,6 +109,28 @@ public class PatchRecordsServiceImplTest {
     }
 
     @Test
+    public void shouldSuccessfullyPatchRecordData_withMultipleOpsOnTheSamePath() throws IOException {
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello again\" : \"world\"}}]"));
+        MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
+        when(batchService.getMultipleRecords(any(MultiRecordIds.class), eq(COLLABORATION_CONTEXT))).thenReturn(multiRecordInfo);
+
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        verifyValidatorsWereInvocated(jsonPatch);
+        assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
+        assertEquals(Collections.emptyList(), result.getFailedRecordIds());
+        assertEquals(Collections.emptyList(), result.getErrors());
+        assertEquals(recordIds, result.getRecordIds());
+        assertThat(result.getRecordCount(), is(2));
+        Record patchedRecord1 = getRecord(RECORD_ID1);
+        patchedRecord1.setData(Collections.singletonMap("Hello again", "world"));
+        Record patchedRecord2 = getRecord(RECORD_ID2);
+        patchedRecord2.setData(Collections.singletonMap("Hello again", "world"));
+        verify(ingestionService).createUpdateRecords(false, Arrays.asList(patchedRecord1, patchedRecord2), USER, COLLABORATION_CONTEXT);
+        verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
+    }
+
+    @Test
     public void shouldSuccessfullyPatchRecordMetaData_whenOpaIsEnabled() throws IOException {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"value\"}]"));

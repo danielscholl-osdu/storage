@@ -179,6 +179,8 @@ public abstract class PatchRecordsTest extends TestBase {
 
     }
 
+    //TODO: add a test to validate same 'op' and 'path' and assert expected behavior
+
     private ClientResponse queryRecordsResponse(List<String> recordIds) throws Exception {
         JsonArray records = new JsonArray();
         for(String recordId : recordIds) {
