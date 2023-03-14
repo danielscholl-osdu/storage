@@ -124,14 +124,15 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                 } catch (JsonPatchException e) {
                     recordIds.remove(validRecord.getId());
                     failedRecordIds.add(validRecord.getId());
-                    logger.error("Json patch exception when updating record: "+validRecord.getId(), e);
                     errors.add("Json patch error for record: "+validRecord.getId());
                 } catch (JsonProcessingException e) {
                     recordIds.remove(validRecord.getId());
                     failedRecordIds.add(validRecord.getId());
-                    logger.error("Json processing exception when updating record: "+validRecord.getId(), e);
                     errors.add("Json processing error for record: "+validRecord.getId());
                 }
+            }
+            if(!errors.isEmpty()) {
+                logger.warning(errors);
             }
             if (!recordsToPersist.isEmpty()) {
                 ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
@@ -144,12 +145,15 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);
             }
             List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
+            long currentTime = System.currentTimeMillis();
             for(String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 if(metadata == null) {
                     notFoundRecordIds.add(recordId);
                     recordIds.remove(recordId);
                 } else {
+                    metadata.setModifyTime(currentTime);
+                    metadata.setModifyUser(user);
                     recordMetadataToBePatched.add(metadata);
                 }
             }
