@@ -177,6 +177,20 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
+    public void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided_withDuplicateOpAndPath() throws IOException {
+        List<String> docIds = new ArrayList<>();
+        docIds.add(RECORD_ID1);
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        RecordMetadata recordMetadata = createRecord(RECORD_ID1);
+        recordMetadataList.add(recordMetadata);
+        List<String> partitionKeys = new ArrayList<>();
+        partitionKeys.add(RECORD_ID1);
+        Map<String, String> recordErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatchWithSameOpAndPath()), Optional.empty());
+        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        assertTrue((recordErrors.isEmpty()));
+    }
+
+    @Test
     public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
         List<String> docIds = new ArrayList<>();
         docIds.add(RECORD_ID1);
@@ -311,6 +325,21 @@ public class RecordMetadataRepositoryTest {
                 "        }\n" +
                 "    }\n" +
                 "]";
+    }
+
+    private String getValidInputJsonForPatchWithSameOpAndPath() {
+        return "[\n" +
+                "        {\n" +
+                "            \"op\": \"add\",\n" +
+                "            \"path\": \"/acl/viewers/1\",\n" +
+                "            \"value\": \"viewerAcl1\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"op\": \"add\",\n" +
+                "            \"path\": \"/acl/viewers/1\",\n" +
+                "            \"value\": \"viewerAcl2\"\n" +
+                "        }\n" +
+                "    ]";
     }
 
 }
