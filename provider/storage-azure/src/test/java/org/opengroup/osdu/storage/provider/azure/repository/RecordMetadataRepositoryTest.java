@@ -306,7 +306,6 @@ public class RecordMetadataRepositoryTest {
         recordAcl.setOwners(owners);
         recordAcl.setViewers(viewers);
         recordMetadata.setAcl(recordAcl);
-
         return recordMetadata;
     }
 

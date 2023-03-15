@@ -14,13 +14,10 @@
 
 package org.opengroup.osdu.storage.util;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
 
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.ClientResponse;
@@ -30,14 +27,6 @@ public class DummyRecordsHelper {
 	protected static final long NOW = System.currentTimeMillis();
 
 	public final String KIND = TenantUtils.getTenantName() + ":storage:inttest:1.0.0" + NOW;
-	public final String ID = TenantUtils.getTenantName() + ":inttest-Multi-Client:flatten-full-seismic"
-			+ NOW;
-	public final String KIND2 = this.KIND;
-	public final String ID2 = TenantUtils.getTenantName() + ":inttest-Multi-Client:flatten-full-seismic2"
-			+ NOW;
-	public final String KIND3 = this.KIND + "1";
-	public final String ID3 = TenantUtils.getTenantName() + ":inttest-Multi-Client:flatten-full-seismic3"
-			+ NOW;
 
 	public QueryResultMock getQueryResultMockFromResponse(ClientResponse response) {
 		assertTrue(response.getType().toString().contains("application/json"));
@@ -92,6 +81,8 @@ public class DummyRecordsHelper {
 		public RecordLegalMock legal;
 		public RecordAncestryMock ancestry;
 		public Map<String, String> tags;
+		public long modifyTime;
+		public String modifyUser;
 	}
 
 	public class RecordAclMock {
