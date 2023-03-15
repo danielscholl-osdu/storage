@@ -194,9 +194,6 @@ public abstract class BatchServiceImpl implements BatchService {
             }
             validRecords.put(recordId, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
         }
-        if (!recordsNotFound.isEmpty()) {
-            logger.error("Records were not found due to missed record metadata: " + recordsNotFound);
-        }
 
         List<String> validRecordObjects = new ArrayList<>(validRecords.values());
         if (validRecordObjects.isEmpty()) {
@@ -206,7 +203,6 @@ public abstract class BatchServiceImpl implements BatchService {
             return response;
         }
 
-        List<String> recordsNotFoundInCloudStorage = new ArrayList<>();
         Map<String, String> recordsPreAclMap = this.cloudStorage.read(validRecords, collaborationContext);
         this.logUnauthorizedGCSRecords(validRecords, recordsPreAclMap);
         Map<String, String> recordsFromCloudStorage = this.postCheckRecordsAcl(recordsPreAclMap, recordsMetadata, collaborationContext);
@@ -218,7 +214,7 @@ public abstract class BatchServiceImpl implements BatchService {
         recordsFromCloudStorage.keySet().forEach(recordId -> {
             String recordData = recordsFromCloudStorage.get(recordId);
             if (Strings.isNullOrEmpty(recordData)) {
-                recordsNotFoundInCloudStorage.add(recordId);
+                recordsNotFound.add(recordId);
             } else {
                 JsonElement jsonRecord = jsonParser.parse(recordData);
                 RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
@@ -228,29 +224,21 @@ public abstract class BatchServiceImpl implements BatchService {
             }
         });
 
-        if (!recordsNotFoundInCloudStorage.isEmpty()) {
-            logger.error("Records were not found in cloud storage: " + recordsNotFoundInCloudStorage);
-            recordsNotFound.addAll(recordsNotFoundInCloudStorage);
-        }
-
         if (isConversionNeeded && !validRecords.isEmpty()) {
             RecordsAndStatuses recordsAndStatuses = this.conversionService.doConversion(jsonObjectRecords);
             this.checkMismatchAndAddToNotFound(recordIds, recordsNotFound, recordsAndStatuses.getRecords());
             response.setConversionStatuses(recordsAndStatuses.getConversionStatuses());
             response.setRecords(this.convertFromJsonObjectListToStringList(recordsAndStatuses.getRecords()));
             response.setNotFound(recordsNotFound);
-        } else {
-            this.checkMismatchAndAddToNotFound(recordIds, recordsNotFound, jsonObjectRecords);
-            response.setConversionStatuses(conversionStatuses);
-            response.setRecords(this.convertFromJsonObjectListToStringList(jsonObjectRecords));
-            response.setNotFound(recordsNotFound);
-            this.auditLog(validRecordObjects, this.auditLogger::readMultipleRecordsWithOptionalConversionSuccess,
-                    recordsNotFound, this.auditLogger::readMultipleRecordsWithOptionalConversionFail);
+            return response;
         }
 
-        if (!recordsNotFound.isEmpty()) {
-            logger.error("Records were not found in total: " + recordsNotFound);
-        }
+        this.checkMismatchAndAddToNotFound(recordIds, recordsNotFound, jsonObjectRecords);
+        response.setConversionStatuses(conversionStatuses);
+        response.setRecords(this.convertFromJsonObjectListToStringList(jsonObjectRecords));
+        response.setNotFound(recordsNotFound);
+        this.auditLog(validRecordObjects, this.auditLogger::readMultipleRecordsWithOptionalConversionSuccess,
+                recordsNotFound, this.auditLogger::readMultipleRecordsWithOptionalConversionFail);
         return response;
     }
 
@@ -271,19 +259,20 @@ public abstract class BatchServiceImpl implements BatchService {
         }
 
         if (isOpaEnabled) {
-            List<ValidationOutputRecord> dataAuthResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.view);
-            for (ValidationOutputRecord outputRecord : dataAuthResult) {
+            List<ValidationOutputRecord> dataAuthzResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.view);
+            for (ValidationOutputRecord outputRecord : dataAuthzResult) {
                 if (outputRecord.getErrors().isEmpty()) {
                     String recordId = outputRecord.getId();
                     String recordData = recordsPreAclMap.get(recordId);
-                    recordsMap.put(recordId, recordData);
-                }
+                    recordsMap.put(recordId, recordData);                }
             }
         } else {
+
             List<RecordMetadata> passAclCheckRecordsMetadata = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.headers);
             for (RecordMetadata metadata : passAclCheckRecordsMetadata) {
                 String recordId = metadata.getId();
                 String recordData = recordsPreAclMap.get(recordId);
+
                 recordsMap.put(recordId, recordData);
             }
         }
@@ -302,18 +291,19 @@ public abstract class BatchServiceImpl implements BatchService {
     }
 
     private void checkMismatchAndAddToNotFound(List<String> requestIds, List<String> notFoundIds, List<JsonObject> fetchedRecords) {
-        if (notFoundIds.size() + fetchedRecords.size() == requestIds.size()) {
+        if ((notFoundIds.size() + fetchedRecords.size()) == requestIds.size()) {
             return;
         }
 
-        List<String> fetchedIds = fetchedRecords.stream().map(this::getRecordId).collect(Collectors.toList());
+        List<String> fetchedIds = fetchedRecords.stream().map(e -> this.getRecordId(e)).collect(Collectors.toList());
 
         for (String requestId : requestIds) {
             if (!notFoundIds.contains(requestId) && !fetchedIds.contains(requestId)) {
-                this.logger.error("Missing record when fetch records, adding to not found: " + requestId);
+                this.logger.warning("Missing record when fetch records, adding to not found: " + requestId);
                 notFoundIds.add(requestId);
             }
         }
+        return;
     }
 
     private String getRecordId(JsonObject record) {
