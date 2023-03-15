@@ -85,11 +85,15 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     public Map<String, String> patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
         List<String> docIds = new ArrayList<>();
         List<String> partitionKeys = new ArrayList<>();
+        String modifyUser = "";
+        Long modifyTime = 0L;
         for(RecordMetadata recordMetadata : recordMetadataList) {
             docIds.add(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
             partitionKeys.add(recordMetadata.getId());
+            modifyUser = recordMetadata.getModifyUser();
+            modifyTime = recordMetadata.getModifyTime();
         }
-        CosmosPatchOperations cosmosPatchOperations = getCosmosPatchOperations(jsonPatch);
+        CosmosPatchOperations cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatch);
         Map<String, String> recordIdToError = new HashMap<>();
         try {
             cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docIds, cosmosPatchOperations, partitionKeys, 1);
@@ -290,7 +294,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         return sb.toString();
     }
 
-    private CosmosPatchOperations getCosmosPatchOperations(JsonPatch jsonPatch) {
+    private CosmosPatchOperations getCosmosPatchOperations(String modifyUser, Long modifyTime, JsonPatch jsonPatch) {
         String metadataPathPrefix = "/metadata";
         CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
         List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
@@ -308,6 +312,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                     break;
             }
         }
+        cosmosPatchOperations.replace(metadataPathPrefix+"/modifyUser", modifyUser);
+        cosmosPatchOperations.replace(metadataPathPrefix+"/modifyTime", modifyTime);
         return cosmosPatchOperations;
     }
 }

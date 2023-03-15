@@ -37,6 +37,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public abstract class PatchRecordsTest extends TestBase {
@@ -85,6 +86,10 @@ public abstract class PatchRecordsTest extends TestBase {
         assertQueryResponse(queryResponseObject, 2);
         String currentVersionRecord1 = queryResponseObject.records[0].version;
         String currentVersionRecord2 = queryResponseObject.records[1].version;
+        long modifyTimeRecord1 = queryResponseObject.records[0].modifyTime;
+        String modifyUserRecord1 = queryResponseObject.records[0].modifyUser;
+        assertEquals(0, modifyTimeRecord1);
+        assertEquals(null, modifyUserRecord1);
 
         ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, false), "");
         assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
@@ -93,7 +98,10 @@ public abstract class PatchRecordsTest extends TestBase {
         assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
-        //TODO: assert on modifyTime and modifyUser as these are expected to be updated
+        assertNotNull(queryResponseObject.records[0].modifyUser);
+        assertTrue(queryResponseObject.records[0].modifyTime > 0);
+        assertNotNull(queryResponseObject.records[1].modifyUser);
+        assertTrue(queryResponseObject.records[1].modifyTime > 0);
         assertEquals(currentVersionRecord1, queryResponseObject.records[0].version);
         assertEquals(currentVersionRecord2, queryResponseObject.records[1].version);
         assertEquals(2, queryResponseObject.records.length);
