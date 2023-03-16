@@ -119,6 +119,9 @@ public class CrsConversionService {
             JsonObject recordJsonObject = originalRecords.get(i);
             String recordId = this.getRecordId(recordJsonObject);
             ConversionStatus.ConversionStatusBuilder statusBuilder = this.getConversionStatusBuilderFromList(recordId, conversionStatuses);
+            if(statusBuilder == null){
+                continue;
+            }
             JsonObject dataBlock = recordJsonObject.getAsJsonObject(Constants.DATA);
             if (dataBlock == null) {
                 statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK);
