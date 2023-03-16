@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
@@ -121,7 +122,16 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
         QueryPageResult<RecordMetadataDoc> scanPageResults;
         try {
-            scanPageResults = recordMetadataQueryHelper.queryPage(RecordMetadataDoc.class, recordMetadataKey, "Status", "active", numRecords, cursor);
+            scanPageResults = recordMetadataQueryHelper.queryPage(
+                RecordMetadataDoc.class,
+                recordMetadataKey,
+                "Status",
+                "active",
+                "Id",
+                ComparisonOperator.BEGINS_WITH,
+                String.format("%s:", this.headers.getPartitionId()),
+                numRecords,
+                cursor);
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
                     e.getMessage(), e);
