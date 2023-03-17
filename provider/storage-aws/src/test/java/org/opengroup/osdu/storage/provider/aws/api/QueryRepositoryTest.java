@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.api;
 
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -134,15 +135,85 @@ public class QueryRepositoryTest {
         RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
         recordMetadataKey.setKind(kind);
 
-        Mockito.when(queryHelper.queryPage(Mockito.eq(RecordMetadataDoc.class), Mockito.anyObject(), Mockito.anyString(), Mockito.anyString(), Mockito.anyInt(), Mockito.eq(cursor)))
-                .thenReturn(expectedQueryPageResult);
+        Mockito.when(queryHelper.queryPage(
+            Mockito.eq(RecordMetadataDoc.class),
+            Mockito.anyObject(),
+            Mockito.anyString(),
+            Mockito.anyString(),
+            Mockito.anyString(),
+            Mockito.eq(ComparisonOperator.BEGINS_WITH),
+            Mockito.anyString(),
+            Mockito.anyInt(),
+            Mockito.anyString()))
+            .thenReturn(expectedQueryPageResult);
 
         // Act
         DatastoreQueryResult datastoreQueryResult = repo.getAllRecordIdsFromKind(kind, 50, cursor, Optional.empty());
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).queryPage(Mockito.eq(RecordMetadataDoc.class), Mockito.anyObject(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.eq(cursor));
+        Mockito.verify(queryHelper, Mockito.times(1)).queryPage(
+            Mockito.eq(RecordMetadataDoc.class),
+            Mockito.anyObject(),
+            Mockito.anyString(),
+            Mockito.anyString(),
+            Mockito.anyString(),
+            Mockito.eq(ComparisonOperator.BEGINS_WITH),
+            Mockito.anyString(),
+            Mockito.eq(50),
+            Mockito.eq(cursor)
+            );
+        Assert.assertEquals(expectedDatastoreQueryResult, datastoreQueryResult);
+    }
+
+    @Test
+    public void getAllRecordIdsFromDifferentKind() throws UnsupportedEncodingException {
+        // Arrange
+        String kind = "osdu:source:type:1.0.0";
+        String cursor = "abc123";
+        String recordId = "tenant:source:type:1.0.0.1212";
+        List<String> resultsIds = new ArrayList<>();
+        resultsIds.add(recordId);
+        DatastoreQueryResult expectedDatastoreQueryResult = new DatastoreQueryResult(cursor, resultsIds);
+        String user = "test-user";
+        RecordMetadataDoc expectedRecordMetadataDoc = new RecordMetadataDoc();
+        expectedRecordMetadataDoc.setId(recordId);
+        expectedRecordMetadataDoc.setKind(kind);
+        expectedRecordMetadataDoc.setUser(user);
+        expectedRecordMetadataDoc.setStatus("active");
+        List<RecordMetadataDoc> expectedRecordMetadataDocList = new ArrayList<>();
+        expectedRecordMetadataDocList.add(expectedRecordMetadataDoc);
+        QueryPageResult<RecordMetadataDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedRecordMetadataDocList);
+        // Set GSI hash key
+        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+        recordMetadataKey.setKind(kind);
+
+        Mockito.when(queryHelper.queryPage(
+                Mockito.eq(RecordMetadataDoc.class),
+                Mockito.anyObject(),
+                Mockito.anyString(),
+                Mockito.anyString(),
+                Mockito.anyString(),
+                Mockito.eq(ComparisonOperator.BEGINS_WITH),
+                Mockito.anyString(),
+                Mockito.anyInt(),
+                Mockito.anyString()))
+            .thenReturn(expectedQueryPageResult);
+
+        // Act
+        DatastoreQueryResult datastoreQueryResult = repo.getAllRecordIdsFromKind(kind, 50, cursor, Optional.empty());
+
+        // Assert
+        Mockito.verify(queryHelper, Mockito.times(1)).queryPage(
+            Mockito.eq(RecordMetadataDoc.class),
+            Mockito.anyObject(),
+            Mockito.anyString(),
+            Mockito.anyString(),
+            Mockito.anyString(),
+            Mockito.eq(ComparisonOperator.BEGINS_WITH),
+            Mockito.anyString(),
+            Mockito.eq(50),
+            Mockito.eq(cursor)
+        );
         Assert.assertEquals(expectedDatastoreQueryResult, datastoreQueryResult);
     }
 }
