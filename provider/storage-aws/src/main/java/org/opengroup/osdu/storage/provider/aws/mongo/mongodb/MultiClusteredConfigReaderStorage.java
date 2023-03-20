@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @Lazy
 @Component
 public class MultiClusteredConfigReaderStorage extends AbstractMultiClusteredConfigReader {
-    String serviceName = "storage";
 
     @Autowired
     public MultiClusteredConfigReaderStorage(SSMManagerUtil ssmManagerUtil) {
@@ -17,7 +16,7 @@ public class MultiClusteredConfigReaderStorage extends AbstractMultiClusteredCon
     }
 
     @Override
-    protected String applyServiceName(String originalName) {
-        return originalName.replace(serviceNamePlaceHolder, serviceName);
+    protected String getDatabaseName(String environment) {
+        return environment + "_osdu_storage";
     }
 }
