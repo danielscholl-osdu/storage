@@ -297,7 +297,7 @@ public class RecordServiceImplTest {
         assertEquals("any kind", capturedRecord.getKind());
         assertEquals(RECORD_ID, capturedRecord.getId());
         assertEquals(RecordState.deleted, capturedRecord.getStatus());
-        assertNotNull(capturedRecord.getModifyTime());
+        assertTrue(record.getModifyTime() != 0);
         assertEquals("anyUserName", capturedRecord.getModifyUser());
 
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
@@ -380,7 +380,6 @@ public class RecordServiceImplTest {
 
         assertEquals(RecordState.deleted, record.getStatus());
         assertEquals(USER_NAME, record.getModifyUser());
-        assertNotNull(record.getModifyTime());
         assertTrue(record.getModifyTime() != 0);
     }
 
@@ -430,7 +429,6 @@ public class RecordServiceImplTest {
 
         assertEquals(RecordState.deleted, record.getStatus());
         assertEquals(USER_NAME, record.getModifyUser());
-        assertNotNull(record.getModifyTime());
         assertTrue(record.getModifyTime() != 0);
     }
 
@@ -509,8 +507,7 @@ public class RecordServiceImplTest {
 
             assertEquals(RecordState.deleted, record.getStatus());
             assertEquals(USER_NAME, record.getModifyUser());
-            assertNotNull(record.getModifyTime());
-
+            assertTrue(record.getModifyTime() != 0);
             assertEquals(1, e.getNotDeletedRecords().size());
             assertEquals(RECORD_ID_1, e.getNotDeletedRecords().get(0).getKey());
             assertEquals(expectedErrorMessage, e.getNotDeletedRecords().get(0).getValue());

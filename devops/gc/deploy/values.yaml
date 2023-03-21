@@ -2,6 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  domain: ""
+  onPremEnabled: false
+
 data:
   # configmaps
   logLevel: "ERROR"
@@ -40,9 +44,7 @@ conf:
   rabbitmqSecretName: "rabbitmq-secret"
   bootstrapSecretName: "datafier-secret"
   replicas: 3
-  onPremEnabled: false
   bootstrapEnabled: false
-  domain: ""
   storageRedisSecretName: "storage-redis-secret"
 
 istio:

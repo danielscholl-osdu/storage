@@ -14,6 +14,8 @@
     * [Exchanges and queues configuration](#Exchanges-and-queues-configuration)
 * [Interaction with message brokers](#Interaction-with-message-brokers)
 * [Keycloak configuration](#Keycloak-configuration)
+* [Running E2E Tests](#Running-E2E-Tests)
+* [Running locally](#Running-locally)
 
 ## Environment variables
 
@@ -421,7 +423,7 @@ Add `partition-and-entitlements` scope to `Default Client Scopes` and generate K
 
 Give `client-id` and `client-secret` to services, which should be authorized within the platform.
 
-### Running E2E Tests
+## Running E2E Tests
 
 You will need to have the following environment variables defined.
 
@@ -458,3 +460,67 @@ Execute following command to build code and run all the integration tests:
  # build + run Google Cloud integration tests.
  $ (cd testing/storage-test-anthos/ && mvn clean test)
  ```
+
+
+## Running locally
+To run storage service locally connected with anthos environment:
+#### Specify mappers drivers property or run `SPRING_PROFILES_ACTIVE=anthos`
+```properties
+obmDriver=minio
+osmDriver=postgres
+oqmDriver=rabbitmq
+```
+#### Specify osdu services urls:
+```properties
+DOMAIN=https://osdu.ref.gcp.gnrg-osdu.projects.epam.com
+AUTHORIZE_API=${DOMAIN}/api/entitlements/v2
+CRS_API=${DOMAIN}/api/crs/v2
+LEGALTAG_API=${DOMAIN}/api/legal/v1
+PARTITION_API=${DOMAIN}/api/partition/v1/
+```
+#### Auth variables:
+```properties
+opa.enabled=false;
+partition-auth-enabled=false
+service.token.provider=OPENID
+OPENID_PROVIDER_CLIENT_ID=${CLIENT_ID};
+OPENID_PROVIDER_CLIENT_SECRET=${CLIENT_SECRET};
+OPENID_PROVIDER_URL=${OPENID_PROVIDER_URL};
+```
+#### Redis variables:
+```properties
+REDIS_STORAGE_HOST=127.0.0.1
+REDIS_GROUP_HOST=127.0.0.1
+```
+#### Partition service should contain non-production sensitive properties to override them with localhost and use through a custom prefixes.
+##### OSM:
+```properties
+POSTGRES_DATASOURCE_URL_OSDU=jdbc:postgresql://localhost:5432/storage;
+POSTGRES_DB_USERNAME_OSDU=${POSTGRES_USERNAME};
+POSTGRES_DB_PASSWORD_OSDU=${POSTGRES_PASSWORD};
+```
+##### OBM:
+```properties
+OBM_MINIO_PARTITION_PROPERTIES_PREFIX=obm.minio.localDebug;
+MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY};
+MINIO_SECRET_KEY=${MINIO_SECRET_KEY};
+```
+##### OQM:
+```properties
+OQM_RABBITMQ_PARTITION_PROPERTIES_PREFIX=oqm.rabbitmq.localDebug;
+RABBIT_MQ_HOST=localhost;
+RABBITMQ_ADMIN_HOST=localhost;
+RABBITMQ_ADMIN_USERNAME=${RABBITMQ_ADMIN_USERNAME};
+RABBITMQ_ADMIN_PASSWORD=${RABBITMQ_ADMIN_PASSWORD};
+```
+#### To connect postgres or minio or rabbitmq port-forwarding should be used:
+```shell
+gcloud auth list
+gcloud config set account <account_name>
+gcloud config set project <project_name>
+kubectl port-forward <rabbit_pod_name> 15672:15672
+kubectl port-forward <rabbit_pod_name> 5672:5672
+kubectl port-forward <minio_pod_name> 9000:9000
+gcloud components install cloud_sql_proxy
+cloud_sql_proxy -instances=<instance_connection_string> -credential_file=<anthos_service_account_json_file>
+```

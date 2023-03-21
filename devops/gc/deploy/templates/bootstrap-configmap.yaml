@@ -10,5 +10,5 @@ data:
   STORAGE_HOST: {{ .Values.data.storageHost | quote }}
   DEFAULT_LEGAL_TAG: {{ .Values.data.defaultLegalTag | quote }}
   DATA_PARTITION_ID: {{ .Values.data.dataPartitionId | quote }}
-  ONPREM_ENABLED: {{ .Values.conf.onPremEnabled | quote }}
+  ONPREM_ENABLED: {{ .Values.global.onPremEnabled | quote }}
 {{- end }}
