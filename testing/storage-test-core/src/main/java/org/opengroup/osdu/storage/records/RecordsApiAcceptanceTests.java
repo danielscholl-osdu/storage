@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.junit.*;
 
@@ -39,6 +40,8 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:" + System.currentTimeMillis();
 	protected static final String RECORD_NEW_ID = TenantUtils.getTenantName() + ":inttest:"
+			+ System.currentTimeMillis();
+	protected static final String RECORD_NEW_ID_1 = TenantUtils.getTenantName() + ":inttest:"
 			+ System.currentTimeMillis();
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:inttest:1.0."
 			+ System.currentTimeMillis();
@@ -59,6 +62,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		// are in
 		TestUtils.send("records/" + RECORD_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
 		TestUtils.send("records/" + RECORD_NEW_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
+		TestUtils.send("records/" + RECORD_NEW_ID_1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
 		LegalTagUtils.delete(LEGAL_TAG, token);
 	}
 
@@ -317,13 +321,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	@Test
 	public void should_updateModifyTimeWithRecordUpdate() throws Exception {
 
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		String jsonInput = createJsonBody(RECORD_NEW_ID_1, "tianNew");
+		System.out.println("RECORD_NEW_ID_1::::::"+RECORD_NEW_ID_1);
 
-		String jsonInput = createJsonBody(RECORD_ID, "tianNew");
-
-		// make update with different name
-		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
+		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
 		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201,
 				DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
@@ -331,24 +332,61 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(1, result.recordIds.length);
 		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(0, result.skippedRecordIds.length);
-		assertEquals(RECORD_ID, result.recordIds[0]);
-		String firstVersionNumber = result.recordIdVersions[0].split(":")[result.recordIdVersions.length-1];
+		assertEquals(RECORD_NEW_ID_1, result.recordIds[0]);
+		System.out.println("RECORD_NEW_ID_1::::::"+RECORD_NEW_ID_1);
+		System.out.println("result recordIds::::::"+result.recordIds[0]);
+		String firstVersionNumber = StringUtils.substringAfterLast(result.recordIdVersions[0],":");
+		System.out.println("first version number::::::"+firstVersionNumber);
 
-		// use skip dupes to skip update
-		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
-		result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
-		assertNotNull(result);
-		assertEquals(1, result.recordCount);
-		String secondLastVersionNumber = result.recordIdVersions[0].split(":")[result.recordIdVersions.length-1];
-
-
-		response = TestUtils.send("records/" + RECORD_ID+"/"+firstVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		response = TestUtils.send("records/" + RECORD_NEW_ID_1, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		GetRecordResponse recordResult1 = TestUtils.getResult(response, 200, GetRecordResponse.class);
 
-		response = TestUtils.send("records/" + RECORD_ID+"/"+secondLastVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		//No modify user and time in 1st version of record
+		assertNull(recordResult1.modifyTime);
+		assertNull(recordResult1.modifyUser);
+
+		// make update-1
+		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
+		DummyRecordsHelper.CreateRecordResponse result2 = TestUtils.getResult(response, 201,
+				DummyRecordsHelper.CreateRecordResponse.class);
+		assertNotNull(result2);
+		assertEquals(1, result2.recordCount);
+		assertEquals(1, result2.recordIds.length);
+		assertEquals(1, result2.recordIdVersions.length);
+		assertEquals(0, result2.skippedRecordIds.length);
+		assertEquals(RECORD_NEW_ID_1, result2.recordIds[0]);
+		String secondVersionNumber = StringUtils.substringAfterLast(result2.recordIdVersions[0],":");
+		System.out.println("second version number::::::"+secondVersionNumber);
+
+		// make update-2
+		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
+		DummyRecordsHelper.CreateRecordResponse result3 = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		assertNotNull(result3);
+		assertEquals(1, result3.recordCount);
+		assertEquals(1, result3.recordIds.length);
+		assertEquals(1, result3.recordIdVersions.length);
+		assertEquals(0, result3.skippedRecordIds.length);
+		assertEquals(RECORD_NEW_ID_1, result3.recordIds[0]);
+
+		String thirdLastVersionNumber = StringUtils.substringAfterLast(result3.recordIdVersions[0],":");
+		System.out.println("third version number::::::"+thirdLastVersionNumber);
+
+		System.out.println("Before 1st get call RECORD_NEW_ID_1::::::"+RECORD_NEW_ID_1);
+		System.out.println("Before 1st get call path::::::"+"records/" + RECORD_NEW_ID_1+"/"+firstVersionNumber);
+		response = TestUtils.send("records/" + RECORD_NEW_ID_1+"/"+firstVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		GetRecordResponse recordResult2 = TestUtils.getResult(response, 200, GetRecordResponse.class);
 
-		assertNotEquals(recordResult1.modifyTime, recordResult2.modifyTime);
+		//No modify user and time in 1st version of record
+		assertNull(recordResult2.modifyTime);
+		assertNull(recordResult2.modifyUser);
+
+		response = TestUtils.send("records/" + RECORD_NEW_ID_1+"/"+secondVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		GetRecordResponse recordResult3 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+
+		response = TestUtils.send("records/" + RECORD_NEW_ID_1+"/"+thirdLastVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		GetRecordResponse recordResult4 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+
+		assertNotEquals(recordResult4.modifyTime, recordResult3.modifyTime);
 
 	}
 
