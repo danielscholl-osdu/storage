@@ -84,6 +84,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
 		assertEquals("Flor�", recordResult.data.get("name"));
 		assertEquals(null, recordResult.data.get("ancestry"));
+
+		//ModifyTime and modifyuser does not exists in 1st version
+		assertNull(recordResult.modifyTime);
+		assertNull(recordResult.modifyUser);
 	}
 
 	@Test
@@ -328,34 +332,23 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(0, result.skippedRecordIds.length);
 		assertEquals(RECORD_ID, result.recordIds[0]);
-
+		String firstVersionNumber = result.recordIdVersions[0].split(":")[result.recordIdVersions.length-1];
 
 		// use skip dupes to skip update
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
 		result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
-		assertNull(result.recordIds);
-		assertNull(result.recordIdVersions);
+		String secondLastVersionNumber = result.recordIdVersions[0].split(":")[result.recordIdVersions.length-1];
 
-		String firstVersionNumber = result.recordIdVersions[0].split(":")[result.recordIdVersions.length-1];
+
 		response = TestUtils.send("records/" + RECORD_ID+"/"+firstVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult3 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult1 = TestUtils.getResult(response, 200, GetRecordResponse.class);
 
-		//ModifyTime and modifyuser does not exists in 1st version
-		assertNull(recordResult.modifyTime);
-		assertNull(recordResult.modifyUser);
-
-		String secondLastVersionNumber = result.recordIdVersions[result.recordIdVersions.length-2].split(":")[result.recordIdVersions.length-1];
 		response = TestUtils.send("records/" + RECORD_ID+"/"+secondLastVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult4 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult2 = TestUtils.getResult(response, 200, GetRecordResponse.class);
 
-		String lastVersionNumber = result.recordIdVersions[result.recordIdVersions.length-1].split(":")[result.recordIdVersions.length-1];
-
-		response = TestUtils.send("records/" + RECORD_ID+"/"+lastVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult5 = TestUtils.getResult(response, 200, GetRecordResponse.class);
-
-		assertNotEquals(recordResult3.modifyTime, recordResult5.modifyTime);
+		assertNotEquals(recordResult1.modifyTime, recordResult2.modifyTime);
 
 	}
 
