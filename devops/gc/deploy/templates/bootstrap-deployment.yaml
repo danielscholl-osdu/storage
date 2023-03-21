@@ -34,7 +34,7 @@ spec:
           envFrom:
           - configMapRef:
               name: {{ printf "%s-config-bootstrap" .Values.conf.appName | quote }}
-          {{- if .Values.conf.onPremEnabled }}
+          {{- if .Values.global.onPremEnabled }}
           - secretRef:
               name: {{ .Values.conf.bootstrapSecretName | quote }}
           {{- end }}
