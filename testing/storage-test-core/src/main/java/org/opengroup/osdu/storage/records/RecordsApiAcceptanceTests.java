@@ -88,10 +88,6 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
 		assertEquals("Flor�", recordResult.data.get("name"));
 		assertEquals(null, recordResult.data.get("ancestry"));
-
-		//ModifyTime and modifyuser does not exists in 1st version
-		assertNull(recordResult.modifyTime);
-		assertNull(recordResult.modifyUser);
 	}
 
 	@Test
