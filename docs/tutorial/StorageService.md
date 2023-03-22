@@ -645,26 +645,28 @@ curl --request PATCH \
 > You can use Search service's query or query_with_cursor [apis](https://community.opengroup.org/osdu/platform/system/search-service/-/blob/master/docs/tutorial/SearchService.md) to search for records based on tags. Since tags is part of metadata, it is automatically indexed. This may not work if the kind is old (older than when the tags feature was introduced ~02/25/2021). You may need to re-index the kind with the [reindex](https://community.opengroup.org/osdu/platform/system/indexer-service/-/blob/master/docs/tutorial/IndexerService.md#reindex) api (with `force_clean=true`) from indexer service.
 
 ## Records patch api <a name="records-patch-api"></a>
-This API allows update of records data and/or metadata in batch. It takes an array of record ids (without version
-numbers) with a maximum number of 100, and updates properties specified in the operation path with value and operation type
-provided. Users need to specify the corresponding data partition id in the header as well.
+This API allows update of records data and/or metadata in batch. It takes an array of record ids (without version numbers) with a maximum number of 100, 
+and updates properties specified in the operation path with value and operation type provided. Users need to specify the corresponding data partition id in the header as well.
 
-Users need to provide a list of recordIDs and a list of operations to be performed on each record. Each operation has `op`(operation type), `path`, and `value` in the field 'ops'. The currently supported operations are
-"replace", "add", and "remove". The supported properties for metadata update are `tags`, `acl/viewers`, `acl/owners`, `legal/legaltags`, `ancestry/parents` and `kind`.
-The supported properties for data update are `data` and `meta`. If `acl` is being updated, the user should be part of the groups that are being replaced/added/removed as ACL.
-User specifies the property they want to update in the `path` field, and new values should be provided in the `value` field.
-
-Note that this API supports PATCH operation in compliant to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902). The behavior of the API reflects this accordingly.
+- This API supports PATCH operation in compliant to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902).
+- Users need to provide a list of recordIDs and a list of operations to be performed on each record.
+- Each operation has `op`(operation type), `path`, and `value` in the field 'ops' (unless the operation is `remove`, then the field `path` shouldn't be provided).
+- The currently supported operations are "replace", "add", and "remove".
+- The supported properties for metadata update are `tags`, `acl/viewers`, `acl/owners`, `legal/legaltags`, `ancestry/parents` and `kind`.
+- The supported properties for data update are `data` and `meta`. 
+- If `acl` is being updated, the user should be part of the groups that are being replaced/added/removed as ACL.
+- User specifies the property they want to update in the `path` field, and new values should be provided in the `value` field.
 
 Records patch API has the following response codes:
 
-| Code | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-|:-----|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 200  | The update operation succeeds fully, all records’ data and/or metadata get updated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| 206  | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or does not have permission to edit the records.                                                                                                                                                                                                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                                                                                                                                                                                      
-| 400  | The update operation fails when the remove operation makes Legal Tags or ACLs empty.|                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Code | Description                                                                                                                                                                       |
+|:-----|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 200  | The update operation succeeds fully, all records’ data and/or metadata are updated.                                                                                               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 206  | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or user does not have permission to edit the records. |                                                                                                                                                                                                                                                                                                                                                                                                                      
+| 400  | The update operation fails when the remove operation makes Legal Tags or ACLs empty.                                                                                              |
 
-Example request:
+Examples:
+1. 
 
 <details><summary>curl</summary>
 
@@ -685,43 +687,44 @@ curl --request PATCH \
       }, 
       "ops": [ 
         {
-        "op": "remove", 
-        "path": "/legal/legaltags/0"
+          "op": "remove", 
+          "path": "/legal/legaltags/0"
         }, 
         { 
-	    "op": "remove", 
-	    "path": "/ancestry/parents"
+	      "op": "remove", 
+	      "path": "/ancestry/parents"
         }, 
         { 
-        "op": "add", 
-        "path": "/acl/viewers/~",
-        "value": "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com"
+          "op": "add", 
+          "path": "/acl/viewers/~",
+          "value": "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com"
         },
         {
-        "op":"replace",
-        "path":"/kind",
-        "value":"newKind"
+          "op":"replace",
+          "path":"/kind",
+          "value":"newKind"
         },
         {
-        "op":"add",
-        "path":"/tags",
-        "value":{
-          "tag1":"value1",
-          "tag2":"value2"
+          "op":"add",
+          "path":"/tags",
+          "value":{
+            "tag1":"value1",
+            "tag2":"value2"
           }
         },
         {
-        "op":"replace",
-        "path":"/data/someProperty/targetProperty",
-        "value": { 
-          "newValue": {
-            "subProperty":"subValue"
-          }
+          "op":"replace",
+          "path":"/data/someProperty/targetProperty",
+          "value": { 
+            "newValue": {
+              "subProperty":"subValue"
+            }
          }
         }
       ] 
     }
 ```
+</details>
 
 ### Differences compared to metadata update api <a name="patch-apis-diff"></a>
 
