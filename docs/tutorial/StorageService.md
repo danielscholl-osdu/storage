@@ -650,10 +650,10 @@ and updates properties specified in the operation path with value and operation 
 
 - This API supports PATCH operation in compliant to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902).
 - Users need to provide a list of recordIDs and a list of operations to be performed on each record.
-- Each operation has `op`(operation type), `path`, and `value` in the field 'ops' (unless the operation is `remove`, then the field `path` shouldn't be provided).
+- Each operation has `op`(operation type), `path`, and `value` in the field 'ops' (unless the operation is `remove`, then the field `value` shouldn't be provided).
 - The currently supported operations are "replace", "add", and "remove".
-- The supported properties for metadata update are `tags`, `acl/viewers`, `acl/owners`, `legal/legaltags`, `ancestry/parents` and `kind`.
-- The supported properties for data update are `data` and `meta`. 
+- The supported properties for metadata update are `tags`, `acl/viewers`, `acl/owners`, `legal/legaltags`, `ancestry/parents`, `kind` and `meta` (`meta` attribute out of the data block).
+- The supported properties for data update are `data`. 
 - If `acl` is being updated, the user should be part of the groups that are being replaced/added/removed as ACL.
 - User specifies the property they want to update in the `path` field, and new values should be provided in the `value` field.
 
@@ -665,7 +665,7 @@ Records patch API has the following response codes:
 | 206  | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or user does not have permission to edit the records. |                                                                                                                                                                                                                                                                                                                                                                                                                      
 | 400  | The update operation fails when the remove operation makes Legal Tags or ACLs empty.                                                                                              |
 
-Examples:
+Check out some examples below, but refer to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902) for a comprehensive documentation on JsonPatch and more examples
 1. 
 
 <details><summary>curl</summary>
