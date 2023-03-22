@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.util;
 
 import static org.junit.Assert.assertTrue;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -81,7 +82,7 @@ public class DummyRecordsHelper {
 		public RecordLegalMock legal;
 		public RecordAncestryMock ancestry;
 		public Map<String, String> tags;
-		public long modifyTime;
+		public Timestamp modifyTime;
 		public String modifyUser;
 	}
 
