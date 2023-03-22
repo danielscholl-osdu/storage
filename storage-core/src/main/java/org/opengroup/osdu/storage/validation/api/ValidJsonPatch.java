@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.validation.api;
 
-import org.opengroup.osdu.storage.validation.impl.JsonPatchPathValidator;
+import org.opengroup.osdu.storage.validation.impl.JsonPatchValidator;
 
 import javax.validation.Constraint;
 import javax.validation.Payload;
@@ -26,9 +26,9 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = {JsonPatchPathValidator.class})
+@Constraint(validatedBy = {JsonPatchValidator.class})
 @Documented
-public @interface ValidJsonPatchPath {
+public @interface ValidJsonPatch {
     String message() default "";
 
     Class<?>[] groups() default {};

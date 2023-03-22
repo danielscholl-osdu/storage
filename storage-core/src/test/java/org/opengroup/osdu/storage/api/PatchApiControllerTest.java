@@ -96,7 +96,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
         Assert.assertEquals(400, appError.getCode());
         Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals(ValidationDoc.INVALID_PATCH_PATH, appError.getMessage());
+        Assert.assertEquals(ValidationDoc.INVALID_PATCH_PATH_START, appError.getMessage());
     }
 
     @Test
@@ -198,10 +198,8 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         return "[\n" +
                 "    {\n" +
                 "        \"op\": \"add\",\n" +
-                "        \"path\": \"/tags\",\n" +
-                "        \"value\": {\n" +
-                "            \"tag3\" : \"value3\"\n" +
-                "        }\n" +
+                "        \"path\": \"/tags/tag3\",\n" +
+                "        \"value\": \"value3\"\n" +
                 "    }\n" +
                 "]";
     }
