@@ -86,10 +86,8 @@ public abstract class PatchRecordsTest extends TestBase {
         assertQueryResponse(queryResponseObject, 2);
         String currentVersionRecord1 = queryResponseObject.records[0].version;
         String currentVersionRecord2 = queryResponseObject.records[1].version;
-        long modifyTimeRecord1 = queryResponseObject.records[0].modifyTime;
-        String modifyUserRecord1 = queryResponseObject.records[0].modifyUser;
-        assertEquals(0, modifyTimeRecord1);
-        assertEquals(null, modifyUserRecord1);
+        assertEquals(null, queryResponseObject.records[0].modifyTime);
+        assertEquals(null, queryResponseObject.records[0].modifyUser);
 
         ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, false), "");
         assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
@@ -99,9 +97,9 @@ public abstract class PatchRecordsTest extends TestBase {
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertNotNull(queryResponseObject.records[0].modifyUser);
-        assertTrue(queryResponseObject.records[0].modifyTime > 0);
+        assertTrue(queryResponseObject.records[0].modifyTime.getTime() > 0);
         assertNotNull(queryResponseObject.records[1].modifyUser);
-        assertTrue(queryResponseObject.records[1].modifyTime > 0);
+        assertTrue(queryResponseObject.records[1].modifyTime.getTime() > 0);
         assertEquals(currentVersionRecord1, queryResponseObject.records[0].version);
         assertEquals(currentVersionRecord2, queryResponseObject.records[1].version);
         assertEquals(2, queryResponseObject.records.length);
