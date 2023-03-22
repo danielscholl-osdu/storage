@@ -23,7 +23,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.storage.validation.impl.JsonPatchPathValidator;
+import org.opengroup.osdu.storage.validation.impl.JsonPatchValidator;
 
 import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
@@ -31,7 +31,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
-public class JsonPatchPathValidatorTest {
+public class JsonPatchValidatorTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -41,17 +41,138 @@ public class JsonPatchPathValidatorTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    private JsonPatchPathValidator sut;
+    private JsonPatchValidator sut;
 
     @Before
     public void setup() {
-        sut = new JsonPatchPathValidator();
+        sut = new JsonPatchValidator();
     }
 
     @Test
     public void should_doNothingInInitialize() {
         // for coverage purposes. Do nothing method!
         this.sut.initialize(null);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasEmptyOperations() throws IOException {
+        String jsonString = "[]";
+
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION_SIZE);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchExceedLimitOfOperations() throws IOException {
+        StringBuilder jsonString = new StringBuilder("[");
+        for (int i = 0; i <= JsonPatchValidator.MAX_NUMBER; i++) {
+            jsonString.append("{\"op\": \"add\", \"path\": \"/acl/viewers\", \"value\": \"value\"},");
+        }
+        jsonString.deleteCharAt(jsonString.length() - 1).append("]");
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_SIZE);
+
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString.toString())), context);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasMoveOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"move\"," +
+                "             \"from\": \"/acl/viewers\"," +
+                "             \"path\": \"/acl/owners\"" +
+                "            }]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasCopyOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"copy\"," +
+                "             \"from\": \"/acl/viewers\"," +
+                "             \"path\": \"/acl/owners\"" +
+                "            }]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasTestOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"test\"," +
+                "             \"path\": \"/acl/viewers\"," +
+                "             \"value\": \"some_value\"" +
+                "            }]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION);
+    }
+
+    @Test
+    public void should_returnTrue_ifPatchHasAddOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/acl/viewers/-\"," +
+                "             \"value\": \"some_value\"" +
+                "            }]";
+
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void should_returnTrue_ifPatchHasRemoveOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"remove\"," +
+                "             \"path\": \"/acl/viewers/1\"" +
+                "            }]";
+
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void should_returnTrue_ifPatchHasReplaceOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"replace\"," +
+                "             \"path\": \"/acl/viewers\"," +
+                "             \"value\": \"some_value\"" +
+                "            }]";
+
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasMultipleValuesForAddOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/acl/viewers\"," +
+                "             \"value\": [\"value1\", \"value2\"]" +
+                "            }]";
+
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUE_FOR_ADD_OPERATION);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasMultipleValuesForReplaceOperationWithSpecifiedIndexInPath() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"replace\"," +
+                "             \"path\": \"/acl/viewers/1\"," +
+                "             \"value\": [\"value1\", \"value2\"]" +
+                "            }]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION);
+
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasMultipleValuesForReplaceOperationWithSpecifiedEndOfArrayInPath() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"replace\"," +
+                "             \"path\": \"/acl/viewers/-\"," +
+                "             \"value\": [\"value1\", \"value2\"]" +
+                "            }]";
+
+        exceptionRule.expect(RequestValidationException.class);
+        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION);
+
+        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }
 
     @Test(expected = RequestValidationException.class)
@@ -84,7 +205,7 @@ public class JsonPatchPathValidatorTest {
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        exceptionRulesAndMethodRun(jsonString);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION);
     }
 
     @Test
@@ -99,25 +220,25 @@ public class JsonPatchPathValidatorTest {
     }
 
     @Test
-    public void should_fail_ifPatchHasInValidLegalPathForAddOperation() throws IOException {
+    public void should_fail_ifPatchHasInvalidLegalPathForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/legal/legaltags\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        exceptionRulesAndMethodRun(jsonString);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION);
     }
 
     @Test
-    public void should_returnTrue_ifPatchHasValidAncestryPath() throws IOException {
+    public void should_fail_ifPatchHasInvalidAncestryPathForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/ancestry/parents\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION);
     }
 
     @Test
@@ -156,19 +277,19 @@ public class JsonPatchPathValidatorTest {
     @Test
     public void shouldThrowException_ifPatchHasInValidPathForRemoveLegalTagsOperation() throws IOException {
         String jsonString = "[{ \"op\": \"remove\", \"path\": \"/legal/legaltags\" }]";
-        exceptionRulesAndMethodRun(jsonString);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_REMOVE_OPERATION);
     }
 
     @Test
     public void shouldThrowException_ifPatchHasInValidPathForRemoveAclViewersOperation() throws IOException {
         String jsonString = "[{ \"op\": \"remove\", \"path\": \"/acl/viewers\" }]";
-        exceptionRulesAndMethodRun(jsonString);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_REMOVE_OPERATION);
     }
 
     @Test
     public void shouldThrowException_ifPatchHasInValidPathForRemoveAclOwnersOperation() throws IOException {
         String jsonString = "[{ \"op\": \"remove\", \"path\": \"/acl/owners\" }]";
-        exceptionRulesAndMethodRun(jsonString);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_REMOVE_OPERATION);
     }
 
     @Test
@@ -192,9 +313,9 @@ public class JsonPatchPathValidatorTest {
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
-    private void exceptionRulesAndMethodRun(String jsonString) throws IOException {
+    private void exceptionRulesAndMethodRun(String jsonString, String message) throws IOException {
         exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OR_REMOVE_OPERATION);
+        exceptionRule.expectMessage(message);
 
         sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
     }

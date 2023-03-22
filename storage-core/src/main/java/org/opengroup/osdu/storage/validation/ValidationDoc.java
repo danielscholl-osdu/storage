@@ -16,10 +16,11 @@ package org.opengroup.osdu.storage.validation;
 
 public class ValidationDoc {
     public static final String PATCH_RECORD_OPERATIONS_NOT_EMPTY = "Record patch operations cannot be empty";
-    public static final String INVALID_PATCH_PATH = "Invalid Patch Path: can only be '/acl/viewers', 'acl/owners', '/legal/legaltags', '/tags', '/kind', '/ancestry/parents', '/data' or '/meta'";
+    public static final String INVALID_PATCH_PATH_START = "Invalid Patch Path: can only starts with '/acl/viewers', 'acl/owners', '/legal/legaltags', '/tags', '/kind', '/ancestry/parents', '/data' or '/meta'";
     public static final String INVALID_PATCH_OPERATION = "Invalid Patch Operation: can only be 'replace' or 'add' or 'remove'";
     public static final String INVALID_PATCH_OPERATION_SIZE = "Invalid Patch Operation: the number of operations can only be between 1 and 100";
-    public static final String INVALID_PATCH_PATH_FOR_ADD_OR_REMOVE_OPERATION = "Invalid Patch Operation: path for add/remove operation must contain index of the value to be added/deleted";
+    public static final String INVALID_PATCH_PATH_FOR_ADD_OPERATION = "Invalid Patch Operation: path for add operation must contain index of the value to be added";
+    public static final String INVALID_PATCH_PATH_FOR_REMOVE_OPERATION = "Invalid Patch Operation: path for remove operation must contain index of the value to be deleted";
     public static final String INVALID_PATCH_PATH_END = "Invalid Patch Operation: path cannot ends with '/'";
     public static final String INVALID_PATCH_OPERATION_TYPE_FOR_KIND = "Invalid Patch Operation: for patching '/kind' only 'replace' operation is allowed";
     public static final String INVALID_PATCH_PATH_FOR_KIND = "Invalid Patch Operation: for patching 'kind' only '/kind' path is allowed";
@@ -28,4 +29,6 @@ public class ValidationDoc {
     public static final String RECORD_ID_LIST_NOT_EMPTY = "The list of record IDs cannot be empty";
     public static final String PATCH_RECORDS_MAX = "Up to 100 records can be patched at a time";
     public static final String INVALID_RECORD_ID_PATCH = "Invalid record format: '%s'. The following format is expected: {tenant-name}:{object-type}:{unique-identifier}";
+    public static final String INVALID_PATCH_VALUE_FOR_ADD_OPERATION = "Invalid Patch Operation: for 'add' operation only single 'value' is allowed";
+    public static final String INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION = "Invalid Patch Operation: for 'replace' operation with the specified index(or end of an array sign '-') of the element to be replaced, only single value is allowed";
 }
