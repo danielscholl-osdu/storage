@@ -39,6 +39,9 @@
   - [Add Tags, ACLs and Legal Tags <a name="metadata-update-add"></a>](#metadata-update-add)
   - [Remove Tags, ACLs and Legal Tags <a name="metadata-update-remove"></a>](#metadata-update-remove)
 - [Records patch api <a name="records-patch-api"></a>](#records-patch-api)
+  - [Add Operation <a name="patch-add-operation"></a>](#patch-add-operation)
+  - [Replace Operation <a name="patch-replace-operation"></a>](#patch-replace-operation)
+  - [Remove Operation <a name="patch-remove-operation"></a>](#patch-remove-operation)
   - [Differences compared to metadata update api <a name="patch-apis-diff"></a>](#patch-api-diff)
 - [Using service accounts to access Storage APIs <a name="Service-accounts"></a>](#using-service-accounts-to-access-storage-apis)
 - [Using skipdupes <a name="skipdupes"></a>](#using-skipdupes)
@@ -655,7 +658,6 @@ and updates properties specified in the operation path with value and operation 
 - The supported properties for metadata update are `tags`, `acl/viewers`, `acl/owners`, `legal/legaltags`, `ancestry/parents`, `kind` and `meta` (`meta` attribute out of the data block).
 - The supported properties for data update are `data`. 
 - If `acl` is being updated, the user should be part of the groups that are being replaced/added/removed as ACL.
-- User specifies the property they want to update in the `path` field, and new values should be provided in the `value` field.
 
 Records patch API has the following response codes:
 
@@ -665,10 +667,111 @@ Records patch API has the following response codes:
 | 206  | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or user does not have permission to edit the records. |                                                                                                                                                                                                                                                                                                                                                                                                                      
 | 400  | The update operation fails when the remove operation makes Legal Tags or ACLs empty.                                                                                              |
 
-Check out some examples below, but refer to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902) for a comprehensive documentation on JsonPatch and more examples
-1. 
+Check out some examples below, but refer to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902) for a comprehensive documentation on JsonPatch and more examples.
 
-<details><summary>curl</summary>
+**Note**: The examples below only highlight the `ops` array from the input payload, a full curl sample is provided at the end.
+
+### Add operation <a name="patch-add-operation"></a>
+Please note that the `add` operation performs either an add or a replace operation, depending on the target location. Refer to [Patch RFC spec - add](https://www.rfc-editor.org/rfc/rfc6902.html#section-4.1) for the explaination.
+1. Add legaltag `abc` to a record, at the end of the `legaltags` array. This will perform an addition because `path` points to an index in an array
+    <details><summary>add legaltag</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "add", 
+              "path": "/legal/legaltags/-",
+              "value": "abc"
+            }
+          ]
+    ```
+    </details>
+
+2. Add/Replace `tags` for a record. Note that although the operation is `add`, this adds `/tags` if it doesn't exist or replaces the current value with given value for `/tags`.
+This is because the target location is an object member that already exists. Please read [RFC Spec](https://www.rfc-editor.org/rfc/rfc6902.html#section-4.1) for more details.
+    <details><summary>replace tags</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "add", 
+              "path": "/tags",
+              "value": {
+                "tag1": "value1"
+              }
+            }
+          ]
+    ```
+    </details>
+
+3. Add a new property `subprop` to `data` block. Note that `parent` must exist. This operation will add `child` under `parent` with the value specified:
+    <details><summary>add to data block</summary>
+    
+    ```
+    "ops": [
+            {
+              "op": "add", 
+              "path": "/data/parent/child",
+              "value": {
+                "grandchild": {
+                  "key": "value"
+                }
+              }
+            }
+          ]
+    ```
+    </details>
+
+### Replace operation <a name="patch-replace-operation"></a>
+The `replace` operation is fairly straightforward, it replaces the value at the target location with a new value.
+1. Replace `/acl/owners` array for a record.
+    <details><summary>replace acl owners</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "replace", 
+              "path": "/acl/owners",
+              "value": [
+                "newacl1",
+                "newacl2"
+              ]
+            }
+          ]
+    ```
+    </details>
+
+### Remove operation <a name="patch-remove-operation"></a>
+The `remove` operation removes the value at the target location. The field `value` must not be provided for this operation.
+1. Remove `/data/parent/child` from the data block
+    <details><summary>remove data property</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "remove", 
+              "path": "/data/parent/child"
+            }
+          ]
+    ```
+    </details>
+
+2. Remove the first value from `/acl/viewers` array
+    <details><summary>remove first acl viewer</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "remove", 
+              "path": "/acl/viewers/0"
+            }
+          ]
+    ```
+    </details>
+
+
+Below is a complete sample curl which performs multiple operations on a list of record IDs.
+<details><summary>complete curl example</summary>
 
 ```
 curl --request PATCH \
@@ -696,7 +799,7 @@ curl --request PATCH \
         }, 
         { 
           "op": "add", 
-          "path": "/acl/viewers/~",
+          "path": "/acl/viewers/-",
           "value": "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com"
         },
         {
