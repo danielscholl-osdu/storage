@@ -39,6 +39,7 @@
   - [Add Tags, ACLs and Legal Tags <a name="metadata-update-add"></a>](#metadata-update-add)
   - [Remove Tags, ACLs and Legal Tags <a name="metadata-update-remove"></a>](#metadata-update-remove)
 - [Records patch api <a name="records-patch-api"></a>](#records-patch-api)
+  - [Input Validation <a name="patch-input-validation"></a>](#patch-input-validation)
   - [Add Operation <a name="patch-add-operation"></a>](#patch-add-operation)
   - [Replace Operation <a name="patch-replace-operation"></a>](#patch-replace-operation)
   - [Remove Operation <a name="patch-remove-operation"></a>](#patch-remove-operation)
@@ -667,11 +668,26 @@ Records patch API has the following response codes:
 | 206  | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or user does not have permission to edit the records. |                                                                                                                                                                                                                                                                                                                                                                                                                      
 | 400  | The update operation fails when the remove operation makes Legal Tags or ACLs empty.                                                                                              |
 
+### Input Validation <a name="patch-input-validation"></a>
+To remain compliant with the domain data models and business requirements, we perform certain input validation
+on the request payload. Please see below table for details:
+
+|                                                                              | Add                                                                              | Replace                                                                     | Remove                                                                      | Remarks                                                                                                                                                       |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| /kind                                                                        | Bad Request                                                                      | Replaces kind                                                               | Bad Request                                                                 | `kind` can only be replaced; `value` must be a raw string. Path must match exactly to `/kind`                                                                 |
+| /tags                                                                        | Replaces tags with `value`. Creates `/tags` if it doesn't exist                  | Replaces tags with `value`. `/tags` must exist                              | Removes tags, `value` is ignored. `/tags` must exist                        | `add` and `replace` behavior similar because `/tags` is an object member                                                                                      |
+| /tags/key                                                                    | Adds `"key" : "value"` to tags, `/tags` must exist                               | Replaces `/tags/key` with `value`. `/tags/key` must exist                   | Removes `"key" : "value"` from tags, `/tags/key` must exist                 |                                                                                                                                                               |
+| /acl/viewers OR /acl/owners OR /legal/legaltags OR /ancestry/parents         | Replaces the target array with value. Creates the attribute if it doesn't exist  | Replaces the target attribute with new value. Target location must exist    | Only `/ancestry/parents` can be removed                                     | In case of add or replace, Path should be an exact match and value must be an array of string values                                                          |
+| /acl/viewers/0 OR /acl/owners/0 OR /legal/legaltags/0 OR /ancestry/parents/0 | Adds value to the target index in the array                                      | Replaces value at the target index in the array. Target location must exist | Removes value at the target index in the array. Target location must exist  | Character `-` can be used to mention last index of the target array. For acl and legaltag, the target value must not be an empty array after applying Patch   |
+| /data                                                                        |                                                                                  |                                                                             |                                                                             | `/data` doesn't adhere to a rigid structure, therefore users must be cautious when modifying `/data`, as data corruption can cause indexing/search issues     |
+| /meta                                                                        |                                                                                  |                                                                             |                                                                             | if an update for `/meta`, it should be compliant with its structure (i.e. array of Map<String, Object>)                                                       |
+
+
 Check out some examples below, but refer to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902) for a comprehensive documentation on JsonPatch and more examples.
 
 **Note**: The examples below only highlight the `ops` array from the input payload, a full curl sample is provided at the end.
 
-### Add operation <a name="patch-add-operation"></a>
+### Add Operation <a name="patch-add-operation"></a>
 Please note that the `add` operation performs either an add or a replace operation, depending on the target location. Refer to [Patch RFC spec - add](https://www.rfc-editor.org/rfc/rfc6902.html#section-4.1) for the explaination.
 1. Add legaltag `abc` to a record, at the end of the `legaltags` array. This will perform an addition because `path` points to an index in an array
     <details><summary>add legaltag</summary>
@@ -722,7 +738,7 @@ This is because the target location is an object member that already exists. Ple
     ```
     </details>
 
-### Replace operation <a name="patch-replace-operation"></a>
+### Replace Operation <a name="patch-replace-operation"></a>
 The `replace` operation is fairly straightforward, it replaces the value at the target location with a new value.
 1. Replace `/acl/owners` array for a record.
     <details><summary>replace acl owners</summary>
@@ -741,7 +757,7 @@ The `replace` operation is fairly straightforward, it replaces the value at the 
     ```
     </details>
 
-### Remove operation <a name="patch-remove-operation"></a>
+### Remove Operation <a name="patch-remove-operation"></a>
 The `remove` operation removes the value at the target location. The field `value` must not be provided for this operation.
 1. Remove `/data/parent/child` from the data block
     <details><summary>remove data property</summary>
