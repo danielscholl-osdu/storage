@@ -137,7 +137,7 @@ public class JsonPatchValidatorTest {
     }
 
     @Test
-    public void shouldThrowException_ifPatchHasMultipleValuesForAddOperation() throws IOException {
+    public void shouldThrowException_ifPatchHasMultipleArrayValuesForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/acl/viewers\"," +
@@ -145,6 +145,28 @@ public class JsonPatchValidatorTest {
                 "            }]";
 
         exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUE_FOR_ADD_OPERATION);
+    }
+
+    @Test
+    public void shouldThrowException_ifPatchHasKeyValueValueForAddOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/tags/hello\"," +
+                "             \"value\": {\"key\" : \"value\"}" +
+                "            }]";
+
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUE_FOR_ADD_OPERATION);
+    }
+
+    @Test
+    public void should_returnTrue_ifPatchHasKeyValueValueForAddOperationForDataPath() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/data/hello\"," +
+                "             \"value\": {\"key\" : \"value\"}" +
+                "            }]";
+
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
     @Test
@@ -244,7 +266,7 @@ public class JsonPatchValidatorTest {
     @Test
     public void should_returnTrue_ifPatchHasValidKindPath() throws IOException {
         String jsonString = "[{" +
-                "             \"op\": \"add\"," +
+                "             \"op\": \"replace\"," +
                 "             \"path\": \"/kind\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
@@ -311,6 +333,24 @@ public class JsonPatchValidatorTest {
         String jsonString = "[{ \"op\": \"remove\", \"path\": \"/acl/owners/2\" }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void shouldFail_whenForReplaceKindValuesPresentedAsArray() throws IOException {
+        String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": [\"kindValue\"]}]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND);
+    }
+
+    @Test
+    public void shouldFail_onInvalidKindOperationRemove() throws IOException {
+        String jsonString = "[{ \"op\": \"remove\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
+    }
+
+    @Test
+    public void shouldFail_onInvalidKindOperationAdd() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
     }
 
     private void exceptionRulesAndMethodRun(String jsonString, String message) throws IOException {
