@@ -36,7 +36,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.opengroup.osdu.storage.util.api.PatchOperations.ADD;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.REMOVE;
 
 @Component
@@ -93,31 +92,8 @@ public class PatchInputValidatorImpl implements PatchInputValidator {
         Set<String> kinds = new HashSet<>();
         StreamSupport.stream(mapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .filter(pathStartsWith(KIND))
-                .forEach(operation -> {
-                    PatchOperations patchOperation = PatchOperations.forOperation(removeExtraQuotes(operation.get(OP)));
-                    if (ADD.equals(patchOperation) || REMOVE.equals(patchOperation)) {
-                        throw RequestValidationException.builder()
-                                .message(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND)
-                                .build();
-                    }
+                .forEach(operation -> kinds.add(removeExtraQuotes(operation.get(VALUE))));
 
-                    boolean isValidPath = removeExtraQuotes(operation.get(PATH)).equals(KIND);
-                    if (!isValidPath) {
-                        throw RequestValidationException.builder()
-                                .message(ValidationDoc.INVALID_PATCH_PATH_FOR_KIND)
-                                .build();
-                    }
-
-                    JsonNode valueNode = operation.get(VALUE);
-                    if (valueNode.getClass() == ArrayNode.class) {
-                        throw RequestValidationException.builder()
-                                .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND)
-                                .build();
-                    } else if (valueNode.getClass() == TextNode.class) {
-                        kinds.add(removeExtraQuotes(valueNode));
-                    }
-
-                });
         for (String kind : kinds) {
             if (!kind.matches(org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.KIND_REGEX)) {
                 throw RequestValidationException.builder()

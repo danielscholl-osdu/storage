@@ -170,36 +170,6 @@ public class PatchInputValidatorImplTest {
     }
 
     @Test
-    public void shouldFail_onInvalidKindOperationAdd() throws IOException {
-        String jsonString = "[{ \"op\": \"add\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
-
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
-
-        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
-    }
-
-    @Test
-    public void shouldFail_onInvalidKindOperationRemove() throws IOException {
-        String jsonString = "[{ \"op\": \"remove\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
-
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
-
-        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
-    }
-
-    @Test
-    public void shouldFail_whenValuesPresentedAsArray() throws IOException {
-        String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": [\"kindValue\"]}]";
-
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND);
-
-        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
-    }
-
-    @Test
     public void shouldFail_whenKindDoesNotFollowNamingConvention() throws IOException {
         String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
 
