@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.validation.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.opengroup.osdu.storage.util.api.PatchOperations;
@@ -40,13 +41,23 @@ import static org.opengroup.osdu.storage.util.api.PatchOperations.REPLACE;
 public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, JsonPatch> {
     public static final int MIN_NUMBER = 1;
     public static final int MAX_NUMBER = 100;
-    private static final Set<String> VALID_PATH_BEGINNINGS = new HashSet<>(Arrays.asList("/tags", "/acl/viewers", "/acl/owners", "/legal/legaltags", "/ancestry/parents", "/kind", "/data", "/meta"));
-    private static final Set<String> INVALID_PATHS_FOR_ADD_OPERATION = new HashSet<>(Arrays.asList("/tags", "/acl/viewers", "/acl/owners", "/legal/legaltags", "/ancestry/parents"));
-    private static final Set<String> INVALID_PATHS_FOR_REMOVE_OPERATION = new HashSet<>(Arrays.asList("/acl/viewers", "/acl/owners", "/legal/legaltags"));
+    private static final String KIND = "/kind";
+    private static final String TAGS = "/tags";
+    private static final String REGEX_TAGS_PATH_FOR_ADD_OR_REMOVE_SINGLE_KEY_VALUE = TAGS.concat("/.+");
+    private static final String ACL_VIEWERS = "/acl/viewers";
+    private static final String ACL_OWNERS = "/acl/owners";
+    private static final String LEGAL_TAGS = "/legal/legaltags";
+    private static final String ANCESTRY_PARENTS = "/ancestry/parents";
+    private static final String META = "/meta";
+    private static final String DATA = "/data";
+    private static final String REGEX_ACLS_LEGAL_ANCESTRY_PATH = "(" + String.join("|", ACL_VIEWERS, ACL_OWNERS, LEGAL_TAGS, ANCESTRY_PARENTS) + ")";
+    private static final String REGEX_ACLS_LEGAL_ANCESTRY_PATH_FOR_ADD_OR_REMOVE_SINGLE_VALUE = REGEX_ACLS_LEGAL_ANCESTRY_PATH + "/(\\d+|-)";
+    private static final Set<String> VALID_PATH_BEGINNINGS = new HashSet<>(Arrays.asList(KIND, TAGS, ACL_VIEWERS, ACL_OWNERS, LEGAL_TAGS, ANCESTRY_PARENTS, DATA, META));
+    private static final Set<String> ACLS_LEGAL_ANCESTY_PATHS = new HashSet<>(Arrays.asList(ACL_VIEWERS, ACL_OWNERS, LEGAL_TAGS, ANCESTRY_PARENTS));
+    private static final Set<String> INVALID_PATHS_FOR_REMOVE_OPERATION = ACLS_LEGAL_ANCESTY_PATHS;
     private static final String OP = "op";
     private static final String PATH = "path";
     private static final String VALUE = "value";
-    private static final String KIND = "/kind";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -57,8 +68,9 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         validatePathStartAndEnd(jsonPatch);
 
         validateKind(jsonPatch);
-        validateAddOperation(jsonPatch);
-        validateReplaceOperation(jsonPatch);
+        validateTags(jsonPatch);
+        validateAclLegalAncestry(jsonPatch);
+        validateMeta(jsonPatch);
         validateRemoveOperation(jsonPatch);
 
         return true;
@@ -112,8 +124,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .filter(pathStartsWith(KIND))
                 .forEach(operation -> {
-                    PatchOperations patchOperation = PatchOperations.forOperation(removeExtraQuotes(operation.get(OP)));
-                    if (ADD.equals(patchOperation) || REMOVE.equals(patchOperation)) {
+                    if (addOperation().test(operation) || removeOperation().test(operation)) {
                         throw RequestValidationException.builder()
                                 .message(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND)
                                 .build();
@@ -135,28 +146,62 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
                 });
     }
 
-    private void validateAddOperation(JsonPatch jsonPatch) {
-        //multiple values are not allowed for add operation
-        boolean isAddOperationValueValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(addOperation())
-                .map(operation -> operation.get(VALUE).getClass())
-                .noneMatch(aClass -> aClass.equals(ArrayNode.class));
-        if (!isAddOperationValueValid) {
-            throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
-                    .message(ValidationDoc.INVALID_PATCH_VALUE_FOR_ADD_OPERATION)
-                    .build();
-        }
+    private void validateTags(JsonPatch jsonPatch) {
+        StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+                .filter(pathStartsWith(TAGS))
+                .filter(addOrReplaceOperation())
+                .forEach(operation -> {
+                    String path = removeExtraQuotes(operation.get(PATH));
+                    JsonNode valueNode = operation.get(VALUE);
+                    if (TAGS.equals(path) && (valueNode.getClass() != ObjectNode.class)) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_TAGS)
+                                .build();
 
-        boolean isValidPathForAddOperations = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(addOperation())
-                .map(operation -> removeExtraQuotes(operation.get(PATH)))
-                .noneMatch(getInvalidPathsForAddOperation());
-        if (!isValidPathForAddOperations) {
-            throw RequestValidationException.builder()
-                    .message(ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION)
-                    .build();
-        }
+                    }
+                    if (path.matches(REGEX_TAGS_PATH_FOR_ADD_OR_REMOVE_SINGLE_KEY_VALUE) && (valueNode.getClass() != TextNode.class)) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_TAGS)
+                                .build();
+                    }
+                });
+    }
+
+    private void validateAclLegalAncestry(JsonPatch jsonPatch) {
+        StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+                .filter(getAclsAndLegalTagsOperations())
+                .filter(addOrReplaceOperation())
+                .forEach(operation -> {
+                    String path = removeExtraQuotes(operation.get(PATH));
+                    JsonNode valueNode = operation.get(VALUE);
+                    if (path.matches(REGEX_ACLS_LEGAL_ANCESTRY_PATH) && (valueNode.getClass() != ArrayNode.class)) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_ACL_LEGAL_ANCESTRY)
+                                .build();
+
+                    }
+                    if (path.matches(REGEX_ACLS_LEGAL_ANCESTRY_PATH_FOR_ADD_OR_REMOVE_SINGLE_VALUE) && (valueNode.getClass() != TextNode.class)) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_SINGLE_VALUE_FORMAT_FOR_ACL_LEGAL_ANCESTRY)
+                                .build();
+                    }
+                });
+    }
+
+    private void validateMeta(JsonPatch jsonPatch) {
+        StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+                .filter(pathStartsWith(META))
+                .filter(addOrReplaceOperation())
+                .forEach(operation -> {
+                    String path = removeExtraQuotes(operation.get(PATH));
+                    JsonNode valueNode = operation.get(VALUE);
+                    if (META.equals(path) && (valueNode.getClass() != ArrayNode.class)) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_VALUE_FORMAT_FOR_META)
+                                .build();
+
+                    }
+                });
     }
 
     private void validateRemoveOperation(JsonPatch jsonPatch) {
@@ -171,23 +216,6 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         }
     }
 
-    private void validateReplaceOperation(JsonPatch jsonPatch) {
-        //single value is allowed for replace operation with the path ends with index(number) or endOfArray sign '-'
-        boolean isReplaceOperationValid = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(replaceOperation())
-                .filter(pathEndsWithNumberOrEndOfArraySign())
-                .map(operation -> operation.get(VALUE).getClass())
-                .noneMatch(aClass -> aClass.equals(ArrayNode.class));
-        if (!isReplaceOperationValid) {
-            throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
-                    .message(ValidationDoc.INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION)
-                    .build();
-        }
-
-        //TODO multiple values are allowed for replace operation with the path exactly /acls/viewers, acls/owners, /legal/legaltags, /ancestry/parents, ...
-    }
-
     private Predicate<String> getAllowedPathStart() {
         return path -> VALID_PATH_BEGINNINGS.stream().anyMatch(path::startsWith);
     }
@@ -197,34 +225,37 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
     }
 
     private Predicate<JsonNode> addOperation() {
-        return operation -> ADD.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
+        return operation -> ADD.equals(getPatchOperation(operation));
     }
 
-    private Predicate<JsonNode> replaceOperation() {
-        return operation -> REPLACE.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
+    private Predicate<JsonNode> addOrReplaceOperation() {
+        return operation -> {
+            PatchOperations patchOperation = getPatchOperation(operation);
+            return ADD.equals(patchOperation) || REPLACE.equals(patchOperation);
+        };
     }
 
     private Predicate<JsonNode> removeOperation() {
-        return operation -> REMOVE.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
+        return operation -> REMOVE.equals(getPatchOperation(operation));
     }
 
-    private Predicate<String> getInvalidPathsForAddOperation() {
-        return path -> INVALID_PATHS_FOR_ADD_OPERATION.stream().anyMatch(path::equals);
-    }
-
-    private Predicate<? super String> getInvalidPathsForRemoveOperation() {
-        return path -> INVALID_PATHS_FOR_REMOVE_OPERATION.stream().anyMatch(path::equals);
-    }
-
-    private Predicate<? super JsonNode> pathEndsWithNumberOrEndOfArraySign() {
+    private Predicate<JsonNode> getAclsAndLegalTagsOperations() {
         return operation -> {
             String path = removeExtraQuotes(operation.get(PATH));
-            return path.matches(".+?\\d") || path.endsWith("/-");
+            return ACLS_LEGAL_ANCESTY_PATHS.stream().anyMatch(path::startsWith);
         };
+    }
+
+    private Predicate<String> getInvalidPathsForRemoveOperation() {
+        return path -> INVALID_PATHS_FOR_REMOVE_OPERATION.stream().anyMatch(path::equals);
     }
 
     private Predicate<PatchOperations> getAllowedOperations() {
         return operation -> ADD.equals(operation) || REMOVE.equals(operation) || REPLACE.equals(operation);
+    }
+
+    private PatchOperations getPatchOperation(JsonNode operation) {
+        return PatchOperations.forOperation(removeExtraQuotes(operation.get(OP)));
     }
 
     private String removeExtraQuotes(JsonNode jsonNode) {

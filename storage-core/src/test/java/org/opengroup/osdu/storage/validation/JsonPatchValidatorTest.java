@@ -130,39 +130,59 @@ public class JsonPatchValidatorTest {
         String jsonString = "[{" +
                 "             \"op\": \"replace\"," +
                 "             \"path\": \"/acl/viewers\"," +
-                "             \"value\": \"some_value\"" +
+                "             \"value\": [\"some_value\"]" +
                 "            }]";
 
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
     @Test
-    public void shouldThrowException_ifPatchHasMultipleArrayValuesForAddOperation() throws IOException {
+    public void should_returnTrue_ifPatchHasMultipleArrayValuesForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/acl/viewers\"," +
                 "             \"value\": [\"value1\", \"value2\"]" +
                 "            }]";
-
-        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUE_FOR_ADD_OPERATION);
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
     @Test
-    public void shouldThrowException_ifPatchHasKeyValueValueForAddOperation() throws IOException {
+    public void shouldThrowException_ifPatchPathContainKeyAndInvalidPatchValueForAddTagOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/tags/hello\"," +
                 "             \"value\": {\"key\" : \"value\"}" +
                 "            }]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_TAGS);
+    }
 
-        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUE_FOR_ADD_OPERATION);
+    @Test
+    public void shouldThrowException_ifPatchPathDoesNotContainKeyAndInvalidPatchValueForAddTagOperation() throws IOException {
+        String jsonString = "[{" +
+                "             \"op\": \"add\"," +
+                "             \"path\": \"/tags\"," +
+                "             \"value\": \"value\"" +
+                "            }]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_TAGS);
+    }
+
+    @Test
+    public void should_returnTrue_ifPatchPathContainsKeyAndValidPatchValueForAddTagOperation() throws IOException {
+        String jsonString = "[{\"op\": \"add\",  \"path\": \"/tags/key\", \"value\": \"value\"}]";
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
+    }
+
+    @Test
+    public void should_returnTrue_ifPatchPathDoesNotContainKeyAndValidPatchValueForAddTagOperation() throws IOException {
+        String jsonString = "[{\"op\": \"add\",  \"path\": \"/tags\", \"value\": {\"key\" : \"value\"} }]";
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
     @Test
     public void should_returnTrue_ifPatchHasKeyValueValueForAddOperationForDataPath() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
-                "             \"path\": \"/data/hello\"," +
+                "             \"path\": \"/data\"," +
                 "             \"value\": {\"key\" : \"value\"}" +
                 "            }]";
 
@@ -176,11 +196,7 @@ public class JsonPatchValidatorTest {
                 "             \"path\": \"/acl/viewers/1\"," +
                 "             \"value\": [\"value1\", \"value2\"]" +
                 "            }]";
-
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION);
-
-        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_SINGLE_VALUE_FORMAT_FOR_ACL_LEGAL_ANCESTRY);
     }
 
     @Test
@@ -190,11 +206,7 @@ public class JsonPatchValidatorTest {
                 "             \"path\": \"/acl/viewers/-\"," +
                 "             \"value\": [\"value1\", \"value2\"]" +
                 "            }]";
-
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION);
-
-        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_SINGLE_VALUE_FORMAT_FOR_ACL_LEGAL_ANCESTRY);
     }
 
     @Test(expected = RequestValidationException.class)
@@ -220,14 +232,14 @@ public class JsonPatchValidatorTest {
     }
 
     @Test
-    public void should_fail_ifPatchHasInValidAclPathFoAddOperation() throws IOException {
+    public void should_fail_ifPatchHasInvalidAclValueForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/acl/viewers\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_ACL_LEGAL_ANCESTRY);
     }
 
     @Test
@@ -242,25 +254,25 @@ public class JsonPatchValidatorTest {
     }
 
     @Test
-    public void should_fail_ifPatchHasInvalidLegalPathForAddOperation() throws IOException {
+    public void should_fail_ifPatchHasInvalidValueForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/legal/legaltags\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_ACL_LEGAL_ANCESTRY);
     }
 
     @Test
-    public void should_fail_ifPatchHasInvalidAncestryPathForAddOperation() throws IOException {
+    public void should_fail_ifPatchHasInvalidAncestryValueForAddOperation() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
                 "             \"path\": \"/ancestry/parents\"," +
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_PATH_FOR_ADD_OPERATION);
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_ACL_LEGAL_ANCESTRY);
     }
 
     @Test
@@ -287,12 +299,7 @@ public class JsonPatchValidatorTest {
 
     @Test
     public void should_returnTrue_ifPatchHasValidMetaPath() throws IOException {
-        String jsonString = "[{" +
-                "             \"op\": \"add\"," +
-                "             \"path\": \"/meta\"," +
-                "             \"value\": \"some_value\"" +
-                "            }]";
-
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/meta\", \"value\": [\"some_value\"] }]";
         assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
@@ -351,6 +358,18 @@ public class JsonPatchValidatorTest {
     public void shouldFail_onInvalidKindOperationAdd() throws IOException {
         String jsonString = "[{ \"op\": \"add\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
         exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND);
+    }
+
+    @Test
+    public void shouldFail_onInvalidValueForMetaOperationAdd() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/meta\", \"value\": \"metaValue\"}]";
+        exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_VALUE_FORMAT_FOR_META);
+    }
+
+    @Test
+    public void shoul_returnTrue_onValidValueForMetaOperationAdd() throws IOException {
+        String jsonString = "[{ \"op\": \"add\", \"path\": \"/meta\", \"value\": [{\"key\" : \"value\"}] }]";
+        assertTrue(sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context));
     }
 
     private void exceptionRulesAndMethodRun(String jsonString, String message) throws IOException {

@@ -25,10 +25,12 @@ public class ValidationDoc {
     public static final String INVALID_PATCH_OPERATION_TYPE_FOR_KIND = "Invalid Patch Operation: for patching '/kind' only 'replace' operation is allowed";
     public static final String INVALID_PATCH_PATH_FOR_KIND = "Invalid Patch Operation: for patching 'kind' only '/kind' path is allowed";
     public static final String INVALID_PATCH_VALUES_FORMAT_FOR_KIND = "Invalid Patch Operation: for patching '/kind' only one value is allowed";
+    public static final String INVALID_PATCH_VALUES_FORMAT_FOR_TAGS = "Invalid Patch Operation: for patching '/tags' value can only be in {'key':'value'} format and for patching '/tags/key' value can only be in a single string format";
+    public static final String INVALID_PATCH_VALUES_FORMAT_FOR_ACL_LEGAL_ANCESTRY = "Invalid Patch Operation: for patching '/acl/viewers', 'acl/owners', '/legal/legaltags', '/ancestry/parents'  value can only be in an array format";
+    public static final String INVALID_PATCH_SINGLE_VALUE_FORMAT_FOR_ACL_LEGAL_ANCESTRY = "Invalid Patch Operation: for patching '/acl/viewers/index', 'acl/owners/index', '/legal/legaltags/index', '/ancestry/parents/index'  value can only be in a single string format";
+    public static final String INVALID_PATCH_VALUE_FORMAT_FOR_META = "Invalid Patch Operation: for patching '/meta' value can only be in an array format";
     public static final String KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION = "Invalid kind: '%s', does not follow the required naming convention";
     public static final String RECORD_ID_LIST_NOT_EMPTY = "The list of record IDs cannot be empty";
     public static final String PATCH_RECORDS_MAX = "Up to 100 records can be patched at a time";
     public static final String INVALID_RECORD_ID_PATCH = "Invalid record format: '%s'. The following format is expected: {tenant-name}:{object-type}:{unique-identifier}";
-    public static final String INVALID_PATCH_VALUE_FOR_ADD_OPERATION = "Invalid Patch Operation: for 'add' operation only single 'value' is allowed";
-    public static final String INVALID_PATCH_VALUE_FOR_REPLACE_OPERATION = "Invalid Patch Operation: for 'replace' operation with the specified index(or end of an array sign '-') of the element to be replaced, only single value is allowed";
 }
