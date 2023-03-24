@@ -14,7 +14,10 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -42,6 +45,7 @@ import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -98,6 +102,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
     @Override
     public PatchRecordsResponse patchRecords(List<String> recordIds, JsonPatch jsonPatch, String user, Optional<CollaborationContext> collaborationContext) {
+        List<String> successfulRecordIds = new ArrayList<>();
         List<String> failedRecordIds = new ArrayList<>();
         List<String> notFoundRecordIds = new ArrayList<>();
         List<String> errors = new ArrayList<>();
@@ -113,20 +118,23 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         if(dataUpdate) {
             MultiRecordInfo multiRecordInfo = batchService.getMultipleRecords(new MultiRecordIds(recordIds, attributes), collaborationContext);
             notFoundRecordIds = multiRecordInfo.getInvalidRecords();
-            recordIds.removeAll(notFoundRecordIds);
 
             List<Record> recordsToPersist = new ArrayList<>();
             for(Record validRecord : multiRecordInfo.getRecords()) {
                 try {
                     JsonNode patched = jsonPatch.apply(objectMapper.convertValue(validRecord, JsonNode.class));
                     Record patchedRecord = objectMapper.treeToValue(patched, Record.class);
-                    recordsToPersist.add(patchedRecord);
+                    if(isEmptyAclOrLegal(patchedRecord)) {
+                        failedRecordIds.add(validRecord.getId());
+                        errors.add("Patch operation for record: " + validRecord.getId() + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
+                    } else {
+                        recordsToPersist.add(patchedRecord);
+                        successfulRecordIds.add(validRecord.getId());
+                    }
                 } catch (JsonPatchException e) {
-                    recordIds.remove(validRecord.getId());
                     failedRecordIds.add(validRecord.getId());
                     errors.add("Json patch error for record: "+validRecord.getId());
                 } catch (JsonProcessingException e) {
-                    recordIds.remove(validRecord.getId());
                     failedRecordIds.add(validRecord.getId());
                     errors.add("Json processing error for record: "+validRecord.getId());
                 }
@@ -153,19 +161,28 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             long currentTime = System.currentTimeMillis();
             for(String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
-                if(metadata == null) {
-                    notFoundRecordIds.add(recordId);
-                    recordIds.remove(recordId);
-                } else {
-                    metadata.setModifyTime(currentTime);
-                    metadata.setModifyUser(user);
-                    recordMetadataToBePatched.add(metadata);
+                try {
+                    if (checkIfResultingAclOrLegalTagsAreEmpty(metadata, jsonPatch)) {
+                        failedRecordIds.add(recordId);
+                        errors.add("Patch operation for record: " + recordId + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
+                    } else {
+                        if(metadata == null) {
+                            notFoundRecordIds.add(recordId);
+                        } else {
+                            metadata.setModifyTime(currentTime);
+                            metadata.setModifyUser(user);
+                            recordMetadataToBePatched.add(metadata);
+                            successfulRecordIds.add(recordId);
+                        }
+                    }
+                } catch (AppException e) {
+                    failedRecordIds.add(recordId);
+                    errors.add("Patch operation for record: " + recordId + " failed with error: " + e.getMessage());
                 }
             }
             if(!recordMetadataToBePatched.isEmpty()) {
                 Map<String, String> recordIdPatchError = persistenceService.patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, collaborationContext);
                 for(String currentRecordId : recordIdPatchError.keySet()) {
-                    recordIds.remove(recordIdPatchError.remove(currentRecordId));
                     errors.add(recordIdPatchError.get(currentRecordId));
                 }
             }
@@ -173,10 +190,10 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
         PatchRecordsResponse recordsResponse = PatchRecordsResponse.builder()
                 .notFoundRecordIds(notFoundRecordIds)
-                .recordIds(recordIds)
+                .recordIds(successfulRecordIds)
                 .failedRecordIds(failedRecordIds)
                 .errors(errors)
-                .recordCount(recordIds.size()).build();
+                .recordCount(successfulRecordIds.size()).build();
 
         auditCreateOrUpdateRecords(recordsResponse);
 
@@ -241,5 +258,41 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                 return true;
         }
         return false;
+    }
+
+    private boolean checkIfResultingAclOrLegalTagsAreEmpty(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
+        try {
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+            objectMapper.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE);
+            objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+            JsonNode patched = jsonPatch.apply(objectMapper.convertValue(recordMetadata, JsonNode.class));
+            RecordMetadata patchedRecordMetadata = objectMapper.treeToValue(patched, RecordMetadata.class);
+            return isEmptyAclOrLegal(patchedRecordMetadata);
+        } catch (JsonPatchException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonPatchException during patch operation");
+        } catch (JsonProcessingException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonProcessingException during patch operation");
+        }
+    }
+
+    private boolean isEmptyAclOrLegal(RecordMetadata recordMetadata) {
+        return recordMetadata.getAcl() == null ||
+                recordMetadata.getAcl().getViewers() == null ||
+                recordMetadata.getAcl().getOwners() == null ||
+                recordMetadata.getLegal() == null ||
+                recordMetadata.getAcl().getOwners().length == 0 ||
+                recordMetadata.getAcl().getViewers().length == 0 ||
+                CollectionUtils.isEmpty(recordMetadata.getLegal().getLegaltags());
+    }
+
+    private boolean isEmptyAclOrLegal(Record record) {
+        return record.getAcl() == null ||
+                record.getAcl().getViewers() == null ||
+                record.getAcl().getOwners() == null ||
+                record.getLegal() == null ||
+                record.getAcl().getOwners().length == 0 ||
+                record.getAcl().getViewers().length == 0 ||
+                CollectionUtils.isEmpty(record.getLegal().getLegaltags());
     }
 }

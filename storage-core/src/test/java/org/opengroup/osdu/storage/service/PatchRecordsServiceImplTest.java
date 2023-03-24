@@ -13,6 +13,7 @@ import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -181,6 +185,115 @@ public class PatchRecordsServiceImplTest {
     }
 
     @Test
+    public void shouldPatchRecordDataPartially_ifResultHasEmptyAclForOneRecord() throws IOException{
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/acl/viewers/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
+
+        MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
+        String[] record1ViewersAcl = new String[]{"viewer1@company.com"};
+        multiRecordInfo.getRecords().get(0).getAcl().setViewers(record1ViewersAcl);
+        when(batchService.getMultipleRecords(any(MultiRecordIds.class), eq(COLLABORATION_CONTEXT))).thenReturn(multiRecordInfo);
+
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        verifyValidatorsWereInvocated(jsonPatch);
+        assertEquals(1, result.getFailedRecordIds().size());
+        assertEquals(RECORD_ID1, result.getFailedRecordIds().get(0));
+        assertEquals(1, result.getErrors().size());
+        assertEquals("Patch operation for record: " + RECORD_ID1 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers", result.getErrors().get(0));
+        assertEquals(RECORD_ID2, result.getRecordIds().get(0));
+        assertThat(result.getRecordCount(), is(1));
+        Record patchedRecord2 = getRecord(RECORD_ID2);
+
+        String[] record2ViewersAcl = new String[]{"viewer2@company.com"};
+        patchedRecord2.getAcl().setViewers(record2ViewersAcl);
+        patchedRecord2.setData(Collections.singletonMap("Hello", "world"));
+        verify(ingestionService).createUpdateRecords(false, Arrays.asList(patchedRecord2), USER, COLLABORATION_CONTEXT);
+
+        verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
+    }
+
+    @Test
+    public void shouldNotPatchData_ifResultHasEmptyLegaltagsForAllRecords() throws IOException{
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/legal/legaltags/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
+
+        MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
+        when(batchService.getMultipleRecords(any(MultiRecordIds.class), eq(COLLABORATION_CONTEXT))).thenReturn(multiRecordInfo);
+
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        verifyValidatorsWereInvocated(jsonPatch);
+        assertEquals(2, result.getFailedRecordIds().size());
+        assertEquals(RECORD_ID1, result.getFailedRecordIds().get(0));
+        assertEquals(RECORD_ID2, result.getFailedRecordIds().get(1));
+        assertEquals(2, result.getErrors().size());
+        assertEquals("Patch operation for record: " + RECORD_ID1 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers", result.getErrors().get(0));
+        assertEquals("Patch operation for record: " + RECORD_ID2 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers", result.getErrors().get(1));
+        assertTrue(result.getRecordIds().isEmpty());
+
+        verify(ingestionService, never()).createUpdateRecords(eq(false), anyList(), eq(USER), eq(COLLABORATION_CONTEXT));
+
+        verify(auditLogger, never()).createOrUpdateRecordsSuccess(result.getRecordIds());
+    }
+
+    @Test
+    public void shouldPatchRecordMetadataPartially_ifResultHasEmptyAclForOneRecord() throws IOException {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/acl/viewers/0\"}]"));
+        Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
+        String[] record1ViewersAcl = new String[]{"viewer1@company.com"};
+        existingRecords.get(RECORD_ID1).setAcl(new Acl(record1ViewersAcl, OWNERS));
+
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
+        when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(true);
+
+        List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
+        recordMetadataToBePatched.add(existingRecords.get(RECORD_ID2));
+
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        verifyValidatorsWereInvocated(jsonPatch);
+        verify(patchInputValidator).validateLegalTags(jsonPatch);
+        verify(entitlementsAndCacheService, times(2)).hasOwnerAccess(headers, OWNERS);
+        assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
+        assertEquals(1, result.getFailedRecordIds().size());
+        assertEquals(RECORD_ID1, result.getFailedRecordIds().get(0));
+        assertEquals(1, result.getErrors().size());
+        assertEquals("Patch operation for record: " + RECORD_ID1 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers", result.getErrors().get(0));
+        assertEquals(RECORD_ID2, result.getRecordIds().get(0));
+        assertThat(result.getRecordCount(), is(1));
+        verify(persistenceService).patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, COLLABORATION_CONTEXT);
+        verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
+    }
+
+    @Test
+    public void shouldNotPatchMetadata_ifResultHasEmptyLegaltagsForAllRecords() throws IOException {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/legal/legaltags/0\"}]"));
+        Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
+
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
+        when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(true);
+
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        verifyValidatorsWereInvocated(jsonPatch);
+        verify(patchInputValidator).validateLegalTags(jsonPatch);
+        verify(entitlementsAndCacheService, times(2)).hasOwnerAccess(headers, OWNERS);
+        assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
+        assertEquals(2, result.getFailedRecordIds().size());
+        assertTrue(result.getFailedRecordIds().contains(RECORD_ID1));
+        assertTrue(result.getFailedRecordIds().contains(RECORD_ID2));
+        assertEquals(2, result.getErrors().size());
+        assertTrue(result.getErrors().contains("Patch operation for record: " + RECORD_ID1 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers"));
+        assertTrue(result.getRecordIds().isEmpty());
+        assertThat(result.getRecordCount(), is(0));
+        verify(persistenceService, never()).patchRecordsMetadata(anyList(), eq(jsonPatch), eq(COLLABORATION_CONTEXT));
+        verify(auditLogger, never()).createOrUpdateRecordsSuccess(result.getRecordIds());
+    }
+
+    @Test
     public void shouldFailRecordDataPatch_ifValueInvalid() throws IOException {
         JsonPatch inValidJsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/data\", \"value\":\"inValidDataFormat\"}]"));
         MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
@@ -244,6 +357,9 @@ public class PatchRecordsServiceImplTest {
         Record record = new Record();
         record.setId(recordId);
         record.setAcl(new Acl(VIEWERS, OWNERS));
+        Legal legal = new Legal();
+        legal.setLegaltags(new HashSet<>(Arrays.asList("legaltag")));
+        record.setLegal(legal);
         return record;
     }
 
@@ -261,6 +377,9 @@ public class PatchRecordsServiceImplTest {
         RecordMetadata recordMetadata = new RecordMetadata();
         recordMetadata.setId(recordId);
         recordMetadata.setAcl(new Acl(VIEWERS, OWNERS));
+        Legal legal = new Legal();
+        legal.setLegaltags(new HashSet<>(Arrays.asList("legaltag")));
+        recordMetadata.setLegal(legal);
         return recordMetadata;
     }
 
