@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.validation.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.opengroup.osdu.storage.util.api.PatchOperations;
 import org.opengroup.osdu.storage.validation.RequestValidationException;
@@ -45,6 +46,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
     private static final String OP = "op";
     private static final String PATH = "path";
     private static final String VALUE = "value";
+    private static final String KIND = "/kind";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -54,6 +56,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         validateOperationType(jsonPatch);
         validatePathStartAndEnd(jsonPatch);
 
+        validateKind(jsonPatch);
         validateAddOperation(jsonPatch);
         validateReplaceOperation(jsonPatch);
         validateRemoveOperation(jsonPatch);
@@ -103,6 +106,33 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
                     .message(ValidationDoc.INVALID_PATCH_PATH_END)
                     .build();
         }
+    }
+
+    private void validateKind(JsonPatch jsonPatch) {
+        StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
+                .filter(pathStartsWith(KIND))
+                .forEach(operation -> {
+                    PatchOperations patchOperation = PatchOperations.forOperation(removeExtraQuotes(operation.get(OP)));
+                    if (ADD.equals(patchOperation) || REMOVE.equals(patchOperation)) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_OPERATION_TYPE_FOR_KIND)
+                                .build();
+                    }
+
+                    boolean isValidPath = removeExtraQuotes(operation.get(PATH)).equals(KIND);
+                    if (!isValidPath) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_PATH_FOR_KIND)
+                                .build();
+                    }
+
+                    JsonNode valueNode = operation.get(VALUE);
+                    if (valueNode.getClass() != TextNode.class) {
+                        throw RequestValidationException.builder()
+                                .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_KIND)
+                                .build();
+                    }
+                });
     }
 
     private void validateAddOperation(JsonPatch jsonPatch) {
@@ -170,6 +200,10 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         return operation -> ADD.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
     }
 
+    private Predicate<JsonNode> replaceOperation() {
+        return operation -> REPLACE.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
+    }
+
     private Predicate<JsonNode> removeOperation() {
         return operation -> REMOVE.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
     }
@@ -193,12 +227,12 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         return operation -> ADD.equals(operation) || REMOVE.equals(operation) || REPLACE.equals(operation);
     }
 
-    private Predicate<JsonNode> replaceOperation() {
-        return operation -> REPLACE.equals(PatchOperations.forOperation(removeExtraQuotes(operation.get(OP))));
-    }
-
     private String removeExtraQuotes(JsonNode jsonNode) {
         return jsonNode.toString().replace("\"", "");
+    }
+
+    private Predicate<JsonNode> pathStartsWith(String path) {
+        return operation -> removeExtraQuotes(operation.get(PATH)).startsWith(path);
     }
 
 }
