@@ -185,7 +185,7 @@ public class ObmStorage implements ICloudStorage {
                     throw new ObmDriverRuntimeException(S3CompatibleErrors.NO_SUCH_KEY_CODE, new RuntimeException(String.format("'%s' not found", path)));
                 }
             } catch (ObmDriverRuntimeException exception) {
-                throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, exception);
+                throw new AppException(exception.getError().getHttpStatusCode(), exception.getCause().getMessage(), exception.getMessage(), exception);
             }
         }
 
