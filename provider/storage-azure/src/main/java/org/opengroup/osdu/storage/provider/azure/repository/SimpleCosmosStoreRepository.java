@@ -302,7 +302,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
             continuationToken = ((CosmosStorePageRequest)pageable).getRequestContinuation();
         }
         int pageSize = pageable.getPageSize();
-        return this.queryItemsPage(dataPartitionId, cosmosDBName, collectionName, query, domainClass, pageSize, continuationToken);
+        return this.queryItemsPage(dataPartitionId, cosmosDBName, collectionName, query, domainClass, pageSize, continuationToken, queryOptions);
     }
 
     protected BulkImportResponse bulkInsert(String dataPartitionId, String cosmosDBName, String collectionName, Collection<T> docs){
