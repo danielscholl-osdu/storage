@@ -48,10 +48,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -128,6 +131,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                         failedRecordIds.add(validRecord.getId());
                         errors.add("Patch operation for record: " + validRecord.getId() + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
                     } else {
+                        patchedRecord.getAcl().setOwners(Arrays.stream(patchedRecord.getAcl().getOwners()).distinct().toArray(String[]::new));
+                        patchedRecord.getAcl().setViewers(Arrays.stream(patchedRecord.getAcl().getViewers()).distinct().toArray(String[]::new));
                         recordsToPersist.add(patchedRecord);
                         successfulRecordIds.add(validRecord.getId());
                     }
