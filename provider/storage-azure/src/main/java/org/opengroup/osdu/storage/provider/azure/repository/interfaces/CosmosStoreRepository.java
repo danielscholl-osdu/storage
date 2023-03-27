@@ -58,5 +58,7 @@ public interface CosmosStoreRepository<T> extends PagingAndSortingRepository<T> 
     <T> Page<T> queryItemsPage(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query, Class<T> clazz,
                                int pageSize, String continuationToken);
 
+    <T> Page<T> queryItemsPage(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query, Class<T> clazz, int pageSize, String continuationToken, CosmosQueryRequestOptions options);
+
 
 }
