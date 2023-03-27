@@ -238,7 +238,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         Assert.notNull(kind, "kind must not be null");
         Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status, collaborationContext);
-        return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query);
+        CosmosQueryRequestOptions queryOptions = new CosmosQueryRequestOptions();
+        queryOptions.setResponseContinuationTokenLimitInKb(1);
+        return this.find(pageable, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, queryOptions);
     }
 
     public int getMetadataDocumentCountForBlob(String path) {
