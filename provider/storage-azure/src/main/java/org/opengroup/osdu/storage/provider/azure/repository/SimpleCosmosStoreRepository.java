@@ -106,6 +106,11 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     }
 
     @Override
+    public <T> Page<T> queryItemsPage(String dataPartitionId, String cosmosDBName, String collection, SqlQuerySpec query, Class<T> clazz, int pageSize, String continuationToken, CosmosQueryRequestOptions options) {
+        return this.operation.queryItemsPage(dataPartitionId,  cosmosDBName, collection, query, clazz,  pageSize,  continuationToken, options);
+    }
+
+    @Override
     public void createItem(String dataPartitionId, String cosmosDBName, String collection, @NonNull String partitionKey, T item) {
         Assert.notNull(item, ENTITY_MUST_NOT_BE_NULL);
         this.operation.createItem(dataPartitionId, cosmosDBName, collection, partitionKey, item);
@@ -258,13 +263,17 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     }
 
     public Page<T> find(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName, SqlQuerySpec query) {
+        return this.find(pageable, dataPartitionId, cosmosDBName, collectionName, query, new CosmosQueryRequestOptions());
+    }
+
+    public Page<T> find(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName, SqlQuerySpec query, CosmosQueryRequestOptions queryOptions) {
         Assert.notNull(pageable, PAGEABLE_MUST_NOT_BE_NULL);
         CosmosStoreQuery cosmosQuery = (new CosmosStoreQuery()).with(query.getQueryText());
         if (pageable.getSort().isSorted()) {
             cosmosQuery.with(pageable.getSort());
         }
         SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmosWithQueryText(cosmosQuery, cosmosQuery.getQuery());
-        return this.paginationQuery(pageable, sqlQuerySpec, domainClass, dataPartitionId, cosmosDBName, collectionName);
+        return this.paginationQuery(pageable, sqlQuerySpec, domainClass, dataPartitionId, cosmosDBName, collectionName, queryOptions);
     }
 
     @Override
@@ -282,6 +291,10 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
     }
 
     public Page<T> paginationQuery(Pageable pageable, SqlQuerySpec query, Class<T> domainClass, String dataPartitionId, String cosmosDBName, String collectionName) {
+       return this.paginationQuery(pageable, query, domainClass, dataPartitionId, cosmosDBName, collectionName, new CosmosQueryRequestOptions());
+    }
+
+    public Page<T> paginationQuery(Pageable pageable, SqlQuerySpec query, Class<T> domainClass, String dataPartitionId, String cosmosDBName, String collectionName, CosmosQueryRequestOptions queryOptions) {
         Assert.isTrue(pageable.getPageSize() > 0, "pageable should have page size larger than 0");
         Assert.hasText(collectionName, "collection should not be null, empty or only whitespaces");
         String continuationToken = null;
@@ -289,7 +302,7 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
             continuationToken = ((CosmosStorePageRequest)pageable).getRequestContinuation();
         }
         int pageSize = pageable.getPageSize();
-        return this.queryItemsPage(dataPartitionId, cosmosDBName, collectionName, query, domainClass, pageSize, continuationToken);
+        return this.queryItemsPage(dataPartitionId, cosmosDBName, collectionName, query, domainClass, pageSize, continuationToken, queryOptions);
     }
 
     protected BulkImportResponse bulkInsert(String dataPartitionId, String cosmosDBName, String collectionName, Collection<T> docs){
