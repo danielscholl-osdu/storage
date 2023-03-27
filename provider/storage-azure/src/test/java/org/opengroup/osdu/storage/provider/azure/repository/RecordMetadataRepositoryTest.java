@@ -1,6 +1,5 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
-import com.azure.cosmos.models.CosmosPatchOperations;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -26,13 +25,13 @@ import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -150,55 +150,47 @@ public class RecordMetadataRepositoryTest {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
         String expectedDocId = CollaborationId + RECORD_ID1;
-        List<String> docIds = new ArrayList<>();
-        docIds.add(expectedDocId);
-        List<RecordMetadata> recordMetadataList = new ArrayList<>();
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
-        recordMetadataList.add(recordMetadata);
-        List<String> partitionKeys = new ArrayList<>();
-        partitionKeys.add(RECORD_ID1);
-        Map<String, String> recordErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.of(collaborationContext));
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        partitionKeyForDoc.put(expectedDocId, RECORD_ID1);
+        Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.of(collaborationContext));
+        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 
     @Test
     public void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided() throws IOException {
-        List<String> docIds = new ArrayList<>();
-        docIds.add(RECORD_ID1);
-        List<RecordMetadata> recordMetadataList = new ArrayList<>();
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
-        recordMetadataList.add(recordMetadata);
-        List<String> partitionKeys = new ArrayList<>();
-        partitionKeys.add(RECORD_ID1);
-        Map<String, String> recordErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
+        Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
+        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 
     @Test
     public void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided_withDuplicateOpAndPath() throws IOException {
-        List<String> docIds = new ArrayList<>();
-        docIds.add(RECORD_ID1);
-        List<RecordMetadata> recordMetadataList = new ArrayList<>();
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
-        recordMetadataList.add(recordMetadata);
-        List<String> partitionKeys = new ArrayList<>();
-        partitionKeys.add(RECORD_ID1);
-        Map<String, String> recordErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatchWithSameOpAndPath()), Optional.empty());
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatchWithSameOpAndPath()));
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
+        Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
+        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 
     @Test
     public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
-        List<String> docIds = new ArrayList<>();
-        docIds.add(RECORD_ID1);
-        List<RecordMetadata> recordMetadataList = new ArrayList<>();
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
-        recordMetadataList.add(recordMetadata);
-        List<String> partitionKeys = new ArrayList<>();
-        partitionKeys.add(RECORD_ID1);
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
 
         AppException appException = mock(AppException.class);
         AppException originalException = mock(AppException.class);
@@ -210,8 +202,8 @@ public class RecordMetadataRepositoryTest {
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);
 
-        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
-        Map<String, String> patchErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        Map<String, String> patchErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
         assertEquals(2, patchErrors.size());
         assertEquals("unknown error with status 500", patchErrors.get("recordId:123"));
         assertEquals("cosmos error with status 400", patchErrors.get("recordId456"));
@@ -222,13 +214,11 @@ public class RecordMetadataRepositoryTest {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
         String expectedDocId = CollaborationId + RECORD_ID1;
-        List<String> docIds = new ArrayList<>();
-        docIds.add(expectedDocId);
-        List<RecordMetadata> recordMetadataList = new ArrayList<>();
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
-        recordMetadataList.add(recordMetadata);
-        List<String> partitionKeys = new ArrayList<>();
-        partitionKeys.add(RECORD_ID1);
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        partitionKeyForDoc.put(expectedDocId, RECORD_ID1);
 
         AppException appException = mock(AppException.class);
         AppException originalException = mock(AppException.class);
@@ -240,8 +230,8 @@ public class RecordMetadataRepositoryTest {
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);
 
-        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
-        Map<String, String> patchErrors = recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.of(collaborationContext));
+        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        Map<String, String> patchErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.of(collaborationContext));
         assertEquals(2, patchErrors.size());
         assertEquals("unknown error with status 500", patchErrors.get("recordId:123"));
         assertEquals("cosmos error with status 400", patchErrors.get("recordId456"));
@@ -249,18 +239,16 @@ public class RecordMetadataRepositoryTest {
 
     @Test
     public void shouldThrowException_whenPatchFailsWithOtherException() throws IOException {
-        List<String> docIds = new ArrayList<>();
-        docIds.add(RECORD_ID1);
-        List<RecordMetadata> recordMetadataList = new ArrayList<>();
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
-        recordMetadataList.add(recordMetadata);
-        List<String> partitionKeys = new ArrayList<>();
-        partitionKeys.add(RECORD_ID1);
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
 
         AppException appException = mock(AppException.class);
-        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), eq(docIds), any(CosmosPatchOperations.class), eq(partitionKeys), eq(1));
+        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         try {
-            recordMetadataRepository.patch(recordMetadataList, getJsonPatchFromJsonString(getValidInputJsonForPatch()), Optional.empty());
+            recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
 
@@ -306,6 +294,8 @@ public class RecordMetadataRepositoryTest {
         recordAcl.setOwners(owners);
         recordAcl.setViewers(viewers);
         recordMetadata.setAcl(recordAcl);
+        recordMetadata.setModifyUser("user1");
+        recordMetadata.setModifyTime(123L);
         return recordMetadata;
     }
 
@@ -317,11 +307,9 @@ public class RecordMetadataRepositoryTest {
     private String getValidInputJsonForPatch() {
         return "[\n" +
                 "    {\n" +
-                "        \"op\": \"add\",\n" +
-                "        \"path\": \"/tags\",\n" +
-                "        \"value\": {\n" +
-                "            \"tag3\" : \"value3\"\n" +
-                "        }\n" +
+                "        \"op\": \"replace\",\n" +
+                "        \"path\": \"/kind\",\n" +
+                "        \"value\": \"/newKind\"\n" +
                 "    }\n" +
                 "]";
     }

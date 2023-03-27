@@ -20,11 +20,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -47,8 +50,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -56,6 +61,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 
@@ -164,6 +170,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
             List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
             long currentTime = System.currentTimeMillis();
+            Map<RecordMetadata, JsonPatch> patchPerRecord = new HashMap<>();
             for(String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 try {
@@ -176,7 +183,15 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                         } else {
                             metadata.setModifyTime(currentTime);
                             metadata.setModifyUser(user);
-                            recordMetadataToBePatched.add(metadata);
+                            JsonPatch jsonPatchForRecord;
+                            try {
+                                jsonPatchForRecord = getJsonPatchForRecord(metadata, jsonPatch);
+                            } catch (IOException e) {
+                                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "IOException during patch operation");
+                            }
+                            if(jsonPatchForRecord != null) {
+                                patchPerRecord.put(metadata, jsonPatchForRecord);
+                            }
                             successfulRecordIds.add(recordId);
                         }
                     }
@@ -185,8 +200,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     errors.add("Patch operation for record: " + recordId + " failed with error: " + e.getMessage());
                 }
             }
-            if(!recordMetadataToBePatched.isEmpty()) {
-                Map<String, String> recordIdPatchError = persistenceService.patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, collaborationContext);
+            if(!patchPerRecord.isEmpty()) {
+                Map<String, String> recordIdPatchError = persistenceService.patchRecordsMetadata(patchPerRecord, collaborationContext);
                 for(String currentRecordId : recordIdPatchError.keySet()) {
                     errors.add(recordIdPatchError.get(currentRecordId));
                 }
@@ -203,6 +218,21 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         auditCreateOrUpdateRecords(recordsResponse);
 
         return recordsResponse;
+    }
+
+    private JsonPatch getJsonPatchForRecord(RecordMetadata recordMetadata, JsonPatch inputJsonPatch) throws IOException {
+        ArrayNode resultNode = objectMapper.createArrayNode();
+        List<JsonNode> patchOperations = StreamSupport.stream(objectMapper.convertValue(inputJsonPatch, JsonNode.class).spliterator(), false)
+                .distinct().collect(toList());
+        for(JsonNode currentNode : patchOperations) {
+            ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode(1);
+            arrayNode.add(currentNode);
+            JsonPatch currentPatch = JsonPatch.fromJson(arrayNode);
+            if(!checkIfResultingAclHasDuplicates(recordMetadata, currentPatch)) {
+                resultNode.add(currentNode);
+            }
+        }
+        return JsonPatch.fromJson(resultNode);
     }
 
     private void auditCreateOrUpdateRecords(PatchRecordsResponse recordsResponse) {
@@ -265,6 +295,22 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         return false;
     }
 
+    private boolean checkIfResultingAclHasDuplicates(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
+        try {
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+            objectMapper.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE);
+            objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+            JsonNode patched = jsonPatch.apply(objectMapper.convertValue(recordMetadata, JsonNode.class));
+            RecordMetadata patchedRecordMetadata = objectMapper.treeToValue(patched, RecordMetadata.class);
+            return hasDuplicateAcl(patchedRecordMetadata.getAcl());
+        } catch (JsonPatchException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonPatchException during patch operation");
+        } catch (JsonProcessingException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonProcessingException during patch operation");
+        }
+    }
+
     private boolean checkIfResultingAclOrLegalTagsAreEmpty(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
         try {
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -279,6 +325,24 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         } catch (JsonProcessingException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonProcessingException during patch operation");
         }
+    }
+
+    private boolean hasDuplicateAcl(Acl acl) {
+        Set<String> viewers = new HashSet<>();
+        Set<String> owners = new HashSet<>();
+        for(String viewer : acl.getViewers()) {
+            if(viewers.contains(viewer))
+                return true;
+            else
+                viewers.add(viewer);
+        }
+        for(String owner : acl.getOwners()) {
+            if (owners.contains(owner))
+                return true;
+            else
+                owners.add(owner);
+        }
+        return false;
     }
 
     private boolean isEmptyAclOrLegal(RecordMetadata recordMetadata) {
