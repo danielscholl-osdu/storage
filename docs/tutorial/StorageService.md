@@ -66,7 +66,9 @@ From the Storage Service perspective, the metadata to be ingested is called __re
    },
    "data": {
      "msg": "Hello World, Data Ecosystem!"
-   }
+   },
+   "modifyUser": "user@email.com",
+   "modifyTime": "2023-03-28T10:31:09.890Z"
 }
 ```
 
@@ -79,6 +81,8 @@ From the Storage Service perspective, the metadata to be ingested is called __re
     * __legal.legaltags__: List of legal tag names associated with the record.
     * __legal.otherRelevantDataCountries__: List of other relevant data countries. Must have at least 2 values: where the data was ingested from and where Data Ecosystem stores the data.
 * __data__: _(mandatory)_ Record payload represented as a list of key-value pairs.
+* __modifyUser__: Email of the user who has last updated that specific version of the record(Not present in 1st version of the record)
+* __modifyTime__: Time at which that version of the record was updated(Not present in 1st version of the record)
 
 [Back to table of contents](#TOC)
 
@@ -305,7 +309,8 @@ The API represents the main injection mechanism into the Data Ecosystem. It allo
 More details available at [Creating records](#Creating-records) and [Ingesting records](#Ingesting-records) sections.
 
 ### Get record version <a name="Retrieve-specific-version"></a>
-The API retrieves the specific version of the given record. 
+The API retrieves the specific version of the given record.
+The modifyTime and modifyUser info will be version specific.
 ```
 GET /api/storage/v2/records/{id}/{version}
 
