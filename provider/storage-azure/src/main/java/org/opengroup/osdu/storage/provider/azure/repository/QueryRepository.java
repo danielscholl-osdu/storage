@@ -116,7 +116,7 @@ public class QueryRepository implements IQueryRepository {
     }
 
     @Override
-    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String hashedCursorKey, Optional<CollaborationContext> collaborationContext) {
+    public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext) {
         Assert.notNull(kind, "kind must not be null");
 
         boolean paginated = false;
@@ -126,16 +126,8 @@ public class QueryRepository implements IQueryRepository {
             paginated = true;
         }
 
-        String cursor = null;
-        if (hashedCursorKey != null && !hashedCursorKey.isEmpty()) {
+        if (cursor != null && !cursor.isEmpty()) {
             paginated = true;
-            try {
-                cursor = this.cursorCache.get(hashedCursorKey);
-            } catch (RedisException ex) {
-                this.logger.error(String.format("Error getting key %s from redis: %s", hashedCursorKey, ex.getMessage()), ex);
-            }
-
-            if (Strings.isNullOrEmpty(cursor)) throw this.getInvalidCursorException();
         }
         String status = RecordState.active.toString();
         DatastoreQueryResult dqr = new DatastoreQueryResult();
@@ -169,11 +161,8 @@ public class QueryRepository implements IQueryRepository {
 
                 } while (!Strings.isNullOrEmpty(continuation) && ids.size() < numRecords);
 
-                // Hash the continuationToken
                 if (!Strings.isNullOrEmpty(continuation)) {
-                    String hashedCursor = Crc32c.hashToBase64EncodedString(continuation);
-                    this.cursorCache.put(hashedCursor, continuation);
-                    dqr.setCursor(hashedCursor);
+                    dqr.setCursor(continuation);
                 }
 
             } else {
