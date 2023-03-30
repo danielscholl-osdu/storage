@@ -14,21 +14,22 @@
 
 package org.opengroup.osdu.storage.model;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.opengroup.osdu.core.common.model.storage.SwaggerDoc;
 import java.util.List;
+
+import static org.opengroup.osdu.core.common.model.storage.SwaggerDoc.FETCH_RECORD_ID_LIST;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Represents a model for Record Query Patch", example = "{ \"ids\": [\"common:work-product-component--wellLog:123456\"] }")
 public class RecordQueryPatch {
-    @ApiModelProperty(value = SwaggerDoc.FETCH_RECORD_ID_LIST,
-            required = true,
-            example = SwaggerDoc.RECORD_ID_EXAMPLE)
+    @ArraySchema(arraySchema = @Schema(implementation = String.class, requiredMode = Schema.RequiredMode.REQUIRED, description = FETCH_RECORD_ID_LIST))
     private List<String> ids;
 }

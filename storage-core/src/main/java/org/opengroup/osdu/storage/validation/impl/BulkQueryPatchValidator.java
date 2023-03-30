@@ -4,7 +4,6 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.opengroup.osdu.storage.validation.api.ValidBulkQueryPatch;
-import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 
 import javax.validation.ConstraintValidator;
@@ -29,7 +28,6 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
     public boolean isValid(RecordQueryPatch value, ConstraintValidatorContext context) {
         if(value == null){
             throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
                     .message(ValidationDoc.INVALID_PAYLOAD)
                     .build();
         }
@@ -38,14 +36,12 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
 
         if(CollectionUtils.isEmpty(recordIds)) {
             throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
                     .message(RECORD_ID_LIST_NOT_EMPTY)
                     .build();
         }
 
         if(recordIds.size() > 100) {
             throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
                     .message(PATCH_RECORDS_MAX)
                     .build();
         }
@@ -54,13 +50,11 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
         for (String recordId : recordIds) {
             if (ids.contains(recordId)) {
                 throw RequestValidationException.builder()
-                        .status(HttpStatus.BAD_REQUEST)
                         .message(ValidationDoc.DUPLICATE_RECORD_ID)
                         .build();
             }
             if (!recordId.matches(ValidationDoc.RECORD_ID_REGEX)) {
                 throw RequestValidationException.builder()
-                        .status(HttpStatus.BAD_REQUEST)
                         .message(INVALID_RECORD_ID_PATCH)
                         .build();
             }
