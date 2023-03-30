@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.model;
 
 import com.github.fge.jsonpatch.JsonPatch;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,18 +27,33 @@ import org.opengroup.osdu.storage.validation.api.ValidJsonPatch;
 
 import javax.validation.constraints.NotNull;
 
+import static org.opengroup.osdu.storage.swagger.SwaggerDoc.PATCH_RECORD_OPERATIONS;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Represents a model for Record Patch", example = "{\n" +
+        "    \"query\": {\n" +
+        "        \"ids\": [\n" +
+        "            \"common:work-product-component--wellLog:123456\"\n" +
+        "        ]\n" +
+        "    },\n" +
+        "    \"ops\": [\n" +
+        "        {\n" +
+        "            \"op\": \"remove\",\n" +
+        "            \"path\": \"/acl/viewers/0\"\n" +
+        "        }\n" +
+        "    ]\n" +
+        "}")
 public class PatchRecordsRequestModel {
 
-    @ApiModelProperty(value = SwaggerDoc.RECORD_QUERY_CONDITION, required = true)
+    @Schema(description = SwaggerDoc.RECORD_QUERY_CONDITION, implementation = RecordQueryPatch.class, requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = ValidationDoc.RECORD_QUERY_CONDITION_NOT_EMPTY)
     @ValidBulkQueryPatch
     private RecordQueryPatch query;
 
-    @ApiModelProperty(value = org.opengroup.osdu.storage.swagger.SwaggerDoc.PATCH_RECORD_OPERATIONS, required = true)
+    @Schema(description = PATCH_RECORD_OPERATIONS, implementation = JsonPatch.class, requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = org.opengroup.osdu.storage.validation.ValidationDoc.PATCH_RECORD_OPERATIONS_NOT_EMPTY)
     @ValidJsonPatch
     private JsonPatch ops;

@@ -286,7 +286,4 @@ public abstract class PatchRecordsTest extends TestBase {
         return updateBody.toString();
     }
 
-    private JsonObject bodyToJsonObject(String json) {
-        return new JsonParser().parse(json).getAsJsonObject();
-    }
 }

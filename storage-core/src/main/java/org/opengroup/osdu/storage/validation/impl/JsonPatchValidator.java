@@ -24,7 +24,6 @@ import org.opengroup.osdu.storage.util.api.PatchOperations;
 import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.api.ValidJsonPatch;
-import org.springframework.http.HttpStatus;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -81,7 +80,6 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
         boolean isNumberOfOperationsValid = operationsNumber >= MIN_NUMBER && operationsNumber <= MAX_NUMBER;
         if (!isNumberOfOperationsValid) {
             throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
                     .message(ValidationDoc.INVALID_PATCH_OPERATION_SIZE)
                     .build();
         }
@@ -94,7 +92,6 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
                 .allMatch(getAllowedOperations());
         if (!isOperationTypeValid) {
             throw RequestValidationException.builder()
-                    .status(HttpStatus.BAD_REQUEST)
                     .message(ValidationDoc.INVALID_PATCH_OPERATION)
                     .build();
         }
