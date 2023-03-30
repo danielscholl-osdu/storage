@@ -31,7 +31,7 @@
 		<jackson-databind.version>2.14.0</jackson-databind.version>
 		<jackson.version>2.14.0</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
-		<snakeyaml.version>1.33</snakeyaml.version>
+		<snakeyaml.version>2.0</snakeyaml.version>
 		<commons-codec.version>1.14</commons-codec.version>
 		<nimbusds.version>7.9</nimbusds.version>
 		<woodstox-core.version>6.2.3</woodstox-core.version>
