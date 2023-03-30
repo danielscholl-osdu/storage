@@ -30,7 +30,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 // <K> is a serializable (e.g a Cursor, com.google.cloud.datastore.Cursor in case of gcp implementation)
 public interface IRecordsMetadataRepository<K extends Serializable> {
 
-	default Map<String, String> patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+	default Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
 		throw new NotImplementedException("TODO");
 	}
 	List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext);

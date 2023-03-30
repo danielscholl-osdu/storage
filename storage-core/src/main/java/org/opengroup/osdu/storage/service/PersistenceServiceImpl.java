@@ -160,16 +160,16 @@ public class PersistenceServiceImpl implements PersistenceService {
 	}
 
 	@Override
-	public Map<String, String> patchRecordsMetadata(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+	public Map<String, String> patchRecordsMetadata(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
 		Map<String, String> recordError;
 		try {
-			recordError = this.commitPatchDatastoreTransaction(recordMetadataList, jsonPatch, collaborationContext);
+			recordError = this.commitPatchDatastoreTransaction(jsonPatchPerRecord, collaborationContext);
 		} catch (NotImplementedException e) {
 			throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
 		} catch (Exception e) {
 			this.logger.warning("Reverting meta data changes");
 			try {
-				this.commitDatastoreTransaction(recordMetadataList, collaborationContext);
+				this.commitDatastoreTransaction(new ArrayList<>(jsonPatchPerRecord.keySet()), collaborationContext);
 			} catch (NotImplementedException innerEx) {
 				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
 			} catch (Exception innerEx) {
@@ -181,7 +181,7 @@ public class PersistenceServiceImpl implements PersistenceService {
 		if(!recordError.isEmpty()) {
 			this.logger.warning("Reverting meta data changes");
 			try {
-				this.commitDatastoreTransaction(recordMetadataList, collaborationContext);
+				this.commitDatastoreTransaction(new ArrayList<>(jsonPatchPerRecord.keySet()), collaborationContext);
 			} catch (NotImplementedException innerEx) {
 				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
 			} catch (Exception e) {
@@ -189,25 +189,27 @@ public class PersistenceServiceImpl implements PersistenceService {
 				throw e;
 			}
 		} else {
-			PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadataList.size()];
-			RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadataList.size()];
-			for (int i = 0; i < recordMetadataList.size(); i++) {
-				RecordMetadata metadata = recordMetadataList.get(i);
-				pubsubInfo[i] = getPubSubInfo(metadata, OperationType.update);
-				recordChangedV2[i] = getRecordChangedV2(metadata, OperationType.update);
-				if (isKindBeingUpdated(jsonPatch)) {
-					String newKind = getNewKindFromPatchInput(jsonPatch);
-					pubsubInfo[i].setPreviousVersionKind(recordMetadataList.get(i).getKind());
-					pubsubInfo[i].setKind(newKind);
-					recordChangedV2[i].setPreviousVersionKind(recordMetadataList.get(i).getKind());
-					recordChangedV2[i].setKind(newKind);
+			List<PubSubInfo> pubSubInfos = new ArrayList<>();
+			List<RecordChangedV2> recordChangedV2s = new ArrayList<>();
+			for(RecordMetadata metadata : jsonPatchPerRecord.keySet()) {
+				PubSubInfo pubSubInfo = getPubSubInfo(metadata, OperationType.update);
+				RecordChangedV2 recordChangedV2 = getRecordChangedV2(metadata, OperationType.update);
+				JsonPatch jsonPatchForRecord = jsonPatchPerRecord.get(metadata);
+				if (isKindBeingUpdated(jsonPatchForRecord)) {
+					String newKind = getNewKindFromPatchInput(jsonPatchForRecord);
+					pubSubInfo.setPreviousVersionKind(metadata.getKind());
+					pubSubInfo.setKind(newKind);
+					recordChangedV2.setPreviousVersionKind(metadata.getKind());
+					recordChangedV2.setKind(newKind);
 				}
+				pubSubInfos.add(pubSubInfo);
+				recordChangedV2s.add(recordChangedV2);
 			}
 			if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-				this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+				this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2s.stream().toArray(RecordChangedV2[]::new));
 			}
 			if (!collaborationContext.isPresent()) {
-				this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+				this.pubSubClient.publishMessage(this.headers, pubSubInfos.stream().toArray(PubSubInfo[]::new));
 			}
 		}
 		return recordError;
@@ -261,9 +263,9 @@ public class PersistenceServiceImpl implements PersistenceService {
 		}
 	}
 
-	private Map<String, String> commitPatchDatastoreTransaction(List<RecordMetadata> recordsMetadata, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
+	private Map<String, String> commitPatchDatastoreTransaction(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
 		try {
-			return this.recordRepository.patch(recordsMetadata, jsonPatch, collaborationContext);
+			return this.recordRepository.patch(jsonPatchPerRecord, collaborationContext);
 		} catch (Exception e) {
 			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error patching records.",
 					"The server could not process your request at the moment.", e);
