@@ -45,6 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -142,9 +143,9 @@ public class PatchRecordsServiceImplTest {
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
         List<RecordMetadata> recordMetadataList = new ArrayList<>(existingRecords.values());
         when(opaService.validateUserAccessToRecords(recordMetadataList, OperationType.update)).thenReturn(Collections.emptyList());
-        List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
-        recordMetadataToBePatched.add(existingRecords.get(RECORD_ID1));
-        recordMetadataToBePatched.add(existingRecords.get(RECORD_ID2));
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(existingRecords.get(RECORD_ID1), jsonPatch);
+        jsonPatchPerRecord.put(existingRecords.get(RECORD_ID2), jsonPatch);
 
         PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
@@ -154,7 +155,7 @@ public class PatchRecordsServiceImplTest {
         assertEquals(Collections.emptyList(), result.getErrors());
         assertEquals(recordIds, result.getRecordIds());
         assertThat(result.getRecordCount(), is(2));
-        verify(persistenceService).patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, COLLABORATION_CONTEXT);
+        verify(persistenceService).patchRecordsMetadata(anyMap(), eq(COLLABORATION_CONTEXT));
         verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
 
     }
@@ -166,9 +167,9 @@ public class PatchRecordsServiceImplTest {
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
         when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(true);
-        List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
-        recordMetadataToBePatched.add(existingRecords.get(RECORD_ID1));
-        recordMetadataToBePatched.add(existingRecords.get(RECORD_ID2));
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(existingRecords.get(RECORD_ID1), jsonPatch);
+        jsonPatchPerRecord.put(existingRecords.get(RECORD_ID2), jsonPatch);
 
         PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
@@ -180,7 +181,7 @@ public class PatchRecordsServiceImplTest {
         assertEquals(Collections.emptyList(), result.getErrors());
         assertEquals(recordIds, result.getRecordIds());
         assertThat(result.getRecordCount(), is(2));
-        verify(persistenceService).patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, COLLABORATION_CONTEXT);
+        verify(persistenceService).patchRecordsMetadata(anyMap(), eq(COLLABORATION_CONTEXT));
         verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
     }
 
@@ -248,8 +249,8 @@ public class PatchRecordsServiceImplTest {
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
         when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(true);
 
-        List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
-        recordMetadataToBePatched.add(existingRecords.get(RECORD_ID2));
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        jsonPatchPerRecord.put(existingRecords.get(RECORD_ID2), jsonPatch);
 
         PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
@@ -263,7 +264,7 @@ public class PatchRecordsServiceImplTest {
         assertEquals("Patch operation for record: " + RECORD_ID1 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers", result.getErrors().get(0));
         assertEquals(RECORD_ID2, result.getRecordIds().get(0));
         assertThat(result.getRecordCount(), is(1));
-        verify(persistenceService).patchRecordsMetadata(recordMetadataToBePatched, jsonPatch, COLLABORATION_CONTEXT);
+        verify(persistenceService).patchRecordsMetadata(anyMap(), eq(COLLABORATION_CONTEXT));
         verify(auditLogger).createOrUpdateRecordsSuccess(result.getRecordIds());
     }
 
@@ -289,7 +290,7 @@ public class PatchRecordsServiceImplTest {
         assertTrue(result.getErrors().contains("Patch operation for record: " + RECORD_ID1 + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers"));
         assertTrue(result.getRecordIds().isEmpty());
         assertThat(result.getRecordCount(), is(0));
-        verify(persistenceService, never()).patchRecordsMetadata(anyList(), eq(jsonPatch), eq(COLLABORATION_CONTEXT));
+        verify(persistenceService, never()).patchRecordsMetadata(anyMap(), eq(COLLABORATION_CONTEXT));
         verify(auditLogger, never()).createOrUpdateRecordsSuccess(result.getRecordIds());
     }
 

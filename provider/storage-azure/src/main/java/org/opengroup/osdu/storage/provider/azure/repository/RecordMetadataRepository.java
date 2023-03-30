@@ -82,21 +82,23 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public Map<String, String> patch(List<RecordMetadata> recordMetadataList, JsonPatch jsonPatch, Optional<CollaborationContext> collaborationContext) {
-        List<String> docIds = new ArrayList<>();
-        List<String> partitionKeys = new ArrayList<>();
-        String modifyUser = "";
-        Long modifyTime = 0L;
-        for(RecordMetadata recordMetadata : recordMetadataList) {
-            docIds.add(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
-            partitionKeys.add(recordMetadata.getId());
+    public Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
+        String modifyUser;
+        Long modifyTime;
+        CosmosPatchOperations cosmosPatchOperations;
+        Map<String, CosmosPatchOperations> cosmosPatchOperationsPerDoc = new HashMap<>();
+        Map<String, String> partitionKeyForDoc = new HashMap<>();
+        for(RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
             modifyUser = recordMetadata.getModifyUser();
             modifyTime = recordMetadata.getModifyTime();
+            cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatchPerRecord.get(recordMetadata));
+            String docId = CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext);
+            cosmosPatchOperationsPerDoc.put(docId, cosmosPatchOperations);
+            partitionKeyForDoc.put(docId, recordMetadata.getId());
         }
-        CosmosPatchOperations cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatch);
         Map<String, String> recordIdToError = new HashMap<>();
         try {
-            cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, docIds, cosmosPatchOperations, partitionKeys, 1);
+            cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, cosmosPatchOperationsPerDoc, partitionKeyForDoc, 1);
         } catch (AppException e) {
             if(e.getOriginalException()!= null && e.getOriginalException() instanceof AppException) {
                 AppException originalException = (AppException)e.getOriginalException();
@@ -110,7 +112,6 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 throw e;
             }
         }
-
         return recordIdToError;
     }
 
