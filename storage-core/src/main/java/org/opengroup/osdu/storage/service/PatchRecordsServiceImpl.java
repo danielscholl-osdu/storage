@@ -168,13 +168,12 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             } else {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);
             }
-            List<RecordMetadata> recordMetadataToBePatched = new ArrayList<>();
             long currentTime = System.currentTimeMillis();
             Map<RecordMetadata, JsonPatch> patchPerRecord = new HashMap<>();
             for(String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 try {
-                    if (checkIfResultingAclOrLegalTagsAreEmpty(metadata, jsonPatch)) {
+                    if (isEmptyAclOrLegal(patchRecordMetadataWithJsonPatch(metadata, jsonPatch))) {
                         failedRecordIds.add(recordId);
                         errors.add("Patch operation for record: " + recordId + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
                     } else {
@@ -228,7 +227,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode(1);
             arrayNode.add(currentNode);
             JsonPatch currentPatch = JsonPatch.fromJson(arrayNode);
-            if(!checkIfResultingAclHasDuplicates(recordMetadata, currentPatch)) {
+            if(!hasDuplicateAcl(patchRecordMetadataWithJsonPatch(recordMetadata, currentPatch).getAcl())) {
                 resultNode.add(currentNode);
             }
         }
@@ -295,7 +294,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         return false;
     }
 
-    private boolean checkIfResultingAclHasDuplicates(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
+    private RecordMetadata patchRecordMetadataWithJsonPatch(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
         try {
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
@@ -303,23 +302,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
             JsonNode patched = jsonPatch.apply(objectMapper.convertValue(recordMetadata, JsonNode.class));
             RecordMetadata patchedRecordMetadata = objectMapper.treeToValue(patched, RecordMetadata.class);
-            return hasDuplicateAcl(patchedRecordMetadata.getAcl());
-        } catch (JsonPatchException e) {
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonPatchException during patch operation");
-        } catch (JsonProcessingException e) {
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonProcessingException during patch operation");
-        }
-    }
-
-    private boolean checkIfResultingAclOrLegalTagsAreEmpty(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
-        try {
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-            objectMapper.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE);
-            objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-            JsonNode patched = jsonPatch.apply(objectMapper.convertValue(recordMetadata, JsonNode.class));
-            RecordMetadata patchedRecordMetadata = objectMapper.treeToValue(patched, RecordMetadata.class);
-            return isEmptyAclOrLegal(patchedRecordMetadata);
+            return patchedRecordMetadata;
         } catch (JsonPatchException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonPatchException during patch operation");
         } catch (JsonProcessingException e) {
