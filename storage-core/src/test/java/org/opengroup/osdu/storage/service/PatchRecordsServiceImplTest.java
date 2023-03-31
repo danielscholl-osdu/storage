@@ -309,8 +309,8 @@ public class PatchRecordsServiceImplTest {
         assertThat(result.getRecordCount(), is(0));
         assertThat(result.getFailedRecordIds().size(), is(2));
         assertThat(result.getErrors().size(), is(2));
-        assertThat(result.getErrors(), contains("Json processing error for record: " + RECORD_ID1, "Json processing error for record: " + RECORD_ID2));
-        verify(logger).error(eq("Json processing error for record: " + RECORD_ID1 + "|Json processing error for record: " + RECORD_ID2));
+        assertThat(result.getErrors(), contains("Json patch error for record: " + RECORD_ID1, "Json patch error for record: " + RECORD_ID2));
+        verify(logger).error(eq("Json patch error for record: " + RECORD_ID1 + "|Json patch error for record: " + RECORD_ID2));
         verify(ingestionService, never()).createUpdateRecords(eq(false), any(), eq(USER), eq(COLLABORATION_CONTEXT));
     }
 

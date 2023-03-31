@@ -48,6 +48,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.opengroup.osdu.storage.util.StringConstants.METADATA_PREFIX;
+import static org.opengroup.osdu.storage.util.StringConstants.MODIFY_TIME;
+import static org.opengroup.osdu.storage.util.StringConstants.MODIFY_USER;
+import static org.opengroup.osdu.storage.util.StringConstants.OP;
+import static org.opengroup.osdu.storage.util.StringConstants.PATH;
+import static org.opengroup.osdu.storage.util.StringConstants.VALUE;
+
 @Repository
 public class RecordMetadataRepository extends SimpleCosmosStoreRepository<RecordMetadataDoc> implements IRecordsMetadataRepository<String> {
 
@@ -301,25 +308,24 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     private CosmosPatchOperations getCosmosPatchOperations(String modifyUser, Long modifyTime, JsonPatch jsonPatch) {
-        String metadataPathPrefix = "/metadata";
         CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
         List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .collect(Collectors.toList());
         for (JsonNode patchOp : patchNodes) {
-            switch (patchOp.get("op").textValue()) {
+            switch (patchOp.get(OP).textValue()) {
                 case "add":
-                    cosmosPatchOperations.add(metadataPathPrefix + patchOp.get("path").textValue(), patchOp.get("value"));
+                    cosmosPatchOperations.add(METADATA_PREFIX + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
                     break;
                 case "replace":
-                    cosmosPatchOperations.replace(metadataPathPrefix + patchOp.get("path").textValue(), patchOp.get("value"));
+                    cosmosPatchOperations.replace(METADATA_PREFIX + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
                     break;
                 case "remove":
-                    cosmosPatchOperations.remove(metadataPathPrefix + patchOp.get("path").textValue());
+                    cosmosPatchOperations.remove(METADATA_PREFIX + patchOp.get(PATH).textValue());
                     break;
             }
         }
-        cosmosPatchOperations.replace(metadataPathPrefix + "/modifyUser", modifyUser);
-        cosmosPatchOperations.replace(metadataPathPrefix + "/modifyTime", modifyTime);
+        cosmosPatchOperations.replace(METADATA_PREFIX + MODIFY_USER, modifyUser);
+        cosmosPatchOperations.replace(METADATA_PREFIX + MODIFY_TIME, modifyTime);
         return cosmosPatchOperations;
     }
 }

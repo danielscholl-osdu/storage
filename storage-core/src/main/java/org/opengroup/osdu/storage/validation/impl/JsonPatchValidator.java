@@ -27,38 +27,33 @@ import org.opengroup.osdu.storage.validation.api.ValidJsonPatch;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
+import static org.opengroup.osdu.storage.util.StringConstants.ACLS_LEGAL_ANCESTY_PATHS;
+import static org.opengroup.osdu.storage.util.StringConstants.INVALID_PATHS_FOR_REMOVE_OPERATION;
+import static org.opengroup.osdu.storage.util.StringConstants.KIND;
+import static org.opengroup.osdu.storage.util.StringConstants.MAX_OP_NUMBER;
+import static org.opengroup.osdu.storage.util.StringConstants.META;
+import static org.opengroup.osdu.storage.util.StringConstants.MIN_OP_NUMBER;
+import static org.opengroup.osdu.storage.util.StringConstants.OP;
+import static org.opengroup.osdu.storage.util.StringConstants.PATH;
+import static org.opengroup.osdu.storage.util.StringConstants.REGEX_ACLS_LEGAL_ANCESTRY_PATH;
+import static org.opengroup.osdu.storage.util.StringConstants.REGEX_ACLS_LEGAL_ANCESTRY_PATH_FOR_ADD_OR_REMOVE_SINGLE_VALUE;
+import static org.opengroup.osdu.storage.util.StringConstants.REGEX_TAGS_PATH_FOR_ADD_OR_REMOVE_SINGLE_KEY_VALUE;
+import static org.opengroup.osdu.storage.util.StringConstants.TAGS;
+import static org.opengroup.osdu.storage.util.StringConstants.VALID_PATH_BEGINNINGS;
+import static org.opengroup.osdu.storage.util.StringConstants.VALUE;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.ADD;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.REMOVE;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.REPLACE;
 
 public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, JsonPatch> {
-    public static final int MIN_NUMBER = 1;
-    public static final int MAX_NUMBER = 100;
-    private static final String KIND = "/kind";
-    private static final String TAGS = "/tags";
-    private static final String REGEX_TAGS_PATH_FOR_ADD_OR_REMOVE_SINGLE_KEY_VALUE = TAGS.concat("/.+");
-    private static final String ACL_VIEWERS = "/acl/viewers";
-    private static final String ACL_OWNERS = "/acl/owners";
-    private static final String LEGAL_TAGS = "/legal/legaltags";
-    private static final String ANCESTRY_PARENTS = "/ancestry/parents";
-    private static final String META = "/meta";
-    private static final String DATA = "/data";
-    private static final String REGEX_ACLS_LEGAL_ANCESTRY_PATH = "(" + String.join("|", ACL_VIEWERS, ACL_OWNERS, LEGAL_TAGS, ANCESTRY_PARENTS) + ")";
-    private static final String REGEX_ACLS_LEGAL_ANCESTRY_PATH_FOR_ADD_OR_REMOVE_SINGLE_VALUE = REGEX_ACLS_LEGAL_ANCESTRY_PATH + "/(\\d+|-)";
-    private static final Set<String> VALID_PATH_BEGINNINGS = new HashSet<>(Arrays.asList(KIND, TAGS, ACL_VIEWERS, ACL_OWNERS, LEGAL_TAGS, ANCESTRY_PARENTS, DATA, META));
-    private static final Set<String> ACLS_LEGAL_ANCESTY_PATHS = new HashSet<>(Arrays.asList(ACL_VIEWERS, ACL_OWNERS, LEGAL_TAGS, ANCESTRY_PARENTS));
-    private static final Set<String> INVALID_PATHS_FOR_REMOVE_OPERATION = ACLS_LEGAL_ANCESTY_PATHS;
-    private static final String OP = "op";
-    private static final String PATH = "path";
-    private static final String VALUE = "value";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /*
+    Performs syntactic and business semantic validation on the JsonPatch input
+     */
     @Override
     public boolean isValid(JsonPatch jsonPatch, ConstraintValidatorContext context) {
 
@@ -77,7 +72,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
 
     private void validateOperationSize(JsonPatch jsonPatch) {
         long operationsNumber = objectMapper.convertValue(jsonPatch, JsonNode.class).size();
-        boolean isNumberOfOperationsValid = operationsNumber >= MIN_NUMBER && operationsNumber <= MAX_NUMBER;
+        boolean isNumberOfOperationsValid = operationsNumber >= MIN_OP_NUMBER && operationsNumber <= MAX_OP_NUMBER;
         if (!isNumberOfOperationsValid) {
             throw RequestValidationException.builder()
                     .message(ValidationDoc.INVALID_PATCH_OPERATION_SIZE)

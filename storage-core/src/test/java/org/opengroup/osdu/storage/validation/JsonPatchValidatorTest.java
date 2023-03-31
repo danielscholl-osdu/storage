@@ -29,6 +29,7 @@ import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
+import static org.opengroup.osdu.storage.util.StringConstants.MAX_OP_NUMBER;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JsonPatchValidatorTest {
@@ -64,7 +65,7 @@ public class JsonPatchValidatorTest {
     @Test
     public void shouldThrowException_ifPatchExceedLimitOfOperations() throws IOException {
         StringBuilder jsonString = new StringBuilder("[");
-        for (int i = 0; i <= JsonPatchValidator.MAX_NUMBER; i++) {
+        for (int i = 0; i <= MAX_OP_NUMBER; i++) {
             jsonString.append("{\"op\": \"add\", \"path\": \"/acl/viewers\", \"value\": \"value\"},");
         }
         jsonString.deleteCharAt(jsonString.length() - 1).append("]");
