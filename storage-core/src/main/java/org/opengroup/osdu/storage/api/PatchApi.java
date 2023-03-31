@@ -67,7 +67,7 @@ public class PatchApi {
     @Autowired
     private CollaborationContextFactory collaborationContextFactory;
 
-    @Operation(summary = "${updateMetadataApi.updateRecordsMetadata.summary}", description = "${updateMetadataApi.updateRecordsMetadata.description}",
+    @Operation(summary = "${patchApi.updateRecordsMetadata.summary}", description = "${patchApi.updateRecordsMetadata.description}",
             security = {@SecurityRequirement(name = "Authorization")}, tags = {"records"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Records updated successfully.", content = {@Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class))}),
@@ -93,7 +93,7 @@ public class PatchApi {
         }
     }
 
-    @Operation(summary = "${patchApi.summary}", description = "${patchApi.description}",
+    @Operation(summary = "${patchApi.patchRecords.summary}", description = "${patchApi.patchRecords.description}",
             security = {@SecurityRequirement(name = "Authorization")}, tags = {"records"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Records updated successfully.", content = {@Content(schema = @Schema(implementation = PatchRecordsResponse.class))}),
