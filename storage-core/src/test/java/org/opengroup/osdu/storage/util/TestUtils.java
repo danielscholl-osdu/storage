@@ -21,30 +21,30 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 
 public class TestUtils {
 
-  public static Matcher<AppException> buildAppExceptionMatcher(String message, String reason) {
-    return new Matcher<AppException>() {
-      @Override
-      public boolean matches(Object o) {
-        AppException appException = (AppException) o;
-        AppError error = appException.getError();
+    public static Matcher<AppException> buildAppExceptionMatcher(String message, String reason) {
+        return new Matcher<AppException>() {
+            @Override
+            public boolean matches(Object o) {
+                AppException appException = (AppException) o;
+                AppError error = appException.getError();
 
-        return error.getMessage().equals(message) && error.getReason().equals(reason);
-      }
+                return error.getMessage().equals(message) && error.getReason().equals(reason);
+            }
 
-      @Override
-      public void describeMismatch(Object o, Description description) {
+            @Override
+            public void describeMismatch(Object o, Description description) {
 
-      }
+            }
 
-      @Override
-      public void _dont_implement_Matcher___instead_extend_BaseMatcher_() {
+            @Override
+            public void _dont_implement_Matcher___instead_extend_BaseMatcher_() {
 
-      }
+            }
 
-      @Override
-      public void describeTo(Description description) {
+            @Override
+            public void describeTo(Description description) {
 
-      }
-    };
-  }
+            }
+        };
+    }
 }
