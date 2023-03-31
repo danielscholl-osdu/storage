@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.List;
 
 import static org.opengroup.osdu.core.common.model.storage.SwaggerDoc.FETCH_RECORD_ID_LIST;

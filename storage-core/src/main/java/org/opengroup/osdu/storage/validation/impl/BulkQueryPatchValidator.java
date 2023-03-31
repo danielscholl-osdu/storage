@@ -26,7 +26,7 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
 
     @Override
     public boolean isValid(RecordQueryPatch value, ConstraintValidatorContext context) {
-        if(value == null){
+        if (value == null) {
             throw RequestValidationException.builder()
                     .message(ValidationDoc.INVALID_PAYLOAD)
                     .build();
@@ -34,13 +34,13 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
 
         List<String> recordIds = value.getIds();
 
-        if(CollectionUtils.isEmpty(recordIds)) {
+        if (CollectionUtils.isEmpty(recordIds)) {
             throw RequestValidationException.builder()
                     .message(RECORD_ID_LIST_NOT_EMPTY)
                     .build();
         }
 
-        if(recordIds.size() > 100) {
+        if (recordIds.size() > 100) {
             throw RequestValidationException.builder()
                     .message(PATCH_RECORDS_MAX)
                     .build();

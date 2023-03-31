@@ -186,7 +186,7 @@ public class PatchRecordsServiceImplTest {
     }
 
     @Test
-    public void shouldPatchRecordDataPartially_ifResultHasEmptyAclForOneRecord() throws IOException{
+    public void shouldPatchRecordDataPartially_ifResultHasEmptyAclForOneRecord() throws IOException {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/acl/viewers/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
 
@@ -215,7 +215,7 @@ public class PatchRecordsServiceImplTest {
     }
 
     @Test
-    public void shouldNotPatchData_ifResultHasEmptyLegaltagsForAllRecords() throws IOException{
+    public void shouldNotPatchData_ifResultHasEmptyLegaltagsForAllRecords() throws IOException {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/legal/legaltags/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
 
@@ -309,7 +309,7 @@ public class PatchRecordsServiceImplTest {
         assertThat(result.getRecordCount(), is(0));
         assertThat(result.getFailedRecordIds().size(), is(2));
         assertThat(result.getErrors().size(), is(2));
-        assertThat(result.getErrors(), contains("Json processing error for record: "+RECORD_ID1, "Json processing error for record: "+RECORD_ID2));
+        assertThat(result.getErrors(), contains("Json processing error for record: " + RECORD_ID1, "Json processing error for record: " + RECORD_ID2));
         verify(logger).error(eq("Json processing error for record: " + RECORD_ID1 + "|Json processing error for record: " + RECORD_ID2));
         verify(ingestionService, never()).createUpdateRecords(eq(false), any(), eq(USER), eq(COLLABORATION_CONTEXT));
     }

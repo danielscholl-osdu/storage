@@ -128,7 +128,7 @@ public class RecordMetadataRepositoryTest {
     public void shouldSetCorrectDocId_IfCollaborationContextIsProvided_InSerial() {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
-        
+
         String expectedDocId = CollaborationId + RECORD_ID1;
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
         recordMetadataRepository.createOrUpdate(singletonList(recordMetadata), Optional.of(collaborationContext));
@@ -139,7 +139,7 @@ public class RecordMetadataRepositoryTest {
                 eq("collection"),
                 eq(CollaborationId.toString() + RECORD_ID1),
                 itemCaptor.capture());
-        
+
         RecordMetadataDoc capturedItem = itemCaptor.getValue();
         System.out.println("jh");
         assertEquals(expectedDocId, capturedItem.getId());
@@ -224,8 +224,8 @@ public class RecordMetadataRepositoryTest {
         AppException originalException = mock(AppException.class);
         AppError appError = mock(AppError.class);
         String[] errors = new String[2];
-        errors[0] = CollaborationId+"recordId:123|unknown error with status 500|unknown exception";
-        errors[1] = CollaborationId+"recordId456|cosmos error with status 400";
+        errors[0] = CollaborationId + "recordId:123|unknown error with status 500|unknown exception";
+        errors[1] = CollaborationId + "recordId456|cosmos error with status 400";
         when(appError.getErrors()).thenReturn(errors);
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);

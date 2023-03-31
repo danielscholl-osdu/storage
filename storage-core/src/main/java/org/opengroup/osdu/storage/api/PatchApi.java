@@ -55,67 +55,67 @@ import java.util.Optional;
 @Validated
 public class PatchApi {
 
-	@Autowired
-	private DpsHeaders headers;
+    @Autowired
+    private DpsHeaders headers;
 
-	@Autowired
-	private BulkUpdateRecordService bulkUpdateRecordService;
+    @Autowired
+    private BulkUpdateRecordService bulkUpdateRecordService;
 
-	@Autowired
-	private PatchRecordsService patchRecordsService;
+    @Autowired
+    private PatchRecordsService patchRecordsService;
 
-	@Autowired
-	private CollaborationContextFactory collaborationContextFactory;
+    @Autowired
+    private CollaborationContextFactory collaborationContextFactory;
 
-	@Operation(summary = "${patchApi.updateRecordsMetadata.summary}", description = "${patchApi.updateRecordsMetadata.description}",
-			security = {@SecurityRequirement(name = "Authorization")}, tags = { "records" })
-	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Records updated successfully.", content = { @Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class)) }),
-			@ApiResponse(responseCode = "206", description = "Records updated successful partially.", content = { @Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class)) }),
-			@ApiResponse(responseCode = "400", description = "Bad Request",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "403", description = "User not authorized to perform the action.",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "404", description = "Not Found",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "500", description = "Internal Server Error",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class ))})
-	})
-	@PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@Parameter(description = "x-collaboration") @RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
-																		   @Parameter(description = "Records to be updated") @RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
-		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), collaborationContext);
-		if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
-			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
-		} else {
-			return new ResponseEntity<>(response, HttpStatus.OK);
-		}
-	}
+    @Operation(summary = "${updateMetadataApi.updateRecordsMetadata.summary}", description = "${updateMetadataApi.updateRecordsMetadata.description}",
+            security = {@SecurityRequirement(name = "Authorization")}, tags = {"records"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Records updated successfully.", content = {@Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class))}),
+            @ApiResponse(responseCode = "206", description = "Records updated successful partially.", content = {@Content(schema = @Schema(implementation = BulkUpdateRecordsResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "403", description = "User not authorized to perform the action.", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "404", description = "Not Found", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "502", description = "Bad Gateway", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "503", description = "Service Unavailable", content = {@Content(schema = @Schema(implementation = AppError.class))})
+    })
+    @PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+    public ResponseEntity<BulkUpdateRecordsResponse> updateRecordsMetadata(@Parameter(description = "x-collaboration") @RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+                                                                           @Parameter(description = "Records to be updated") @RequestBody @Valid RecordBulkUpdateParam recordBulkUpdateParam) {
+        Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+        BulkUpdateRecordsResponse response = this.bulkUpdateRecordService.bulkUpdateRecords(recordBulkUpdateParam, this.headers.getUserEmail(), collaborationContext);
+        if (!response.getLockedRecordIds().isEmpty() || !response.getNotFoundRecordIds().isEmpty() || !response.getUnAuthorizedRecordIds().isEmpty()) {
+            return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+    }
 
-	@Operation(summary = "${patchApi.updateRecordsMetadata.summary}", description = "${patchApi.updateRecordsMetadata.description}",
-			security = {@SecurityRequirement(name = "Authorization")}, tags = { "records" })
-	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Records updated successfully.", content = { @Content(schema = @Schema(implementation = PatchRecordsResponse.class)) }),
-			@ApiResponse(responseCode = "206", description = "Records updated successful partially.", content = { @Content(schema = @Schema(implementation = PatchRecordsResponse.class)) }),
-			@ApiResponse(responseCode = "400", description = "Bad Request",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "403", description = "User not authorized to perform the action.",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "404", description = "Not Found",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "500", description = "Internal Server Error",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
-			@ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class ))})
-	})
-	@PatchMapping(consumes = "application/json-patch+json", produces = MediaType.APPLICATION_JSON_VALUE)
-	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
-	public ResponseEntity<PatchRecordsResponse> patchRecords(@Parameter(description = "x-collaboration") @RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
-															 @Parameter(description = "Records to be pathced") @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
-		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), patchRecordsRequest.getOps(), this.headers.getUserEmail(), collaborationContext);
-		if (!response.getNotFoundRecordIds().isEmpty() || !response.getFailedRecordIds().isEmpty()) {
-			return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
-		} else {
-			return new ResponseEntity<>(response, HttpStatus.OK);
-		}
-	}
+    @Operation(summary = "${patchApi.summary}", description = "${patchApi.description}",
+            security = {@SecurityRequirement(name = "Authorization")}, tags = {"records"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Records updated successfully.", content = {@Content(schema = @Schema(implementation = PatchRecordsResponse.class))}),
+            @ApiResponse(responseCode = "206", description = "Records updated successful partially.", content = {@Content(schema = @Schema(implementation = PatchRecordsResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Bad Request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "403", description = "User not authorized to perform the action.", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "404", description = "Not Found", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "502", description = "Bad Gateway", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+            @ApiResponse(responseCode = "503", description = "Service Unavailable", content = {@Content(schema = @Schema(implementation = AppError.class))})
+    })
+    @PatchMapping(consumes = "application/json-patch+json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+    public ResponseEntity<PatchRecordsResponse> patchRecords(@Parameter(description = "x-collaboration") @RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+                                                             @Parameter(description = "Records to be pathced") @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
+        Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+        PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), patchRecordsRequest.getOps(), this.headers.getUserEmail(), collaborationContext);
+        if (!response.getNotFoundRecordIds().isEmpty() || !response.getFailedRecordIds().isEmpty()) {
+            return new ResponseEntity<>(response, HttpStatus.PARTIAL_CONTENT);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+    }
 }

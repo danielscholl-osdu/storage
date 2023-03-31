@@ -30,19 +30,20 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 // <K> is a serializable (e.g a Cursor, com.google.cloud.datastore.Cursor in case of gcp implementation)
 public interface IRecordsMetadataRepository<K extends Serializable> {
 
-	default Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
-		throw new NotImplementedException("TODO");
-	}
-	List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext);
+    default Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
+        throw new NotImplementedException("TODO");
+    }
 
-	void delete(String id, Optional<CollaborationContext> collaborationContext);
+    List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext);
 
-	RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext);
+    void delete(String id, Optional<CollaborationContext> collaborationContext);
 
-	Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext);
+    RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext);
 
-	//TODO remove after all providers replace it with the new method queryByLegal
-	AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, K cursor);
+    Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext);
 
-	AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit);
+    //TODO remove after all providers replace it with the new method queryByLegal
+    AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, K cursor);
+
+    AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit);
 }

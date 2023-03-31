@@ -47,251 +47,252 @@ import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEA
 @Service
 public class PersistenceServiceImpl implements PersistenceService {
 
-	@Autowired
-	private IRecordsMetadataRepository recordRepository;
+    @Autowired
+    private IRecordsMetadataRepository recordRepository;
 
-	@Autowired
-	private ICloudStorage cloudStorage;
+    @Autowired
+    private ICloudStorage cloudStorage;
 
-	@Autowired
-	private IMessageBus pubSubClient;
+    @Autowired
+    private IMessageBus pubSubClient;
 
-	@Autowired
-	private DpsHeaders headers;
+    @Autowired
+    private DpsHeaders headers;
 
-	@Autowired
-	private JaxRsDpsLog logger;
-	@Autowired
-	private IFeatureFlag collaborationFeatureFlag;
+    @Autowired
+    private JaxRsDpsLog logger;
+    @Autowired
+    private IFeatureFlag collaborationFeatureFlag;
 
-	private ObjectMapper objectMapper = new ObjectMapper();
-	@Override
-	public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-		List<RecordProcessing> recordsProcessing = transfer.getRecords();
-		List<RecordMetadata> recordsMetadata = new ArrayList<>(recordsProcessing.size());
+    @Override
+    public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
 
-		PubSubInfo[] pubsubInfo = new PubSubInfo[recordsProcessing.size()];
-		RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordsProcessing.size()];
+        List<RecordProcessing> recordsProcessing = transfer.getRecords();
+        List<RecordMetadata> recordsMetadata = new ArrayList<>(recordsProcessing.size());
 
-		for (int i = 0; i < recordsProcessing.size(); i++) {
-			RecordProcessing processing = recordsProcessing.get(i);
-			RecordMetadata recordMetadata = processing.getRecordMetadata();
-			recordsMetadata.add(recordMetadata);
-			if(processing.getOperationType() == OperationType.create) {
-				pubsubInfo[i] = getPubSubInfo(recordMetadata, OperationType.create);
-				recordChangedV2[i] = getRecordChangedV2(recordMetadata, OperationType.create);
-			} else {
-				pubsubInfo[i] = getPubSubInfo(recordMetadata, OperationType.update);
-				pubsubInfo[i].setRecordBlocks(processing.getRecordBlocks());
-				recordChangedV2[i] = getRecordChangedV2(recordMetadata, OperationType.update);
-				recordChangedV2[i].setRecordBlocks(processing.getRecordBlocks());
+        PubSubInfo[] pubsubInfo = new PubSubInfo[recordsProcessing.size()];
+        RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordsProcessing.size()];
 
-				if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
-					pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
-					recordChangedV2[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
-				}
-			}
-		}
+        for (int i = 0; i < recordsProcessing.size(); i++) {
+            RecordProcessing processing = recordsProcessing.get(i);
+            RecordMetadata recordMetadata = processing.getRecordMetadata();
+            recordsMetadata.add(recordMetadata);
+            if (processing.getOperationType() == OperationType.create) {
+                pubsubInfo[i] = getPubSubInfo(recordMetadata, OperationType.create);
+                recordChangedV2[i] = getRecordChangedV2(recordMetadata, OperationType.create);
+            } else {
+                pubsubInfo[i] = getPubSubInfo(recordMetadata, OperationType.update);
+                pubsubInfo[i].setRecordBlocks(processing.getRecordBlocks());
+                recordChangedV2[i] = getRecordChangedV2(recordMetadata, OperationType.update);
+                recordChangedV2[i].setRecordBlocks(processing.getRecordBlocks());
 
-		this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
-		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
-		}
-		if (!collaborationContext.isPresent()) {
-			this.pubSubClient.publishMessage(this.headers, pubsubInfo);
-		}
-	}
+                if (!Strings.isNullOrEmpty(processing.getRecordMetadata().getPreviousVersionKind())) {
+                    pubsubInfo[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
+                    recordChangedV2[i].setPreviousVersionKind(processing.getRecordMetadata().getPreviousVersionKind());
+                }
+            }
+        }
 
-	private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
+        this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+            this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+        }
+        if (!collaborationContext.isPresent()) {
+            this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+        }
+    }
 
-		try {
-			this.commitCloudStorageTransaction(recordsProcessing);
-			this.commitDatastoreTransaction(recordsMetadata, collaborationContext);
-		} catch (AppException e) {
-			try {
-				//try deleting the latest version of the record from blob storage and Datastore
-				this.tryCleanupCloudStorage(recordsProcessing);
-				this.tryCleanupDatastore(recordsMetadata, collaborationContext);
-			} catch (AppException innerException) {
-				e.addSuppressed(innerException);
-			}
+    private void commitBatch(List<RecordProcessing> recordsProcessing, List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
 
-			throw e;
-		}
-	}
+        try {
+            this.commitCloudStorageTransaction(recordsProcessing);
+            this.commitDatastoreTransaction(recordsMetadata, collaborationContext);
+        } catch (AppException e) {
+            try {
+                //try deleting the latest version of the record from blob storage and Datastore
+                this.tryCleanupCloudStorage(recordsProcessing);
+                this.tryCleanupDatastore(recordsMetadata, collaborationContext);
+            } catch (AppException innerException) {
+                e.addSuppressed(innerException);
+            }
 
-	@Override
-	public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
-		Map<String, Acl> originalAcls = new HashMap<>();
-		List<String> lockedRecords = new ArrayList<>();
-		List<RecordMetadata> validMetadata = new ArrayList<>();
-		try {
-			originalAcls = this.cloudStorage.updateObjectMetadata(recordMetadata, recordsId, validMetadata, lockedRecords, recordsIdMap, collaborationContext);
-			this.commitDatastoreTransaction(validMetadata, collaborationContext);
-		} catch (NotImplementedException e) {
-			throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
-		} catch (Exception e) {
-			this.logger.warning("Reverting meta data changes");
-			try {
-				this.cloudStorage.revertObjectMetadata(recordMetadata, originalAcls, collaborationContext);
-			} catch (NotImplementedException innerEx) {
-				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
-			} catch (Exception innerEx) {
-				e.addSuppressed(innerEx);
-			}
-			throw e;
-		}
-		PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
-		RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadata.size()];
-		for (int i = 0; i < recordMetadata.size(); i++) {
-			RecordMetadata metadata = recordMetadata.get(i);
-			pubsubInfo[i] = getPubSubInfo(metadata, OperationType.update);
-			recordChangedV2[i] = getRecordChangedV2(metadata, OperationType.update);
-		}
-		if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-			this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
-		}
-		if (!collaborationContext.isPresent()) {
-			this.pubSubClient.publishMessage(this.headers, pubsubInfo);
-		}
+            throw e;
+        }
+    }
 
-		return lockedRecords;
-	}
+    @Override
+    public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
+        Map<String, Acl> originalAcls = new HashMap<>();
+        List<String> lockedRecords = new ArrayList<>();
+        List<RecordMetadata> validMetadata = new ArrayList<>();
+        try {
+            originalAcls = this.cloudStorage.updateObjectMetadata(recordMetadata, recordsId, validMetadata, lockedRecords, recordsIdMap, collaborationContext);
+            this.commitDatastoreTransaction(validMetadata, collaborationContext);
+        } catch (NotImplementedException e) {
+            throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+        } catch (Exception e) {
+            this.logger.warning("Reverting meta data changes");
+            try {
+                this.cloudStorage.revertObjectMetadata(recordMetadata, originalAcls, collaborationContext);
+            } catch (NotImplementedException innerEx) {
+                throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+            } catch (Exception innerEx) {
+                e.addSuppressed(innerEx);
+            }
+            throw e;
+        }
+        PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
+        RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadata.size()];
+        for (int i = 0; i < recordMetadata.size(); i++) {
+            RecordMetadata metadata = recordMetadata.get(i);
+            pubsubInfo[i] = getPubSubInfo(metadata, OperationType.update);
+            recordChangedV2[i] = getRecordChangedV2(metadata, OperationType.update);
+        }
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+            this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+        }
+        if (!collaborationContext.isPresent()) {
+            this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+        }
 
-	@Override
-	public Map<String, String> patchRecordsMetadata(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
-		Map<String, String> recordError;
-		try {
-			recordError = this.commitPatchDatastoreTransaction(jsonPatchPerRecord, collaborationContext);
-		} catch (NotImplementedException e) {
-			throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
-		} catch (Exception e) {
-			this.logger.warning("Reverting meta data changes");
-			try {
-				this.commitDatastoreTransaction(new ArrayList<>(jsonPatchPerRecord.keySet()), collaborationContext);
-			} catch (NotImplementedException innerEx) {
-				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
-			} catch (Exception innerEx) {
-				logger.error("Error reverting metadata to its original state", innerEx);
-				e.addSuppressed(innerEx);
-			}
-			throw e;
-		}
-		if(!recordError.isEmpty()) {
-			this.logger.warning("Reverting meta data changes");
-			try {
-				this.commitDatastoreTransaction(new ArrayList<>(jsonPatchPerRecord.keySet()), collaborationContext);
-			} catch (NotImplementedException innerEx) {
-				throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
-			} catch (Exception e) {
-				logger.error("Error reverting metadata to its original state", e);
-				throw e;
-			}
-		} else {
-			List<PubSubInfo> pubSubInfos = new ArrayList<>();
-			List<RecordChangedV2> recordChangedV2s = new ArrayList<>();
-			for(RecordMetadata metadata : jsonPatchPerRecord.keySet()) {
-				PubSubInfo pubSubInfo = getPubSubInfo(metadata, OperationType.update);
-				RecordChangedV2 recordChangedV2 = getRecordChangedV2(metadata, OperationType.update);
-				JsonPatch jsonPatchForRecord = jsonPatchPerRecord.get(metadata);
-				if (isKindBeingUpdated(jsonPatchForRecord)) {
-					String newKind = getNewKindFromPatchInput(jsonPatchForRecord);
-					pubSubInfo.setPreviousVersionKind(metadata.getKind());
-					pubSubInfo.setKind(newKind);
-					recordChangedV2.setPreviousVersionKind(metadata.getKind());
-					recordChangedV2.setKind(newKind);
-				}
-				pubSubInfos.add(pubSubInfo);
-				recordChangedV2s.add(recordChangedV2);
-			}
-			if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
-				this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2s.stream().toArray(RecordChangedV2[]::new));
-			}
-			if (!collaborationContext.isPresent()) {
-				this.pubSubClient.publishMessage(this.headers, pubSubInfos.stream().toArray(PubSubInfo[]::new));
-			}
-		}
-		return recordError;
-	}
+        return lockedRecords;
+    }
 
-	private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata, OperationType operationType) {
-		return PubSubInfo.builder()
-				.id(recordMetadata.getId())
-				.kind(recordMetadata.getKind())
-				.op(operationType)
-				.build();
-	}
+    @Override
+    public Map<String, String> patchRecordsMetadata(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
+        Map<String, String> recordError;
+        try {
+            recordError = this.commitPatchDatastoreTransaction(jsonPatchPerRecord, collaborationContext);
+        } catch (NotImplementedException e) {
+            throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+        } catch (Exception e) {
+            this.logger.warning("Reverting meta data changes");
+            try {
+                this.commitDatastoreTransaction(new ArrayList<>(jsonPatchPerRecord.keySet()), collaborationContext);
+            } catch (NotImplementedException innerEx) {
+                throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+            } catch (Exception innerEx) {
+                logger.error("Error reverting metadata to its original state", innerEx);
+                e.addSuppressed(innerEx);
+            }
+            throw e;
+        }
+        if (!recordError.isEmpty()) {
+            this.logger.warning("Reverting meta data changes");
+            try {
+                this.commitDatastoreTransaction(new ArrayList<>(jsonPatchPerRecord.keySet()), collaborationContext);
+            } catch (NotImplementedException innerEx) {
+                throw new AppException(HttpStatus.SC_NOT_IMPLEMENTED, "Not Implemented", "Interface not fully implemented yet");
+            } catch (Exception e) {
+                logger.error("Error reverting metadata to its original state", e);
+                throw e;
+            }
+        } else {
+            List<PubSubInfo> pubSubInfos = new ArrayList<>();
+            List<RecordChangedV2> recordChangedV2s = new ArrayList<>();
+            for (RecordMetadata metadata : jsonPatchPerRecord.keySet()) {
+                PubSubInfo pubSubInfo = getPubSubInfo(metadata, OperationType.update);
+                RecordChangedV2 recordChangedV2 = getRecordChangedV2(metadata, OperationType.update);
+                JsonPatch jsonPatchForRecord = jsonPatchPerRecord.get(metadata);
+                if (isKindBeingUpdated(jsonPatchForRecord)) {
+                    String newKind = getNewKindFromPatchInput(jsonPatchForRecord);
+                    pubSubInfo.setPreviousVersionKind(metadata.getKind());
+                    pubSubInfo.setKind(newKind);
+                    recordChangedV2.setPreviousVersionKind(metadata.getKind());
+                    recordChangedV2.setKind(newKind);
+                }
+                pubSubInfos.add(pubSubInfo);
+                recordChangedV2s.add(recordChangedV2);
+            }
+            if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+                this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2s.stream().toArray(RecordChangedV2[]::new));
+            }
+            if (!collaborationContext.isPresent()) {
+                this.pubSubClient.publishMessage(this.headers, pubSubInfos.stream().toArray(PubSubInfo[]::new));
+            }
+        }
+        return recordError;
+    }
 
-	private RecordChangedV2 getRecordChangedV2(RecordMetadata recordMetadata, OperationType operationType) {
-		return RecordChangedV2.builder()
-				.id(recordMetadata.getId())
-				.version(recordMetadata.getLatestVersion())
-				.modifiedBy(recordMetadata.getModifyUser())
-				.kind(recordMetadata.getKind())
-				.op(operationType)
-				.build();
-	}
+    private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata, OperationType operationType) {
+        return PubSubInfo.builder()
+                .id(recordMetadata.getId())
+                .kind(recordMetadata.getKind())
+                .op(operationType)
+                .build();
+    }
 
-	private void tryCleanupCloudStorage(List<RecordProcessing> recordsProcessing) {
-		recordsProcessing.forEach(r -> this.cloudStorage.deleteVersion(r.getRecordMetadata(), r.getRecordMetadata().getLatestVersion()));
-	}
+    private RecordChangedV2 getRecordChangedV2(RecordMetadata recordMetadata, OperationType operationType) {
+        return RecordChangedV2.builder()
+                .id(recordMetadata.getId())
+                .version(recordMetadata.getLatestVersion())
+                .modifiedBy(recordMetadata.getModifyUser())
+                .kind(recordMetadata.getKind())
+                .op(operationType)
+                .build();
+    }
 
-	private void tryCleanupDatastore(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
-		List<RecordMetadata> updatedRecordsMetadata = new ArrayList();
-		for(RecordMetadata recordMetadata : recordsMetadata) {
-			List<String> gcsVersionPathsWithoutLatestVersion = new ArrayList<>(recordMetadata.getGcsVersionPaths());
-			gcsVersionPathsWithoutLatestVersion.remove(recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
-			recordMetadata.setGcsVersionPaths(gcsVersionPathsWithoutLatestVersion);
-			updatedRecordsMetadata.add(recordMetadata);
-		}
-		if(!updatedRecordsMetadata.isEmpty()) {
-			this.commitDatastoreTransaction(updatedRecordsMetadata, collaborationContext);
-		}
-	}
+    private void tryCleanupCloudStorage(List<RecordProcessing> recordsProcessing) {
+        recordsProcessing.forEach(r -> this.cloudStorage.deleteVersion(r.getRecordMetadata(), r.getRecordMetadata().getLatestVersion()));
+    }
 
-	private void commitCloudStorageTransaction(List<RecordProcessing> recordsProcessing) {
-		this.cloudStorage.write(recordsProcessing.toArray(new RecordProcessing[recordsProcessing.size()]));
-	}
+    private void tryCleanupDatastore(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
+        List<RecordMetadata> updatedRecordsMetadata = new ArrayList();
+        for (RecordMetadata recordMetadata : recordsMetadata) {
+            List<String> gcsVersionPathsWithoutLatestVersion = new ArrayList<>(recordMetadata.getGcsVersionPaths());
+            gcsVersionPathsWithoutLatestVersion.remove(recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+            recordMetadata.setGcsVersionPaths(gcsVersionPathsWithoutLatestVersion);
+            updatedRecordsMetadata.add(recordMetadata);
+        }
+        if (!updatedRecordsMetadata.isEmpty()) {
+            this.commitDatastoreTransaction(updatedRecordsMetadata, collaborationContext);
+        }
+    }
 
-	private void commitDatastoreTransaction(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
-		try {
-			this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
-		} catch (Exception e) {
-			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
-					"The server could not process your request at the moment.", e);
-		}
-	}
+    private void commitCloudStorageTransaction(List<RecordProcessing> recordsProcessing) {
+        this.cloudStorage.write(recordsProcessing.toArray(new RecordProcessing[recordsProcessing.size()]));
+    }
 
-	private Map<String, String> commitPatchDatastoreTransaction(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
-		try {
-			return this.recordRepository.patch(jsonPatchPerRecord, collaborationContext);
-		} catch (Exception e) {
-			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error patching records.",
-					"The server could not process your request at the moment.", e);
-		}
-	}
+    private void commitDatastoreTransaction(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
+        try {
+            this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
+                    "The server could not process your request at the moment.", e);
+        }
+    }
 
-	private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
-		JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-		Iterator<JsonNode> nodes = patchNode.elements();
-		while(nodes.hasNext()) {
-			JsonNode currentNode = nodes.next();
-			if(currentNode.findPath("path").toString().contains("kind"))
-				return true;
-		}
-		return false;
-	}
+    private Map<String, String> commitPatchDatastoreTransaction(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
+        try {
+            return this.recordRepository.patch(jsonPatchPerRecord, collaborationContext);
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error patching records.",
+                    "The server could not process your request at the moment.", e);
+        }
+    }
 
-	private String getNewKindFromPatchInput(JsonPatch jsonPatch) {
-		JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-		Iterator<JsonNode> nodes = patchNode.elements();
-		while(nodes.hasNext()) {
-			JsonNode currentNode = nodes.next();
-			if(currentNode.findPath("path").toString().contains("kind")) {
-				return currentNode.findPath("value").textValue();
-			}
-		}
-		throw new RuntimeException("Failed to retrieve kind value from jsonpatch: "+jsonPatch.toString());
-	}
+    private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
+        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
+        Iterator<JsonNode> nodes = patchNode.elements();
+        while (nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            if (currentNode.findPath("path").toString().contains("kind"))
+                return true;
+        }
+        return false;
+    }
+
+    private String getNewKindFromPatchInput(JsonPatch jsonPatch) {
+        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
+        Iterator<JsonNode> nodes = patchNode.elements();
+        while (nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            if (currentNode.findPath("path").toString().contains("kind")) {
+                return currentNode.findPath("value").textValue();
+            }
+        }
+        throw new RuntimeException("Failed to retrieve kind value from jsonpatch: " + jsonPatch.toString());
+    }
 }

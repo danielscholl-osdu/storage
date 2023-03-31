@@ -115,6 +115,7 @@ public abstract class ApiTest<T> {
     protected ObjectMapper objectMapper;
 
     protected abstract HttpMethod getHttpMethod();
+
     protected abstract String getUriTemplate();
 
     protected void setupAuthorization(String role) throws EntitlementsException {
