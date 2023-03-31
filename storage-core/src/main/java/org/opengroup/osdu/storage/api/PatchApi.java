@@ -109,7 +109,7 @@ public class PatchApi {
     @PatchMapping(consumes = "application/json-patch+json", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
     public ResponseEntity<PatchRecordsResponse> patchRecords(@Parameter(description = "x-collaboration") @RequestHeader(name = CollaborationFilter.X_COLLABORATION_HEADER_NAME, required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
-                                                             @Parameter(description = "Records to be pathced") @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
+                                                             @Parameter(description = "Records to be patched") @RequestBody @Valid PatchRecordsRequestModel patchRecordsRequest) {
         Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
         PatchRecordsResponse response = this.patchRecordsService.patchRecords(patchRecordsRequest.getQuery().getIds(), patchRecordsRequest.getOps(), this.headers.getUserEmail(), collaborationContext);
         if (!response.getNotFoundRecordIds().isEmpty() || !response.getFailedRecordIds().isEmpty()) {
