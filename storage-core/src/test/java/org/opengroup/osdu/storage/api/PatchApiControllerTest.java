@@ -162,7 +162,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         PatchRecordsResponse response = PatchRecordsResponse.builder()
                 .recordCount(3)
                 .recordIds(recordIds)
-                .failedRecordIds(Arrays.asList(new String[] {"opendes:npe:123"}))
+                .failedRecordIds(Arrays.asList(new String[]{"opendes:npe:123"}))
                 .build();
         Mockito.when(patchRecordsService.patchRecords(eq(recordIds), any(JsonPatch.class), eq("a@b"), eq(Optional.empty()))).thenReturn(response);
         ResultActions result = sendRequest(getRequestPayloadMultipleIds(recordQueryPatch, getValidInputJson()));
@@ -230,8 +230,8 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
 
     private RecordQueryPatch getRecordQueryPatchFor101Records() {
         List<String> recordIds = new ArrayList<>();
-        for(int i = 0; i < 101; i++) {
-            recordIds.add("opendes:npe:123"+i);
+        for (int i = 0; i < 101; i++) {
+            recordIds.add("opendes:npe:123" + i);
         }
         return RecordQueryPatch.builder().ids(recordIds).build();
     }

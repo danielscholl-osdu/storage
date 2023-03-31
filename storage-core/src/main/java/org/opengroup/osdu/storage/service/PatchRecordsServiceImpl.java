@@ -124,16 +124,16 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
 
         boolean dataUpdate = isDataOrMetaBeingUpdated(jsonPatch);
 
-        if(dataUpdate) {
+        if (dataUpdate) {
             MultiRecordInfo multiRecordInfo = batchService.getMultipleRecords(new MultiRecordIds(recordIds, attributes), collaborationContext);
             notFoundRecordIds = multiRecordInfo.getInvalidRecords();
 
             List<Record> recordsToPersist = new ArrayList<>();
-            for(Record validRecord : multiRecordInfo.getRecords()) {
+            for (Record validRecord : multiRecordInfo.getRecords()) {
                 try {
                     JsonNode patched = jsonPatch.apply(objectMapper.convertValue(validRecord, JsonNode.class));
                     Record patchedRecord = objectMapper.treeToValue(patched, Record.class);
-                    if(isEmptyAclOrLegal(patchedRecord)) {
+                    if (isEmptyAclOrLegal(patchedRecord)) {
                         failedRecordIds.add(validRecord.getId());
                         errors.add("Patch operation for record: " + validRecord.getId() + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
                     } else {
@@ -144,15 +144,15 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     }
                 } catch (JsonPatchException e) {
                     failedRecordIds.add(validRecord.getId());
-                    errors.add("Json patch error for record: "+validRecord.getId());
+                    errors.add("Json patch error for record: " + validRecord.getId());
                 } catch (JsonProcessingException e) {
                     failedRecordIds.add(validRecord.getId());
-                    errors.add("Json processing error for record: "+validRecord.getId());
+                    errors.add("Json processing error for record: " + validRecord.getId());
                 }
             }
-            if(!errors.isEmpty()) {
+            if (!errors.isEmpty()) {
                 StringBuilder errorBuilder = new StringBuilder();
-                for(String error : errors) {
+                for (String error : errors) {
                     errorBuilder.append(error).append("|");
                 }
                 errorBuilder.setLength(errorBuilder.length() - 1);
@@ -163,21 +163,21 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
         } else {
             Map<String, RecordMetadata> existingRecords = recordRepository.get(recordIds, collaborationContext);
-            if(isOpaEnabled) {
+            if (isOpaEnabled) {
                 this.validateUserAccessAndCompliancePolicyConstraints(existingRecords);
             } else {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);
             }
             long currentTime = System.currentTimeMillis();
             Map<RecordMetadata, JsonPatch> patchPerRecord = new HashMap<>();
-            for(String recordId : recordIds) {
+            for (String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 try {
                     if (isEmptyAclOrLegal(patchRecordMetadataWithJsonPatch(metadata, jsonPatch))) {
                         failedRecordIds.add(recordId);
                         errors.add("Patch operation for record: " + recordId + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
                     } else {
-                        if(metadata == null) {
+                        if (metadata == null) {
                             notFoundRecordIds.add(recordId);
                         } else {
                             metadata.setModifyTime(currentTime);
@@ -188,7 +188,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                             } catch (IOException e) {
                                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "IOException during patch operation");
                             }
-                            if(jsonPatchForRecord != null) {
+                            if (jsonPatchForRecord != null) {
                                 patchPerRecord.put(metadata, jsonPatchForRecord);
                             }
                             successfulRecordIds.add(recordId);
@@ -199,9 +199,9 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                     errors.add("Patch operation for record: " + recordId + " failed with error: " + e.getMessage());
                 }
             }
-            if(!patchPerRecord.isEmpty()) {
+            if (!patchPerRecord.isEmpty()) {
                 Map<String, String> recordIdPatchError = persistenceService.patchRecordsMetadata(patchPerRecord, collaborationContext);
-                for(String currentRecordId : recordIdPatchError.keySet()) {
+                for (String currentRecordId : recordIdPatchError.keySet()) {
                     errors.add(recordIdPatchError.get(currentRecordId));
                 }
             }
@@ -223,11 +223,11 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         ArrayNode resultNode = objectMapper.createArrayNode();
         List<JsonNode> patchOperations = StreamSupport.stream(objectMapper.convertValue(inputJsonPatch, JsonNode.class).spliterator(), false)
                 .distinct().collect(toList());
-        for(JsonNode currentNode : patchOperations) {
+        for (JsonNode currentNode : patchOperations) {
             ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode(1);
             arrayNode.add(currentNode);
             JsonPatch currentPatch = JsonPatch.fromJson(arrayNode);
-            if(!hasDuplicateAcl(patchRecordMetadataWithJsonPatch(recordMetadata, currentPatch).getAcl())) {
+            if (!hasDuplicateAcl(patchRecordMetadataWithJsonPatch(recordMetadata, currentPatch).getAcl())) {
                 resultNode.add(currentNode);
             }
         }
@@ -259,7 +259,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             for (ValidationOutputRecord outputRecord : dataAuthzResult) {
                 if (!outputRecord.getErrors().isEmpty()) {
                     logger.error(String.format("Data authorization failure for record %s: %s", outputRecord.getId(), outputRecord.getErrors().toString()));
-                    for(OpaError error : outputRecord.getErrors()) {
+                    for (OpaError error : outputRecord.getErrors()) {
                         throw new AppException(Integer.parseInt(error.getCode()), error.getReason(), error.getMessage());
                     }
                 }
@@ -286,9 +286,9 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     private boolean isDataOrMetaBeingUpdated(JsonPatch jsonPatch) {
         JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
         Iterator<JsonNode> nodes = patchNode.elements();
-        while(nodes.hasNext()) {
+        while (nodes.hasNext()) {
             JsonNode currentNode = nodes.next();
-            if(currentNode.findPath("path").textValue().startsWith("/data") || currentNode.findPath("path").textValue().startsWith("/meta"))
+            if (currentNode.findPath("path").textValue().startsWith("/data") || currentNode.findPath("path").textValue().startsWith("/meta"))
                 return true;
         }
         return false;
@@ -313,13 +313,13 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     private boolean hasDuplicateAcl(Acl acl) {
         Set<String> viewers = new HashSet<>();
         Set<String> owners = new HashSet<>();
-        for(String viewer : acl.getViewers()) {
-            if(viewers.contains(viewer))
+        for (String viewer : acl.getViewers()) {
+            if (viewers.contains(viewer))
                 return true;
             else
                 viewers.add(viewer);
         }
-        for(String owner : acl.getOwners()) {
+        for (String owner : acl.getOwners()) {
             if (owners.contains(owner))
                 return true;
             else

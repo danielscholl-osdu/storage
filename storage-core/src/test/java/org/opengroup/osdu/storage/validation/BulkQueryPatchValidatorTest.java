@@ -80,8 +80,8 @@ public class BulkQueryPatchValidatorTest {
     public void should_throwValidationException_ifRecordListHasMoreThan100Ids() {
         RecordQueryPatch recordQueryPatch = new RecordQueryPatch();
         List<String> recordIds = new ArrayList<>();
-        for(int i = 0; i < 101; i++) {
-            recordIds.add("id"+i);
+        for (int i = 0; i < 101; i++) {
+            recordIds.add("id" + i);
         }
         recordQueryPatch.setIds(recordIds);
         exceptionRulesAndMethodRun(recordQueryPatch, PATCH_RECORDS_MAX);

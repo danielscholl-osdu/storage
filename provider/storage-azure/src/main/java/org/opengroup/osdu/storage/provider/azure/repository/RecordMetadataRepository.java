@@ -88,7 +88,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         CosmosPatchOperations cosmosPatchOperations;
         Map<String, CosmosPatchOperations> cosmosPatchOperationsPerDoc = new HashMap<>();
         Map<String, String> partitionKeyForDoc = new HashMap<>();
-        for(RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
+        for (RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
             modifyUser = recordMetadata.getModifyUser();
             modifyTime = recordMetadata.getModifyTime();
             cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatchPerRecord.get(recordMetadata));
@@ -100,10 +100,10 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         try {
             cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, cosmosPatchOperationsPerDoc, partitionKeyForDoc, 1);
         } catch (AppException e) {
-            if(e.getOriginalException()!= null && e.getOriginalException() instanceof AppException) {
-                AppException originalException = (AppException)e.getOriginalException();
+            if (e.getOriginalException() != null && e.getOriginalException() instanceof AppException) {
+                AppException originalException = (AppException) e.getOriginalException();
                 String[] originalExceptionErrors = originalException.getError().getErrors();
-                for(String cosmosError : originalExceptionErrors) {
+                for (String cosmosError : originalExceptionErrors) {
                     String[] idAndError = cosmosError.split("\\|");
                     //assuming azure library throws an error in the format of "recordId|<message with responseCode>|<exception>"
                     recordIdToError.put(CollaborationUtil.getIdWithoutNamespace(idAndError[0], collaborationContext), idAndError[1]);
@@ -116,16 +116,17 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata,  Optional<CollaborationContext> collaborationContext) {
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         Assert.notNull(recordsMetadata, "recordsMetadata must not be null");
         recordsMetadata.forEach(metadata -> {
-            if(metadata.getAcl() == null) {
-                logger.error( "Acl of the record " + metadata + " must not be null");
+            if (metadata.getAcl() == null) {
+                logger.error("Acl of the record " + metadata + " must not be null");
                 throw new IllegalArgumentException("Acl of the record must not be null");
             }
         });
 
-        if(recordsMetadata.size() >= minBatchSizeToUseBulkUpload) createOrUpdateParallel(recordsMetadata, collaborationContext);
+        if (recordsMetadata.size() >= minBatchSizeToUseBulkUpload)
+            createOrUpdateParallel(recordsMetadata, collaborationContext);
         else createOrUpdateSerial(recordsMetadata, collaborationContext);
 
         return recordsMetadata;
@@ -133,9 +134,10 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     /**
      * Implementation of createOrUpdate that writes the records in serial one at a time to Cosmos.
+     *
      * @param recordsMetadata records to write to cosmos.
      */
-    private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext){
+    private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         for (RecordMetadata recordMetadata : recordsMetadata) {
             RecordMetadataDoc doc = new RecordMetadataDoc();
             doc.setId(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
@@ -146,12 +148,13 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     /**
      * Implementation of createOrUpdate that uses DocumentBulkExecutor to upload all records in parallel to Cosmos.
+     *
      * @param recordsMetadata records to write to cosmos.
      */
-    private void createOrUpdateParallel(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext){
+    private void createOrUpdateParallel(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadataDoc> docs = new ArrayList<>();
         List<String> partitionKeys = new ArrayList<>();
-        for (RecordMetadata recordMetadata : recordsMetadata){
+        for (RecordMetadata recordMetadata : recordsMetadata) {
             RecordMetadataDoc doc = new RecordMetadataDoc();
             doc.setId(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
             doc.setMetadata(recordMetadata);
@@ -214,7 +217,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         List<RecordMetadataDoc> queryResults = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
 
         Map<String, RecordMetadata> results = new HashMap<>();
-        for(RecordMetadataDoc doc : queryResults){
+        for (RecordMetadataDoc doc : queryResults) {
             if (doc.getMetadata() == null) continue;
             results.put(doc.getId(), doc.getMetadata());
         }
@@ -253,10 +256,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     private static SqlQuerySpec getIdsByMetadata_kindAndMetada_statusQuery(String kind, String status, Optional<CollaborationContext> collaborationContext) {
         String queryText;
-        if (!collaborationContext.isPresent()){
+        if (!collaborationContext.isPresent()) {
             queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' AND c.id = c.metadata.id", kind, status);
-        }
-        else {
+        } else {
             queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' and STARTSWITH(c.id, '%s')", kind, status, CollaborationUtil.getNamespace(collaborationContext));
         }
         return new SqlQuerySpec(queryText);
@@ -271,7 +273,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     public RecordMetadataDoc save(RecordMetadataDoc entity) {
-        return this.save(entity, headers.getPartitionId(),cosmosDBName,recordMetadataCollection,entity.getId());
+        return this.save(entity, headers.getPartitionId(), cosmosDBName, recordMetadataCollection, entity.getId());
     }
 
     @Override
@@ -281,13 +283,14 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     /**
      * Method to generate query string for searching Cosmos for a list of Ids.
+     *
      * @param ids Ids to generate query for.
      * @return String representing Cosmos query searching for all of the ids.
      */
-    private String createCosmosBatchGetQueryById(List<String> ids, Optional<CollaborationContext> collaborationContext){
+    private String createCosmosBatchGetQueryById(List<String> ids, Optional<CollaborationContext> collaborationContext) {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT * FROM c WHERE c.id IN (");
-        for(String id : ids){
+        for (String id : ids) {
             sb.append("\"" + CollaborationUtil.getIdWithNamespace(id, collaborationContext) + "\",");
         }
 
@@ -302,21 +305,21 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
         List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
                 .collect(Collectors.toList());
-        for(JsonNode patchOp : patchNodes) {
+        for (JsonNode patchOp : patchNodes) {
             switch (patchOp.get("op").textValue()) {
                 case "add":
-                    cosmosPatchOperations.add(metadataPathPrefix+patchOp.get("path").textValue(), patchOp.get("value"));
+                    cosmosPatchOperations.add(metadataPathPrefix + patchOp.get("path").textValue(), patchOp.get("value"));
                     break;
                 case "replace":
-                    cosmosPatchOperations.replace(metadataPathPrefix+patchOp.get("path").textValue(), patchOp.get("value"));
+                    cosmosPatchOperations.replace(metadataPathPrefix + patchOp.get("path").textValue(), patchOp.get("value"));
                     break;
                 case "remove":
-                    cosmosPatchOperations.remove(metadataPathPrefix+patchOp.get("path").textValue());
+                    cosmosPatchOperations.remove(metadataPathPrefix + patchOp.get("path").textValue());
                     break;
             }
         }
-        cosmosPatchOperations.replace(metadataPathPrefix+"/modifyUser", modifyUser);
-        cosmosPatchOperations.replace(metadataPathPrefix+"/modifyTime", modifyTime);
+        cosmosPatchOperations.replace(metadataPathPrefix + "/modifyUser", modifyUser);
+        cosmosPatchOperations.replace(metadataPathPrefix + "/modifyTime", modifyTime);
         return cosmosPatchOperations;
     }
 }

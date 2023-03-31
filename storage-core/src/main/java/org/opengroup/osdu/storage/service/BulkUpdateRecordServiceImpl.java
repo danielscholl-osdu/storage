@@ -99,7 +99,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
         Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
         List<String> notFoundRecordIds = new ArrayList<>();
-        List<String> unauthorizedRecordIds= isOpaEnabled
+        List<String> unauthorizedRecordIds = isOpaEnabled
                 ? this.validateUserAccessAndCompliancePolicyConstraints(bulkUpdateOps, idMap, existingRecords, user)
                 : this.validateUserAccessAndComplianceConstraints(bulkUpdateOps, idMap, existingRecords);
 

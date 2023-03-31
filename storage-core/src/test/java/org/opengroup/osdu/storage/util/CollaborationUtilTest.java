@@ -21,19 +21,19 @@ public class CollaborationUtilTest {
     @Test
     public void shouldGetCorrectIdWithNamespace_IfCollaborationContextIsProvided() {
         UUID CollaborationId = UUID.randomUUID();
-        CollaborationContext collaborationContext= CollaborationContext.builder().id(CollaborationId).application("unit testing").build();
-        
+        CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).application("unit testing").build();
+
         String result = CollaborationUtil.getIdWithNamespace(RECORD_ID, Optional.of(collaborationContext));
 
-        assertEquals(result,CollaborationId.toString()+RECORD_ID);
+        assertEquals(result, CollaborationId.toString() + RECORD_ID);
     }
 
     @Test
     public void shouldGetCorrectIdWithoutNamespace_IfCollaborationContextIsProvided() {
         UUID CollaborationId = UUID.randomUUID();
-        CollaborationContext collaborationContext= CollaborationContext.builder().id(CollaborationId).application("unit testing").build();
+        CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).application("unit testing").build();
 
-        String result = CollaborationUtil.getIdWithoutNamespace(collaborationContext.getId()+RECORD_ID, Optional.of(collaborationContext));
+        String result = CollaborationUtil.getIdWithoutNamespace(collaborationContext.getId() + RECORD_ID, Optional.of(collaborationContext));
 
         assertEquals(result, RECORD_ID);
     }

@@ -18,7 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
 
-public class TestPatchRecords extends PatchRecordsTest{
+public class TestPatchRecords extends PatchRecordsTest {
     @Before
     @Override
     public void setup() throws Exception {

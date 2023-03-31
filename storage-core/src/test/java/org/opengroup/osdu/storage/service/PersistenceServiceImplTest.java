@@ -94,12 +94,12 @@ public class PersistenceServiceImplTest {
         this.createdRecords = new ArrayList<>();
 
         this.acl = new Acl();
-        this.acl.setViewers(new String[] { "viewers1", "viewers2" });
-        this.acl.setOwners(new String[] { "owners1", "owners2" });
+        this.acl.setViewers(new String[]{"viewers1", "viewers2"});
+        this.acl.setOwners(new String[]{"owners1", "owners2"});
     }
 
     @Test
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_persistRecords_when_noExceptionIsThrown() {
 
         when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
@@ -135,7 +135,7 @@ public class PersistenceServiceImplTest {
     }
 
     @Test
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_persistRecords_when_noExceptionIsThrown_when_collaborationIsEmptyAndFFIsEnabled() {
 
         when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
@@ -174,7 +174,7 @@ public class PersistenceServiceImplTest {
     }
 
     @Test
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_persistRecords_when_noExceptionIsThrown_when_collaborationIsPresentAndFFIsEnabled() {
 
         when(collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
@@ -212,7 +212,7 @@ public class PersistenceServiceImplTest {
     }
 
     @Test
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_notPersistRecords_and_throw500AppException_when_nonDatastoreErrorOccur() {
 
         TransferBatch batch = this.createBatchTransfer();
@@ -231,6 +231,7 @@ public class PersistenceServiceImplTest {
         verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture(), any());
         verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
     }
+
     @Ignore
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -252,6 +253,7 @@ public class PersistenceServiceImplTest {
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
         verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
+
     @Ignore
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -345,7 +347,7 @@ public class PersistenceServiceImplTest {
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
         JsonPatch jsonPatchInput = getJsonPatchFromJsonString(getValidInputJsonForPatch());
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
-        for(RecordMetadata metadata : recordMetadataList)
+        for (RecordMetadata metadata : recordMetadataList)
             jsonPatchPerRecord.put(metadata, jsonPatchInput);
         try {
             this.sut.patchRecordsMetadata(jsonPatchPerRecord, Optional.empty());
@@ -354,7 +356,7 @@ public class PersistenceServiceImplTest {
             verify(this.logger, times(1)).warning("Reverting meta data changes");
             verify(recordRepository, times(1)).createOrUpdate(anyList(), eq(Optional.empty()));
             PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
-            for(int i = 0; i < recordMetadataList.size(); i++) {
+            for (int i = 0; i < recordMetadataList.size(); i++) {
                 pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
             }
             verify(pubSubClient, never()).publishMessage(headers, pubSubInfos);
@@ -369,12 +371,12 @@ public class PersistenceServiceImplTest {
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
         JsonPatch jsonPatchInput = getJsonPatchFromJsonString(getValidInputJsonForPatch());
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
-        for(RecordMetadata metadata : recordMetadataList)
+        for (RecordMetadata metadata : recordMetadataList)
             jsonPatchPerRecord.put(metadata, jsonPatchInput);
         Map<String, String> response = this.sut.patchRecordsMetadata(jsonPatchPerRecord, Optional.empty());
         verify(this.logger, times(1)).warning("Reverting meta data changes");
         PubSubInfo[] pubSubInfos = new PubSubInfo[recordMetadataList.size()];
-        for(int i = 0; i < recordMetadataList.size(); i++) {
+        for (int i = 0; i < recordMetadataList.size(); i++) {
             pubSubInfos[i] = getPubSubInfo(recordMetadataList.get(i));
         }
         verify(pubSubClient, never()).publishMessage(headers, pubSubInfos);
@@ -390,7 +392,7 @@ public class PersistenceServiceImplTest {
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
         JsonPatch jsonPatchInput = getJsonPatchFromJsonString(getValidInputJsonForPatch());
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
-        for(RecordMetadata metadata : recordMetadataList)
+        for (RecordMetadata metadata : recordMetadataList)
             jsonPatchPerRecord.put(metadata, jsonPatchInput);
         patchErrors = this.sut.patchRecordsMetadata(jsonPatchPerRecord, Optional.empty());
         verify(pubSubClient, times(1)).publishMessage(eq(headers), any());
@@ -404,7 +406,7 @@ public class PersistenceServiceImplTest {
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
         JsonPatch jsonPatchInput = getJsonPatchFromJsonString(getValidInputJsonForPatchKindUpdate());
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
-        for(RecordMetadata metadata : recordMetadataList)
+        for (RecordMetadata metadata : recordMetadataList)
             jsonPatchPerRecord.put(metadata, jsonPatchInput);
         patchErrors = this.sut.patchRecordsMetadata(jsonPatchPerRecord, Optional.empty());
         verify(pubSubClient, times(1)).publishMessage(eq(headers), any());
@@ -554,7 +556,7 @@ public class PersistenceServiceImplTest {
         record.setStatus(RecordState.active);
         record.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3"));
 
-        RecordMetadata record2= new RecordMetadata();
+        RecordMetadata record2 = new RecordMetadata();
         record2.setKind("any kind");
         record2.setId("id:access:2");
         record2.setStatus(RecordState.active);

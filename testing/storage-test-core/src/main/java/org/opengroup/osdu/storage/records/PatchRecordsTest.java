@@ -189,7 +189,7 @@ public abstract class PatchRecordsTest extends TestBase {
 
     private ClientResponse queryRecordsResponse(List<String> recordIds) throws Exception {
         JsonArray records = new JsonArray();
-        for(String recordId : recordIds) {
+        for (String recordId : recordIds) {
             records.add(recordId);
         }
         JsonObject queryBody = new JsonObject();
@@ -208,18 +208,18 @@ public abstract class PatchRecordsTest extends TestBase {
 
     private String getPatchPayload(List<String> records, boolean isMetaUpdate, boolean isDataUpdate) {
         JsonArray recordsJson = new JsonArray();
-        for(String record : records) {
+        for (String record : records) {
             recordsJson.add(record);
         }
 
         JsonArray ops = new JsonArray();
-        if(isMetaUpdate) {
+        if (isMetaUpdate) {
             ops.add(getAddTagsPatchOp());
             ops.add(getReplaceAclOwnersPatchOp());
             ops.add(getAddLegaltagsPatchOp());
             ops.add(getReplaceKindPatchOp());
         }
-        if(isDataUpdate) {
+        if (isDataUpdate) {
             ops.add(getReplaceDataPatchOp());
         }
 
