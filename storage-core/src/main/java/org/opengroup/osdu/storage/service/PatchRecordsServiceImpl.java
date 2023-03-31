@@ -14,20 +14,11 @@
 
 package org.opengroup.osdu.storage.service;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.fge.jsonpatch.JsonPatch;
-import com.github.fge.jsonpatch.JsonPatchException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -43,25 +34,21 @@ import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 
@@ -122,7 +109,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         patchInputValidator.validateKind(jsonPatch);
         patchInputValidator.validateAncestry(jsonPatch);
 
-        boolean dataUpdate = isDataOrMetaBeingUpdated(jsonPatch);
+        boolean dataUpdate = JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch);
 
         if (dataUpdate) {
             MultiRecordInfo multiRecordInfo = batchService.getMultipleRecords(new MultiRecordIds(recordIds, attributes), collaborationContext);
@@ -131,9 +118,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             List<Record> recordsToPersist = new ArrayList<>();
             for (Record validRecord : multiRecordInfo.getRecords()) {
                 try {
-                    JsonNode patched = jsonPatch.apply(objectMapper.convertValue(validRecord, JsonNode.class));
-                    Record patchedRecord = objectMapper.treeToValue(patched, Record.class);
-                    if (isEmptyAclOrLegal(patchedRecord)) {
+                    Record patchedRecord = JsonPatchUtil.applyPatch(jsonPatch, Record.class, validRecord);
+                    if (JsonPatchUtil.isEmptyAclOrLegal(patchedRecord)) {
                         failedRecordIds.add(validRecord.getId());
                         errors.add("Patch operation for record: " + validRecord.getId() + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
                     } else {
@@ -142,22 +128,12 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                         recordsToPersist.add(patchedRecord);
                         successfulRecordIds.add(validRecord.getId());
                     }
-                } catch (JsonPatchException e) {
+                } catch (AppException e) {
                     failedRecordIds.add(validRecord.getId());
                     errors.add("Json patch error for record: " + validRecord.getId());
-                } catch (JsonProcessingException e) {
-                    failedRecordIds.add(validRecord.getId());
-                    errors.add("Json processing error for record: " + validRecord.getId());
                 }
             }
-            if (!errors.isEmpty()) {
-                StringBuilder errorBuilder = new StringBuilder();
-                for (String error : errors) {
-                    errorBuilder.append(error).append("|");
-                }
-                errorBuilder.setLength(errorBuilder.length() - 1);
-                logger.error(errorBuilder.toString());
-            }
+            logErrors(errors);
             if (!recordsToPersist.isEmpty()) {
                 ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
             }
@@ -168,23 +144,22 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             } else {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);
             }
-            long currentTime = System.currentTimeMillis();
             Map<RecordMetadata, JsonPatch> patchPerRecord = new HashMap<>();
             for (String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 try {
-                    if (isEmptyAclOrLegal(patchRecordMetadataWithJsonPatch(metadata, jsonPatch))) {
+                    if (JsonPatchUtil.isEmptyAclOrLegal(JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, metadata))) {
                         failedRecordIds.add(recordId);
                         errors.add("Patch operation for record: " + recordId + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
                     } else {
                         if (metadata == null) {
                             notFoundRecordIds.add(recordId);
                         } else {
-                            metadata.setModifyTime(currentTime);
+                            metadata.setModifyTime(System.currentTimeMillis());
                             metadata.setModifyUser(user);
                             JsonPatch jsonPatchForRecord;
                             try {
-                                jsonPatchForRecord = getJsonPatchForRecord(metadata, jsonPatch);
+                                jsonPatchForRecord = JsonPatchUtil.getJsonPatchForRecord(metadata, jsonPatch);
                             } catch (IOException e) {
                                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "IOException during patch operation");
                             }
@@ -219,19 +194,15 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         return recordsResponse;
     }
 
-    private JsonPatch getJsonPatchForRecord(RecordMetadata recordMetadata, JsonPatch inputJsonPatch) throws IOException {
-        ArrayNode resultNode = objectMapper.createArrayNode();
-        List<JsonNode> patchOperations = StreamSupport.stream(objectMapper.convertValue(inputJsonPatch, JsonNode.class).spliterator(), false)
-                .distinct().collect(toList());
-        for (JsonNode currentNode : patchOperations) {
-            ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode(1);
-            arrayNode.add(currentNode);
-            JsonPatch currentPatch = JsonPatch.fromJson(arrayNode);
-            if (!hasDuplicateAcl(patchRecordMetadataWithJsonPatch(recordMetadata, currentPatch).getAcl())) {
-                resultNode.add(currentNode);
+    private void logErrors(List<String> errors) {
+        if (!errors.isEmpty()) {
+            StringBuilder errorBuilder = new StringBuilder();
+            for (String error : errors) {
+                errorBuilder.append(error).append("|");
             }
+            errorBuilder.setLength(errorBuilder.length() - 1);
+            logger.error(errorBuilder.toString());
         }
-        return JsonPatch.fromJson(resultNode);
     }
 
     private void auditCreateOrUpdateRecords(PatchRecordsResponse recordsResponse) {
@@ -281,70 +252,5 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                 throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
             }
         }
-    }
-
-    private boolean isDataOrMetaBeingUpdated(JsonPatch jsonPatch) {
-        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        Iterator<JsonNode> nodes = patchNode.elements();
-        while (nodes.hasNext()) {
-            JsonNode currentNode = nodes.next();
-            if (currentNode.findPath("path").textValue().startsWith("/data") || currentNode.findPath("path").textValue().startsWith("/meta"))
-                return true;
-        }
-        return false;
-    }
-
-    private RecordMetadata patchRecordMetadataWithJsonPatch(RecordMetadata recordMetadata, JsonPatch jsonPatch) {
-        try {
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-            objectMapper.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE);
-            objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-            JsonNode patched = jsonPatch.apply(objectMapper.convertValue(recordMetadata, JsonNode.class));
-            RecordMetadata patchedRecordMetadata = objectMapper.treeToValue(patched, RecordMetadata.class);
-            return patchedRecordMetadata;
-        } catch (JsonPatchException e) {
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonPatchException during patch operation");
-        } catch (JsonProcessingException e) {
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Bad input", "JsonProcessingException during patch operation");
-        }
-    }
-
-    private boolean hasDuplicateAcl(Acl acl) {
-        Set<String> viewers = new HashSet<>();
-        Set<String> owners = new HashSet<>();
-        for (String viewer : acl.getViewers()) {
-            if (viewers.contains(viewer))
-                return true;
-            else
-                viewers.add(viewer);
-        }
-        for (String owner : acl.getOwners()) {
-            if (owners.contains(owner))
-                return true;
-            else
-                owners.add(owner);
-        }
-        return false;
-    }
-
-    private boolean isEmptyAclOrLegal(RecordMetadata recordMetadata) {
-        return recordMetadata.getAcl() == null ||
-                recordMetadata.getAcl().getViewers() == null ||
-                recordMetadata.getAcl().getOwners() == null ||
-                recordMetadata.getLegal() == null ||
-                recordMetadata.getAcl().getOwners().length == 0 ||
-                recordMetadata.getAcl().getViewers().length == 0 ||
-                CollectionUtils.isEmpty(recordMetadata.getLegal().getLegaltags());
-    }
-
-    private boolean isEmptyAclOrLegal(Record record) {
-        return record.getAcl() == null ||
-                record.getAcl().getViewers() == null ||
-                record.getAcl().getOwners() == null ||
-                record.getLegal() == null ||
-                record.getAcl().getOwners().length == 0 ||
-                record.getAcl().getViewers().length == 0 ||
-                CollectionUtils.isEmpty(record.getLegal().getLegaltags());
     }
 }

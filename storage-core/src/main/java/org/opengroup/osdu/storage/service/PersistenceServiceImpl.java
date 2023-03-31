@@ -14,7 +14,6 @@
 
 package org.opengroup.osdu.storage.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
@@ -32,12 +31,12 @@ import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -196,8 +195,8 @@ public class PersistenceServiceImpl implements PersistenceService {
                 PubSubInfo pubSubInfo = getPubSubInfo(metadata, OperationType.update);
                 RecordChangedV2 recordChangedV2 = getRecordChangedV2(metadata, OperationType.update);
                 JsonPatch jsonPatchForRecord = jsonPatchPerRecord.get(metadata);
-                if (isKindBeingUpdated(jsonPatchForRecord)) {
-                    String newKind = getNewKindFromPatchInput(jsonPatchForRecord);
+                if (JsonPatchUtil.isKindBeingUpdated(jsonPatchForRecord)) {
+                    String newKind = JsonPatchUtil.getNewKindFromPatchInput(jsonPatchForRecord);
                     pubSubInfo.setPreviousVersionKind(metadata.getKind());
                     pubSubInfo.setKind(newKind);
                     recordChangedV2.setPreviousVersionKind(metadata.getKind());
@@ -271,28 +270,5 @@ public class PersistenceServiceImpl implements PersistenceService {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error patching records.",
                     "The server could not process your request at the moment.", e);
         }
-    }
-
-    private boolean isKindBeingUpdated(JsonPatch jsonPatch) {
-        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        Iterator<JsonNode> nodes = patchNode.elements();
-        while (nodes.hasNext()) {
-            JsonNode currentNode = nodes.next();
-            if (currentNode.findPath("path").toString().contains("kind"))
-                return true;
-        }
-        return false;
-    }
-
-    private String getNewKindFromPatchInput(JsonPatch jsonPatch) {
-        JsonNode patchNode = objectMapper.convertValue(jsonPatch, JsonNode.class);
-        Iterator<JsonNode> nodes = patchNode.elements();
-        while (nodes.hasNext()) {
-            JsonNode currentNode = nodes.next();
-            if (currentNode.findPath("path").toString().contains("kind")) {
-                return currentNode.findPath("value").textValue();
-            }
-        }
-        throw new RuntimeException("Failed to retrieve kind value from jsonpatch: " + jsonPatch.toString());
     }
 }

@@ -29,7 +29,7 @@ public enum PatchOperations {
         this.op = op;
     }
 
-    public String getOperation() {
+    public String getValue() {
         return op;
     }
 
@@ -38,7 +38,7 @@ public enum PatchOperations {
         if (Strings.isNullOrEmpty(value)) return PatchOperations.UNDEFINED;
 
         for (PatchOperations op : values()) {
-            if (op.getOperation().equalsIgnoreCase(value)) {
+            if (op.getValue().equalsIgnoreCase(value)) {
                 return op;
             }
         }
