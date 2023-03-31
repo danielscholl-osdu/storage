@@ -16,10 +16,17 @@ package org.opengroup.osdu.storage.util;
 
 import static org.apache.http.HttpStatus.SC_MULTI_STATUS;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.ValidationException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -29,12 +36,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
+import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -45,6 +54,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import org.opengroup.osdu.core.common.model.http.AppException;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
@@ -60,8 +71,31 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     protected ResponseEntity<Object> handleValidationException(ValidationException e) {
+        if (e.getCause() instanceof RequestValidationException) {
+            return handleRequestValidationException((RequestValidationException)e.getCause());
+        }
         return this.getErrorResponse(
                 new AppException(HttpStatus.BAD_REQUEST.value(), "Validation error.", e.getMessage(), e));
+    }
+
+    @ExceptionHandler(RequestValidationException.class)
+    protected ResponseEntity<Object> handleRequestValidationException(RequestValidationException e) {
+        return new ResponseEntity<>(getValidationResponse(e.getStatus(), e.getReason(), e.getMessage()), e.getStatus());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    protected ResponseEntity<Object> handleConstraintValidationException(ConstraintViolationException e) {
+        List<String> msgs = new ArrayList<String>();
+        for (ConstraintViolation violation : e.getConstraintViolations()) {
+            msgs.add(violation.getMessage());
+        }
+        if (msgs.isEmpty()) {
+            msgs.add("Invalid payload");
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode array = mapper.valueToTree(msgs);
+        JsonNode result = mapper.createObjectNode().set("errors", array);
+        return this.getErrorResponse(new AppException(HttpStatus.BAD_REQUEST.value(), "Validation error.", result.toString()));
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -125,6 +159,19 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
                         "Method not found.", e));
     }
 
+    @Override
+    @NonNull
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException e,
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatus status,
+                                                                  @NonNull WebRequest request) {
+        if (e.getCause() instanceof ValueInstantiationException) {
+            return this.getErrorResponse(
+                    new AppException(HttpStatus.BAD_REQUEST.value(), "Validation error", e.getMessage(), e));
+        }
+        return super.handleHttpMessageNotReadable(e, headers, status, request);
+    }
+
     public ResponseEntity<Object> getErrorResponse(AppException e) {
 
         String exceptionMsg = e.getOriginalException() != null
@@ -138,5 +185,14 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
         }
 
         return new ResponseEntity<Object>(e.getError(), HttpStatus.resolve(e.getError().getCode()));
+    }
+
+    private ObjectNode getValidationResponse(HttpStatus status, String reason, String message) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode node = mapper.createObjectNode();
+        node.put("code", status.value());
+        node.put("reason", reason);
+        node.put("message", message);
+        return node;
     }
 }

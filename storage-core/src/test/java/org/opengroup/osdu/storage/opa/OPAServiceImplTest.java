@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.http.HttpClient;
 import org.opengroup.osdu.core.common.http.HttpResponse;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class OPAServiceImplTest {
     @Mock
     private DpsHeaders headers;
@@ -149,7 +149,6 @@ public class OPAServiceImplTest {
         recordsMetadata.add(existingRecordMetadata2);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
-        when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{}");
 
         try {
@@ -181,7 +180,6 @@ public class OPAServiceImplTest {
         recordsMetadata.add(existingRecordMetadata2);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
-        when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [{\"message\":\"Invalid legal tag(s) found on record\"},{\"message\":\"You must be an owner to update a record\"}],\"id\": \"tenant1:crazy:record2\"}]}");
 
         List<OpaError> errors2 = new ArrayList<>();
@@ -216,7 +214,6 @@ public class OPAServiceImplTest {
         recordsMetadata.add(recordMetadata2);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
-        when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"id\": \"tenant1:crazy:record2\",\"errors\":[{\"reason\":\"test\",\"message\":\"You must be a viewer or an owner to access a record\",\"code\":\"401\",\"id\": \"tenant1:crazy:record2\"}]}]}");
 
         List<OpaError> errors2 = new ArrayList<>();
