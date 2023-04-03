@@ -23,14 +23,13 @@ import static org.mockito.Mockito.when;
 
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
-import java.util.Optional;
 
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
 import org.apache.http.HttpStatus;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -43,15 +42,12 @@ import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
-import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class SchemaServiceImplTest {
 
     private static final String USER = null;
-    private static final String TENANT_NAME = "TENANT1";
     private static final String KIND = "tenant1:test:unit:1.0.0";
 
     @Mock
@@ -59,9 +55,6 @@ public class SchemaServiceImplTest {
 
     @Mock
     private ICache<String, Schema> cacheService;
-
-    @Mock
-    private ITenantFactory tenantFactory;
 
     @Mock
     private TenantInfo tenant;
@@ -81,13 +74,6 @@ public class SchemaServiceImplTest {
     @InjectMocks
     private SchemaServiceImpl sut;
 
-    @Before
-    public void setup() {
-        when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT_NAME);
-        when(this.tenant.getName()).thenReturn(TENANT_NAME);
-        when(this.tenantFactory.exists(TENANT_NAME)).thenReturn(true);
-        when(this.tenantFactory.getTenantInfo(TENANT_NAME)).thenReturn(this.tenant);
-    }
 
     @Test
     public void should_returnHttp400_when_creatingSchemaWithInvalidSchemaItemKind() {
@@ -256,8 +242,6 @@ public class SchemaServiceImplTest {
         Schema schema = new Schema();
         schema.setKind(KIND);
 
-        when(this.cacheService.get(KIND)).thenReturn(null);
-
         when(this.schemaRepository.get(KIND)).thenReturn(schema);
 
         Schema foundSchema = this.sut.getSchema(KIND);
@@ -270,8 +254,6 @@ public class SchemaServiceImplTest {
 
     @Test
     public void should_returnHttp404_when_gettingSchemaWhichDoesNotExist() {
-        when(this.cacheService.get(KIND)).thenReturn(null);
-
         when(this.schemaRepository.get(KIND)).thenReturn(null);
 
         try {
