@@ -27,7 +27,7 @@ import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
 import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
-import org.opengroup.osdu.storage.util.StringConstants;
+import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
@@ -60,7 +60,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Before
     public void setup() {
         Mockito.when(dpsHeaders.getUserEmail()).thenReturn("a@b");
-        Mockito.when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
+        Mockito.when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
     }
 
     @Test

@@ -29,7 +29,7 @@ import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static org.opengroup.osdu.storage.util.StringConstants.MAX_OP_NUMBER;
+import static org.opengroup.osdu.storage.util.RecordConstants.MAX_OP_NUMBER;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JsonPatchValidatorTest {

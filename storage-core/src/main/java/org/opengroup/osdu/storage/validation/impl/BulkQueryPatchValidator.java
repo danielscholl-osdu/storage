@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.opengroup.osdu.storage.util.RecordConstants.MAX_RECORD_ID_NUMBER;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_RECORD_ID_PATCH;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.PATCH_RECORDS_MAX;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.RECORD_ID_LIST_NOT_EMPTY;
@@ -40,7 +41,7 @@ public class BulkQueryPatchValidator implements ConstraintValidator<ValidBulkQue
                     .build();
         }
 
-        if (recordIds.size() > 100) {
+        if (recordIds.size() > MAX_RECORD_ID_NUMBER) {
             throw RequestValidationException.builder()
                     .message(PATCH_RECORDS_MAX)
                     .build();

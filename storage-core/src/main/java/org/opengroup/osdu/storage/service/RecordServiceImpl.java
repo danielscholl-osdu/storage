@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEATURE_NAME;
 
 @Service
 public class RecordServiceImpl implements RecordService {

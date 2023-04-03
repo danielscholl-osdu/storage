@@ -49,7 +49,7 @@ import org.opengroup.osdu.storage.model.RecordChangedV2Delete;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.StringConstants;
+import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
 import java.util.Arrays;
@@ -366,7 +366,7 @@ public class RecordServiceImplTest {
             put(RECORD_ID, record);
         }};
 
-        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
+        when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
         when(recordRepository.get(singletonList(RECORD_ID), Optional.empty())).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
@@ -390,7 +390,7 @@ public class RecordServiceImplTest {
             put(COLLABORATION_CONTEXT.get().getId() + RECORD_ID, record);
         }};
 
-        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
+        when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(singletonList(RECORD_ID), COLLABORATION_CONTEXT)).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
@@ -415,7 +415,7 @@ public class RecordServiceImplTest {
             put(RECORD_ID, record);
         }};
 
-        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
+        when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(singletonList(RECORD_ID), Optional.empty())).thenReturn(expectedRecordMetadataMap);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
 
@@ -435,7 +435,7 @@ public class RecordServiceImplTest {
     @Test
     public void shouldSoftDeleteRecords_successfully_inCollaborationContext() {
         RecordMetadata record = buildRecordMetadata();
-        when(collaborationFeatureFlag.isFeatureEnabled(StringConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
+        when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(RECORD_ID, COLLABORATION_CONTEXT)).thenReturn(record);
         when(dataAuthorizationService.validateOwnerAccess(record, OperationType.delete)).thenReturn(true);
         sut.deleteRecord(RECORD_ID, USER_NAME, COLLABORATION_CONTEXT);
