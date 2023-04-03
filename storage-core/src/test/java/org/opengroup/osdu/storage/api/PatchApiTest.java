@@ -6,7 +6,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -31,7 +31,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class PatchApiTest {
     private final String USER = "user";
     private final String TENANT = "tenant1";
@@ -61,10 +61,6 @@ public class PatchApiTest {
         initMocks(this);
 
         when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
-        when(this.httpHeaders.getPartitionIdWithFallbackToAccountId()).thenReturn(this.TENANT);
-
-        when(this.headersProvider.get()).thenReturn(this.httpHeaders);
-        when(this.bulkUpdateRecordServiceProvider.get()).thenReturn(this.bulkUpdateRecordService);
 
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
 
@@ -182,4 +178,5 @@ public class PatchApiTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
     }
+
 }

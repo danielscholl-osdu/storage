@@ -18,14 +18,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>storage-core</artifactId>
-	<version>0.20.0-SNAPSHOT</version>
+	<version>0.21.0-SNAPSHOT</version>
 	<description>Core project for the storage service</description>
 	<packaging>jar</packaging>
 
 	<parent>
 		<groupId>org.opengroup.osdu</groupId>
 		<artifactId>os-storage</artifactId>
-		<version>0.20.0-SNAPSHOT</version>
+		<version>0.21.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -33,7 +33,7 @@
 		<java.version>1.8</java.version>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.source>1.8</maven.compiler.source>
-		<os-core-common.version>0.19.0-rc8</os-core-common.version>
+		<os-core-common.version>0.20.0-rc3</os-core-common.version>
 		<spring-webmvc.version>5.3.22</spring-webmvc.version>
 	</properties>
 
@@ -96,21 +96,17 @@
 			<version>${spring-webmvc.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.java-json-tools</groupId>
+			<artifactId>json-patch</artifactId>
+			<version>1.13</version>
+		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>2.0.2-beta</version>
-		</dependency>
-		<dependency>
-			<groupId>org.powermock</groupId>
-			<artifactId>powermock-api-mockito</artifactId>
-			<version>1.7.4</version>
 		</dependency>
 
 		<dependency>

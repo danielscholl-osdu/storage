@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
@@ -39,7 +39,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class EntitlementsAndCacheServiceImplTest {
 
     private static final String MEMBER_EMAIL = "tester@gmail.com";
@@ -150,7 +150,6 @@ public class EntitlementsAndCacheServiceImplTest {
         final String ERROR_MSG = "FATAL ERROR";
 
         HttpResponse response = mock(HttpResponse.class);
-        when(response.isServerErrorCode()).thenReturn(true);
         when(response.getResponseCode()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
         EntitlementsException expectedException = new EntitlementsException(ERROR_MSG, response);
