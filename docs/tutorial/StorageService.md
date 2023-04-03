@@ -651,6 +651,11 @@ curl --request PATCH \
 ## Records patch api <a name="records-patch-api"></a>
 This API allows update of records data and/or metadata in batch. It takes an array of record ids (without version numbers) with a maximum number of 100, 
 and updates properties specified in the operation path with value and operation type provided. Users need to specify the corresponding data partition id in the header as well.
+The API response contains list of record IDs that were patched successfully, as well as list of record IDs that failed to be patched, with the list of errors.
+
+**Note**: The input record IDs must not contain version of the records. However, the list of record IDs returned in the response
+will have `<recordId>:<version>` format. This is because any `data` update increases the record version,
+however `metadata` updates do not. The version returned in the response will be the latest version of each record.
 
 - This API supports PATCH operation in compliant to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902).
 - Users need to provide a list of recordIDs and a list of operations to be performed on each record.
