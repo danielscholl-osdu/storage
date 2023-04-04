@@ -48,12 +48,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.opengroup.osdu.storage.util.StringConstants.METADATA_PREFIX;
-import static org.opengroup.osdu.storage.util.StringConstants.MODIFY_TIME;
-import static org.opengroup.osdu.storage.util.StringConstants.MODIFY_USER;
-import static org.opengroup.osdu.storage.util.StringConstants.OP;
-import static org.opengroup.osdu.storage.util.StringConstants.PATH;
-import static org.opengroup.osdu.storage.util.StringConstants.VALUE;
+import static org.opengroup.osdu.storage.util.RecordConstants.METADATA_PREFIX_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.MODIFY_TIME_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.MODIFY_USER_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.OP;
+import static org.opengroup.osdu.storage.util.RecordConstants.PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.VALUE;
 
 @Repository
 public class RecordMetadataRepository extends SimpleCosmosStoreRepository<RecordMetadataDoc> implements IRecordsMetadataRepository<String> {
@@ -314,18 +314,18 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         for (JsonNode patchOp : patchNodes) {
             switch (patchOp.get(OP).textValue()) {
                 case "add":
-                    cosmosPatchOperations.add(METADATA_PREFIX + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
+                    cosmosPatchOperations.add(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
                     break;
                 case "replace":
-                    cosmosPatchOperations.replace(METADATA_PREFIX + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
+                    cosmosPatchOperations.replace(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
                     break;
                 case "remove":
-                    cosmosPatchOperations.remove(METADATA_PREFIX + patchOp.get(PATH).textValue());
+                    cosmosPatchOperations.remove(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue());
                     break;
             }
         }
-        cosmosPatchOperations.replace(METADATA_PREFIX + MODIFY_USER, modifyUser);
-        cosmosPatchOperations.replace(METADATA_PREFIX + MODIFY_TIME, modifyTime);
+        cosmosPatchOperations.replace(METADATA_PREFIX_PATH + MODIFY_USER_PATH, modifyUser);
+        cosmosPatchOperations.replace(METADATA_PREFIX_PATH + MODIFY_TIME_PATH, modifyTime);
         return cosmosPatchOperations;
     }
 }
