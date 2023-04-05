@@ -8,13 +8,11 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 import com.google.cloud.storage.StorageException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.AppError;
-import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.util.GlobalExceptionMapper;
 import org.springframework.http.ResponseEntity;
 
@@ -32,14 +30,8 @@ public class GcpExceptionMapperTest {
         StorageException exception = new StorageException(403, "Access Denied");
         AppError expectedBody = new AppError(FORBIDDEN.value(),
             "Access Denied", "The user is not authorized to perform this action");
-
-        when(mapper.getErrorResponse(Matchers.argThat(new ArgumentMatcher<AppException>() {
-
-            @Override
-            public boolean matches(AppException e) {
-                return StorageException.class == e.getOriginalException().getClass();
-            }
-        })))
+        when(mapper.getErrorResponse(ArgumentMatchers .argThat(
+            e -> StorageException.class == e.getOriginalException().getClass())))
             .thenReturn(new ResponseEntity<>(expectedBody, FORBIDDEN));
 
         ResponseEntity<Object> response = sut.handleStorageException(exception);
