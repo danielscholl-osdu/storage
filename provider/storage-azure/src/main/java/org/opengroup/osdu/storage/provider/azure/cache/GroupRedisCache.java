@@ -31,8 +31,10 @@ public class GroupRedisCache extends RedisAzureCache<String, Groups> {
             final @Named("REDIS_PORT") int port,
             final @Named("GROUP_REDIS_TTL") int timeout,
             final @Named("REDIS_EXPIRATION") int expiration,
+            final @Named("REDIS_HOST_KEY") String hostKey,
+            final @Named("REDIS_PASSWORD_KEY") String passwordKey,
             @Value("${redis.database}") final int database)
     {
-        super(String.class, Groups.class, new RedisAzureConfiguration(database, expiration, port, timeout));
+        super(String.class, Groups.class, new RedisAzureConfiguration(database, expiration, port, timeout, hostKey, passwordKey));
     }
 }
