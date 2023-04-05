@@ -30,20 +30,20 @@ import javax.validation.ConstraintValidatorContext;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
-import static org.opengroup.osdu.storage.util.StringConstants.ACLS_LEGAL_ANCESTY_PATHS;
-import static org.opengroup.osdu.storage.util.StringConstants.INVALID_PATHS_FOR_REMOVE_OPERATION;
-import static org.opengroup.osdu.storage.util.StringConstants.KIND;
-import static org.opengroup.osdu.storage.util.StringConstants.MAX_OP_NUMBER;
-import static org.opengroup.osdu.storage.util.StringConstants.META;
-import static org.opengroup.osdu.storage.util.StringConstants.MIN_OP_NUMBER;
-import static org.opengroup.osdu.storage.util.StringConstants.OP;
-import static org.opengroup.osdu.storage.util.StringConstants.PATH;
-import static org.opengroup.osdu.storage.util.StringConstants.REGEX_ACLS_LEGAL_ANCESTRY_PATH;
-import static org.opengroup.osdu.storage.util.StringConstants.REGEX_ACLS_LEGAL_ANCESTRY_PATH_FOR_ADD_OR_REMOVE_SINGLE_VALUE;
-import static org.opengroup.osdu.storage.util.StringConstants.REGEX_TAGS_PATH_FOR_ADD_OR_REMOVE_SINGLE_KEY_VALUE;
-import static org.opengroup.osdu.storage.util.StringConstants.TAGS;
-import static org.opengroup.osdu.storage.util.StringConstants.VALID_PATH_BEGINNINGS;
-import static org.opengroup.osdu.storage.util.StringConstants.VALUE;
+import static org.opengroup.osdu.storage.util.RecordConstants.ACLS_LEGAL_ANCESTY_PATHS;
+import static org.opengroup.osdu.storage.util.RecordConstants.INVALID_PATHS_FOR_REMOVE_OPERATION;
+import static org.opengroup.osdu.storage.util.RecordConstants.KIND_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.MAX_OP_NUMBER;
+import static org.opengroup.osdu.storage.util.RecordConstants.META_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.MIN_OP_NUMBER;
+import static org.opengroup.osdu.storage.util.RecordConstants.OP;
+import static org.opengroup.osdu.storage.util.RecordConstants.PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.REGEX_ACLS_LEGAL_ANCESTRY_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.REGEX_ACLS_LEGAL_ANCESTRY_PATH_FOR_ADD_OR_REMOVE_SINGLE_VALUE;
+import static org.opengroup.osdu.storage.util.RecordConstants.REGEX_TAGS_PATH_FOR_ADD_OR_REMOVE_SINGLE_KEY_VALUE;
+import static org.opengroup.osdu.storage.util.RecordConstants.TAGS_PATH;
+import static org.opengroup.osdu.storage.util.RecordConstants.VALID_PATH_BEGINNINGS;
+import static org.opengroup.osdu.storage.util.RecordConstants.VALUE;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.ADD;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.REMOVE;
 import static org.opengroup.osdu.storage.util.api.PatchOperations.REPLACE;
@@ -114,7 +114,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
 
     private void validateKind(JsonPatch jsonPatch) {
         StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(pathStartsWith(KIND))
+                .filter(pathStartsWith(KIND_PATH))
                 .forEach(operation -> {
                     if (addOperation().test(operation) || removeOperation().test(operation)) {
                         throw RequestValidationException.builder()
@@ -122,7 +122,7 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
                                 .build();
                     }
 
-                    boolean isValidPath = removeExtraQuotes(operation.get(PATH)).equals(KIND);
+                    boolean isValidPath = removeExtraQuotes(operation.get(PATH)).equals(KIND_PATH);
                     if (!isValidPath) {
                         throw RequestValidationException.builder()
                                 .message(ValidationDoc.INVALID_PATCH_PATH_FOR_KIND)
@@ -140,12 +140,12 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
 
     private void validateTags(JsonPatch jsonPatch) {
         StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(pathStartsWith(TAGS))
+                .filter(pathStartsWith(TAGS_PATH))
                 .filter(addOrReplaceOperation())
                 .forEach(operation -> {
                     String path = removeExtraQuotes(operation.get(PATH));
                     JsonNode valueNode = operation.get(VALUE);
-                    if (TAGS.equals(path) && (valueNode.getClass() != ObjectNode.class)) {
+                    if (TAGS_PATH.equals(path) && (valueNode.getClass() != ObjectNode.class)) {
                         throw RequestValidationException.builder()
                                 .message(ValidationDoc.INVALID_PATCH_VALUES_FORMAT_FOR_TAGS)
                                 .build();
@@ -182,12 +182,12 @@ public class JsonPatchValidator implements ConstraintValidator<ValidJsonPatch, J
 
     private void validateMeta(JsonPatch jsonPatch) {
         StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .filter(pathStartsWith(META))
+                .filter(pathStartsWith(META_PATH))
                 .filter(addOrReplaceOperation())
                 .forEach(operation -> {
                     String path = removeExtraQuotes(operation.get(PATH));
                     JsonNode valueNode = operation.get(VALUE);
-                    if (META.equals(path) && (valueNode.getClass() != ArrayNode.class)) {
+                    if (META_PATH.equals(path) && (valueNode.getClass() != ArrayNode.class)) {
                         throw RequestValidationException.builder()
                                 .message(ValidationDoc.INVALID_PATCH_VALUE_FORMAT_FOR_META)
                                 .build();
