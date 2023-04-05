@@ -27,6 +27,7 @@ import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
 import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
@@ -126,7 +127,6 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                         patchedRecord.getAcl().setOwners(Arrays.stream(patchedRecord.getAcl().getOwners()).distinct().toArray(String[]::new));
                         patchedRecord.getAcl().setViewers(Arrays.stream(patchedRecord.getAcl().getViewers()).distinct().toArray(String[]::new));
                         recordsToPersist.add(patchedRecord);
-                        successfulRecordIds.add(validRecord.getId());
                     }
                 } catch (AppException e) {
                     failedRecordIds.add(validRecord.getId());
@@ -135,7 +135,10 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
             logErrors(errors);
             if (!recordsToPersist.isEmpty()) {
-                ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
+                TransferInfo transferInfoAfterPatch = ingestionService.createUpdateRecords(false, recordsToPersist, user, collaborationContext);
+                for(Record record : recordsToPersist) {
+                    successfulRecordIds.add(record.getId()+":"+transferInfoAfterPatch.getVersion());
+                }
             }
         } else {
             Map<String, RecordMetadata> existingRecords = recordRepository.get(recordIds, collaborationContext);
@@ -166,7 +169,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
                             if (jsonPatchForRecord != null) {
                                 patchPerRecord.put(metadata, jsonPatchForRecord);
                             }
-                            successfulRecordIds.add(recordId);
+                            successfulRecordIds.add(recordId+":"+metadata.getLatestVersion());
                         }
                     }
                 } catch (AppException e) {
