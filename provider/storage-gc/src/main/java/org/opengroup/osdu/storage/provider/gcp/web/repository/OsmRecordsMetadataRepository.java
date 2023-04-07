@@ -19,14 +19,15 @@ package org.opengroup.osdu.storage.provider.gcp.web.repository;
 
 import static org.opengroup.osdu.core.gcp.osm.model.where.condition.And.and;
 import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
+import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.In.in;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -107,13 +108,16 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     }
 
     @Override
-    public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
-
-        Map<String, RecordMetadata> output = new HashMap<>();
-        for (String id : ids) {
-            Optional.ofNullable(get(id, collaborationContext)).ifPresent(r -> output.put(id, r));
-        }
-        return output;
+    public Map<String, RecordMetadata> get(List<String> ids,
+        Optional<CollaborationContext> collaborationContext) {
+        GetQuery<RecordMetadata> recordsMetadataInQuery = new GetQuery<>(
+            RecordMetadata.class,
+            getDestination(),
+            in("id", ids)
+        );
+        return context.getResultsAsList(recordsMetadataInQuery).stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(RecordMetadata::getId, recordMetadata -> recordMetadata));
     }
 
     //TODO remove when other providers replace with new method queryByLegal
