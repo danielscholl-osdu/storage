@@ -24,6 +24,12 @@ public class RedisConfig {
     @Value("${redis.expiration:3600}")
     public int redisExpiration;
 
+    @Value("${redis.host.key}")
+    public String redisHostKey;
+
+    @Value("${redis.password.key}")
+    public String redisPasswordKey;
+
     @Bean
     @Named("REDIS_PORT")
     public int getRedisPort() {
@@ -47,4 +53,16 @@ public class RedisConfig {
     @Bean
     @Named("REDIS_EXPIRATION")
     public int getRedisExpiration() { return redisExpiration; }
+
+    @Bean
+    @Named("REDIS_HOST_KEY")
+    public String getRedisHostKey() {
+        return redisHostKey;
+    }
+
+    @Bean
+    @Named("REDIS_PASSWORD_KEY")
+    public String getRedisPasswordKey() {
+        return redisPasswordKey;
+    }
 }
