@@ -118,7 +118,7 @@ public class S3RecordClientTest {
 
         // assert
         Mockito.verify(s3, Mockito.times(1)).putObject(
-                Mockito.eq(recordsBucketName), Mockito.eq(expectedKeyName), Mockito.eq("{\"data\":{\"test-data\":{}},\"meta\":null}"));
+                Mockito.eq(recordsBucketName), Mockito.eq(expectedKeyName), Mockito.eq("{\"data\":{\"test-data\":{}},\"meta\":null,\"modifyUser\":null,\"modifyTime\":0}"));
     }
 
     @Test

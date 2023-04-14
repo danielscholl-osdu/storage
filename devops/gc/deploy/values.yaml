@@ -16,7 +16,7 @@ data:
   partitionHost: "http://partition"
   crsConverterHost: "http://crs-conversion"
   legalHost: "http://legal"
-  opaEnabled: false
+  opaEnabled: true
   opaEndpoint: "http://opa"
   storageHost: "http://storage"
   defaultLegalTag: "default-data-tag"

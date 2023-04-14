@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEATURE_NAME;
 
 @Component
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {

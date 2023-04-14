@@ -70,6 +70,10 @@ Example:
 ![Screenshot](./pics/namespace.PNG)
 
 
+| name                   | value            | description                                               |
+|------------------------|------------------|-----------------------------------------------------------|
+| DATASTORE_BETA_ENABLED | 'true' or 'false | to activate experimental features in Datastore OSM driver |
+
 ```yaml
 indexes:
   

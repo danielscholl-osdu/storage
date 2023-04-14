@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class LegalServiceImplTest {
 
     @Mock
@@ -113,7 +113,6 @@ public class LegalServiceImplTest {
         InvalidTagsWithReason invalidTags = new InvalidTagsWithReason();
         invalidTags.setInvalidLegalTags(new InvalidTagWithReason[] { invalidTag });
 
-        when(this.cache.get("yxJYdg==")).thenReturn(null);
         when(this.legalService.validate("tag3")).thenReturn(invalidTags);
 
         try {
@@ -139,7 +138,6 @@ public class LegalServiceImplTest {
 
         LegalException legalException = new LegalException("service crashed", response);
 
-        when(this.cache.get("yxJYdg==")).thenReturn(null);
         when(this.legalService.validate("tag3")).thenThrow(legalException);
 
         try {

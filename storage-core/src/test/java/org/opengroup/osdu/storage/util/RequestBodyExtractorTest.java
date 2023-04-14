@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.http.RequestBodyExtractor;
 import org.junit.Assert;
@@ -31,9 +32,8 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class RequestBodyExtractorTest {
     private static String REQUEST_BODY = "{\"message\":{\"messageId\":\"unit-test-message-id\",\"data\":\"eyJzdGF0dXNDaGFuZ2VkVGFncyI6W3siY2hhbmdlZFRhZ05hbWUiOiJ0YWcxIiwiY2hhbmdlZFRhZ1N0YXR1cyI6ImluY29tcGxpYW50In0seyJjaGFuZ2VkVGFnTmFtZSI6InRhZzIiLCJjaGFuZ2VkVGFnU3RhdHVzIjoiaW5jb21wbGlhbnQifV19\",\"attributes\":{\"account-id\":\"test-tenant\",\"test-user\":\"unittest@gmail.com\"}}}";
     private static String REQUEST_BODY_DP = "{\"message\":{\"messageId\":\"unit-test-message-id\",\"data\":\"eyJzdGF0dXNDaGFuZ2VkVGFncyI6W3siY2hhbmdlZFRhZ05hbWUiOiJ0YWcxIiwiY2hhbmdlZFRhZ1N0YXR1cyI6ImluY29tcGxpYW50In0seyJjaGFuZ2VkVGFnTmFtZSI6InRhZzIiLCJjaGFuZ2VkVGFnU3RhdHVzIjoiaW5jb21wbGlhbnQifV19\",\"attributes\":{\"data-partition-id\":\"test-tenant\",\"test-user\":\"unittest@gmail.com\"}}}";
@@ -52,7 +52,6 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_returnAttributes_whenRequestBodyProvided() throws Exception {
         this.createRequestStream(REQUEST_BODY);
-        when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
         Map<String, String> expectedAttributes = new HashMap<>();
         expectedAttributes.put(DpsHeaders.ACCOUNT_ID, "test-tenant");
@@ -65,7 +64,6 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_returnAttributes_whenRequestBodyProvided_dp() throws Exception {
         this.createRequestStream(REQUEST_BODY_DP);
-        when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
         Map<String, String> expectedAttributes = new HashMap<>();
         expectedAttributes.put(DpsHeaders.DATA_PARTITION_ID, "test-tenant");
@@ -78,7 +76,6 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_throwError_whenRequestBodyProvided_with_notenant() throws Exception {
         this.createRequestStream(REQUEST_BODY_NOTENANT);
-        when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
 
         try {
@@ -93,7 +90,6 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_returnData_whenRequestBodyProvided() throws Exception {
         this.createRequestStream(REQUEST_BODY);
-        when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
         String expectedData = "{\"statusChangedTags\":[{\"changedTagName\":\"tag1\",\"changedTagStatus\":\"incompliant\"},{\"changedTagName\":\"tag2\",\"changedTagStatus\":\"incompliant\"}]}";
 

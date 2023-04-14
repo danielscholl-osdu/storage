@@ -208,6 +208,8 @@ public class IngestionServiceImpl implements IngestionService {
 				recordMetadata.setHash(hash);
 				recordsToProcess.add(new RecordProcessing(recordData, recordMetadata, OperationType.create));
 			} else {
+				recordData.setModifyUser(transfer.getUser());
+				recordData.setModifyTime(currentTimestamp);
 				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext));
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
 				if (!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {

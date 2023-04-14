@@ -25,7 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -60,7 +60,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class IngestionServiceImplTest {
 
     @Mock
@@ -168,12 +168,7 @@ public class IngestionServiceImplTest {
         this.record2.setAcl(this.acl);
 
         when(this.tenant.getName()).thenReturn(TENANT);
-        when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT);
-        when(this.tenantFactory.exists(TENANT)).thenReturn(true);
-        when(this.tenantFactory.getTenantInfo(TENANT)).thenReturn(this.tenant);
         when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
-        when(this.entitlementsFactory.create(headers)).thenReturn(entitlementsService);
-        when(this.entitlementsService.getGroups()).thenReturn(groups);
         recordBlocks = new RecordBlocks(cloudStorage, crcHashGenerator);
         sut.recordBlocks = recordBlocks;
     }
@@ -193,9 +188,6 @@ public class IngestionServiceImplTest {
 
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
-
-        when(this.recordRepository.get(NEW_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata1);
-        when(this.recordRepository.get(NEW_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata2);
 
         try {
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
@@ -221,9 +213,6 @@ public class IngestionServiceImplTest {
 
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
-
-        when(this.recordRepository.get(INVALID_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata1);
-        when(this.recordRepository.get(INVALID_RECORD_ID, Optional.empty())).thenReturn(existingRecordMetadata2);
 
         try {
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
@@ -330,7 +319,6 @@ public class IngestionServiceImplTest {
 
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata1);
-        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
@@ -565,11 +553,9 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(Lists.newArrayList(RECORD_ID1), Optional.empty())).thenReturn(existingRecords);
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(true);
-        when(this.cloudStorage.read(any(), anyLong(), anyBoolean())).thenReturn(new Gson().toJson(recordInStorage));
 
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata);
-        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
@@ -622,7 +608,6 @@ public class IngestionServiceImplTest {
 
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata);
-        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
 
         when(this.cloudStorage.read(existingRecordMetadata, 123L, false)).thenReturn(recordFromStorage);
 
@@ -718,12 +703,8 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
-
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata1);
-        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
-        when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
@@ -756,12 +737,8 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
-
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata1);
-        when(this.authService.hasValidAccess(any(), any())).thenReturn(recordMetadataList);
-        when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
