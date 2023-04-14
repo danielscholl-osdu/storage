@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import static java.util.Collections.singletonList;
-import static org.opengroup.osdu.storage.util.StringConstants.COLLABORATIONS_FEATURE_NAME;
+import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEATURE_NAME;
 
 @Service
 public class SchemaServiceImpl implements SchemaService {

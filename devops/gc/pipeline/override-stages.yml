@@ -2,7 +2,7 @@ variables:
   GC_SERVICE: storage
   GC_VENDOR: gc
   NO_DATA_ACCESS_TESTER: $GC_NO_DATA_ACCESS_TESTER
-  OPA_INTEGRATION_ENABLED: "false"
+  OPA_INTEGRATION_ENABLED: "true"
 
 .define_DATA_BRANCH:
   script:

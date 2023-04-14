@@ -34,10 +34,16 @@
     - [Parameters <a name="parameters"></a>](#parameters-2)
   - [Delete record <a name="Delete-record"></a>](#delete-record)
   - [Delete records <a name="Delete-records"></a>](#delete-records)
-- [Patch api <a name="patch-api"></a>](#patch-api)
-  - [Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>](#patch-api-metadata-bulk-replace)
-  - [Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>](#patch-api-metadata-bulk-add)
-  - [Remove Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-remove"></a>](#patch-api-metadata-bulk-remove)
+- [Metadata update api <a name="metadata-update-api"></a>](#metadata-update-api)
+  - [Replace Tags, ACLs and Legal Tags <a name="metadata-update-replace"></a>](#metadata-update-replace)
+  - [Add Tags, ACLs and Legal Tags <a name="metadata-update-add"></a>](#metadata-update-add)
+  - [Remove Tags, ACLs and Legal Tags <a name="metadata-update-remove"></a>](#metadata-update-remove)
+- [Records patch api <a name="records-patch-api"></a>](#records-patch-api)
+  - [Input Validation <a name="patch-input-validation"></a>](#patch-input-validation)
+  - [Add Operation <a name="patch-add-operation"></a>](#patch-add-operation)
+  - [Replace Operation <a name="patch-replace-operation"></a>](#patch-replace-operation)
+  - [Remove Operation <a name="patch-remove-operation"></a>](#patch-remove-operation)
+  - [Differences compared to metadata update api <a name="patch-apis-diff"></a>](#patch-api-diff)
 - [Using service accounts to access Storage APIs <a name="Service-accounts"></a>](#using-service-accounts-to-access-storage-apis)
 - [Using skipdupes <a name="skipdupes"></a>](#using-skipdupes)
 - [Support for GeoJSON types <a name="geojson-support"></a>](#support-for-geojson-types)
@@ -66,7 +72,9 @@ From the Storage Service perspective, the metadata to be ingested is called __re
    },
    "data": {
      "msg": "Hello World, Data Ecosystem!"
-   }
+   },
+   "modifyUser": "user@email.com",
+   "modifyTime": "2023-03-28T10:31:09.890Z"
 }
 ```
 
@@ -79,6 +87,8 @@ From the Storage Service perspective, the metadata to be ingested is called __re
     * __legal.legaltags__: List of legal tag names associated with the record.
     * __legal.otherRelevantDataCountries__: List of other relevant data countries. Must have at least 2 values: where the data was ingested from and where Data Ecosystem stores the data.
 * __data__: _(mandatory)_ Record payload represented as a list of key-value pairs.
+* __modifyUser__: Email of the user who has last updated that specific version of the record(Not present in 1st version of the record)
+* __modifyTime__: Time at which that version of the record was updated(Not present in 1st version of the record)
 
 [Back to table of contents](#TOC)
 
@@ -305,7 +315,8 @@ The API represents the main injection mechanism into the Data Ecosystem. It allo
 More details available at [Creating records](#Creating-records) and [Ingesting records](#Ingesting-records) sections.
 
 ### Get record version <a name="Retrieve-specific-version"></a>
-The API retrieves the specific version of the given record. 
+The API retrieves the specific version of the given record.
+The modifyTime and modifyUser info will be version specific.
 ```
 GET /api/storage/v2/records/{id}/{version}
 
@@ -426,9 +437,9 @@ curl --request POST \
 ```
 </details>
 
-## Patch api <a name="patch-api"></a>
+## Metadata update api <a name="metadata-update-api"></a>
 
-Bulk Update API allows the update of records metadata in batch. It takes an array of record ids with/without version
+This API allows update of records metadata in batch. It takes an array of record ids with/without version
 numbers with a maximum number of 500, and updates properties specified in the operation path with value and operation type
 provided. If a version number is provided, updates will be applied to the specific version of the record. If not, the
 latest version of the record will be updated. Users need to specify the corresponding data partition id in the header as
@@ -452,7 +463,7 @@ Bulk Update API has the following response codes:
 PATCH /api/storage/v2/records
 ```
 
-### Replace Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-replace"></a>
+### Replace Tags, ACLs and Legal Tags <a name="metadata-update-replace"></a>
 
 In the "replace" operation, property value in "path" would be fully replaced by values provided in the "value" field. If
 we need to replace tags ops.value should be colon separated string value.
@@ -512,7 +523,7 @@ curl --request PATCH \
 
 </details>
 
-### Add Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-add"></a>
+### Add Tags, ACLs and Legal Tags <a name="metadata-update-add"></a>
 
 In the "add" operation, the valid Tags, Legal Tags, and ACLs (Acl Viewers, Acl Owners) provided in the "value" field
 will be added to the property value in the "path" field. If we need to add tags ops.value should be colon separated
@@ -575,7 +586,7 @@ curl --request PATCH \
 
 </details>
 
-### Remove Tags, ACLs and Legal Tags <a name="patch-api-metadata-bulk-remove"></a>
+### Remove Tags, ACLs and Legal Tags <a name="metadata-update-remove"></a>
 
 In the "remove" operation, the valid Tags, Legal Tags, and ACLs (Acl Viewers, Acl Owners) provided in the "value" field
 will be removed from the property value in the "path" field. When the given Tags, Legal Tags, or ACLs (Acl Viewers, Acl
@@ -641,6 +652,218 @@ curl --request PATCH \
 </details>
 
 > You can use Search service's query or query_with_cursor [apis](https://community.opengroup.org/osdu/platform/system/search-service/-/blob/master/docs/tutorial/SearchService.md) to search for records based on tags. Since tags is part of metadata, it is automatically indexed. This may not work if the kind is old (older than when the tags feature was introduced ~02/25/2021). You may need to re-index the kind with the [reindex](https://community.opengroup.org/osdu/platform/system/indexer-service/-/blob/master/docs/tutorial/IndexerService.md#reindex) api (with `force_clean=true`) from indexer service.
+
+## Records patch api <a name="records-patch-api"></a>
+This API allows update of records data and/or metadata in batch. It takes an array of record ids (without version numbers) with a maximum number of 100, 
+and updates properties specified in the operation path with value and operation type provided. Users need to specify the corresponding data partition id in the header as well.
+The API response contains list of record IDs that were patched successfully, as well as list of record IDs that failed to be patched, with the list of errors.
+
+**Note**: The input record IDs must not contain version of the records. However, the list of record IDs returned in the response
+will have `<recordId>:<version>` format. This is because any `data` update increases the record version,
+however `metadata` updates do not. The version returned in the response will be the latest version of each record.
+
+- This API supports PATCH operation in compliant to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902).
+- Users need to provide a list of recordIDs and a list of operations to be performed on each record.
+- Each operation has `op`(operation type), `path`, and `value` in the field 'ops' (unless the operation is `remove`, then the field `value` shouldn't be provided).
+- The currently supported operations are "replace", "add", and "remove".
+- The supported properties for metadata update are `tags`, `acl/viewers`, `acl/owners`, `legal/legaltags`, `ancestry/parents`, `kind` and `meta` (`meta` attribute out of the data block).
+- The supported properties for data update are `data`. 
+- If `acl` is being updated, the user should be part of the groups that are being replaced/added/removed as ACL.
+
+Records patch API has the following response codes:
+
+| Code | Description                                                                                                                                                                       |
+|:-----|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 200  | The update operation succeeds fully, all records’ data and/or metadata are updated.                                                                                               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 206  | The update operation succeeds partially. Some records are not updated due to different reasons, including records not found or user does not have permission to edit the records. |                                                                                                                                                                                                                                                                                                                                                                                                                      
+| 400  | The update operation fails when the input validation fails. Please check below section for more details.                                                                          |
+
+### Input Validation <a name="patch-input-validation"></a>
+To remain compliant with the domain data models and business requirements, we perform certain input validation
+on the request payload. Please see below table for details:
+
+|                                                                              | Add                                                                              | Replace                                                                     | Remove                                                                      | Remarks                                                                                                                                                                                                                                                  |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| /kind                                                                        | Bad Request                                                                      | Replaces kind                                                               | Bad Request                                                                 | `kind` can only be replaced; `value` must be a raw string & valid kind. Path must match exactly to `/kind`                                                                                                                                               |
+| /tags                                                                        | Replaces tags with `value`. Creates `/tags` if it doesn't exist                  | Replaces tags with `value`. `/tags` must exist                              | Removes tags, `value` is ignored. `/tags` must exist                        | `add` and `replace` behavior similar because `/tags` is an object member                                                                                                                                                                                 |
+| /tags/key                                                                    | Adds `"key" : "value"` to tags, `/tags` must exist                               | Replaces `/tags/key` with `value`. `/tags/key` must exist                   | Removes `"key" : "value"` from tags, `/tags/key` must exist                 |                                                                                                                                                                                                                                                          |
+| /acl/viewers OR /acl/owners OR /legal/legaltags OR /ancestry/parents         | Replaces the target array with value. Creates the attribute if it doesn't exist  | Replaces the target attribute with new value. Target location must exist    | Only `/ancestry/parents` can be removed                                     | In case of add or replace, Path should be an exact match and value must be an array of string values                                                                                                                                                     |
+| /acl/viewers/0 OR /acl/owners/0 OR /legal/legaltags/0 OR /ancestry/parents/0 | Adds value to the target index in the array                                      | Replaces value at the target index in the array. Target location must exist | Removes value at the target index in the array. Target location must exist  | Character `-` can be used to mention last index of the target array. For acl and legaltag, the target value must not be an empty array after applying Patch                                                                                              |
+| /data                                                                        |                                                                                  |                                                                             |                                                                             | **`/data` doesn't adhere to a rigid structure, therefore users must be cautious when modifying `/data` attributes. Value type must adhere to attribute type defined in Schema service. Any type change can potentially cause indexing/search issues.**   |
+| /meta                                                                        |                                                                                  |                                                                             |                                                                             | **if an update for `/meta`, it should be compliant with its structure (i.e. array of Map<String, Object>)**                                                                                                                                              |
+
+
+Check out some examples below, but refer to the [Patch RFC spec](https://www.rfc-editor.org/rfc/rfc6902) for a comprehensive documentation on JsonPatch and more examples.
+
+**Note**: The examples below only highlight the `ops` array from the input payload, a full curl sample is provided at the end.
+
+### Add Operation <a name="patch-add-operation"></a>
+Please note that the `add` operation performs either an add or a replace operation, depending on the target location. Refer to [Patch RFC spec - add](https://www.rfc-editor.org/rfc/rfc6902.html#section-4.1) for the explaination.
+1. Add legaltag `abc` to a record, at the end of the `legaltags` array. This will perform an addition because `path` points to an index in an array
+    <details><summary>add legaltag</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "add", 
+              "path": "/legal/legaltags/-",
+              "value": "abc"
+            }
+          ]
+    ```
+    </details>
+
+2. Add/Replace `tags` for a record. Note that although the operation is `add`, this adds `/tags` if it doesn't exist or replaces the current value with given value for `/tags`.
+This is because the target location is an object member that already exists. Please read [RFC Spec](https://www.rfc-editor.org/rfc/rfc6902.html#section-4.1) for more details.
+    <details><summary>replace tags</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "add", 
+              "path": "/tags",
+              "value": {
+                "tag1": "value1"
+              }
+            }
+          ]
+    ```
+    </details>
+
+3. Add a new property `subprop` to `data` block. Note that `parent` must exist. This operation will add `child` under `parent` with the value specified:
+    <details><summary>add to data block</summary>
+    
+    ```
+    "ops": [
+            {
+              "op": "add", 
+              "path": "/data/parent/child",
+              "value": {
+                "grandchild": {
+                  "key": "value"
+                }
+              }
+            }
+          ]
+    ```
+    </details>
+
+### Replace Operation <a name="patch-replace-operation"></a>
+The `replace` operation is fairly straightforward, it replaces the value at the target location with a new value.
+1. Replace `/acl/owners` array for a record.
+    <details><summary>replace acl owners</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "replace", 
+              "path": "/acl/owners",
+              "value": [
+                "newacl1",
+                "newacl2"
+              ]
+            }
+          ]
+    ```
+    </details>
+
+### Remove Operation <a name="patch-remove-operation"></a>
+The `remove` operation removes the value at the target location. The field `value` must not be provided for this operation.
+1. Remove `/data/parent/child` from the data block
+    <details><summary>remove data property</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "remove", 
+              "path": "/data/parent/child"
+            }
+          ]
+    ```
+    </details>
+
+2. Remove the first value from `/acl/viewers` array
+    <details><summary>remove first acl viewer</summary>
+    
+    ```
+    "ops": [
+            { 
+              "op": "remove", 
+              "path": "/acl/viewers/0"
+            }
+          ]
+    ```
+    </details>
+
+
+Below is a complete sample curl which performs multiple operations on a list of record IDs.
+<details><summary>complete curl example</summary>
+
+```
+curl --request PATCH \
+   --url '/api/storage/v2/records' \
+   --header 'accept: application/json' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'content-type: application/json-patch+json'\
+   --header 'Data-Partition-Id: common'
+    --data-raw ‘{ 
+      "query": { 
+        "ids": [
+          "tenant1:type:unique-identifier",
+          "tenant2:type:unique-identifier",
+          "tenant3:type:unique-identifier"
+        ]
+      }, 
+      "ops": [ 
+        {
+          "op": "remove", 
+          "path": "/legal/legaltags/0"
+        }, 
+        { 
+	      "op": "remove", 
+	      "path": "/ancestry/parents"
+        }, 
+        { 
+          "op": "add", 
+          "path": "/acl/viewers/-",
+          "value": "data.default.viewer1@opendes.enterprisedata.cloud.slb-ds.com"
+        },
+        {
+          "op":"replace",
+          "path":"/kind",
+          "value":"newKind"
+        },
+        {
+          "op":"add",
+          "path":"/tags",
+          "value":{
+            "tag1":"value1",
+            "tag2":"value2"
+          }
+        },
+        {
+          "op":"replace",
+          "path":"/data/someProperty/targetProperty",
+          "value": { 
+            "newValue": {
+              "subProperty":"subValue"
+            }
+         }
+        }
+      ] 
+    }
+```
+</details>
+
+### Differences compared to metadata update api <a name="patch-apis-diff"></a>
+
+|                             | Metadata Update API                                                                                                                                                                                  | Patch API                                           |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| Header `Content-Type`       | application/json                                                                                                                                                                                     | application/json-patch+json                         |
+| Supported Record properties | acl, tags, legaltags                                                                                                                                                                                 | acl, tags, legaltags, ancestry, kind, data, meta    |
+| `ops` field in payload      | array of [PatchOperation](https://community.opengroup.org/osdu/platform/system/lib/core/os-core-common/-/blob/master/src/main/java/org/opengroup/osdu/core/common/model/storage/PatchOperation.java) | [JsonPatch](https://www.rfc-editor.org/rfc/rfc6902) |
+| Maximum number of records   | 500                                                                                                                                                                                                  | 100                                                 |
+
 
 ## Using service accounts to access Storage APIs <a name="Service-accounts"></a>
 The Storage service relies on the Google native data access authorization mechanisms to provide access control on the records. 

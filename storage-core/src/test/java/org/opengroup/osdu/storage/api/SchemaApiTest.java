@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
@@ -37,14 +38,11 @@ import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
 import org.opengroup.osdu.storage.service.SchemaService;
 import org.springframework.http.ResponseEntity;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class SchemaApiTest {
-
-    private final String USER = "testUser";
 
     @Mock
     private SchemaService schemaService;
@@ -61,9 +59,6 @@ public class SchemaApiTest {
     @Before
     public void setup() {
         initMocks(this);
-
-        when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
-
     }
 
     @Test
