@@ -20,8 +20,10 @@ package org.opengroup.osdu.storage.provider.gcp.web.cache;
 import lombok.RequiredArgsConstructor;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.RedisCache;
+import org.opengroup.osdu.core.common.cache.VmCache;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.storage.Schema;
+import org.opengroup.osdu.core.common.partition.PartitionInfo;
 import org.opengroup.osdu.core.gcp.cache.RedisCacheBuilder;
 import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
 import org.springframework.context.annotation.Bean;
@@ -64,5 +66,10 @@ public class CacheConfig {
             String.class,
             Schema.class
         );
+    }
+
+    @Bean
+    public ICache<String, PartitionInfo> partitionInfoCache() {
+        return new VmCache<>(600, 2000);
     }
 }
