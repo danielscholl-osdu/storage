@@ -405,7 +405,7 @@ This is its cardinal difference from other implementations that use PUSH-subscri
 choice when choosing brokers.
 
 When using PULL-subscribers, there is a need to restore Storage service subscribers at the start of Storage service.
-This magic happens in the `OqmSubscriberManager.java` class from `core-lib-gcp` in the @PostConstruct method.
+This magic happens in the `OqmSubscriberManager.java` class from `OQM` in the @PostConstruct method.
 
 ## Keycloak configuration
 
