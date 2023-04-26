@@ -15,12 +15,16 @@
 
 package org.opengroup.osdu.storage.records;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.opengroup.osdu.storage.util.AWSTestUtils;
-import org.opengroup.osdu.storage.util.ConfigUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.*;
+import org.opengroup.osdu.storage.util.*;
+import com.sun.jersey.api.client.ClientResponse;
+import com.google.gson.Gson;
+
+
 
 public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
 
@@ -40,13 +44,42 @@ public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
     @Override
     public void setup() throws Exception {
         this.testUtils = new AWSTestUtils();
-        this.configUtils = new ConfigUtils("test.properties");
     }
 
     @After
     @Override
     public void tearDown() throws Exception {
         this.testUtils = null;
+	}
+
+	@Override
+	@Test
+    public void should_createNewRecord_withSpecialCharacter_ifEnabled() throws Exception {
+		final long currentTimeMillis = System.currentTimeMillis();
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:testSpecialChars%abc%2Ffoobar-" + currentTimeMillis;
+		final String ENCODED_RECORD_ID = TenantUtils.getTenantName() + ":inttest:testSpecialChars%25abc%252Ffoobar-" + currentTimeMillis;
+
+		String jsonInput = createJsonBody(RECORD_ID, "TestSpecialCharacters");
+
+		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		String json = response.getEntity(String.class);
+		assertEquals(201, response.getStatus());
+		assertTrue(response.getType().toString().contains("application/json"));
+
+		Gson gson = new Gson();
+		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
+				DummyRecordsHelper.CreateRecordResponse.class);
+
+		assertEquals(1, result.recordCount);
+		assertEquals(1, result.recordIds.length);
+		assertEquals(1, result.recordIdVersions.length);
+		assertEquals(RECORD_ID, result.recordIds[0]);
+
+		response = TestUtils.send("records/" + ENCODED_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+
+		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		assertEquals("TestSpecialCharacters", recordResult.data.get("name"));
+
 	}
 
 }
