@@ -12,8 +12,6 @@ data:
   LEGAL_HOST: {{ .Values.data.legalHost | quote }}
   LOG_LEVEL: {{ .Values.data.logLevel | quote }}
   PARTITION_HOST: {{ .Values.data.partitionHost | quote }}
-  REDIS_GROUP_HOST: {{ .Values.data.redisGroupHost | quote }}
-  REDIS_STORAGE_HOST: {{ .Values.data.redisStorageHost | quote }}
   STORAGE_SERVICE_ACCOUNT_EMAIL: {{ .Values.data.storageServiceAccountEmail | quote }}
   SPRING_PROFILES_ACTIVE: {{ .Values.data.springProfilesActive | quote }}
   OPA_ENABLED: {{ .Values.data.opaEnabled | quote }}
