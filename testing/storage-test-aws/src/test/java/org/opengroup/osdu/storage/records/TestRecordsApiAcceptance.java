@@ -77,13 +77,9 @@ public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
 
 		response = TestUtils.send("records/" + ENCODED_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 
+		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		assertEquals("TestSpecialCharacters", recordResult.data.get("name"));
 
-		
-		// Service does not allow URLs with suspicious characters, Which is the default setting.
-		// Different CSPs are responding with different status code for this error when a special character like %25 is present in the URL.
-		// Hence the Assert Statement is marked not to be 200.
-		// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
-		assertNotEquals(200, response.getStatus());
 	}
 
 }
