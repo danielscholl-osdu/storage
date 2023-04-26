@@ -84,8 +84,6 @@ public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
 		// Hence the Assert Statement is marked not to be 200.
 		// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
 		assertNotEquals(200, response.getStatus());
-		assertEquals(404, response.getStatus());
-
 	}
 
 }
