@@ -40,7 +40,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.19.0-rc3</version>
+            <version>0.21.0-test-SNAPSHOT</version>
         </dependency>
 
         <dependency>
