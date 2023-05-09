@@ -19,7 +19,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -88,7 +87,7 @@ public class BulkUpdateRecordServiceImplTest {
     @Mock
     private DpsHeaders headers;
     @Mock
-    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    private IEntitlementsExtensionService entitlementsAndCacheService;
     @Mock
     private StorageAuditLogger auditLogger;
     @Mock
@@ -127,6 +126,29 @@ public class BulkUpdateRecordServiceImplTest {
     }
 
     @Test
+    public void should_bulkUpdateRecords_successfully_whenDataManager() {
+        RecordMetadata recordMetadata = buildRecordMetadata();
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, recordMetadata);
+        }};
+
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        commonSetup(recordMetadataMap, param.getOps(), true, false);
+        when(this.entitlementsAndCacheService.isDataManager(any())).thenReturn(true);
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+
+        commonVerify(singletonList(TEST_ID), param.getOps());
+        verify(persistenceService, only()).updateMetadata(singletonList(recordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty());
+        verify(auditLogger, only()).createOrUpdateRecordsSuccess(TEST_IDS);
+
+        assertEquals(TEST_ID, actualResponse.getRecordIds().get(0));
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+    }
+
+    @Test
     public void should_bulkUpdateRecords_successfully_when_recordMetadataNotFound() {
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
 
@@ -134,7 +156,6 @@ public class BulkUpdateRecordServiceImplTest {
 
         BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
 
-        verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
         assertTrue(actualResponse.getRecordIds().isEmpty());

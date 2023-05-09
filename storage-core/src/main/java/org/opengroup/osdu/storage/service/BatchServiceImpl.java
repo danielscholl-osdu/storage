@@ -28,7 +28,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -79,7 +78,7 @@ public abstract class BatchServiceImpl implements BatchService {
     private CrsConverterClientFactory crsConverterClientFactory;
 
     @Autowired
-    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    private IEntitlementsExtensionService entitlementsAndCacheService;
 
     @Autowired
     private IOPAService opaService;
@@ -270,21 +269,29 @@ public abstract class BatchServiceImpl implements BatchService {
             recordMetadataList.add(recordMetadata);
         }
 
-        if (isOpaEnabled) {
-            List<ValidationOutputRecord> dataAuthResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.view);
-            for (ValidationOutputRecord outputRecord : dataAuthResult) {
-                if (outputRecord.getErrors().isEmpty()) {
-                    String recordId = outputRecord.getId();
-                    String recordData = recordsPreAclMap.get(recordId);
-                    recordsMap.put(recordId, recordData);
-                }
-            }
-        } else {
-            List<RecordMetadata> passAclCheckRecordsMetadata = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.headers);
-            for (RecordMetadata metadata : passAclCheckRecordsMetadata) {
+        if (this.entitlementsAndCacheService.isDataManager(this.headers)) {
+            for (RecordMetadata metadata : recordMetadataList) {
                 String recordId = metadata.getId();
                 String recordData = recordsPreAclMap.get(recordId);
                 recordsMap.put(recordId, recordData);
+            }
+        } else {
+            if (isOpaEnabled) {
+                List<ValidationOutputRecord> dataAuthResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.view);
+                for (ValidationOutputRecord outputRecord : dataAuthResult) {
+                    if (outputRecord.getErrors().isEmpty()) {
+                        String recordId = outputRecord.getId();
+                        String recordData = recordsPreAclMap.get(recordId);
+                        recordsMap.put(recordId, recordData);
+                    }
+                }
+            } else {
+                List<RecordMetadata> passAclCheckRecordsMetadata = this.entitlementsAndCacheService.hasValidAccess(recordMetadataList, this.headers);
+                for (RecordMetadata metadata : passAclCheckRecordsMetadata) {
+                    String recordId = metadata.getId();
+                    String recordData = recordsPreAclMap.get(recordId);
+                    recordsMap.put(recordId, recordData);
+                }
             }
         }
 

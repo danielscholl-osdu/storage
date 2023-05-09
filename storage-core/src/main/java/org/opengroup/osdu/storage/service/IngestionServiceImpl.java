@@ -17,7 +17,6 @@ package org.opengroup.osdu.storage.service;
 import com.google.common.base.Strings;
 import io.jsonwebtoken.lang.Collections;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -86,7 +85,7 @@ public class IngestionServiceImpl implements IngestionService {
     private JaxRsDpsLog logger;
 
 	@Autowired
-	private IEntitlementsAndCacheService entitlementsAndCacheService;
+	private IEntitlementsExtensionService entitlementsAndCacheService;
 
 	@Autowired
 	private IOPAService opaService;
@@ -254,12 +253,13 @@ public class IngestionServiceImpl implements IngestionService {
 	}
 
 	private void validateOwnerAccessOnExistingRecords(List<Record> inputRecords, Map<String, RecordMetadata> existingRecords) {
+		boolean isDataManager = this.entitlementsAndCacheService.isDataManager(this.headers);
 		for (Record record: inputRecords) {
 			if (!existingRecords.containsKey(record.getId())) {
 				continue;
 			}
 			RecordMetadata existingRecordMetadata = existingRecords.get(record.getId());
-			if(!this.entitlementsAndCacheService.hasOwnerAccess(headers, existingRecordMetadata.getAcl().getOwners())) {
+			if(!isDataManager && !this.entitlementsAndCacheService.hasOwnerAccess(headers, existingRecordMetadata.getAcl().getOwners())) {
 				this.logger.warning(String.format("User does not have owner access to record %s", record.getId()));
 				throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
 			}
