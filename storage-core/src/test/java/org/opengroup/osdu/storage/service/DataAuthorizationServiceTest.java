@@ -8,12 +8,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
-import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.policy.PolicyResponse;
-import org.opengroup.osdu.core.common.model.policy.Result;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
@@ -24,6 +20,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -97,6 +94,36 @@ public class DataAuthorizationServiceTest {
 
         verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
         verify(this.entitlementsService, times(1)).hasValidAccess(any(), any());
+    }
+
+    @Test
+    public void should_returnTrue_validateOwnerAccess_when_dataManager() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(true);
+        assertTrue(this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update));
+
+        verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
+        verify(this.entitlementsService, times(0)).hasOwnerAccess(any(), any());
+    }
+
+    @Test
+    public void should_returnTrue_validateViewerOrOwnerAccess_when_dataManager() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(true);
+        assertTrue(this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update));
+
+        verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
+        verify(this.entitlementsService, times(0)).hasOwnerAccess(any(), any());
+    }
+
+    @Test
+    public void should_returnTrue_hasAccess_when_dataManager() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(true);
+        assertTrue(this.sut.hasAccess(this.getRecordMetadata(), OperationType.update));
+
+        verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
+        verify(this.entitlementsService, times(0)).hasOwnerAccess(any(), any());
     }
 
     private RecordMetadata getRecordMetadata() {
