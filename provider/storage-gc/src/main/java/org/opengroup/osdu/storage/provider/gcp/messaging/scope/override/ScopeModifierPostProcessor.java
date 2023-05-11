@@ -15,19 +15,33 @@
  *  limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp.messaging.config;
+package org.opengroup.osdu.storage.provider.gcp.messaging.scope.override;
 
+import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.opengroup.osdu.storage.provider.gcp.messaging.thread.ThreadScope;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.stereotype.Component;
 
-public class ThreadBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
+@Slf4j
+@Component
+public class ScopeModifierPostProcessor implements BeanFactoryPostProcessor {
 
     public static final String SCOPE_THREAD = "scope_thread";
 
     @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
-        configurableListableBeanFactory.registerScope(SCOPE_THREAD, new ThreadScope());
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory factory) throws BeansException {
+        factory.registerScope(SCOPE_THREAD, new ThreadScope());
+
+        for (String beanName : factory.getBeanDefinitionNames()) {
+            BeanDefinition beanDef = factory.getBeanDefinition(beanName);
+            if (Objects.equals(beanDef.getScope(), "request")) {
+                beanDef.setScope(SCOPE_THREAD);
+                log.debug("Scope has been overridden for bean: {}", beanDef.getBeanClassName());
+            }
+        }
     }
 }
