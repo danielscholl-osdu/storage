@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.opengroup.osdu.core.auth.TokenProvider;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.gcp.messaging.config.MessagingConfigurationProperties;
-import org.opengroup.osdu.storage.provider.gcp.messaging.config.ThreadBeanFactoryPostProcessor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -39,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Primary
 @Component
-@Scope(value = ThreadBeanFactoryPostProcessor.SCOPE_THREAD, proxyMode = TARGET_CLASS)
+@Scope(value = ScopeModifierPostProcessor.SCOPE_THREAD, proxyMode = TARGET_CLASS)
 @RequiredArgsConstructor
 public class ThreadDpsHeaders extends DpsHeaders {
 

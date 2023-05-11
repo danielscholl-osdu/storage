@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright 2020-2023 Google LLC
+ *  Copyright 2020-2023 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagConsistencyValidator;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
@@ -39,6 +40,7 @@ import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadDp
 import org.opengroup.osdu.storage.provider.gcp.messaging.thread.ThreadScopeContextHolder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 /**
@@ -68,18 +70,27 @@ public class OqmSubscriberManager {
 
         //Get all Tenant infos
         for (TenantInfo tenantInfo : tenantInfoFactory.listTenantInfo()) {
-            log.debug("* OqmSubscriberManager on provisioning tenant {}:", tenantInfo.getDataPartitionId());
+            String dataPartitionId = tenantInfo.getDataPartitionId();
+            String tagsChangedTopicName = configurationProperties.getLegalTagsChangedTopicName();
+            log.debug("* OqmSubscriberManager on provisioning tenant {}:", dataPartitionId);
 
-            log.debug("* * OqmSubscriberManager on check for topic {} existence:", configurationProperties.getLegalTagsChangedTopicName());
-            OqmTopic topic = driver.getTopic(configurationProperties.getLegalTagsChangedTopicName(), getDestination(tenantInfo)).orElse(null);
+            log.debug("* * OqmSubscriberManager on check for topic {} existence:",
+                tagsChangedTopicName);
+            OqmTopic topic = driver.getTopic(tagsChangedTopicName, getDestination(tenantInfo)).orElse(null);
             if (topic == null) {
-                log.debug("* * OqmSubscriberManager on check for topic {} existence: ABSENT.", configurationProperties.getLegalTagsChangedTopicName());
-                continue;
-            } else {
-                log.debug("* * OqmSubscriberManager on check for topic {} existence: PRESENT.", configurationProperties.getLegalTagsChangedTopicName());
+                log.error("* * OqmSubscriberManager on check for topic {} existence: ABSENT.",
+                    tagsChangedTopicName);
+                throw new AppException(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Required topic not exists.",
+                    String.format(
+                        "Required topic not exists. Create topic: %s for tenant: %s and restart service.",
+                        tagsChangedTopicName, dataPartitionId
+                    )
+                );
             }
 
-            String legalTagsChangedSubscriptionName = configurationProperties.getLegalTagsChangedSubscriptionName() + "-" +tenantInfo.getDataPartitionId();
+            String legalTagsChangedSubscriptionName = configurationProperties.getLegalTagsChangedSubscriptionName();
 
             log.debug("* * OqmSubscriberManager on check for subscription {} existence:", legalTagsChangedSubscriptionName);
 
@@ -91,25 +102,30 @@ public class OqmSubscriberManager {
             OqmSubscription subscription = driver.listSubscriptions(topic, query, getDestination(tenantInfo)).stream().findAny().orElse(null);
 
             if (subscription == null) {
-                log.debug("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.", legalTagsChangedSubscriptionName);
-
-                OqmSubscription request = OqmSubscription.builder()
-                    .topic(topic)
-                    .name(legalTagsChangedSubscriptionName)
-                    .build();
-
-                subscription = driver.createAndGetSubscription(request, getDestination(tenantInfo));
+                log.error("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.", legalTagsChangedSubscriptionName);
+                throw new AppException(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Required subscription not exists.",
+                    String.format(
+                        "Required subscription not exists. Create subscription: %s for tenant: %s and restart service.",
+                        legalTagsChangedSubscriptionName,
+                        dataPartitionId
+                    )
+                );
             } else {
                 log.debug("* * OqmSubscriberManager on check for subscription {} existence: PRESENT.", legalTagsChangedSubscriptionName);
             }
 
-            log.debug("* * OqmSubscriberManager on registering Subscriber for tenant {}, subscription {}", tenantInfo.getDataPartitionId(),
+            log.debug("* * OqmSubscriberManager on registering Subscriber for tenant {}, subscription {}",
+                dataPartitionId,
                 legalTagsChangedSubscriptionName);
             registerSubscriber(tenantInfo, subscription);
-            log.debug("* * OqmSubscriberManager on provisioning for tenant {}, subscription {}: Subscriber REGISTERED.", tenantInfo.getDataPartitionId(),
+            log.debug("* * OqmSubscriberManager on provisioning for tenant {}, subscription {}: Subscriber REGISTERED.",
+                dataPartitionId,
                 subscription.getName());
 
-            log.debug("* OqmSubscriberManager on provisioning tenant {}: COMPLETED.", tenantInfo.getDataPartitionId());
+            log.debug("* OqmSubscriberManager on provisioning tenant {}: COMPLETED.",
+                dataPartitionId);
         }
 
         log.debug("OqmSubscriberManager bean constructed. Provisioning COMPLETED.");

@@ -91,10 +91,11 @@ indexes:
 
 At PubSub should be created set of topics and subscriptions.
 
-| topic name          | subscription name               | description                   | sensitive? | env var to override                                                     |
-|---------------------|---------------------------------|-------------------------------|------------|-------------------------------------------------------------------------|
-| `records-changed`   | -                               | Search topic for pushing      | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
-| `legaltags-changed` | `storage-oqm-legaltags-changed` | Legaltags topic for consuming | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| topic name                         | subscription name               | description                                                                                                                                                                                                                                                            | sensitive? | env var to override                                                     |
+|------------------------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`                  | -                               | Search topic for pushing                                                                                                                                                                                                                                               | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed`                | `storage-oqm-legaltags-changed` | Legaltags topic for consuming <br/> `Maximum delivery attempts: 5`<br/>`Retry policy: Retry after exponential backoff delay`<br/>`Minimum backoff duration: 10 seconds`<br/>`Maximum backoff duration: 600 seconds`<br/>`Grant forwarding permissions for dead letter` | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| `legal-tag-changed-dead-lettering` | -                               | -                                                                                                                                                                                                                                                                      | -          | -                                                                       |
 
 ## GCS configuration <a name="ObjectStoreConfig"></a>
 
