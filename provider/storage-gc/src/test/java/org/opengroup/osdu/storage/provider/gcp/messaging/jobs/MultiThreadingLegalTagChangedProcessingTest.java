@@ -36,11 +36,13 @@ import org.junit.runner.RunWith;
 import org.opengroup.osdu.core.auth.TokenProvider;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.logging.DefaultLogger;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagWithReason;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagConsistencyValidator;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.Schema;
@@ -49,12 +51,11 @@ import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
 import org.opengroup.osdu.core.gcp.oqm.driver.OqmDriver;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmAckReplier;
 import org.opengroup.osdu.core.gcp.oqm.model.OqmMessage;
+import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.gcp.messaging.config.MessagingConfigurationProperties;
 import org.opengroup.osdu.storage.provider.gcp.messaging.jobs.config.PullConfigStub;
 import org.opengroup.osdu.storage.provider.gcp.messaging.jobs.stub.OqmPubSubStub;
 import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadDpsHeaders;
-import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadLegalTagConsistencyValidator;
-import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadStorageAuditLogger;
 import org.opengroup.osdu.storage.provider.gcp.messaging.thread.ThreadScopeContextHolder;
 import org.opengroup.osdu.storage.provider.gcp.web.cache.LegalTagMultiTenantCache;
 import org.opengroup.osdu.storage.provider.gcp.web.repository.OsmRecordsMetadataRepository;
@@ -112,7 +113,10 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     private DefaultLogger iLogger;
 
     @MockBean
-    private ThreadStorageAuditLogger jaxRsDpsLog;
+    private JaxRsDpsLog jaxRsDpsLog;
+
+    @MockBean
+    private StorageAuditLogger auditLogger;
 
     @Autowired
     private OqmPubSubStub pubSubStub;
@@ -121,7 +125,7 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     private PullConfigStub pullConfigStub;
 
     @Autowired
-    private ThreadLegalTagConsistencyValidator legalTagConsistencyValidator;
+    private LegalTagConsistencyValidator legalTagConsistencyValidator;
 
     @Autowired
     private LegalComplianceChangeServiceGcpImpl complianceChangeServiceGcp;

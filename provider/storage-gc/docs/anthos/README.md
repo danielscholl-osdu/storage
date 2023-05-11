@@ -389,10 +389,11 @@ curl -L -X PATCH 'https://api/partition/v1/partitions/opendes' -H 'data-partitio
 
 At RabbitMq should be created set of exchanges and queues.
 
-| topic name          | subscription name               | description                   | sensitive? | env var to override                                                     |
-|---------------------|---------------------------------|-------------------------------|------------|-------------------------------------------------------------------------|
-| `records-changed`   | -                               | Search topic for pushing      | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
-| `legaltags-changed` | `storage-oqm-legaltags-changed` | Legaltags topic for consuming | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| topic name                               | subscription name               | description                                                | sensitive? | env var to override                                                     |
+|------------------------------------------|---------------------------------|------------------------------------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`                        | -                               | Search topic for pushing                                   | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed`                      | `storage-oqm-legaltags-changed` | Legaltags topic for consuming                              | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| `storage-oqm-legaltags-changed-exchange` | -                               | Service topic for delaying failed legal tag changed events | -          | -                                                                       |
 
 ![Screenshot](./pics/rabbit.PNG)
 
