@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright 2020-2023 Google LLC
+ *  Copyright 2020-2023 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,17 +17,7 @@
 
 package org.opengroup.osdu.storage.provider.gcp.web.repository;
 
-import static org.opengroup.osdu.core.gcp.osm.model.where.condition.And.and;
-import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
-import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.In.in;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
-
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.github.fge.jsonpatch.JsonPatch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -43,8 +33,17 @@ import org.opengroup.osdu.core.gcp.osm.service.Transaction;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opengroup.osdu.core.gcp.osm.model.where.condition.And.and;
+import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.Eq.eq;
+import static org.opengroup.osdu.core.gcp.osm.model.where.predicate.In.in;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 @Repository
 @Scope(SCOPE_SINGLETON)
@@ -125,6 +124,27 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, String cursor) {
         return queryByLegal(legalTagName, null, limit);
     }
+
+  @Override
+  public Map<String, String> patch(
+      Map<RecordMetadata, JsonPatch> jsonPatchPerRecord,
+      Optional<CollaborationContext> collaborationContext) {
+    if (Objects.nonNull(jsonPatchPerRecord)) {
+      Transaction txn = context.beginTransaction(getDestination());
+      try {
+        for (RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
+          JsonPatch jsonPatch = jsonPatchPerRecord.get(recordMetadata);
+          RecordMetadata newRecordMetadata =
+              JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordMetadata);
+          context.upsert(newRecordMetadata, getDestination());
+        }
+        txn.commitIfActive();
+      } finally {
+        txn.rollbackIfActive();
+      }
+    }
+    return new HashMap<>();
+  }
 
     private Destination getDestination() {
         return Destination.builder().partitionId(tenantInfo.getDataPartitionId())
