@@ -48,8 +48,8 @@ In the current version, the mappers are equipped with several drivers to the sto
 2. For Google Cloud only
    - GCloud SDK with java (latest version)
 
-### Anthos Service Configuration:
-[Anthos service configuration ](docs/anthos/README.md)
+### Baremetal Service Configuration:
+[Baremetal service configuration ](docs/baremetal/README.md)
 ### Google Cloud Service Configuration:
 [Google Cloud service configuration ](docs/gc/README.md)
 
@@ -139,8 +139,8 @@ cd provider/storage-gc/ && mvn spring-boot:run
 
 This section describes how to run cloud OSDU E2E tests.
 
-### Anthos test configuration:
-[Anthos service configuration ](docs/anthos/README.md)
+### Baremetal test configuration:
+[Baremetal service configuration ](docs/baremetal/README.md)
 ### Google Cloud test configuration:
 [Google Cloud service configuration ](docs/gc/README.md)
 

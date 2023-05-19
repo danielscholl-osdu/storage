@@ -35,7 +35,7 @@
 		<module>storage-test-azure</module>
 		<module>storage-test-gc</module>
 		<module>storage-test-ibm</module>
-        <module>storage-test-anthos</module>
+        <module>storage-test-baremetal</module>
     </modules>
 
 	<properties>
