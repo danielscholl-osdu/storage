@@ -21,7 +21,7 @@ if [ "${ONPREM_ENABLED}" == "true" ]; then
     source ./validate-env.sh "OPENID_PROVIDER_CLIENT_ID"
     source ./validate-env.sh "OPENID_PROVIDER_CLIENT_SECRET"
 
-    # Check that all env ANTHOS variables are provided
+    # Check that all env Baremetal variables are provided
     export KEYCLOAK_AUTH_URL="${OPENID_PROVIDER_URL}/protocol/openid-connect/token"
     export KEYCLOAK_CLIENT_ID="${OPENID_PROVIDER_CLIENT_ID}"
     export KEYCLOAK_CLIENT_SECRET="${OPENID_PROVIDER_CLIENT_SECRET}"

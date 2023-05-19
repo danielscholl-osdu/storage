@@ -26,7 +26,7 @@
     </parent>
 
     <groupId>org.opengroup.osdu.storage</groupId>
-    <artifactId>storage-test-anthos</artifactId>
+    <artifactId>storage-test-baremetal</artifactId>
     <version>0.21.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
