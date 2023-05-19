@@ -18,11 +18,11 @@ variables:
         REF_DATA_BRANCH="master";
       fi;
 
-gc-anthos-test:
+gc-baremetal-test:
   variables:
-    GC_VENDOR: anthos
+    GC_VENDOR: baremetal
     TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID: storage-no-access-tester
-    TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET: $OSDU_ANTHOS_STORAGE_NO_ACCESS_CLIENT_SECRET
+    TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET: $OSDU_BAREMETAL_STORAGE_NO_ACCESS_CLIENT_SECRET
 
 gc-containerize-bootstrap-gitlab:
   variables:

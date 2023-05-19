@@ -1,4 +1,4 @@
-# Service Configuration for Anthos
+# Service Configuration for Baremetal
 
 ## Table of Contents <a name="TOC"></a>
 * [Environment variables](#Environment-variables)
@@ -459,12 +459,12 @@ Execute following command to build code and run all the integration tests:
 
  ```bash
  # build + run Google Cloud integration tests.
- $ (cd testing/storage-test-anthos/ && mvn clean test)
+ $ (cd testing/storage-test-baremetal/ && mvn clean test)
  ```
 
 
 ## Running locally
-To run storage service locally connected with anthos environment:
+To run storage service locally connected with baremetal environment:
 #### Specify mappers drivers property or run `SPRING_PROFILES_ACTIVE=anthos`
 ```properties
 obmDriver=minio
@@ -523,5 +523,5 @@ kubectl port-forward <rabbit_pod_name> 15672:15672
 kubectl port-forward <rabbit_pod_name> 5672:5672
 kubectl port-forward <minio_pod_name> 9000:9000
 gcloud components install cloud_sql_proxy
-cloud_sql_proxy -instances=<instance_connection_string> -credential_file=<anthos_service_account_json_file>
+cloud_sql_proxy -instances=<instance_connection_string> -credential_file=<baremetal_service_account_json_file>
 ```
