@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -54,7 +55,11 @@ public class SwaggerConfiguration {
               .required(true)
               .example("units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;")
               .schema(new StringSchema());
-      return operation.addParametersItem(dataPartitionId).addParametersItem(frameOfReference);
+
+      Operation currentOperation = operation.addParametersItem(dataPartitionId);
+      if(currentOperation.getOperationId().equals("fetchRecords"))
+        currentOperation = currentOperation.addParametersItem(frameOfReference);
+      return currentOperation;
     };
   }
 }
