@@ -431,7 +431,7 @@ You will need to have the following environment variables defined.
 | name                                           | value                                     | description                                                      | sensitive?                                        | source |
 |------------------------------------------------|-------------------------------------------|------------------------------------------------------------------|---------------------------------------------------|--------|
 | `DEPLOY_ENV`                                   | `empty`                                   | Required but not used, should be set up with string "empty"      | no                                                | -      |
-| `DOMAIN`                                       | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                       | no                                                | -      |
+| `GROUP_ID`                                     | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                       | no                                                | -      |
 | `LEGAL_URL`                                    | ex`http://localhsot:8080/api/legal/v1/`   | Legal API endpoint                                               | no                                                | -      |
 | `STORAGE_URL`                                  | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service                                      | no                                                | -      |
 | `TENANT_NAME`                                  | ex `opendes`                              | OSDU tenant used for testing                                     | no                                                | --     |
@@ -473,11 +473,11 @@ oqmDriver=rabbitmq
 ```
 #### Specify osdu services urls:
 ```properties
-DOMAIN=https://osdu.ref.gcp.gnrg-osdu.projects.epam.com
-AUTHORIZE_API=${DOMAIN}/api/entitlements/v2
-CRS_API=${DOMAIN}/api/crs/v2
-LEGALTAG_API=${DOMAIN}/api/legal/v1
-PARTITION_API=${DOMAIN}/api/partition/v1/
+HOST=https://osdu.ref.gcp.gnrg-osdu.projects.epam.com
+AUTHORIZE_API=${HOST}/api/entitlements/v2
+CRS_API=${HOST}/api/crs/v2
+LEGALTAG_API=${HOST}/api/legal/v1
+PARTITION_API=${HOST}/api/partition/v1/
 ```
 #### Auth variables:
 ```properties
