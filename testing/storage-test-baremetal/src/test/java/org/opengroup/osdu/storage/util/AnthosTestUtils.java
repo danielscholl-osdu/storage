@@ -15,10 +15,16 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
+import java.util.Optional;
 
 public class AnthosTestUtils extends TestUtils {
 
     private static final OpenIDTokenProvider openIDTokenProvider = new OpenIDTokenProvider();
+
+    public AnthosTestUtils() {
+        domain = Optional.ofNullable(System.getProperty("GROUP_ID", System.getenv("GROUP_ID")))
+                .orElse("group");
+    }
 
     @Override
     public synchronized String getToken() throws Exception {

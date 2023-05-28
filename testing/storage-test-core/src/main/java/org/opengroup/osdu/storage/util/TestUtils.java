@@ -48,7 +48,7 @@ public abstract class TestUtils {
     protected static String noDataAccesstoken = null;
     private static Gson gson = new Gson();
 
-    protected static final String domain = System.getProperty("DOMAIN", System.getenv("DOMAIN"));
+    protected static String domain = System.getProperty("DOMAIN", System.getenv("DOMAIN"));
 
     public static final String getDomain() {
         return domain;
