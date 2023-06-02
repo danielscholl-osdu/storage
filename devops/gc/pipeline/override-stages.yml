@@ -37,3 +37,5 @@ gc-containerize-bootstrap-gcr:
     BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
   before_script:
     - !reference [.define_DATA_BRANCH, script]
+    - gcloud auth activate-service-account --key-file=${GC_BAREMETAL_DEPLOY_FILE}
+    - gcloud auth configure-docker gcr.io
