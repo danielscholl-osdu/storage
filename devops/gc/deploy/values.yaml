@@ -5,6 +5,7 @@
 global:
   domain: ""
   onPremEnabled: false
+  dataBootstrapEnabled: false
 
 data:
   # configmaps
@@ -44,7 +45,6 @@ conf:
   rabbitmqSecretName: "rabbitmq-secret"
   bootstrapSecretName: "datafier-secret"
   replicas: 3
-  bootstrapEnabled: false
   storageRedisSecretName: "storage-redis-secret"
 
 istio:
