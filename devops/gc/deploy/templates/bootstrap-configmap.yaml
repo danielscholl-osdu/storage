@@ -1,4 +1,4 @@
-{{- if .Values.conf.bootstrapEnabled }}
+{{- if .Values.global.dataBootstrapEnabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
