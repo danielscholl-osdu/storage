@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2023, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,28 +14,60 @@
 
 package org.opengroup.osdu.storage.conversion;
 
-import java.util.*;
-import com.google.gson.*;
-import com.google.common.base.Strings;
-import org.apache.http.HttpStatus;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
 import org.opengroup.osdu.core.common.Constants;
-import org.opengroup.osdu.core.common.model.crs.*;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.crs.GeoJson.*;
-import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.crs.ICrsConverterFactory;
 import org.opengroup.osdu.core.common.crs.ICrsConverterService;
-import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.crs.ConvertGeoJsonRequest;
+import org.opengroup.osdu.core.common.model.crs.ConvertGeoJsonResponse;
+import org.opengroup.osdu.core.common.model.crs.ConvertPointsRequest;
+import org.opengroup.osdu.core.common.model.crs.ConvertPointsResponse;
+import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
+import org.opengroup.osdu.core.common.model.crs.CrsConverterException;
+import org.opengroup.osdu.core.common.model.crs.CrsPropertySet;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonBase;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonFeature;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonFeatureCollection;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonGeometryCollection;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonLineString;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonMultiLineString;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonMultiPoint;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonMultiPolygon;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonPoint;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonPolygon;
+import org.opengroup.osdu.core.common.model.crs.Point;
+import org.opengroup.osdu.core.common.model.crs.PointConversionInfo;
+import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.http.RequestStatus;
+import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
+import org.opengroup.osdu.storage.di.CrsConversionConfig;
+import org.opengroup.osdu.storage.di.SpringConfig;
 import org.opengroup.osdu.storage.util.ConversionJsonUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-import org.opengroup.osdu.storage.di.SpringConfig;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.opengroup.osdu.core.common.Constants.*;
 import static org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages.MISSING_GEOMETRIES;
@@ -72,8 +104,12 @@ public class CrsConversionService {
     
     @Autowired
     private SpringConfig springConfig;
+
     @Autowired
     private ConversionJsonUtils conversionJsonUtils;
+
+    @Autowired
+    private CrsConversionConfig crsConversionConfig;
 
     public RecordsAndStatuses doCrsConversion(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
         RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
@@ -141,8 +177,7 @@ public class CrsConversionService {
     }
 
     private void gatherCrsGeoJsonConversionData(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
-        for (int i = 0; i < originalRecords.size(); i++) {
-            JsonObject recordJsonObject = originalRecords.get(i);
+        for (JsonObject recordJsonObject : originalRecords) {
             String recordId = this.getRecordId(recordJsonObject);
             ConversionStatus.ConversionStatusBuilder statusBuilder = this.getConversionStatusBuilderFromList(recordId, conversionStatuses);
             if(statusBuilder == null){
@@ -150,9 +185,7 @@ public class CrsConversionService {
             }
             List<String> validationErrors = new ArrayList<>();
             JsonObject filteredObjects = this.dpsConversionService.filterDataFields(recordJsonObject, validationErrors);
-            Iterator<String> keys = filteredObjects.keySet().iterator();
-            while(keys.hasNext()) {
-                String attributeName = keys.next();
+            for (String attributeName : filteredObjects.keySet()) {
                 JsonObject asIngestedCoordinates = filteredObjects.getAsJsonObject(attributeName).getAsJsonObject(AS_INGESTED_COORDINATES);
                 if (asIngestedCoordinates != null) {
                     GeoJsonFeatureCollection fc = new GeoJsonFeatureCollection();
@@ -176,7 +209,7 @@ public class CrsConversionService {
                     }
                     fc.setFeatures(featureArray);
 
-                    ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
+                    ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders), getRequestConfig());
                     ConvertGeoJsonRequest request = new ConvertGeoJsonRequest(fc, TO_CRS_GEO_JSON, TO_UNIT_Z);
                     try {
                         if (statusBuilder.getErrors().isEmpty()) {
@@ -191,6 +224,10 @@ public class CrsConversionService {
                             statusBuilder.addError(String.format(BAD_REQUEST, crsEx.getHttpResponse().getBody()));
                         } else {
                             this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, crsEx.getHttpResponse().toString()));
+                        }
+                    } catch (AppException ex) {
+                        if (ex.getError().getCode() == RequestStatus.SOCKET_TIMEOUT) {
+                            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
                         }
                     }
                 } else {
@@ -382,7 +419,7 @@ public class CrsConversionService {
                 originalPoints.add(point);
             }
 
-            ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
+            ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders), getRequestConfig());
             ConvertPointsRequest request = new ConvertPointsRequest(persistableReference, TO_CRS, originalPoints);
 
             ConvertPointsResponse response = crsConverterService.convertPoints(request);
@@ -424,10 +461,12 @@ public class CrsConversionService {
                 this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, cvEx.getHttpResponse().toString()));
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "crs conversion service error.");
             }
-        } catch (ClassCastException ccEx) {
+        } catch (ClassCastException | IllegalStateException ccEx) {
             statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, ccEx.getMessage()));
-        } catch (IllegalStateException isEx) {
-            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, isEx.getMessage()));
+        } catch (AppException ex) {
+            if (ex.getError().getCode() == RequestStatus.SOCKET_TIMEOUT) {
+                statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
+            }
         } catch (Exception e) {
             statusBuilder.addError(e.getMessage());
         }
@@ -449,8 +488,8 @@ public class CrsConversionService {
     }
 
     List<PointConversionInfo> callClientLibraryDoConversion(Map<String, List<PointConversionInfo>> originalPointsMap, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses) {
-      ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders));
-      List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
+        ICrsConverterService crsConverterService = this.crsConverterFactory.create(this.customizeHeaderBeforeCallingCrsConversion(this.dpsHeaders), getRequestConfig());
+        List<PointConversionInfo> convertedPointInfo = new ArrayList<>();
 
         for (Map.Entry<String, List<PointConversionInfo>> entry : originalPointsMap.entrySet()) {
             List<Point> pointsToBeConverted = new ArrayList<>();
@@ -470,10 +509,13 @@ public class CrsConversionService {
             } catch (CrsConverterException e) {
                 if (e.getHttpResponse().IsBadRequestCode()) {
                     convertedPointInfo.addAll(this.putDataErrorFromCrsIntoPointsInfo(pointsList, e.getMessage()));
-                    continue;
                 } else {
                     this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, e.getHttpResponse().toString()));
                     throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "crs conversion service error.");
+                }
+            } catch (AppException ex) {
+                if (ex.getError().getCode() == RequestStatus.SOCKET_TIMEOUT) {
+                    convertedPointInfo.addAll(this.putDataErrorFromCrsIntoPointsInfo(pointsList, ex.getMessage()));
                 }
             }
         }
@@ -759,5 +801,13 @@ public class CrsConversionService {
             bbox[i] = bboxValues.get(i).getAsDouble();
         }
         return bbox;
+    }
+
+    private RequestConfig getRequestConfig(){
+        return RequestConfig.custom()
+                .setSocketTimeout(crsConversionConfig.getSocketTimeout())
+                .setConnectTimeout(crsConversionConfig.getConnectTimeout())
+                .setConnectionRequestTimeout(crsConversionConfig.getConnectionRequestTimeout())
+                .build();
     }
 }
