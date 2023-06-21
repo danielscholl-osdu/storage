@@ -226,9 +226,7 @@ public class CrsConversionService {
                             this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, crsEx.getHttpResponse().toString()));
                         }
                     } catch (AppException ex) {
-                        if (ex.getError().getCode() == RequestStatus.SOCKET_TIMEOUT) {
-                            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
-                        }
+                        statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
                     }
                 } else {
                     statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
@@ -464,9 +462,7 @@ public class CrsConversionService {
         } catch (ClassCastException | IllegalStateException ccEx) {
             statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, ccEx.getMessage()));
         } catch (AppException ex) {
-            if (ex.getError().getCode() == RequestStatus.SOCKET_TIMEOUT) {
-                statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
-            }
+            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
         } catch (Exception e) {
             statusBuilder.addError(e.getMessage());
         }
@@ -514,9 +510,7 @@ public class CrsConversionService {
                     throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "crs conversion service error.");
                 }
             } catch (AppException ex) {
-                if (ex.getError().getCode() == RequestStatus.SOCKET_TIMEOUT) {
-                    convertedPointInfo.addAll(this.putDataErrorFromCrsIntoPointsInfo(pointsList, ex.getMessage()));
-                }
+                convertedPointInfo.addAll(this.putDataErrorFromCrsIntoPointsInfo(pointsList, ex.getMessage()));
             }
         }
         return convertedPointInfo;
