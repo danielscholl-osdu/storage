@@ -115,7 +115,6 @@ public class CrsConversionServiceTest {
     private static final String CONVERTED_RECORD_7 = "{\"id\":\"unit-test-6\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":15788.036,\"Y\":9567.4,\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"X\",\"Y\",\"Z\",\"T\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
     private static final String CONVERTED_RECORD_8 = "{\"id\":\"unit-test-20\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"Nested\":{\"X\":15788.036,\"Y\":9567.4},\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"Nested.X\",\"Nested.Y\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
     private static final String CONVERTED_RECORD_9 = "{\"id\":\"unit-test-21\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"Nested\":{\"X\":15788.036,\"Y\":9567.4},\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"Nested.X\",\"Nested.Y\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
-    private static final int TIMEOUT = 60000;
 
     @Before
     public void setup() throws Exception{
@@ -138,9 +137,6 @@ public class CrsConversionServiceTest {
         when(this.crsPropertySet.getPropertyPairing()).thenReturn(this.pairProperty);
         when(this.crsPropertySet.getNestedPropertyNames()).thenReturn(this.nestedPropertyNames);
 
-        when(this.crsConversionConfig.getSocketTimeout()).thenReturn(TIMEOUT);
-        when(this.crsConversionConfig.getConnectTimeout()).thenReturn(TIMEOUT);
-        when(this.crsConversionConfig.getConnectionRequestTimeout()).thenReturn(TIMEOUT);
         when(this.crsConverterFactory.create(any(), any(RequestConfig.class))).thenReturn(this.crsConverterService);
         when(this.crsConverterService.convertPoints(any())).thenReturn(this.convertPointsResponse);
 
