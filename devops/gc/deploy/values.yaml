@@ -6,6 +6,7 @@ global:
   domain: ""
   onPremEnabled: false
   dataBootstrapEnabled: false
+  limitsEnabled: true
 
 data:
   # configmaps
