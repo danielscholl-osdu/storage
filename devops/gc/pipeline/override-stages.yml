@@ -4,13 +4,13 @@ variables:
   NO_DATA_ACCESS_TESTER: $GC_NO_DATA_ACCESS_TESTER
   OPA_INTEGRATION_ENABLED: "true"
 
-.define_DATA_BRANCH:
+.gc_define_DATA_BRANCH:
   script:
     - >
       if [[ -z $CI_COMMIT_TAG ]] && [[ $CI_COMMIT_BRANCH =~ ^release\/[0-9]{1,2}.[0-9]{1,2}$ ]];
       then
         REF_DATA_BRANCH=$CI_COMMIT_BRANCH
-      elif [[ $CI_COMMIT_TAG =~ ^v[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}$ ]];
+      elif [[ $CI_COMMIT_TAG =~ ^v[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}.* ]];
       then
         TAG=$(echo $CI_COMMIT_TAG | sed "s/^v//");
         REF_DATA_BRANCH="release/${TAG%.*}";
@@ -18,22 +18,24 @@ variables:
         REF_DATA_BRANCH="master";
       fi;
 
-gc-anthos-test:
+gc-baremetal-test:
   variables:
-    GC_VENDOR: anthos
+    GC_VENDOR: baremetal
     TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID: storage-no-access-tester
-    TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET: $OSDU_ANTHOS_STORAGE_NO_ACCESS_CLIENT_SECRET
+    TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET: $OSDU_BAREMETAL_STORAGE_NO_ACCESS_CLIENT_SECRET
 
 gc-containerize-bootstrap-gitlab:
   variables:
     GC_ENABLE_BOOTSTRAP: "true"
     BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
   before_script:
-    - !reference [.define_DATA_BRANCH, script]
+    - !reference [.gc_define_DATA_BRANCH, script]
 
 gc-containerize-bootstrap-gcr:
   variables:
     GC_ENABLE_BOOTSTRAP: "true"
     BUILD_ARGS: "--build-arg DATA_BRANCH=$REF_DATA_BRANCH"
   before_script:
-    - !reference [.define_DATA_BRANCH, script]
+    - !reference [.gc_define_DATA_BRANCH, script]
+    - gcloud auth activate-service-account --key-file=${GC_BAREMETAL_DEPLOY_FILE}
+    - gcloud auth configure-docker gcr.io

@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright 2020-2023 Google LLC
+ *  Copyright 2020-2023 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,14 +21,11 @@ import java.util.Arrays;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opengroup.osdu.core.common.multitenancy.TenantInfoFactory;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.gcp.web.config.WebAppMainContextConfiguration;
 import org.opengroup.osdu.storage.swagger.SwaggerConfiguration;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -52,7 +49,6 @@ import org.springframework.context.annotation.PropertySource;
             value = {
                 StorageApplication.class,
                 WebAppMainContextConfiguration.class,
-                TenantInfoFactory.class,
                 SwaggerConfiguration.class
             }
         )
@@ -68,10 +64,5 @@ public class MessagingCustomContextConfiguration {
         log.debug("Messaging context status: {}.", applicationContext);
         String[] allBeansNames = applicationContext.getBeanDefinitionNames();
         log.debug("Messaging context beans definitions: {}.", Arrays.toString(allBeansNames));
-    }
-
-    @Bean
-    public static BeanFactoryPostProcessor beanFactoryPostProcessor() {
-        return new ThreadBeanFactoryPostProcessor();
     }
 }

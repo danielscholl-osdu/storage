@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>os-storage</artifactId>
-    <version>0.21.0-SNAPSHOT</version>
+    <version>0.22.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>storage-gc</artifactId>
-  <version>0.21.0-SNAPSHOT</version>
+  <version>0.22.0-SNAPSHOT</version>
   <description>Google cloud related implementation staff.</description>
   <packaging>jar</packaging>
 
@@ -71,39 +71,16 @@
         <artifactId>gson</artifactId>
         <version>2.9.1</version>
       </dependency>
-      <!--for MinIO-->
-      <!--TODO: move next 4 dependencies to core-lib-gcp. Related to mappers-->
-      <dependency>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-stdlib</artifactId>
-        <version>1.6.0</version>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.squareup.okio</groupId>
-        <artifactId>okio</artifactId>
-        <version>2.7.0</version>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>okhttp</artifactId>
-        <version>4.9.2</version>
-        <scope>compile</scope>
-      </dependency>
     </dependencies>
   </dependencyManagement>
+
   <dependencies>
-    <dependency>
-      <groupId>org.opengroup.osdu</groupId>
-      <artifactId>os-core-common</artifactId>
-      <version>0.21.0-rc4</version>
-    </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-gc</artifactId>
       <version>0.21.0-rc4</version>
     </dependency>
+    <!--    Mappers    -->
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>osm</artifactId>
@@ -112,7 +89,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>oqm</artifactId>
-      <version>0.21.0-rc3</version>
+      <version>0.21.0-rc5</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
@@ -122,7 +99,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>storage-core</artifactId>
-      <version>0.21.0-SNAPSHOT</version>
+      <version>0.22.0-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <groupId>org.mockito</groupId>
