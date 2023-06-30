@@ -16,5 +16,10 @@ RUN apt-get update \
     && chmod +x download-data.sh \
     && chmod +x bootstrap_storage.sh \
     && ./download-data.sh 
+
+RUN groupadd -g 10001 -r nonroot \
+  && useradd -d /opt -g 10001 -r -u 10001 nonroot
+RUN chown -R 10001:10001 /opt
+USER 10001:10001
     
 CMD ["/bin/bash", "-c", "/opt/bootstrap_storage.sh && sleep 365d"]
