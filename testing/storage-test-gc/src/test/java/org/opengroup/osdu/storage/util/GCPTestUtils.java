@@ -15,8 +15,14 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
+import java.util.Optional;
 
 public class GCPTestUtils extends TestUtils{
+
+	public GCPTestUtils() {
+		domain = Optional.ofNullable(System.getProperty("GROUP_ID", System.getenv("GROUP_ID")))
+				.orElse("group");
+	}
 
 	@Override
 	public synchronized String getToken() throws Exception {

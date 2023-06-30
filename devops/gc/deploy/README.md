@@ -32,6 +32,8 @@ First you need to set variables in **values.yaml** file using any code editor. S
 |------|-------------|------|---------|---------|
 **global.domain** | your domain for the external endpoint, ex `example.com` | string | - | yes
 **global.onPremEnabled** | whether on-prem is enabled | boolean | false | yes
+**global.dataBootstrapEnabled** | whether storage bootstrap is enabled | boolean | false | yes
+**global.limitsEnabled** | whether CPU and memory limits are enabled | boolean | true | yes
 
 ### Configmap variables
 
@@ -47,9 +49,9 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **data.legalHost** | Legal service host address | string | `http://legal` | yes
 **data.opaEnabled** | whether OPA is enabled | boolean | false | yes
 **data.opaEndpoint** | OPA host address | string | `http://opa` | yes
-**data.storageHost** | Storage service host address | string | `http://storage` | only if `conf.bootstrapEnabled` is true
-**data.defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `conf.bootstrapEnabled` is true
-**data.dataPartitionId** | Data partition id | string | - | only if `conf.bootstrapEnabled` is true
+**data.storageHost** | Storage service host address | string | `http://storage` | only if `global.dataBootstrapEnabled` is true
+**data.defaultLegalTag** | Name of the previously created legal tag (without partition part) | string | `default-data-tag` | only if `global.dataBootstrapEnabled` is true
+**data.dataPartitionId** | Data partition id | string | - | only if `global.dataBootstrapEnabled` is true
 **data.redisStorageHost** | The host for redis instance. If empty (by default), helm installs an internal redis instance | string | - | yes
 **data.redisStoragePort** | The port for redis instance | digit | 6379 | yes
 
@@ -59,13 +61,13 @@ First you need to set variables in **values.yaml** file using any code editor. S
 |------|-------------|------|---------|---------|
 **data.requestsCpu** | amount of requested CPU | string | `10m` | yes
 **data.requestsMemory** | amount of requested memory| string | `650Mi` | yes
-**data.limitsCpu** | CPU limit | string | `1` | yes
-**data.limitsMemory** | memory limit | string | `3G` | yes
+**data.limitsCpu** | CPU limit | string | `1` | only if `global.limitsEnabled` is true
+**data.limitsMemory** | memory limit | string | `3G` | only if `global.limitsEnabled` is true
 **data.image** | path to the image in a registry | string | - | yes
 **data.imagePullPolicy** | when to pull the image | string | `IfNotPresent` | yes
 **data.serviceAccountName** | name of kubernetes service account | string | `storage` | yes
-**data.bootstrapImage** | path to the bootstrap image in a registry | string | - | only if `conf.bootstrapEnabled` is true
-**data.bootstrapServiceAccountName** | name of kubernetes service account that will be used for bootstrap | string | - | only if `conf.bootstrapEnabled` is true
+**data.bootstrapImage** | path to the bootstrap image in a registry | string | - | only if `global.dataBootstrapEnabled` is true
+**data.bootstrapServiceAccountName** | name of kubernetes service account that will be used for bootstrap | string | - | only if `global.dataBootstrapEnabled` is true
 **data.redisImage** | service image | string | `redis:7` | yes
 
 ### Configuration variables
@@ -78,9 +80,8 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **conf.postgresSecretName** | secret for postgres | string | `storage-postgres-secret` | yes
 **conf.rabbitmqSecretName** | secret for rabbitmq | string | `rabbitmq-secret` | yes
 **conf.storageRedisSecretName** | secret for redis that contains redis password with REDIS_PASSWORD key | string | `storage-redis-secret` | yes
-**conf.bootstrapSecretName** | secret for bootstrap to access openid provider | string | `datafier-secret` | only if `conf.bootstrapEnabled` is true
+**conf.bootstrapSecretName** | secret for bootstrap to access openid provider | string | `datafier-secret` | only if `global.dataBootstrapEnabled` is true
 **conf.replicas** | Number of replicas | integer | 3 | yes
-**conf.bootstrapEnabled** | whether storage bootstrap is enabled | boolean | false | yes
 
 ### Istio variables
 

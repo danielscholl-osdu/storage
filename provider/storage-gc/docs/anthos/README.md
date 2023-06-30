@@ -1,4 +1,4 @@
-# Service Configuration for Anthos
+# Service Configuration for Baremetal
 
 ## Table of Contents <a name="TOC"></a>
 * [Environment variables](#Environment-variables)
@@ -389,10 +389,11 @@ curl -L -X PATCH 'https://api/partition/v1/partitions/opendes' -H 'data-partitio
 
 At RabbitMq should be created set of exchanges and queues.
 
-| topic name          | subscription name               | description                   | sensitive? | env var to override                                                     |
-|---------------------|---------------------------------|-------------------------------|------------|-------------------------------------------------------------------------|
-| `records-changed`   | -                               | Search topic for pushing      | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
-| `legaltags-changed` | `storage-oqm-legaltags-changed` | Legaltags topic for consuming | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| topic name                               | subscription name               | description                                                | sensitive? | env var to override                                                     |
+|------------------------------------------|---------------------------------|------------------------------------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`                        | -                               | Search topic for pushing                                   | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed`                      | `storage-oqm-legaltags-changed` | Legaltags topic for consuming                              | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| `storage-oqm-legaltags-changed-exchange` | -                               | Service topic for delaying failed legal tag changed events | -          | -                                                                       |
 
 ![Screenshot](./pics/rabbit.PNG)
 
@@ -430,7 +431,7 @@ You will need to have the following environment variables defined.
 | name                                           | value                                     | description                                                      | sensitive?                                        | source |
 |------------------------------------------------|-------------------------------------------|------------------------------------------------------------------|---------------------------------------------------|--------|
 | `DEPLOY_ENV`                                   | `empty`                                   | Required but not used, should be set up with string "empty"      | no                                                | -      |
-| `DOMAIN`                                       | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                       | no                                                | -      |
+| `GROUP_ID`                                     | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                       | no                                                | -      |
 | `LEGAL_URL`                                    | ex`http://localhsot:8080/api/legal/v1/`   | Legal API endpoint                                               | no                                                | -      |
 | `STORAGE_URL`                                  | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service                                      | no                                                | -      |
 | `TENANT_NAME`                                  | ex `opendes`                              | OSDU tenant used for testing                                     | no                                                | --     |
@@ -458,12 +459,12 @@ Execute following command to build code and run all the integration tests:
 
  ```bash
  # build + run Google Cloud integration tests.
- $ (cd testing/storage-test-anthos/ && mvn clean test)
+ $ (cd testing/storage-test-baremetal/ && mvn clean test)
  ```
 
 
 ## Running locally
-To run storage service locally connected with anthos environment:
+To run storage service locally connected with baremetal environment:
 #### Specify mappers drivers property or run `SPRING_PROFILES_ACTIVE=anthos`
 ```properties
 obmDriver=minio
@@ -472,11 +473,11 @@ oqmDriver=rabbitmq
 ```
 #### Specify osdu services urls:
 ```properties
-DOMAIN=https://osdu.ref.gcp.gnrg-osdu.projects.epam.com
-AUTHORIZE_API=${DOMAIN}/api/entitlements/v2
-CRS_API=${DOMAIN}/api/crs/v2
-LEGALTAG_API=${DOMAIN}/api/legal/v1
-PARTITION_API=${DOMAIN}/api/partition/v1/
+HOST=https://osdu.ref.gcp.gnrg-osdu.projects.epam.com
+AUTHORIZE_API=${HOST}/api/entitlements/v2
+CRS_API=${HOST}/api/crs/v2
+LEGALTAG_API=${HOST}/api/legal/v1
+PARTITION_API=${HOST}/api/partition/v1/
 ```
 #### Auth variables:
 ```properties
@@ -522,5 +523,5 @@ kubectl port-forward <rabbit_pod_name> 15672:15672
 kubectl port-forward <rabbit_pod_name> 5672:5672
 kubectl port-forward <minio_pod_name> 9000:9000
 gcloud components install cloud_sql_proxy
-cloud_sql_proxy -instances=<instance_connection_string> -credential_file=<anthos_service_account_json_file>
+cloud_sql_proxy -instances=<instance_connection_string> -credential_file=<baremetal_service_account_json_file>
 ```

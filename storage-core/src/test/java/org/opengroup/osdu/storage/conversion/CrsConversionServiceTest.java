@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2023, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.conversion;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.http.client.config.RequestConfig;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.model.crs.*;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
@@ -23,6 +24,7 @@ import org.opengroup.osdu.core.common.model.crs.CrsPropertySet;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
+import org.opengroup.osdu.storage.di.CrsConversionConfig;
 import org.opengroup.osdu.storage.di.SpringConfig;
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
@@ -68,6 +70,9 @@ public class CrsConversionServiceTest {
     
     @Mock
     private SpringConfig springConfig;
+
+    @Mock
+    private CrsConversionConfig crsConversionConfig;
 
     private List<JsonObject> originalRecords = new ArrayList<>();
     private List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -132,7 +137,7 @@ public class CrsConversionServiceTest {
         when(this.crsPropertySet.getPropertyPairing()).thenReturn(this.pairProperty);
         when(this.crsPropertySet.getNestedPropertyNames()).thenReturn(this.nestedPropertyNames);
 
-        when(this.crsConverterFactory.create(any())).thenReturn(this.crsConverterService);
+        when(this.crsConverterFactory.create(any(), any(RequestConfig.class))).thenReturn(this.crsConverterService);
         when(this.crsConverterService.convertPoints(any())).thenReturn(this.convertPointsResponse);
 
         when(this.jwtClient.getIdToken(any())).thenReturn("auth-token-unit-test");
