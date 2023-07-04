@@ -31,6 +31,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
+import com.github.fge.jsonpatch.JsonPatch;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -66,6 +68,36 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath);
     }
 
+    @Override
+    public Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
+        if (Objects.nonNull(jsonPatchPerRecord)) {
+            DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+
+            for (RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
+                JsonPatch jsonPatch = jsonPatchPerRecord.get(recordMetadata);
+                RecordMetadata newRecordMetadata =
+                        JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordMetadata);
+                // user should be part of the acl of the record being saved
+                RecordMetadataDoc doc = new RecordMetadataDoc();
+
+                // Set the core fields (what is expected in every implementation)
+                doc.setId(newRecordMetadata.getId());
+                doc.setMetadata(newRecordMetadata);
+
+                // Add extra indexed fields for querying in DynamoDB
+                doc.setKind(newRecordMetadata.getKind());
+                doc.setLegaltags(newRecordMetadata.getLegal().getLegaltags());
+                doc.setStatus(newRecordMetadata.getStatus().name());
+                doc.setUser(newRecordMetadata.getUser());
+
+                // Store the record to the database
+                recordMetadataQueryHelper.save(doc);
+                saveLegalTagAssociation(newRecordMetadata.getId(), newRecordMetadata.getLegal().getLegaltags());
+              }
+          }
+          return new HashMap<>();    
+    }
+    
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         if (recordsMetadata != null) {
