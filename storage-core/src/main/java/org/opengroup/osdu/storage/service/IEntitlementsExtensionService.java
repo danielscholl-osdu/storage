@@ -21,4 +21,5 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 public interface IEntitlementsExtensionService extends IEntitlementsAndCacheService {
 
     Groups getGroups(DpsHeaders headers);
+    boolean isDataManager(DpsHeaders headers);
 }

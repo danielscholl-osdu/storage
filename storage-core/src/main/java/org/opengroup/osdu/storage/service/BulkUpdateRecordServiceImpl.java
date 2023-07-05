@@ -14,7 +14,6 @@
 
 package org.opengroup.osdu.storage.service;
 
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -55,7 +54,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     private PatchOperationValidator patchOperationValidator;
 
     @Autowired
-    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    private IEntitlementsExtensionService entitlementsAndCacheService;
 
     @Autowired
     private StorageAuditLogger auditLogger;
@@ -162,6 +161,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     }
 
     private List<String> validateOwnerAccess(Map<String, String> idMap, Map<String, RecordMetadata> existingRecords) {
+        boolean isDataManager = this.entitlementsAndCacheService.isDataManager(this.headers);
         List<String> unauthorizedRecordIds = new ArrayList<>();
         for (String id : idMap.keySet()) {
             String idWithVersion = idMap.get(id);
@@ -172,7 +172,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
             }
 
             // pre acl check, enforce application data restriction
-            if (!this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners())) {
+            if (!isDataManager && !this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners())) {
                 unauthorizedRecordIds.add(idWithVersion);
             }
         }

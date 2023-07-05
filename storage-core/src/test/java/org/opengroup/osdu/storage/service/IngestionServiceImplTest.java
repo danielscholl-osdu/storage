@@ -48,7 +48,6 @@ import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.legal.ILegalService;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.storage.util.CrcHashGenerator;
 import org.opengroup.osdu.storage.util.RecordBlocks;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
@@ -90,7 +89,7 @@ public class IngestionServiceImplTest {
     private ITenantFactory tenantFactory;
 
     @Mock
-    private IEntitlementsAndCacheService authService;
+    private IEntitlementsExtensionService authService;
 
     @Mock
     private IEntitlementsFactory entitlementsFactory;

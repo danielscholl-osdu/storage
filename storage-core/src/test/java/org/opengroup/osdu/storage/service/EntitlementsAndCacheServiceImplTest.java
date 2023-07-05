@@ -203,6 +203,34 @@ public class EntitlementsAndCacheServiceImplTest {
     }
 
     @Test
+    public void should_returnTure_when_requesterIsDataManager() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("users.data.root@tenant.gmail.com");
+        g1.setName("users.data.root");
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        assertTrue(this.sut.isDataManager(this.headers));
+    }
+
+    @Test
+    public void should_returnFalse_when_requesterIsNotDataManager() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("users@tenant.gmail.com");
+        g1.setName("users");
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        assertFalse(this.sut.isDataManager(this.headers));
+    }
+
+    @Test
     public void should_returnTrue_when_AclIsValid() throws EntitlementsException {
         GroupInfo g1 = new GroupInfo();
         g1.setEmail("role1@tenant.gmail.com");
