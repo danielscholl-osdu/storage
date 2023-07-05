@@ -88,6 +88,12 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
     }
 
     @Override
+    public boolean isDataManager(DpsHeaders headers) {
+        Groups groups = this.getGroups(headers);
+        return groups.any("users.data.root");
+    }
+
+    @Override
     public boolean hasOwnerAccess(DpsHeaders headers, String[] ownerList) {
         Groups groups = this.getGroups(headers);
         Set<String> aclList = new HashSet<>();
