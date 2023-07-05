@@ -63,6 +63,9 @@ public class DataAuthorizationService {
     private ICloudStorage cloudStorage;
 
     public boolean validateOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
+        if (this.entitlementsService.isDataManager(this.headers)) {
+            return true;
+        }
         if (isOpaEnabled) {
             return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
@@ -71,6 +74,9 @@ public class DataAuthorizationService {
     }
 
     public boolean validateViewerOrOwnerAccess(RecordMetadata recordMetadata, OperationType operationType) {
+        if (this.entitlementsService.isDataManager(this.headers)) {
+            return true;
+        }
         if (isOpaEnabled) {
             return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
@@ -80,6 +86,9 @@ public class DataAuthorizationService {
     }
 
     public boolean hasAccess(RecordMetadata recordMetadata, OperationType operationType) {
+        if (this.entitlementsService.isDataManager(this.headers)) {
+            return true;
+        }
         if (isOpaEnabled) {
             if (!recordMetadata.getStatus().equals(RecordState.active)) {
                 return false;
