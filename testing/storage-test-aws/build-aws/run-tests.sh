@@ -63,3 +63,4 @@ if [ -n "$1" ]
 fi
 
 exit $TEST_EXIT_CODE
+
