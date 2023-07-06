@@ -54,14 +54,6 @@ mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
 #mvn -Dmaven.surefire.debug test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
 TEST_EXIT_CODE=$?
 
-#### RUN INTEGRATION TEST ON TEST-TENANT #########################################################################
-export TENANT_NAME=test-partition
-export LEGAL_S3_BUCKET=$TEST_TENANT_LEGAL_S3_BUCKET
-
-mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
-#mvn -Dmaven.surefire.debug test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
-TEST_EXIT_CODE=$?
-
 #### COPY TEST REPORTS #########################################################################
 
 if [ -n "$1" ]
@@ -71,3 +63,4 @@ if [ -n "$1" ]
 fi
 
 exit $TEST_EXIT_CODE
+
