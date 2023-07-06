@@ -79,9 +79,11 @@ public class CrsConversionService {
     private static final String TO_CRS_GEO_JSON = "{\"authCode\":{\"auth\":\"EPSG\",\"code\":\"4326\"},\"name\":\"GCS_WGS_1984\",\"type\":\"LBC\",\"ver\":\"PE_10_3_1\",\"wkt\":\"GEOGCS[\\\"GCS_WGS_1984\\\",DATUM[\\\"D_WGS_1984\\\",SPHEROID[\\\"WGS_1984\\\",6378137.0,298.257223563]],PRIMEM[\\\"Greenwich\\\",0.0],UNIT[\\\"Degree\\\",0.0174532925199433],AUTHORITY[\\\"EPSG\\\",4326]]\"}";
     private static final String TO_UNIT_Z = "{\"baseMeasurement\":{\"ancestry\":\"Length\",\"type\":\"UM\"},\"scaleOffset\":{\"offset\":0.0,\"scale\":1.0},\"symbol\":\"m\",\"type\":\"USO\"}";
     private static final String UNKNOWN_ERROR = "unknown error";
-    private static final String INVALID_COORDINATES = "CRS conversion: Invalid Coordinates values, no conversion applied. Error: %s";
+    private static final String INVALID_COORDINATES = "CRS conversion: invalid Coordinates values, no conversion applied. Error: %s";
     private static final String BAD_REQUEST = "CRS conversion: bad request from crs converter, no conversion applied. Response From CRS Converter: %s.";
-    private static final String CONVERSION_FAILURE = "CRS Conversion Error: Point Converted failed(CRS Converter is returning null), no conversion applied. Affected property names: %s, %s";
+    private static final String TIMEOUT_FAILURE = "CRS conversion: timeout on crs converter request, no conversion applied. Affected property: %s. Response From CRS Converter: %s.";
+    private static final String CONVERSION_FAILURE = "CRS Conversion: point conversion failure (null response from crs converter), no conversion applied. Affected property names: %s, %s";
+    private static final String OTHER_FAILURE = "CRS conversion: error from crs converter, no conversion applied. Affected property: %s. Response from CRS converter: %s.";
 
     @Autowired
     private CrsPropertySet crsPropertySet;
@@ -222,11 +224,15 @@ public class CrsConversionService {
                     } catch (CrsConverterException crsEx) {
                         if (crsEx.getHttpResponse().IsBadRequestCode()) {
                             statusBuilder.addError(String.format(BAD_REQUEST, crsEx.getHttpResponse().getBody()));
+                        } else if (crsEx.getHttpResponse().getResponseCode() == HttpStatus.SC_GATEWAY_TIMEOUT) {
+                            statusBuilder.addError(String.format(TIMEOUT_FAILURE, attributeName, crsEx.getHttpResponse().getBody()));
                         } else {
-                            this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, crsEx.getHttpResponse().toString()));
+                            String message = String.format(OTHER_FAILURE, attributeName, crsEx.getHttpResponse().toString());
+                            this.logger.error(message);
+                            statusBuilder.addError(message);
                         }
                     } catch (AppException ex) {
-                        statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
+                        statusBuilder.addError(String.format(OTHER_FAILURE, attributeName, ex.getError().getMessage()));
                     }
                 } else {
                     statusBuilder.addError(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_COORDINATES);
@@ -456,13 +462,13 @@ public class CrsConversionService {
             if (cvEx.getHttpResponse().IsBadRequestCode()) {
                 statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.BAD_REQUEST_FROM_CRS, cvEx.getHttpResponse().getBody(), nestedFieldName));
             } else {
-                this.logger.error(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, cvEx.getHttpResponse().toString()));
+                this.logger.error(String.format(OTHER_FAILURE, nestedFieldName, cvEx.getHttpResponse().toString()));
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR, "crs conversion service error.");
             }
         } catch (ClassCastException | IllegalStateException ccEx) {
             statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, nestedFieldName, ccEx.getMessage()));
         } catch (AppException ex) {
-            statusBuilder.addError(String.format(CrsConversionServiceErrorMessages.CRS_OTHER_ERROR, ex.getError().getMessage()));
+            statusBuilder.addError(String.format(OTHER_FAILURE, nestedFieldName, ex.getError().getMessage()));
         } catch (Exception e) {
             statusBuilder.addError(e.getMessage());
         }
