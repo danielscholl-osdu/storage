@@ -21,13 +21,13 @@
     <parent>
         <artifactId>os-storage-testing</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.22.0-SNAPSHOT</version>
+        <version>0.23.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>org.opengroup.osdu.storage</groupId>
     <artifactId>storage-test-baremetal</artifactId>
-    <version>0.22.0-SNAPSHOT</version>
+    <version>0.23.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.storage</groupId>
             <artifactId>storage-test-core</artifactId>
-            <version>0.22.0-SNAPSHOT</version>
+            <version>0.23.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.nimbusds</groupId>
