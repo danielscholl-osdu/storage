@@ -53,6 +53,8 @@ public class ConversionServiceTest {
     private JsonParser jsonParser = new JsonParser();
     private List<JsonObject> originalRecords = new ArrayList<>();
     private static final String INVALID_COORDINATES = "CRS conversion: Invalid Coordinates values, no conversion applied.";
+    private static final String TIMEOUT_FAILURE = "CRS conversion: timeout on crs converter request, no conversion applied. Affected property: %s. Response From CRS Converter: %s.";
+    private static final String OTHER_FAILURE = "CRS conversion: error from crs converter, no conversion applied. Affected property: %s. Response from CRS converter: %s.";
     private static final String RECORD_1 = "{\"id\":\"unit-test-1\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
     private static final String RECORD_2 = "{\"id\":\"unit-test-2\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}";
     private static final String RECORD_3 = "{\"id\":\"unit-test-3\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":16.00,\"Y\":10.00,\"Z\":0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"persistableReference\":\"reference\",\"propertyNames\":[\"X\",\"Y\",\"Z\"],\"name\":\"GCS_WGS_1984\"}]}";
@@ -508,6 +510,52 @@ public class ConversionServiceTest {
         Assert.assertEquals(1, result.getRecords().size());
         Assert.assertTrue(result.getRecords().get(0).toString().equalsIgnoreCase(ERRONEOUS_ANY_CRS_RECORD_1));
         Assert.assertEquals(String.format(CrsConversionServiceErrorMessages.MISSING_AS_INGESTED_TYPE, ""), result.getConversionStatuses().get(0).getErrors().get(0));
+    }
+
+    @Test
+    public void should_applyNoCrsConversion_whenProvidedValidRecordButCRSTimeoutFailure() {
+        this.originalRecords.add(this.jsonParser.parse(ANY_CRS_POINT_RECORD).getAsJsonObject());
+        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        ConversionStatus conversionStatus = new ConversionStatus();
+        conversionStatus.setStatus(ConvertStatus.ERROR.toString());
+        conversionStatus.setId("geo-json-point-test");
+        errors.add(TIMEOUT_FAILURE);
+        conversionStatus.setErrors(errors);
+        conversionStatuses.add(conversionStatus);
+        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
+        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setRecords(this.originalRecords);
+        when(this.crsConversionService.doCrsGeoJsonConversion(any(), any())).thenReturn(crsConversionResult);
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+        Assert.assertEquals(1, result.getConversionStatuses().size());
+        Assert.assertEquals(1, result.getConversionStatuses().get(0).getErrors().size());
+        Assert.assertEquals(ConvertStatus.ERROR.toString(), result.getConversionStatuses().get(0).getStatus());
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertEquals(TIMEOUT_FAILURE, result.getConversionStatuses().get(0).getErrors().get(0));
+    }
+
+    @Test
+    public void should_applyNoCrsConversion_whenProvidedValidRecordButCRSOtherFailure() {
+        this.originalRecords.add(this.jsonParser.parse(ANY_CRS_POINT_RECORD).getAsJsonObject());
+        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        ConversionStatus conversionStatus = new ConversionStatus();
+        conversionStatus.setStatus(ConvertStatus.ERROR.toString());
+        conversionStatus.setId("geo-json-point-test");
+        errors.add(OTHER_FAILURE);
+        conversionStatus.setErrors(errors);
+        conversionStatuses.add(conversionStatus);
+        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
+        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setRecords(this.originalRecords);
+        when(this.crsConversionService.doCrsGeoJsonConversion(any(), any())).thenReturn(crsConversionResult);
+        RecordsAndStatuses result = this.sut.doConversion(this.originalRecords);
+        Assert.assertEquals(1, result.getConversionStatuses().size());
+        Assert.assertEquals(1, result.getConversionStatuses().get(0).getErrors().size());
+        Assert.assertEquals(ConvertStatus.ERROR.toString(), result.getConversionStatuses().get(0).getStatus());
+        Assert.assertEquals(1, result.getRecords().size());
+        Assert.assertEquals(OTHER_FAILURE, result.getConversionStatuses().get(0).getErrors().get(0));
     }
 
     @Test
