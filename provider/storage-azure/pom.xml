@@ -103,7 +103,9 @@
                 NettyToAzureCoreHttpHeadersWrapper class and fails for decoding the xml responses used in
                 workflow sharing via sas token
                 If we use azure-core-http-netty there is no such issue and we get azure-core 1.35 which
-                is the current version in core-lib-azure          -->
+                is the current version in core-lib-azure -->
+            <!--Also refer to this issue for more details -->
+            <!--https://community.opengroup.org/osdu/platform/system/lib/cloud/azure/os-core-lib-azure/-/issues/32 -->
             <artifactId>azure-core-http-netty</artifactId>
             <groupId>com.azure</groupId>
             <version>1.12.8</version>
