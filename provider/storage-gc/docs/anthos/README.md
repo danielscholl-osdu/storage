@@ -428,25 +428,28 @@ Give `client-id` and `client-secret` to services, which should be authorized wit
 
 You will need to have the following environment variables defined.
 
-| name                                           | value                                     | description                                                      | sensitive?                                        | source |
-|------------------------------------------------|-------------------------------------------|------------------------------------------------------------------|---------------------------------------------------|--------|
-| `DEPLOY_ENV`                                   | `empty`                                   | Required but not used, should be set up with string "empty"      | no                                                | -      |
-| `GROUP_ID`                                     | ex`opendes-gc.projects.com`               | OSDU R2 to run tests under                                       | no                                                | -      |
-| `LEGAL_URL`                                    | ex`http://localhsot:8080/api/legal/v1/`   | Legal API endpoint                                               | no                                                | -      |
-| `STORAGE_URL`                                  | ex`http://localhost:8080/api/storage/v2/` | Endpoint of storage service                                      | no                                                | -      |
-| `TENANT_NAME`                                  | ex `opendes`                              | OSDU tenant used for testing                                     | no                                                | --     |
-| `TEST_OPENID_PROVIDER_CLIENT_ID`               | `********`                                | Client Id for `$INTEGRATION_TESTER`                              | yes                                               | --     |
-| `TEST_OPENID_PROVIDER_CLIENT_SECRET`           | `********`                                |                                                                  | Client secret for `$INTEGRATION_TESTER`           | --     |
-| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID`     | `********`                                | Client Id for `$NO_ACCESS_INTEGRATION_TESTER`                    | yes                                               | --     |
-| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET` | `********`                                |                                                                  | Client secret for `$NO_ACCESS_INTEGRATION_TESTER` | --     |
-| `TEST_OPENID_PROVIDER_URL`                     | `https://keycloak.com/auth/realms/osdu`   | OpenID provider url                                              | yes                                               | --     |
-| `OPA_INTEGRATION_ENABLED`                      | `true` OR `false`                         | Should be update if integration with OPA\Policy enabled\disabled | no                                                | --     |
+| name                                           | value                                          | description                                                      | sensitive?                                        | source |
+|------------------------------------------------|------------------------------------------------|------------------------------------------------------------------|---------------------------------------------------|--------|
+| `DEPLOY_ENV`                                   | `empty`                                        | Required but not used, should be set up with string "empty"      | no                                                | -      |
+| `GROUP_ID`                                     | ex`opendes-gc.projects.com`                    | OSDU R2 to run tests under                                       | no                                                | -      |
+| `LEGAL_URL`                                    | ex`http://localhsot:8080/api/legal/v1/`        | Legal API endpoint                                               | no                                                | -      |
+| `STORAGE_URL`                                  | ex`http://localhost:8080/api/storage/v2/`      | Endpoint of storage service                                      | no                                                | -      |
+| `TENANT_NAME`                                  | ex `opendes`                                   | OSDU tenant used for testing                                     | no                                                | --     |
+| `TEST_OPENID_PROVIDER_CLIENT_ID`               | `********`                                     | Client Id for `$INTEGRATION_TESTER`                              | yes                                               | --     |
+| `TEST_OPENID_PROVIDER_CLIENT_SECRET`           | `********`                                     |                                                                  | Client secret for `$INTEGRATION_TESTER`           | --     |
+| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID`     | `********`                                     | Client Id for `$NO_ACCESS_INTEGRATION_TESTER`                    | yes                                               | --     |
+| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET` | `********`                                     |                                                                  | Client secret for `$NO_ACCESS_INTEGRATION_TESTER` | --     |
+| `TEST_OPENID_PROVIDER_URL`                     | `https://keycloak.com/auth/realms/osdu`        | OpenID provider url                                              | yes                                               | --     |
+| `OPA_INTEGRATION_ENABLED`                      | `true` OR `false`                              | Should be update if integration with OPA\Policy enabled\disabled | no                                                | --     |
+| `ENTITLEMENTS_URL`                             | ex`http://localhost:8080/api/entitlements/v2/` | Endpoint of entitlements service                                 | no                                                | -      |
+| `DATA_ROOT_OPENID_PROVIDER_CLIENT_ID`          | `********`                                     | Client Id for data root tester                                   | yes                                               | -      |
+| `DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET`      | `********`                                     | Client secret for data root tester                               | yes                                               | -      |
 
 **Entitlements configuration for integration accounts**
 
-| INTEGRATION_TESTER | NO_DATA_ACCESS_TESTER | 
-| ---  | ---   |
-| users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin |
+| INTEGRATION_TESTER                                                                                                                                                                                             | NO_DATA_ACCESS_TESTER                                         | DATA_ROOT_TESTER                                                                        | 
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin | users<br/>users.data.root<br/>service.entitlements.user<br/>service.storage.viewer<br/> |
 
 Execute following command to build code and run all the integration tests:
 
