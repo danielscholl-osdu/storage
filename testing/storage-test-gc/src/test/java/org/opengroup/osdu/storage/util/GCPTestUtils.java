@@ -42,4 +42,14 @@ public class GCPTestUtils extends TestUtils{
 		}
 		return "Bearer " + noDataAccesstoken;
 	}
+
+	@Override
+	public String getDataRootUserToken() throws Exception {
+		if (Strings.isNullOrEmpty(dataRootToken)) {
+			String serviceAccountFile = System.getProperty("DATA_ROOT_TESTER",
+					System.getenv("DATA_ROOT_TESTER"));
+			dataRootToken = new GoogleServiceAccount(serviceAccountFile).getAuthToken();
+		}
+		return "Bearer " + dataRootToken;
+	}
 }

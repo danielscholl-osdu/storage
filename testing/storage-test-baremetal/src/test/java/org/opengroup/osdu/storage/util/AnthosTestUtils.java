@@ -41,4 +41,12 @@ public class AnthosTestUtils extends TestUtils {
         }
         return "Bearer " + noDataAccesstoken;
     }
+
+    @Override
+    public String getDataRootUserToken() throws Exception {
+        if (Strings.isNullOrEmpty(dataRootToken)) {
+            dataRootToken = openIDTokenProvider.getDataRootToken();
+        }
+        return "Bearer " + dataRootToken;
+    }
 }

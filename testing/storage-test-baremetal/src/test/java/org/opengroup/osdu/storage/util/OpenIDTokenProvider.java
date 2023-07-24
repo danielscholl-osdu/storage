@@ -44,6 +44,7 @@ public class OpenIDTokenProvider {
     private final Scope scope;
     private final ClientAuthentication clientAuthentication;
     private final ClientAuthentication noAccessClientAuthentication;
+    private final ClientAuthentication dataRootAuthentication;
 
     public OpenIDTokenProvider() {
         this.tokenEndpointURI = openIDProviderConfig.getProviderMetadata().getTokenEndpointURI();
@@ -57,6 +58,11 @@ public class OpenIDTokenProvider {
             new ClientSecretBasic(
                 new ClientID(openIDProviderConfig.getNoAccessClientId()),
                 new Secret(openIDProviderConfig.getNoAccessClientSecret())
+            );
+        this.dataRootAuthentication =
+            new ClientSecretBasic(
+                new ClientID(openIDProviderConfig.getDataRootClientId()),
+                new Secret(openIDProviderConfig.getDataRootClientSecret())
             );
     }
 
@@ -72,6 +78,15 @@ public class OpenIDTokenProvider {
     public String getNoAccessToken() {
         try {
             TokenRequest request = new TokenRequest(this.tokenEndpointURI, this.noAccessClientAuthentication, this.clientGrant, this.scope);
+            return requestToken(request);
+        } catch (ParseException | IOException e) {
+            throw new RuntimeException("Unable get credentials from INTEGRATION_TESTER variables", e);
+        }
+    }
+
+    public String getDataRootToken(){
+        try {
+            TokenRequest request = new TokenRequest(this.tokenEndpointURI, this.dataRootAuthentication, this.clientGrant, this.scope);
             return requestToken(request);
         } catch (ParseException | IOException e) {
             throw new RuntimeException("Unable get credentials from INTEGRATION_TESTER variables", e);

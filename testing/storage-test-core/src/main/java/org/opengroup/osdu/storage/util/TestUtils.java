@@ -41,11 +41,13 @@ import com.google.gson.Gson;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.http.HttpStatus;
 
 public abstract class TestUtils {
     protected static String token = null;
     protected static String noDataAccesstoken = null;
+    protected static String dataRootToken = null;
     private static Gson gson = new Gson();
 
     protected static String domain = System.getProperty("DOMAIN", System.getenv("DOMAIN"));
@@ -115,6 +117,10 @@ public abstract class TestUtils {
     public abstract String getToken() throws Exception;
 
     public abstract String getNoDataAccessToken() throws Exception;
+
+    public String getDataRootUserToken() throws Exception{
+        throw new NotImplementedException();
+    }
 
     public static ClientResponse sendWithCustomMediaType(String path, String httpMethod, Map<String, String> headers, String contentType, String requestBody,
                                                          String query) throws Exception {
