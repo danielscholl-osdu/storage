@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.opengroup.osdu.core.common.Constants;
@@ -611,6 +612,18 @@ public class RecordUtil {
 		return records.toString();
 	}
 
+	public static String createJsonRecordWithCustomAcl(String newRecordId, String kind,
+			String legalTag, String dataGroupEmail) {
+		JsonObject record = getDefaultRecordWithCustomAcl(newRecordId, kind, legalTag, dataGroupEmail);
+		JsonObject dataJson = new JsonObject();
+		dataJson.addProperty("score-int", 58377304471659395L);
+		dataJson.addProperty("score-double", 58377304.471659395);
+		record.add("data", dataJson);
+		JsonArray records = new JsonArray();
+		records.add(record);
+		return records.toString();
+	}
+
 	private static double[][][][] createCoordinates4(int mode, int dimension) {
 		double[][][][] pts_s = new double[2][2][5][dimension];
 		for (int l = 0; l < 2; l++) {
@@ -663,6 +676,12 @@ public class RecordUtil {
 	private static JsonObject getDefaultRecord(String id, String kind, String legalTag) {
 		JsonArray acls = new JsonArray();
 		acls.add(TestUtils.getAcl());
+		return getDefaultRecordFromAcl(id, kind, legalTag, acls);
+	}
+
+	private static JsonObject getDefaultRecordWithCustomAcl(String id, String kind, String legalTag, String acl) {
+		JsonArray acls = new JsonArray();
+		acls.add(acl);
 		return getDefaultRecordFromAcl(id, kind, legalTag, acls);
 	}
 
