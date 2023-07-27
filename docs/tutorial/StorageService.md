@@ -91,7 +91,7 @@ From the Storage Service perspective, the metadata to be ingested is called __re
 * __data__: _(mandatory)_ Record payload represented as a list of key-value pairs.
 * __createUser__: ID of the user who has created the record
 * __createTime__: Time at which the record was created
-* __modifyUser__: Email of the user who has last updated that specific version of the record (Not present in first version of the record)
+* __modifyUser__: ID of the user who has last updated that specific version of the record (Not present in first version of the record)
 * __modifyTime__: Time at which that version of the record was updated (Not present in first version of the record)
 
 **Note**: `modifyUser` and `modifyTime` values are only updated for data-block updates using the `PATCH` or `PUT` APIs. Metadata updates using the `PATCH` API do not create a new record version nor update the `modifyTime` and `modifyUser` attributes.
