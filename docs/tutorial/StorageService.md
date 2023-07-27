@@ -73,6 +73,8 @@ From the Storage Service perspective, the metadata to be ingested is called __re
    "data": {
      "msg": "Hello World, Data Ecosystem!"
    },
+   "createUser": "user@email.com/userId",
+   "createTime": "2023-03-28T10:31:09.890Z",
    "modifyUser": "user@email.com",
    "modifyTime": "2023-03-28T10:31:09.890Z"
 }
@@ -87,8 +89,13 @@ From the Storage Service perspective, the metadata to be ingested is called __re
     * __legal.legaltags__: List of legal tag names associated with the record.
     * __legal.otherRelevantDataCountries__: List of other relevant data countries. Must have at least 2 values: where the data was ingested from and where Data Ecosystem stores the data.
 * __data__: _(mandatory)_ Record payload represented as a list of key-value pairs.
-* __modifyUser__: Email of the user who has last updated that specific version of the record(Not present in 1st version of the record)
-* __modifyTime__: Time at which that version of the record was updated(Not present in 1st version of the record)
+* __createUser__: ID of the user who has created the record
+* __createTime__: Time at which the record was created
+* __modifyUser__: Email of the user who has last updated that specific version of the record (Not present in first version of the record)
+* __modifyTime__: Time at which that version of the record was updated (Not present in first version of the record)
+
+**Note**: `modifyUser` and `modifyTime` values are only updated for data-block updates using the `PATCH` or `PUT` APIs. Metadata updates using the `PATCH` API do not create a new record version nor update the `modifyTime` and `modifyUser` attributes.
+
 
 [Back to table of contents](#TOC)
 
