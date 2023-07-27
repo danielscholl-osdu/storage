@@ -73,7 +73,7 @@ From the Storage Service perspective, the metadata to be ingested is called __re
    "data": {
      "msg": "Hello World, Data Ecosystem!"
    },
-   "createUser": "user@email.com/userId",
+   "createUser": "user@email.com",
    "createTime": "2023-03-28T10:31:09.890Z",
    "modifyUser": "user@email.com",
    "modifyTime": "2023-03-28T10:31:09.890Z"
