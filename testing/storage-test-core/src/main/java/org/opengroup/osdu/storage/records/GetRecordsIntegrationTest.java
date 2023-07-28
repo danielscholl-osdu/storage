@@ -27,6 +27,7 @@ import static org.junit.Assert.*;
 
 public abstract class GetRecordsIntegrationTest extends TestBase {
 	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":getrecord:" + System.currentTimeMillis();
+	protected static final String ANOTHER_RECORD_ID = TenantUtils.getTenantName() + ":getrecordnodup:" + System.currentTimeMillis();
 
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:getrecord:1.0."
 			+ System.currentTimeMillis();
@@ -43,7 +44,6 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
         LegalTagUtils.create(LEGAL_TAG_NAME_B, token);
 
 		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_A);
-
 
         ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getStatus());
@@ -75,6 +75,27 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 		assertEquals("5.837730447165939E7",
 				dataJson.get("double-tag").getAsJsonObject().get("score-double").toString());
 		assertEquals("123456789", dataJson.get("count").toString());
+	}
+
+	@Test
+	public void should_getRecord_withoutDuplicates_when_duplicateAclAndLegaltagsAreProvided() throws Exception {
+		String jsonInputWithDuplicates = RecordUtil.createRecordWithDuplicateAclAndLegaltags(ANOTHER_RECORD_ID, KIND, LEGAL_TAG_NAME_A);
+		ClientResponse putResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputWithDuplicates, "");
+		assertEquals(201, putResponse.getStatus());
+		assertTrue(putResponse.getType().toString().contains("application/json"));
+
+		ClientResponse response = TestUtils.send("records/" + ANOTHER_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		JsonObject acl = json.get("acl").getAsJsonObject();
+		JsonObject legal = json.get("legal").getAsJsonObject();
+
+		assertEquals(ANOTHER_RECORD_ID, json.get("id").getAsString());
+		assertEquals(KIND, json.get("kind").getAsString());
+		assertEquals(LEGAL_TAG_NAME_A, legal.get("legaltags").getAsString());
+		assertEquals(TestUtils.getAcl(), acl.get("owners").getAsString());
+		assertEquals(TestUtils.getAcl(), acl.get("viewers").getAsString());
 	}
 
 	@Test
