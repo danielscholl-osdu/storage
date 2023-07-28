@@ -30,6 +30,13 @@ public class RecordUtil {
         return records.toString();
     }
 
+	public static String createRecordWithDuplicateAclAndLegaltags(String id, String kind, String legalTag) {
+		JsonObject record = getDefaultRecordWithDefaultDataAndDuplicateAclAndLegaltags(id, kind, legalTag);
+		JsonArray records = new JsonArray();
+		records.add(record);
+		return records.toString();
+	}
+
 	public static String createDefaultJsonRecordWithParentId(String id, String kind, String legalTag, String parentId) {
 		JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
 		JsonObject ancestryObject = new JsonObject();
@@ -679,6 +686,13 @@ public class RecordUtil {
 		return getDefaultRecordFromAcl(id, kind, legalTag, acls);
 	}
 
+	private static JsonObject getDefaultRecordWithDuplicateAclsAndLegaltags(String id, String kind, String legalTag) {
+		JsonArray acls = new JsonArray();
+		acls.add(TestUtils.getAcl());
+		acls.add(TestUtils.getAcl());
+		return getDefaultRecordWithDuplicateAclAndLegaltags(id, kind, legalTag, acls);
+	}
+
 	private static JsonObject getDefaultRecordWithCustomAcl(String id, String kind, String legalTag, String acl) {
 		JsonArray acls = new JsonArray();
 		acls.add(acl);
@@ -714,6 +728,30 @@ public class RecordUtil {
 		return record;
 	}
 
+	private static JsonObject getDefaultRecordWithDuplicateAclAndLegaltags(String id, String kind, String legalTag, JsonArray acls) {
+		JsonObject acl = new JsonObject();
+		acl.add("viewers", acls);
+		acl.add("owners", acls);
+
+		JsonArray tags = new JsonArray();
+		tags.add(legalTag);
+		tags.add(legalTag);
+
+		JsonArray ordcJson = new JsonArray();
+		ordcJson.add("BR");
+
+		JsonObject legal = new JsonObject();
+		legal.add("legaltags", tags);
+		legal.add("otherRelevantDataCountries", ordcJson);
+
+		JsonObject record = new JsonObject();
+		record.addProperty("id", id);
+		record.addProperty("kind", kind);
+		record.add("acl", acl);
+		record.add("legal", legal);
+		return record;
+	}
+
 	private static JsonObject getDefaultRecordWithDefaultData(String id, String kind, String legalTag) {
 		JsonObject data = new JsonObject();
 		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
@@ -723,8 +761,23 @@ public class RecordUtil {
 		return record;
 	}
 
+	private static JsonObject getDefaultRecordWithDefaultDataAndDuplicateAclAndLegaltags(String id, String kind, String legalTag) {
+		JsonObject data = new JsonObject();
+		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
+		data.add("double-tag", getNumberPropertyObject("score-double", 58377304.471659395));
+		data.addProperty("count", 123456789L);
+		JsonObject record = getRecordWithInputDataAndDuplicateAclsAndLegaltags(id, kind, legalTag, data);
+		return record;
+	}
+
 	private static JsonObject getRecordWithInputData(String id, String kind, String legalTag, JsonObject data) {
 		JsonObject record = getDefaultRecord(id, kind, legalTag);
+		record.add("data", data);
+		return record;
+	}
+
+	private static JsonObject getRecordWithInputDataAndDuplicateAclsAndLegaltags(String id, String kind, String legalTag, JsonObject data) {
+		JsonObject record = getDefaultRecordWithDuplicateAclsAndLegaltags(id, kind, legalTag);
 		record.add("data", data);
 		return record;
 	}
