@@ -78,7 +78,7 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 	}
 
 	@Test
-	public void should_getRecord_withoutDuplicates_when_duplicateAclAndLegaltagsAreProvided() {
+	public void should_getRecord_withoutDuplicates_when_duplicateAclAndLegaltagsAreProvided() throws Exception {
 		String jsonInputWithDuplicates = RecordUtil.createRecordWithDuplicateAclAndLegaltags(ANOTHER_RECORD_ID, KIND, LEGAL_TAG_NAME_A);
 		ClientResponse putResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputWithDuplicates, "");
 		assertEquals(201, putResponse.getStatus());
