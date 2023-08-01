@@ -14,18 +14,17 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class DeleteRecordLogicallyAndItsVersionsTest extends TestBase {
 
@@ -42,9 +41,9 @@ public abstract class DeleteRecordLogicallyAndItsVersionsTest extends TestBase {
 
 		LegalTagUtils.create(LEGAL_TAG, testUtils.getToken());
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 				RecordUtil.createJsonRecordWithData(RECORD_ID, KIND, LEGAL_TAG, "v1"), "");
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 	}
 
 	@After
@@ -57,13 +56,13 @@ public abstract class DeleteRecordLogicallyAndItsVersionsTest extends TestBase {
 	@Test
 	public void should_deleteRecordAndAllVersionsLogically_when_userIsAuthorized() throws Exception {
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 				RecordUtil.createJsonRecordWithData(RECORD_ID, KIND, LEGAL_TAG, "v2"), "");
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
-		ClientResponse versionResponse = TestUtils.send("records/versions/" + RECORD_ID, "GET",
+		CloseableHttpResponse versionResponse = TestUtils.send("records/versions/" + RECORD_ID, "GET",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, versionResponse.getStatus());
+		assertEquals(HttpStatus.SC_OK, versionResponse.getCode());
 
 		String versions = TestUtils.getResult(versionResponse, HttpStatus.SC_OK, String.class);
 		JsonObject content = new JsonParser().parse(versions).getAsJsonObject();
@@ -72,15 +71,15 @@ public abstract class DeleteRecordLogicallyAndItsVersionsTest extends TestBase {
 		String versionOne = versionArray.get(0).toString();
 		String versionTwo = versionArray.get(1).toString();
 
-		ClientResponse deleteResponse = TestUtils.send("records/", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+		CloseableHttpResponse deleteResponse = TestUtils.send("records/", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 				"{'anything':'anything'}", RECORD_ID + ":delete");
 
-		assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getStatus());
+		assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
 
 		response = TestUtils.send("records/" + RECORD_ID + "/" + versionOne, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 
 		response = TestUtils.send("records/" + RECORD_ID + "/" + versionTwo, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 	}
 }

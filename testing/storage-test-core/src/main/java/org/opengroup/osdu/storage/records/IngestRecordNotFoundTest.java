@@ -14,15 +14,14 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class IngestRecordNotFoundTest extends TestBase {
 
@@ -47,10 +46,10 @@ public abstract class IngestRecordNotFoundTest extends TestBase {
 
 		String record = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
 
 		String result = TestUtils.getResult(response, HttpStatus.SC_BAD_REQUEST, String.class);
-		JsonObject jsonResponse = new JsonParser().parse(result).getAsJsonObject();
+		JsonObject jsonResponse = JsonParser.parseString(result).getAsJsonObject();
 		assertEquals("Error on writing record", jsonResponse.get("reason").getAsString());
 		assertEquals("Could not find group \"" + group + "\".",
 				jsonResponse.get("message").getAsString());

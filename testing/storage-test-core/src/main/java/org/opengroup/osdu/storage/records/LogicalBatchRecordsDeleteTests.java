@@ -18,7 +18,8 @@ import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
@@ -43,39 +44,39 @@ public abstract class LogicalBatchRecordsDeleteTests extends TestBase {
     public void should_deleteRecordsLogically_successfully() throws Exception {
         String requestBody = String.format("[\"%s\",\"%s\"]", RECORD_ID_1, RECORD_ID_2);
 
-        ClientResponse response = TestUtils.send("records/delete", "POST",
+        CloseableHttpResponse response = TestUtils.send("records/delete", "POST",
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, EMPTY);
-        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_1, "GET",
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_2, "GET",
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
     }
 
     @Test
     public void should_deleteRecordsLogically_withPartialSuccess_whenOneRecordNotFound() throws Exception {
         String requestBody = String.format("[\"%s\",\"%s\",\"%s\"]", RECORD_ID_1, RECORD_ID_2, NOT_EXISTED_RECORD_ID);
 
-        ClientResponse deleteResponse = TestUtils.send("records/delete", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/delete", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 requestBody, EMPTY);
 
-        assertEquals(SC_MULTI_STATUS, deleteResponse.getStatus());
+        assertEquals(SC_MULTI_STATUS, deleteResponse.getCode());
 
-        JsonArray jsonBody = new JsonParser().parse(deleteResponse.getEntity(String.class)).getAsJsonArray();
+        JsonArray jsonBody = JsonParser.parseString(EntityUtils.toString(deleteResponse.getEntity())).getAsJsonArray();
 
         assertEquals(1, jsonBody.size());
         assertEquals(getValueFromDeleteResponseJsonArray(jsonBody, "notDeletedRecordId"), NOT_EXISTED_RECORD_ID);
         assertEquals(getValueFromDeleteResponseJsonArray(jsonBody, "message"), "Record with id '" + NOT_EXISTED_RECORD_ID + "' not found");
 
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID_1, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(SC_NOT_FOUND, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID_1, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(SC_NOT_FOUND, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_2, "GET",HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(SC_NOT_FOUND, response.getStatus());
+        assertEquals(SC_NOT_FOUND, response.getCode());
     }
 
     public void setup(String token) throws Exception {
@@ -84,13 +85,13 @@ public abstract class LogicalBatchRecordsDeleteTests extends TestBase {
         String firstBody = createBody(RECORD_ID_1, "anything", Lists.newArrayList(LEGAL_TAG), Lists.newArrayList("BR", "IT"));
         String secondBody = createBody(RECORD_ID_2, "anything", Lists.newArrayList(LEGAL_TAG), Lists.newArrayList("BR", "IT"));
 
-        ClientResponse firstResponse = TestUtils.send("records", "PUT",
+        CloseableHttpResponse firstResponse = TestUtils.send("records", "PUT",
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), firstBody, "");
-        ClientResponse secondResponse = TestUtils.send("records", "PUT",
+        CloseableHttpResponse secondResponse = TestUtils.send("records", "PUT",
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), secondBody, "");
 
-        assertEquals(HttpStatus.SC_CREATED, firstResponse.getStatus());
-        assertEquals(HttpStatus.SC_CREATED, secondResponse.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, firstResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, secondResponse.getCode());
     }
 
     public void tearDown(String token) throws Exception {

@@ -15,14 +15,14 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
+import com.google.gson.Gson;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.*;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
-import com.google.gson.Gson;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 
@@ -61,10 +61,10 @@ public class TestRecordsApiAcceptance extends RecordsApiAcceptanceTests {
 
 		String jsonInput = createJsonBody(RECORD_ID, "TestSpecialCharacters");
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-		String json = response.getEntity(String.class);
-		assertEquals(201, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		String json = EntityUtils.toString(response.getEntity());
+		assertEquals(201, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,

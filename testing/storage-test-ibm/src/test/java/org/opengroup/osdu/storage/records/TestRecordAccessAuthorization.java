@@ -14,18 +14,19 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.Map;
-
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.*;
 import org.opengroup.osdu.storage.util.*;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTests {
 
@@ -58,11 +59,11 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
             testUtils.getNoDataAccessToken());
 
-        ClientResponse response = TestUtils.send("records", "PUT", headers,
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
             RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatus());
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getCode());
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
         assertEquals(401, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
         assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
@@ -71,7 +72,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     @Override
     public void should_receiveHttp403_when_userIsNotAuthorizedToGetLatestVersionOfARecord() throws Exception {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), this.testUtils.getNoDataAccessToken());
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
         this.assertNotAuthorized(response);
     }
     protected void assertNotAuthorized(ClientResponse response) {
@@ -84,10 +85,10 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     @Test
     public void should_receiveHttp403_when_userIsNotAuthorizedToPurgeRecord() throws Exception {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), this.testUtils.getNoDataAccessToken());
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
-        Assert.assertEquals(401L, (long)response.getStatus());
-        JsonObject json = (new JsonParser()).parse((String)response.getEntity(String.class)).getAsJsonObject();
-        Assert.assertEquals(401L, (long)json.get("code").getAsInt());
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
+        Assert.assertEquals(401, response.getCode());
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+        Assert.assertEquals(401, json.get("code").getAsInt());
         Assert.assertEquals("Access denied", json.get("reason").getAsString());
     }
 
@@ -101,10 +102,10 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         Map<String, String> headersWithValidAccessToken = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
                 testUtils.getToken());
 
-        ClientResponse response = TestUtils.send("records", "PUT", headersWithValidAccessToken,
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", headersWithValidAccessToken,
                 RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
 
-        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
         // Query for original record (no access) and recently created record (with
         // access)
@@ -119,7 +120,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         body.add("records", records);
 
         response = TestUtils.send("query/records", "POST", headersWithNoDataAccessToken, body.toString(), "");
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatus());
+        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getCode());
 
 
         TestUtils.send("records/" + newRecordId, "DELETE", headersWithNoDataAccessToken, "", "");

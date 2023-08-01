@@ -15,7 +15,8 @@
 package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
@@ -52,40 +53,40 @@ public abstract class ParentRecordValidationTest extends TestBase {
 
     @Test
     public void shouldReturn200_whenRecordContainsValidAncestry() throws Exception {
-        ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
-        String responseString = response.getEntity(String.class);
-        String parentIdWithVersion = new JsonParser()
-                .parse(responseString)
+        String responseString = EntityUtils.toString(response.getEntity());
+        String parentIdWithVersion = JsonParser
+                .parseString(responseString)
                 .getAsJsonObject()
                 .get("recordIdVersions")
                 .getAsJsonArray()
                 .get(0).getAsString();
 
-        ClientResponse response2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecordWithParentId(RECORD_ID_2, KIND, LEGAL_TAG, parentIdWithVersion), "");
 
-        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-        assertEquals(HttpStatus.SC_CREATED, response2.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
+        assertEquals(HttpStatus.SC_CREATED, response2.getCode());
     }
 
     @Test
     public void shouldReturn404_whenRecordAncestryNotExisted() throws Exception {
 
         String parentIdWithVersion = "opendes:test:1.1.1000000000000:1000000000000000";
-        ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecordWithParentId(RECORD_ID_3, KIND, LEGAL_TAG, parentIdWithVersion), "");
 
 
         String expectedErrorMessage = "The record 'RecordIdWithVersion(recordId=opendes:test:1.1.1000000000000, recordVersion=1000000000000000)' was not found";
-        String actualErrorMessage = new JsonParser()
-                .parse(response.getEntity(String.class))
-                .getAsJsonObject()
-                .get("message")
-                .getAsString();
+        String actualErrorMessage = JsonParser
+            .parseString(EntityUtils.toString(response.getEntity()))
+            .getAsJsonObject()
+            .get("message")
+            .getAsString();
 
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
         assertEquals(expectedErrorMessage, actualErrorMessage);
     }
 }

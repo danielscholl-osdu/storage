@@ -16,20 +16,17 @@ package org.opengroup.osdu.storage.query;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     protected static final long NOW = System.currentTimeMillis();
@@ -57,8 +54,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnSingleRecordMatching_when_noConversionRequired() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -68,9 +65,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "none");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
 
@@ -84,16 +81,16 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
     @Test
     public void should_returnRecordMatchingAndRecordNotFound_when_noConversionRequired() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -104,9 +101,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "none");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
 
@@ -121,8 +118,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
     @Test
@@ -139,9 +136,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "none");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
     }
 
     @Test
@@ -149,8 +146,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnConvertedRecords_whenConversionRequiredAndNoError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -161,9 +158,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -174,10 +171,10 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(3, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
 
     }
 
@@ -186,8 +183,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnConvertedRecords_whenConversionRequiredAndNoErrorWithMultiplePairOfCoordinates() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithMultiplePairOfCoordinates(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -198,9 +195,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -210,10 +207,10 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(5, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
 
     }
 
@@ -222,8 +219,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnOriginalRecordsAndConversionStatusAsNoMeta_whenConversionRequiredAndNoMetaBlockInRecord() throws Exception{
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordNoMetaBlock(2, recordId, KIND, LEGAL_TAG);
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -235,9 +232,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -249,18 +246,18 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(3, responseObject.records[0].data.size());
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
         assertEquals("CRS Conversion: Meta Block is missing or empty in this record, no conversion applied.", conversionStatuses.get(0).errors.get(0));
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
     }
 
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndConversionErrorExists() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordMissingValue(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -271,9 +268,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -286,10 +283,10 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
         assertEquals("CRS conversion: Unknown coordinate pair 'z'.", conversionStatuses.get(0).errors.get(1));
         assertEquals("CRS conversion: property 'Y' is missing in datablock, no conversion applied to this property and its corresponding pairing property.", conversionStatuses.get(0).errors.get(0));
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
     }
 
     @Test
@@ -297,8 +294,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -308,9 +305,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -320,16 +317,16 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
     //@Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock1() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -339,9 +336,9 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -350,16 +347,16 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
     @Test
     public void should_returnRecordsAndConversionStatus_whenDateAndFormatProvidedInMetaBlock() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordsWithDateFormat(1, recordId, KIND, LEGAL_TAG, "yyyy-MM-dd", "creationDate", "2019-08-03", DATETIME_PERSISTABLE_REFERENCE);
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -369,8 +366,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -380,8 +377,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -389,8 +386,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 12);
@@ -400,8 +397,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -414,8 +411,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
         assertEquals("SUCCESS", conversionStatuses.get(0).status);
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
   //  @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -423,8 +420,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 12);
@@ -434,8 +431,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -449,8 +446,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("ERROR", conversionStatuses.get(0).status);
         assertEquals("Unit conversion: illegal value for property markers[1].measuredDepth", conversionStatuses.get(0).errors.get(0));
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -458,8 +455,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 13);
@@ -469,8 +466,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -483,8 +480,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
         assertEquals("SUCCESS", conversionStatuses.get(0).status);
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -492,8 +489,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 13);
@@ -503,8 +500,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -518,8 +515,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("ERROR", conversionStatuses.get(0).status);
         assertEquals("Unit conversion: illegal value for property markers[1].measuredDepth", conversionStatuses.get(0).errors.get(0));
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -527,8 +524,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithIndexOutOfBoundary() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 13);
@@ -538,8 +535,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -553,8 +550,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("SUCCESS", conversionStatuses.get(0).status);
         assertEquals("Unit conversion: property markers[2].measuredDepth missing", conversionStatuses.get(0).errors.get(0));
 
-        ClientResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getStatus());
+        CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -562,8 +559,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypePoint() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -573,8 +570,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -586,8 +583,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -595,8 +592,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPoint() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiPoint", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -606,8 +603,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -619,8 +616,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -628,8 +625,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypePolygon() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPolygon", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -639,8 +636,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -652,8 +649,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -661,8 +658,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPolygon() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiPolygon", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -672,8 +669,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -685,8 +682,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -694,8 +691,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeLineString() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsLineString", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -705,8 +702,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -718,8 +715,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -727,8 +724,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiLineString() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiLineString", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -738,8 +735,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -751,8 +748,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -760,8 +757,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeGeometryCollection() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsGeometryCollection", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -771,8 +768,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -784,8 +781,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -793,8 +790,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnConvertedRecords_whenConversionRequiredWithAsIngestedCoordinatesBlockWithError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInvalidAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -804,8 +801,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -817,8 +814,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -826,8 +823,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     public void should_returnConvertedRecords_whenConversionNotRequiredWithAsIngestedCoordinatesAndWgs84CoordinatesBlocks() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithWGS84Coordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -837,8 +834,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);
@@ -850,7 +847,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(1, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
     }
 }

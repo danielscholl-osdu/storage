@@ -14,30 +14,24 @@
 
 package org.opengroup.osdu.storage.legal;
 
-import static org.opengroup.osdu.storage.util.LegalTagUtils.createRandomName;
-import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
-import static org.apache.http.HttpStatus.SC_CREATED;
-import static org.apache.http.HttpStatus.SC_OK;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.google.common.collect.Lists;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import io.jsonwebtoken.lang.Collections;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.junit.Test;
+import org.opengroup.osdu.storage.util.DummyRecordsHelper.CreateRecordResponse;
+import org.opengroup.osdu.storage.util.DummyRecordsHelper.RecordResultMock;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.*;
-
-import com.google.common.collect.Lists;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import org.opengroup.osdu.storage.util.*;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper.CreateRecordResponse;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper.RecordResultMock;
-import com.sun.jersey.api.client.ClientResponse;
-
-import io.jsonwebtoken.lang.Collections;
+import static org.apache.http.HttpStatus.*;
+import static org.junit.Assert.*;
+import static org.opengroup.osdu.storage.util.LegalTagUtils.createRandomName;
 
 public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 
@@ -122,35 +116,35 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 				Lists.newArrayList(LEGAL_TAG_CHILD_THAT_WILL_NOT_BE_CREATED), Lists.newArrayList("FR", "US", "CA"),
 				null);
 
-		ClientResponse response = TestUtils.send("records", "PUT",
+		CloseableHttpResponse response = TestUtils.send("records", "PUT",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), childBody, "");
-		assertEquals(SC_BAD_REQUEST, response.getStatus());
+		assertEquals(SC_BAD_REQUEST, response.getCode());
 	}
 
 	@Test
 	public void should_return400_when_noParentRecordAndNoChildLegalTagsProvided() throws Exception {
 		String body = createBody(CHILD_ID_THAT_IS_NOT_CREATED, "childname", null, Lists.newArrayList("FR", "US"), null);
-		ClientResponse response = TestUtils.send("records", "PUT",
+		CloseableHttpResponse response = TestUtils.send("records", "PUT",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		assertEquals(SC_BAD_REQUEST, response.getStatus());
+		assertEquals(SC_BAD_REQUEST, response.getCode());
 	}
 
 	@Test
 	public void should_returnErrorCode400_when_noParentRecordAndNoORDCValuesProvided() throws Exception {
 		String body = createBody(CHILD_ID_THAT_IS_NOT_CREATED, "childname", Lists.newArrayList(LEGAL_TAG_PARENT_ONE),
 				null, null);
-		ClientResponse response = TestUtils.send("records", "PUT",
+		CloseableHttpResponse response = TestUtils.send("records", "PUT",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		assertEquals(SC_BAD_REQUEST, response.getStatus());
+		assertEquals(SC_BAD_REQUEST, response.getCode());
 	}
 
 	protected RecordResultMock retrieveRecord(String recordId) throws Exception {
 		System.out.println("Retrieving record=" + recordId);
-		ClientResponse response = TestUtils.send("records/" + recordId, "GET",
+		CloseableHttpResponse response = TestUtils.send("records/" + recordId, "GET",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		String responseBody = response.getEntity(String.class);
+		String responseBody = EntityUtils.toString(response.getEntity());
 		System.out.println(" responseBody=" + responseBody);
-		assertEquals(SC_OK, response.getStatus());
+		assertEquals(SC_OK, response.getCode());
 
 		return GSON.fromJson(responseBody, RecordResultMock.class);
 	}
@@ -210,13 +204,13 @@ public abstract class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 		String parentBody = createBody(parentId, dataValue, Lists.newArrayList(legalTagForParent), ordc, parents);
 		System.out.println("createAndAssertRecord");
 		System.out.println("parentBody=" + parentId + " " + parentBody);
-		ClientResponse response = TestUtils.send("records", "PUT",
+		CloseableHttpResponse response = TestUtils.send("records", "PUT",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), parentBody, "");
 
-		String responseBody = response.getEntity(String.class);
+		String responseBody = EntityUtils.toString(response.getEntity());
 		System.out.println("responseBody=" + parentId + " " + responseBody);
-		assertEquals(SC_CREATED, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		assertEquals(SC_CREATED, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		CreateRecordResponse result = GSON.fromJson(responseBody, CreateRecordResponse.class);
 

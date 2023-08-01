@@ -1,6 +1,6 @@
 /*
- * Copyright 2020-2022 Google LLC
- * Copyright 2020-2022 EPAM Systems, Inc
+ * Copyright 2020-2023 Google LLC
+ * Copyright 2020-2023 EPAM Systems, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,95 +25,104 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 
 public class OpenIDProviderConfig {
 
-    public static final String TEST_OPENID_PROVIDER_CLIENT_ID = "TEST_OPENID_PROVIDER_CLIENT_ID";
-    public static final String TEST_OPENID_PROVIDER_CLIENT_SECRET = "TEST_OPENID_PROVIDER_CLIENT_SECRET";
-    public static final String TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID = "TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID";
-    public static final String TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET = "TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET";
-    public static final String DATA_ROOT_OPENID_PROVIDER_CLIENT_ID = "DATA_ROOT_OPENID_PROVIDER_CLIENT_ID";
-    public static final String DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET = "DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET";
-    public static final String TEST_OPENID_PROVIDER_URL = "TEST_OPENID_PROVIDER_URL";
+  public static final String TEST_OPENID_PROVIDER_CLIENT_ID = "TEST_OPENID_PROVIDER_CLIENT_ID";
+  public static final String TEST_OPENID_PROVIDER_CLIENT_SECRET =
+      "TEST_OPENID_PROVIDER_CLIENT_SECRET";
+  public static final String TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID =
+      "TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID";
+  public static final String TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET =
+      "TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET";
+  public static final String DATA_ROOT_OPENID_PROVIDER_CLIENT_ID =
+      "DATA_ROOT_OPENID_PROVIDER_CLIENT_ID";
+  public static final String DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET =
+      "DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET";
+  public static final String TEST_OPENID_PROVIDER_URL = "TEST_OPENID_PROVIDER_URL";
 
-    private String clientId;
-    private String clientSecret;
-    private String noAccessClientId;
-    private String noAccessClientSecret;
-    private String dataRootClientId;
-    private String dataRootClientSecret;
-    private String url;
-    private final String[] scopes = {"openid"};
-    private static final OpenIDProviderConfig openIDProviderConfig = new OpenIDProviderConfig();
-    private static OIDCProviderMetadata providerMetadata;
+  private String clientId;
+  private String clientSecret;
+  private String noAccessClientId;
+  private String noAccessClientSecret;
+  private String dataRootClientId;
+  private String dataRootClientSecret;
+  private String url;
+  private final String[] scopes = {"openid"};
+  private static final OpenIDProviderConfig openIDProviderConfig = new OpenIDProviderConfig();
+  private static OIDCProviderMetadata providerMetadata;
 
-    public static OpenIDProviderConfig Instance() {
-        try {
-            openIDProviderConfig.clientId =
-                System.getProperty(TEST_OPENID_PROVIDER_CLIENT_ID,
-                    System.getenv(TEST_OPENID_PROVIDER_CLIENT_ID));
+  public static OpenIDProviderConfig Instance() {
+    try {
+      openIDProviderConfig.clientId =
+          System.getProperty(
+              TEST_OPENID_PROVIDER_CLIENT_ID, System.getenv(TEST_OPENID_PROVIDER_CLIENT_ID));
 
-            openIDProviderConfig.clientSecret =
-                System.getProperty(TEST_OPENID_PROVIDER_CLIENT_SECRET,
-                    System.getenv(TEST_OPENID_PROVIDER_CLIENT_SECRET));
+      openIDProviderConfig.clientSecret =
+          System.getProperty(
+              TEST_OPENID_PROVIDER_CLIENT_SECRET,
+              System.getenv(TEST_OPENID_PROVIDER_CLIENT_SECRET));
 
-            openIDProviderConfig.noAccessClientId =
-                System.getProperty(TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID,
-                    System.getenv(TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID));
+      openIDProviderConfig.noAccessClientId =
+          System.getProperty(
+              TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID,
+              System.getenv(TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID));
 
-            openIDProviderConfig.noAccessClientSecret =
-                System.getProperty(TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET,
-                    System.getenv(TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET));
+      openIDProviderConfig.noAccessClientSecret =
+          System.getProperty(
+              TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET,
+              System.getenv(TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET));
 
-            openIDProviderConfig.url =
-                System.getProperty(TEST_OPENID_PROVIDER_URL,
-                    System.getenv(TEST_OPENID_PROVIDER_URL));
+      openIDProviderConfig.url =
+          System.getProperty(TEST_OPENID_PROVIDER_URL, System.getenv(TEST_OPENID_PROVIDER_URL));
 
-            openIDProviderConfig.dataRootClientId =
-                System.getProperty(DATA_ROOT_OPENID_PROVIDER_CLIENT_ID,
-                    System.getenv(DATA_ROOT_OPENID_PROVIDER_CLIENT_ID));
+      openIDProviderConfig.dataRootClientId =
+          System.getProperty(
+              DATA_ROOT_OPENID_PROVIDER_CLIENT_ID,
+              System.getenv(DATA_ROOT_OPENID_PROVIDER_CLIENT_ID));
 
-            openIDProviderConfig.dataRootClientSecret =
-                System.getProperty(DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET,
-                    System.getenv(DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET));
+      openIDProviderConfig.dataRootClientSecret =
+          System.getProperty(
+              DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET,
+              System.getenv(DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET));
 
-            Issuer issuer = new Issuer(openIDProviderConfig.url);
-            OIDCProviderConfigurationRequest request = new OIDCProviderConfigurationRequest(issuer);
-            HTTPRequest httpRequest = request.toHTTPRequest();
-            HTTPResponse httpResponse = httpRequest.send();
-            providerMetadata = OIDCProviderMetadata.parse(httpResponse.getContentAsJSONObject());
-        } catch (Exception e) {
-            throw new RuntimeException("Malformed token provider configuration", e);
-        }
-        return openIDProviderConfig;
+      Issuer issuer = new Issuer(openIDProviderConfig.url);
+      OIDCProviderConfigurationRequest request = new OIDCProviderConfigurationRequest(issuer);
+      HTTPRequest httpRequest = request.toHTTPRequest();
+      HTTPResponse httpResponse = httpRequest.send();
+      providerMetadata = OIDCProviderMetadata.parse(httpResponse.getContentAsJSONObject());
+    } catch (Exception e) {
+      throw new RuntimeException("Malformed token provider configuration", e);
     }
+    return openIDProviderConfig;
+  }
 
-    public String getClientId() {
-        return clientId;
-    }
+  public String getClientId() {
+    return clientId;
+  }
 
-    public String getClientSecret() {
-        return clientSecret;
-    }
+  public String getClientSecret() {
+    return clientSecret;
+  }
 
-    public String getNoAccessClientId() {
-        return noAccessClientId;
-    }
+  public String getNoAccessClientId() {
+    return noAccessClientId;
+  }
 
-    public String getNoAccessClientSecret() {
-        return noAccessClientSecret;
-    }
+  public String getNoAccessClientSecret() {
+    return noAccessClientSecret;
+  }
 
-    public String[] getScopes() {
-        return scopes;
-    }
+  public String[] getScopes() {
+    return scopes;
+  }
 
-    public OIDCProviderMetadata getProviderMetadata() {
-        return providerMetadata;
-    }
+  public OIDCProviderMetadata getProviderMetadata() {
+    return providerMetadata;
+  }
 
-    public String getDataRootClientId() {
-        return dataRootClientId;
-    }
+  public String getDataRootClientId() {
+    return dataRootClientId;
+  }
 
-    public String getDataRootClientSecret() {
-        return dataRootClientSecret;
-    }
+  public String getDataRootClientSecret() {
+    return dataRootClientSecret;
+  }
 }

@@ -16,24 +16,18 @@ package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestBase;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.opengroup.osdu.storage.util.HeaderUtils.getHeadersWithxCollaboration;
 import static org.opengroup.osdu.storage.util.TestUtils.assertRecordVersion;
 import static org.opengroup.osdu.storage.util.TestUtils.createRecordInCollaborationContext_AndReturnVersion;
@@ -100,7 +94,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
     public void should_getLatestVersion_when_validRecordIdAndCollaborationIdAreProvided() throws Exception {
         if (!isCollaborationEnabled) return;
         //get record1 --> v1
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD1_V1);
         //get record1 with guid1 --> v3
         response = TestUtils.send("records/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
@@ -110,25 +104,25 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         assertRecordVersion(response, RECORD1_V4);
         //get record2 with guid1 --> 404
         response = TestUtils.send("records/" + RECORD_ID_2, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
     }
 
     @Test
     public void should_getCorrectRecordVersion_when_validRecordIdAndCollaborationIdAndRecordVersionAreProvided() throws Exception {
         if (!isCollaborationEnabled) return;
         //get record1 with v2 with context guid1
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID_1 + "/" + RECORD1_V2, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID_1 + "/" + RECORD1_V2, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD1_V2);
         //get 404 for record1 with v2 with context guid2
         response = TestUtils.send("records/" + RECORD_ID_1 + "/" + RECORD1_V2, "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
     }
 
     @Test
     public void should_getAllRecordVersions_when_validRecordIdAndCollaborationIdAreProvided() throws Exception {
         if (!isCollaborationEnabled) return;
         //I will get only v1 for record1 with no context
-        ClientResponse response = TestUtils.send("records/versions/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        CloseableHttpResponse response = TestUtils.send("records/versions/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         RecordsApiAcceptanceTests.GetVersionsResponse versionsResponse = TestUtils.getResult(response, 200, RecordsApiAcceptanceTests.GetVersionsResponse.class);
         assertEquals(1, versionsResponse.versions.length);
         assertEquals(RECORD1_V1, versionsResponse.versions[0]);
@@ -145,21 +139,21 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
     @Test
     public void should_getRecordsOnlyInCollaborationContext_whenQueryByKind() throws Exception {
         if (!isCollaborationEnabled) return;
-        ClientResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND1);
-        assertEquals(SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND1);
+        assertEquals(SC_OK, response.getCode());
         DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
         assertEquals(2, responseObject.results.length);
         assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_1::equals));
         assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_2::equals));
 
         response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND1);
-        assertEquals(SC_OK, response.getStatus());
+        assertEquals(SC_OK, response.getCode());
         responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
         assertEquals(1, responseObject.results.length);
         assertTrue(Arrays.stream(responseObject.results).anyMatch(RECORD_ID_1::equals));
 
         response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND3);
-        assertEquals(SC_OK, response.getStatus());
+        assertEquals(SC_OK, response.getCode());
         responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
         assertEquals(0, responseObject.results.length);
     }
@@ -167,8 +161,8 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
     @Test
     public void should_getEmptyRecordsInNoCollaborationContext_whenQueryByKind() throws Exception {
         if (!isCollaborationEnabled) return;
-        ClientResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(null, null, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND2);
-        assertEquals(SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records", "GET", getHeadersWithxCollaboration(null, null, TENANT_NAME, testUtils.getToken()), "", "?kind=" + KIND2);
+        assertEquals(SC_OK, response.getCode());
         DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
         assertEquals(0, responseObject.results.length);
     }
@@ -183,8 +177,8 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         records.add(RECORD_ID_3);
         JsonObject body = new JsonObject();
         body.add("records", records);
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -199,7 +193,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
         // If I fetch records 1, 2, and 3 in no context, I should get a 200 with records 1 and 2
         response = TestUtils.send("query/records:batch", "POST", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -223,8 +217,8 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
         records.add(RECORD_ID_3);
         JsonObject body = new JsonObject();
         body.add("records", records);
-        ClientResponse response = TestUtils.send("query/records", "POST", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("query/records", "POST", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.RecordsMock responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
         assertEquals(3, responseObject.records.length);
@@ -239,7 +233,7 @@ public abstract class CollaborationRecordsRetrieveTest extends TestBase {
 
         // If I query records 1, 2 and 3 in context guid1, I should get 2xx with records 1 and 3
         response = TestUtils.send("query/records", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);

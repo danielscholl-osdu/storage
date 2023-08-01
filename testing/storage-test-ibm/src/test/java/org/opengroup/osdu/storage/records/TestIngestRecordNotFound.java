@@ -14,20 +14,10 @@
 
 package org.opengroup.osdu.storage.records;
 
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.IBMTestUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestUtils;
-
-import com.sun.jersey.api.client.ClientResponse;
+import org.junit.*;
+import org.opengroup.osdu.storage.util.*;
 
 public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
 
@@ -65,7 +55,7 @@ public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
 
 		String record = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
         // it's a much simpler implementation to just check if the user is in the group that is being saved and if not to skip
         // per previous integration test requirements
         TestUtils.getResult(response, HttpStatus.SC_FORBIDDEN, String.class);

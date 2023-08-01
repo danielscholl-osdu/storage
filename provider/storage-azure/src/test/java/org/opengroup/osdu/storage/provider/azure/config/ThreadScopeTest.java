@@ -7,22 +7,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import javax.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-
-import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class ThreadScopeTest {
     private String name = "name";
@@ -46,7 +42,7 @@ class ThreadScopeTest {
 
     @Test
     void shouldGetObject() {
-        when(scope.get(name,null)).thenReturn(obj);
+        when(scope.get(name,factory)).thenReturn(obj);
         obj = scope.get(name,factory);
         assertNotNull(obj);
     }
@@ -64,7 +60,7 @@ class ThreadScopeTest {
         Enumeration<String> headerNames = Collections.enumeration(headers.keySet());
         when(request.getHeaderNames()).thenReturn(headerNames);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-        when(request.getHeader(any())).thenReturn(any());
+        when(request.getHeader(any())).thenReturn("header");
         assertEquals(threadScope.get(name,factory).getClass(),dpsHeaders.getClass());
     }
 }

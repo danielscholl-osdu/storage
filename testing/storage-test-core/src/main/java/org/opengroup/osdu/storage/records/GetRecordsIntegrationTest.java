@@ -15,13 +15,13 @@
 package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonArray;
-import org.apache.http.HttpStatus;
-import org.junit.Test;
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
 
 import static org.junit.Assert.*;
 
@@ -45,9 +45,9 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 
 		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_A);
 
-        ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
+		assertEquals(201, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -59,10 +59,10 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_getRecord_when_validRecordIdIsProvided() throws Exception {
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 		JsonObject dataJson = json.get("data").getAsJsonObject();
 		JsonObject acl = json.get("acl").getAsJsonObject();
 
@@ -80,14 +80,14 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 	@Test
 	public void should_getRecord_withoutDuplicates_when_duplicateAclAndLegaltagsAreProvided() throws Exception {
 		String jsonInputWithDuplicates = RecordUtil.createRecordWithDuplicateAclAndLegaltags(ANOTHER_RECORD_ID, KIND, LEGAL_TAG_NAME_A);
-		ClientResponse putResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputWithDuplicates, "");
-		assertEquals(201, putResponse.getStatus());
-		assertTrue(putResponse.getType().toString().contains("application/json"));
+		CloseableHttpResponse putResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputWithDuplicates, "");
+		assertEquals(201, putResponse.getCode());
+		assertTrue(putResponse.getEntity().getContentType().contains("application/json"));
 
-		ClientResponse response = TestUtils.send("records/" + ANOTHER_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("records/" + ANOTHER_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 		JsonObject acl = json.get("acl").getAsJsonObject();
 		JsonObject legal = json.get("legal").getAsJsonObject();
 
@@ -100,11 +100,11 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_getOnlyTheCertainDataFields_when_attributesAreProvided() throws Exception {
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?attribute=data.count&attribute=data.int-tag.score-int");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 		JsonObject dataJson = json.get("data").getAsJsonObject();
 		JsonObject acl = json.get("acl").getAsJsonObject();
 
@@ -120,10 +120,10 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_notReturnFieldsAlreadyInDatastore_when_returningRecord() throws Exception {
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 
 		assertNotNull(json.get("id"));
 		assertNotNull(json.get("kind"));
@@ -141,13 +141,13 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
     @Test
     public void should_legaltagChange_when_updateRecordWithLegaltag() throws Exception {
 		String newJsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_B);
-        ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), newJsonInput, "?skipdupes=false");
-        assertEquals(201, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), newJsonInput, "?skipdupes=false");
+        assertEquals(201, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 
         assertEquals(RECORD_ID, json.get("id").getAsString());
         assertEquals(KIND, json.get("kind").getAsString());
