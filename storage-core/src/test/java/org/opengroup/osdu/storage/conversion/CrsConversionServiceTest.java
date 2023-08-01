@@ -16,32 +16,30 @@ package org.opengroup.osdu.storage.conversion;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.apache.http.client.config.RequestConfig;
-import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
-import org.opengroup.osdu.core.common.model.crs.*;
-import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-import org.opengroup.osdu.core.common.model.crs.CrsPropertySet;
-import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
-import org.opengroup.osdu.storage.di.CrsConversionConfig;
-import org.opengroup.osdu.storage.di.SpringConfig;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.crs.CrsConverterFactory;
 import org.opengroup.osdu.core.common.crs.CrsConverterService;
 import org.opengroup.osdu.core.common.http.HttpResponse;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.crs.*;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
+import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
+import org.opengroup.osdu.storage.di.CrsConversionConfig;
+import org.opengroup.osdu.storage.di.SpringConfig;
 
 import java.util.*;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)

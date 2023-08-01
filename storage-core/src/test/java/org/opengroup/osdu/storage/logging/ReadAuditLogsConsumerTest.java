@@ -29,10 +29,13 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.partition.PartitionInfo;
 import org.opengroup.osdu.core.common.partition.Property;
 import org.opengroup.osdu.storage.service.IPartitionService;
-import org.powermock.reflect.Whitebox;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class ReadAuditLogsConsumerTest {
@@ -47,10 +50,11 @@ public class ReadAuditLogsConsumerTest {
     @InjectMocks
     private ReadAuditLogsConsumer readAuditLogsConsumer;
 
+    private ICache<String, Boolean> readAuditLogSwitchCache;
+
     @Before
     public void setup() {
-        ICache<String, Boolean> readAuditLogSwitchCache = new VmCache<>(60, 2);
-        Whitebox.setInternalState(readAuditLogsConsumer, "readAuditLogSwitchCache", readAuditLogSwitchCache);
+        readAuditLogSwitchCache = new VmCache<>(60, 2);
     }
 
     @Test
@@ -58,12 +62,12 @@ public class ReadAuditLogsConsumerTest {
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("dp");
         ICache<String, Boolean> readAuditLogSwitchCache = new VmCache<>(100, 1);
         readAuditLogSwitchCache.put("is-read-audit-logs-enabled-dp", true);
-        Whitebox.setInternalState(readAuditLogsConsumer, "readAuditLogSwitchCache", readAuditLogSwitchCache);
+        ReflectionTestUtils.setField(readAuditLogsConsumer,"readAuditLogSwitchCache", readAuditLogSwitchCache);
         AuditPayload auditPayload = Mockito.mock(AuditPayload.class);
         readAuditLogsConsumer.accept(auditPayload);
 
-        Mockito.verify(logger).audit(auditPayload);
-        Mockito.verifyZeroInteractions(partitionService);
+        verify(logger).audit(auditPayload);
+        verifyNoMoreInteractions(partitionService);
     }
 
     @Test
@@ -71,11 +75,12 @@ public class ReadAuditLogsConsumerTest {
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("dp");
         ICache<String, Boolean> readAuditLogSwitchCache = new VmCache<>(100, 1);
         readAuditLogSwitchCache.put("is-read-audit-logs-enabled-dp", false);
-        Whitebox.setInternalState(readAuditLogsConsumer, "readAuditLogSwitchCache", readAuditLogSwitchCache);
         AuditPayload auditPayload = Mockito.mock(AuditPayload.class);
+        ReflectionTestUtils.setField(readAuditLogsConsumer,"readAuditLogSwitchCache", readAuditLogSwitchCache);
+
         readAuditLogsConsumer.accept(auditPayload);
 
-        Mockito.verifyZeroInteractions(logger, partitionService);
+        verifyNoMoreInteractions(logger, partitionService);
     }
 
     @Test
@@ -90,12 +95,14 @@ public class ReadAuditLogsConsumerTest {
         Mockito.when(partitionService.getPartition("dp")).thenReturn(partitionInfo);
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("dp");
         AuditPayload auditPayload = Mockito.mock(AuditPayload.class);
+        ReflectionTestUtils.setField(readAuditLogsConsumer,"readAuditLogSwitchCache", readAuditLogSwitchCache);
+
         readAuditLogsConsumer.accept(auditPayload);
 
-        Mockito.verify(partitionService).getPartition("dp");
-        Mockito.verify(dpsHeaders, Mockito.times(3)).getPartitionId();
-        Mockito.verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
-        Mockito.verifyNoMoreInteractions(logger);
+        verify(partitionService).getPartition("dp");
+        verify(dpsHeaders, Mockito.times(3)).getPartitionId();
+        verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
+        verifyNoMoreInteractions(logger);
     }
 
     @Test
@@ -110,12 +117,14 @@ public class ReadAuditLogsConsumerTest {
         Mockito.when(partitionService.getPartition("dp")).thenReturn(partitionInfo);
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("dp");
         AuditPayload auditPayload = Mockito.mock(AuditPayload.class);
+        ReflectionTestUtils.setField(readAuditLogsConsumer,"readAuditLogSwitchCache", readAuditLogSwitchCache);
+
         readAuditLogsConsumer.accept(auditPayload);
 
-        Mockito.verify(partitionService).getPartition("dp");
-        Mockito.verify(dpsHeaders, Mockito.times(2)).getPartitionId();
-        Mockito.verify(logger).audit(auditPayload);
-        Mockito.verifyNoMoreInteractions(logger);
+        verify(partitionService).getPartition("dp");
+        verify(dpsHeaders, Mockito.times(2)).getPartitionId();
+        verify(logger).audit(auditPayload);
+        verifyNoMoreInteractions(logger);
     }
 
     @Test
@@ -130,15 +139,16 @@ public class ReadAuditLogsConsumerTest {
         Mockito.when(partitionService.getPartition("dp")).thenReturn(partitionInfo);
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("dp");
         AuditPayload auditPayload = Mockito.mock(AuditPayload.class);
+        ReflectionTestUtils.setField(readAuditLogsConsumer,"readAuditLogSwitchCache", readAuditLogSwitchCache);
 
         readAuditLogsConsumer.accept(auditPayload);
         // on second time should use cached value
         readAuditLogsConsumer.accept(auditPayload);
 
-        Mockito.verify(partitionService).getPartition("dp");
-        Mockito.verify(dpsHeaders, Mockito.times(4)).getPartitionId();
-        Mockito.verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
-        Mockito.verifyNoMoreInteractions(logger);
+        verify(partitionService).getPartition("dp");
+        verify(dpsHeaders, Mockito.times(4)).getPartitionId();
+        verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
+        verifyNoMoreInteractions(logger);
     }
 
     @Test
@@ -153,15 +163,16 @@ public class ReadAuditLogsConsumerTest {
         Mockito.when(partitionService.getPartition("dp")).thenReturn(partitionInfo);
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("dp");
         AuditPayload auditPayload = Mockito.mock(AuditPayload.class);
+        ReflectionTestUtils.setField(readAuditLogsConsumer,"readAuditLogSwitchCache", readAuditLogSwitchCache);
 
         readAuditLogsConsumer.accept(auditPayload);
         // on second time should use cached value
         readAuditLogsConsumer.accept(auditPayload);
 
-        Mockito.verify(partitionService).getPartition("dp");
-        Mockito.verify(dpsHeaders, Mockito.times(4)).getPartitionId();
-        Mockito.verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as true");
-        Mockito.verify(logger, Mockito.times(2)).audit(auditPayload);
-        Mockito.verifyNoMoreInteractions(logger);
+        verify(partitionService).getPartition("dp");
+        verify(dpsHeaders, Mockito.times(4)).getPartitionId();
+        verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as true");
+        verify(logger, Mockito.times(2)).audit(auditPayload);
+        verifyNoMoreInteractions(logger);
     }
 }
