@@ -14,18 +14,20 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.Map;
-
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+
+import java.io.IOException;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class RecordAccessAuthorizationTests extends TestBase {
 
@@ -37,10 +39,10 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG, token);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token),
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token),
 				RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -54,7 +56,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());
 
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
 
 		this.assertNotAuthorized(response);
 	}
@@ -64,7 +66,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());
 
-		ClientResponse response = TestUtils.send("records/versions/" + RECORD_ID, "GET", headers, "", "");
+		CloseableHttpResponse response = TestUtils.send("records/versions/" + RECORD_ID, "GET", headers, "", "");
 
 		this.assertNotAuthorized(response);
 	}
@@ -74,8 +76,8 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> withDataAccessHeader = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getToken());
 
-		ClientResponse response = TestUtils.send("records/versions/" + RECORD_ID, "GET", withDataAccessHeader, "", "");
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		CloseableHttpResponse response = TestUtils.send("records/versions/" + RECORD_ID, "GET", withDataAccessHeader, "", "");
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 		String version = json.get("versions").getAsJsonArray().get(0).toString();
 
 		Map<String, String> withoutDataAccessHeader = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
@@ -91,7 +93,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());
 
-		ClientResponse response = TestUtils.send("records/", "POST", headers, "{'anything':'anything'}",
+		CloseableHttpResponse response = TestUtils.send("records/", "POST", headers, "{'anything':'anything'}",
 				RECORD_ID + ":delete");
 
 		this.assertNotAuthorized(response);
@@ -102,10 +104,10 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());
 
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
 
-        assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatus());
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
         assertEquals(403, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
     }
@@ -115,7 +117,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getNoDataAccessToken());
 
-		ClientResponse response = TestUtils.send("records", "PUT", headers,
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
 				RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
 		this.assertNotAuthorized(response);
@@ -131,10 +133,10 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		Map<String, String> headersWithValidAccessToken = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getToken());
 
-		ClientResponse response = TestUtils.send("records", "PUT", headersWithValidAccessToken,
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", headersWithValidAccessToken,
 				RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
 
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
 		// Query for original record (no access) and recently created record (with
 		// access)
@@ -149,7 +151,7 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		body.add("records", records);
 
 		response = TestUtils.send("query/records", "POST", headersWithNoDataAccessToken, body.toString(), "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
 
@@ -160,9 +162,16 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		TestUtils.send("records/" + newRecordId, "DELETE", headersWithNoDataAccessToken, "", "");
 	}
 
-	protected void assertNotAuthorized(ClientResponse response) {
-		assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatus());
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+	protected void assertNotAuthorized(CloseableHttpResponse response) {
+		assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
+		JsonObject json = null;
+		try {
+			json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (ParseException e) {
+			throw new RuntimeException(e);
+		}
 		assertEquals(403, json.get("code").getAsInt());
 		assertEquals("Access denied", json.get("reason").getAsString());
 		assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());

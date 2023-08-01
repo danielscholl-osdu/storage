@@ -1,24 +1,19 @@
 package org.opengroup.osdu.storage.records;
 
 import com.google.api.client.util.Strings;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestBase;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.apache.http.HttpStatus.SC_CREATED;
-import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-import static org.apache.http.HttpStatus.SC_NO_CONTENT;
+import static org.apache.http.HttpStatus.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -62,10 +57,10 @@ public abstract class CollaborationRecordsPurgeTest extends TestBase {
     @Test
     public void should_purgeAllRecordVersionsOnlyInCollaborationContext() throws Exception {
         if (!isCollaborationEnabled) return;
-        ClientResponse response = TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
-        assertEquals(SC_NO_CONTENT, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_PURGE_ID, "DELETE", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
+        assertEquals(SC_NO_CONTENT, response.getCode());
         response = TestUtils.send("records/" + RECORD_PURGE_ID, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, testUtils.getToken()), "", "");
-        assertEquals(SC_NOT_FOUND, response.getStatus());
+        assertEquals(SC_NOT_FOUND, response.getCode());
         response = TestUtils.send("records/" + RECORD_PURGE_ID, "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD_PURGE_V3);
     }
@@ -73,11 +68,11 @@ public abstract class CollaborationRecordsPurgeTest extends TestBase {
     private static Long createRecord(String recordId, String collaborationId, String kind, String token) throws Exception {
         String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, LEGAL_TAG_NAME_A);
 
-        ClientResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, token), jsonInput, "");
-        assertEquals(SC_CREATED, response.getStatus());
-        assertTrue(response.getType().toString().contains("application/json"));
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, token), jsonInput, "");
+        assertEquals(SC_CREATED, response.getCode());
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
 
-        String responseBody = response.getEntity(String.class);
+        String responseBody = EntityUtils.toString(response.getEntity());
         DummyRecordsHelper.CreateRecordResponse result = GSON.fromJson(responseBody, DummyRecordsHelper.CreateRecordResponse.class);
 
         return Long.parseLong(result.recordIdVersions[0].split(":")[3]);
@@ -91,10 +86,17 @@ public abstract class CollaborationRecordsPurgeTest extends TestBase {
         return headers;
     }
 
-    private static void assertRecordVersion(ClientResponse response, Long expectedVersion) {
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+    private static void assertRecordVersion(CloseableHttpResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
-        String responseBody = response.getEntity(String.class);
+        String responseBody = null;
+        try {
+            responseBody = EntityUtils.toString(response.getEntity());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         DummyRecordsHelper.RecordResultMock result = GSON.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
         assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
     }

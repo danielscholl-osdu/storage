@@ -1,5 +1,6 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -30,27 +31,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.only;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RecordMetadataRepositoryTest {
@@ -84,7 +70,7 @@ public class RecordMetadataRepositoryTest {
 
     @BeforeEach
     public void setup() {
-        when(headers.getPartitionId()).thenReturn("opendes");
+        lenient().when(headers.getPartitionId()).thenReturn("opendes");
         ReflectionTestUtils.setField(recordMetadataRepository, "cosmosDBName", "osdu-db");
         ReflectionTestUtils.setField(recordMetadataRepository, "recordMetadataCollection", "collection");
         ReflectionTestUtils.setField(recordMetadataRepository, "minBatchSizeToUseBulkUpload", 2);
@@ -93,12 +79,10 @@ public class RecordMetadataRepositoryTest {
 
     @Test
     public void shouldFailOnCreateOrUpdate_IfAclIsNull() {
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage("Acl of the record must not be null");
         try {
             recordMetadataRepository.createOrUpdate(singletonList(new RecordMetadata()), Optional.empty());
         } catch (IllegalArgumentException e) {
-            verify(logger, only()).error("Acl of the record RecordMetadata(id=null, kind=null, previousVersionKind=null, acl=null, legal=null, ancestry=null, tags={}, gcsVersionPaths=[], status=null, user=null, createTime=0, modifyUser=null, modifyTime=0, hash=null) must not be null");
+            assertEquals("Acl of the record must not be null", e.getMessage());
         }
 
     }
@@ -263,24 +247,19 @@ public class RecordMetadataRepositoryTest {
 
         Pageable pageable = PageRequest.of(0, 8);
 
-        doReturn(page).when(operation).queryItemsPage(any(),
-                any(),
-                eq("opendes"),
-                any(SqlQuerySpec.class),
-                any(Class.class),
-                eq(8),
-                any());
+        doReturn(page).when(operation).queryItemsPage(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(Class.class), eq(8), any(), any(CosmosQueryRequestOptions.class));
 
         this.recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status(KIND, STATUS, pageable, Optional.of(collaborationContext));
 
         ArgumentCaptor<SqlQuerySpec> queryCaptor = ArgumentCaptor.forClass(SqlQuerySpec.class);
-        verify(operation).queryItemsPage(any(),
-                any(),
-                eq("opendes"),
+        verify(operation).queryItemsPage(eq("opendes"),
+                eq("osdu-db"),
+                eq("collection"),
                 queryCaptor.capture(),
                 any(Class.class),
                 eq(8),
-                any());
+                any(),
+                any(CosmosQueryRequestOptions.class));
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQuery, capturedQuery.getQueryText());
     }

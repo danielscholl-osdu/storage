@@ -14,35 +14,34 @@
 
 package org.opengroup.osdu.storage.util;
 
+import com.google.gson.Gson;
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
+
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opengroup.osdu.storage.util.HeaderUtils.getHeadersWithxCollaboration;
 import static org.opengroup.osdu.storage.util.TestBase.GSON;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.ws.rs.core.MediaType;
-
-import com.google.gson.Gson;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import org.apache.commons.lang.NotImplementedException;
-import org.apache.http.HttpStatus;
 
 public abstract class TestUtils {
     protected static String token = null;
@@ -87,7 +86,7 @@ public abstract class TestUtils {
         return System.getProperty("DEPLOY_ENV", System.getenv("DEPLOY_ENV"));
     }
 
-    public static String getApiPath(String api) throws Exception {
+    public static String getApiPath(String api) throws MalformedURLException {
         String baseUrl = System.getProperty("STORAGE_URL", System.getenv("STORAGE_URL"));
         if (baseUrl == null || baseUrl.contains("-null")) {
             baseUrl = "https://localhost:8443/api/storage/v2/";
@@ -97,18 +96,32 @@ public abstract class TestUtils {
         return mergedURL.toString();
     }
 
-    public static void assertRecordVersion(ClientResponse response, Long expectedVersion) {
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+    public static void assertRecordVersion(CloseableHttpResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
-        String responseBody = response.getEntity(String.class);
+        String responseBody;
+        try {
+            responseBody = EntityUtils.toString(response.getEntity());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         DummyRecordsHelper.RecordResultMock result = gson.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
         assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
     }
 
-    public static String assertRecordVersionAndReturnResponseBody(ClientResponse response, Long expectedVersion) {
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+    public static String assertRecordVersionAndReturnResponseBody(CloseableHttpResponse response, Long expectedVersion) {
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
-        String responseBody = response.getEntity(String.class);
+        String responseBody;
+        try {
+            responseBody = EntityUtils.toString(response.getEntity());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         DummyRecordsHelper.RecordResultMock result = gson.fromJson(responseBody, DummyRecordsHelper.RecordResultMock.class);
         assertEquals(expectedVersion.longValue(), Long.parseLong(result.version));
         return responseBody;
@@ -122,45 +135,46 @@ public abstract class TestUtils {
         throw new NotImplementedException();
     }
 
-    public static ClientResponse sendWithCustomMediaType(String path, String httpMethod, Map<String, String> headers, String contentType, String requestBody,
-                                                         String query) throws Exception {
+    public static CloseableHttpResponse sendWithCustomMediaType(String path, String httpMethod, Map<String, String> headers, String contentType, String requestBody,
+                                                                String query) throws Exception {
 
         log(httpMethod, TestUtils.getApiPath(path + query), headers, requestBody);
-        Client client = TestUtils.getClient();
+        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
+        headers.put("Content-Type", contentType);
+        ClassicHttpRequest httpRequest = createHttpRequest(TestUtils.getApiPath(path + query), httpMethod, requestBody, headers);
 
-        WebResource webResource = client.resource(TestUtils.getApiPath(path + query));
-
-        WebResource.Builder builder = webResource.accept(MediaType.APPLICATION_JSON).type(contentType);
-        headers.forEach(builder::header);
-
-        return builder.method(httpMethod, ClientResponse.class, requestBody);
+        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build()) {
+            return httpClient.execute(httpRequest, new CustomHttpClientResponseHandler());
+        }
     }
 
-    public static ClientResponse send(String path, String httpMethod, Map<String, String> headers, String requestBody,
-                                      String query) throws Exception {
+    public static CloseableHttpResponse send(String path, String httpMethod, Map<String, String> headers, String requestBody,
+                                             String query) throws Exception {
 
         log(httpMethod, TestUtils.getApiPath(path + query), headers, requestBody);
-        Client client = TestUtils.getClient();
 
-        WebResource webResource = client.resource(TestUtils.getApiPath(path + query));
+        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
+        headers.put("Content-Type", MediaType.APPLICATION_JSON);
+        headers.put("Accept-Charset","utf-8");
+        ClassicHttpRequest httpRequest = createHttpRequest(TestUtils.getApiPath(path + query), httpMethod, requestBody, headers);
 
-        WebResource.Builder builder = webResource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON);
-        headers.forEach(builder::header);
-
-        return builder.method(httpMethod, ClientResponse.class, requestBody);
+        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build()) {
+            return httpClient.execute(httpRequest, new CustomHttpClientResponseHandler());
+        }
     }
 
-    public static ClientResponse send(String url, String path, String httpMethod, Map<String, String> headers,
-                                      String requestBody, String query) throws Exception {
+    public static CloseableHttpResponse send(String url, String path, String httpMethod, Map<String, String> headers,
+                                             String requestBody, String query) throws Exception {
 
         log(httpMethod, url + path, headers, requestBody);
-        Client client = TestUtils.getClient();
 
-        WebResource webResource = client.resource(url + path);
-        WebResource.Builder builder = webResource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON);
-        headers.forEach(builder::header);
+        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
+        headers.put("Content-Type", MediaType.APPLICATION_JSON);
+        ClassicHttpRequest httpRequest = createHttpRequest(url + path, httpMethod, requestBody, headers);
 
-        return builder.method(httpMethod, ClientResponse.class, requestBody);
+        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build()) {
+            return httpClient.execute(httpRequest, new CustomHttpClientResponseHandler());
+        }
     }
 
     private static void log(String method, String url, Map<String, String> headers, String body) {
@@ -169,78 +183,58 @@ public abstract class TestUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T getResult(ClientResponse response, int exepectedStatus, Class<T> classOfT) {
-        assertEquals(exepectedStatus, response.getStatus());
+    public static <T> T getResult(CloseableHttpResponse response, int exepectedStatus, Class<T> classOfT) {
+        assertEquals(exepectedStatus, response.getCode());
         if (exepectedStatus == 204) {
             return null;
         }
 
-        assertTrue(response.getType().toString().contains("application/json"));
-        String json = response.getEntity(String.class);
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
+        String json;
+        try {
+            json = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         if (classOfT == String.class) {
             return (T) json;
         }
-
         return gson.fromJson(json, classOfT);
     }
 
     public static Long createRecordInCollaborationContext_AndReturnVersion(String recordId, String kind, String legaltag, String collaborationId, String applicationName, String tenant_name, String token) throws Exception {
         String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, legaltag);
 
-        ClientResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, applicationName, tenant_name, token), jsonInput, "");
-        assertEquals(SC_CREATED, response.getStatus());
-        assertTrue(response.getType().toString().contains("application/json"));
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, applicationName, tenant_name, token), jsonInput, "");
+        assertEquals(SC_CREATED, response.getCode());
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
 
-        String responseBody = response.getEntity(String.class);
+        String responseBody = EntityUtils.toString(response.getEntity());
         DummyRecordsHelper.CreateRecordResponse result = GSON.fromJson(responseBody, DummyRecordsHelper.CreateRecordResponse.class);
 
         return Long.parseLong(result.recordIdVersions[0].split(":")[3]);
     }
 
-    protected static Client getClient() {
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-            @Override
-            public X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] certs, String authType) {
-            }
-        }};
-
-        try {
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        } catch (Exception e) {
-        }
-        allowMethods("PATCH");
-        return Client.create();
+    private static ClassicHttpRequest createHttpRequest(String path, String httpMethod, String requestBody,
+                                                        Map<String, String> headers) throws MalformedURLException {
+        ClassicRequestBuilder classicRequestBuilder = ClassicRequestBuilder.create(httpMethod)
+                .setUri(path)
+                .setEntity(requestBody, ContentType.APPLICATION_JSON);
+        headers.forEach(classicRequestBuilder::addHeader);
+        return classicRequestBuilder.build();
     }
 
-    private static void allowMethods(String... methods) {
-        try {
-            Field methodsField = HttpURLConnection.class.getDeclaredField("methods");
 
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(methodsField, methodsField.getModifiers() & ~Modifier.FINAL);
+    private static BasicHttpClientConnectionManager createBasicHttpClientConnectionManager() {
+    ConnectionConfig connConfig = ConnectionConfig.custom()
+            .setConnectTimeout(1500000, TimeUnit.MILLISECONDS)
+            .setSocketTimeout(1500000, TimeUnit.MILLISECONDS)
+            .build();
+    BasicHttpClientConnectionManager cm = new BasicHttpClientConnectionManager();
+    cm.setConnectionConfig(connConfig);
+    return cm;
+  }
 
-            methodsField.setAccessible(true);
-
-            String[] oldMethods = (String[]) methodsField.get(null);
-            Set<String> methodsSet = new LinkedHashSet<>(Arrays.asList(oldMethods));
-            methodsSet.addAll(Arrays.asList(methods));
-            String[] newMethods = methodsSet.toArray(new String[0]);
-
-            methodsField.set(null/*static field*/, newMethods);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 }

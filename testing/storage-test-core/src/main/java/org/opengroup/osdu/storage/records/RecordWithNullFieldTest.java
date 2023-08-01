@@ -14,22 +14,20 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import org.apache.http.HttpStatus;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper.RecordResultMock;
-import com.sun.jersey.api.client.ClientResponse;
+
+import static org.junit.Assert.*;
 
 public abstract class RecordWithNullFieldTest extends TestBase {
 
@@ -57,15 +55,15 @@ public abstract class RecordWithNullFieldTest extends TestBase {
 	public void should_returnRecordWithoutNullFields_when_recordIsIngestedWithNullFields() throws Exception {
 
 		// create record with null field
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 				RecordUtil.createJsonRecordWithData(RECORD_ID, KIND, LEGAL_TAG, null), "");
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
 		// get record
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 		JsonObject dataJson = json.get("data").getAsJsonObject();
 
 		assertEquals("58377304471659395", dataJson.get("score-int").toString());
@@ -82,7 +80,7 @@ public abstract class RecordWithNullFieldTest extends TestBase {
 		body.add("attributes", attributes);
 
 		response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(), "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
 		assertEquals(1, responseObject.records.length);
@@ -100,7 +98,7 @@ public abstract class RecordWithNullFieldTest extends TestBase {
 		attributes.add("data.custom");
 
 		response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(), "");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
 		assertEquals(1, responseObject.records.length);

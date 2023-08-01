@@ -15,18 +15,18 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 
 public class SchemaUtil {
 
     protected final String schema = TenantUtils.getTenantName() + ":storage:inttest:1.0.0"
             + System.currentTimeMillis();
 
-    public static ClientResponse create(String kind, String token) throws Exception {
+    public static CloseableHttpResponse create(String kind, String token) throws Exception {
         return TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), SchemaUtil.validSchemaPostBody(kind), "");
     }
 
-    public static ClientResponse delete(String kind, String token) throws Exception {
+    public static CloseableHttpResponse delete(String kind, String token) throws Exception {
         return TestUtils.send("schemas/" + kind, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
     }
 

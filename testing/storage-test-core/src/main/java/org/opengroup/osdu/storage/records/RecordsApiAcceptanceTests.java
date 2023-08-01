@@ -14,27 +14,23 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.*;
 
 public abstract class RecordsApiAcceptanceTests extends TestBase {
 
@@ -71,10 +67,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	public void should_createNewRecord_when_givenValidRecord_and_verifyNoAncestry() throws Exception {
 		String jsonInput = createJsonBody(RECORD_NEW_ID, "Flor�");
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-		String json = response.getEntity(String.class);
-		assertEquals(201, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		String json = EntityUtils.toString(response.getEntity());
+		assertEquals(201, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
@@ -87,14 +83,14 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 		response = TestUtils.send("records/" + RECORD_NEW_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
-		assertEquals("Flor�", recordResult.data.get("name"));
+		assertEquals("Flor?", recordResult.data.get("name"));
 		assertEquals(null, recordResult.data.get("ancestry"));
 	}
 
 	@Test
 	public void should_updateRecordsWithSameData_when_skipDupesIsFalse() throws Exception {
 
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
 
 		String jsonInput = createJsonBody(RECORD_ID, "tianNew");
@@ -152,7 +148,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	public void should_getAnOlderVersion_and_theMostRecentVersion_and_retrieveAllVersions()
 			throws Exception {
 
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		GetRecordResponse originalRecordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
 
 		String jsonInput = createJsonBody(RECORD_ID, "tianNew2");
@@ -192,11 +188,11 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		String jsonInput = createJsonBody(idToDelete, "tianNew2");
 
 		// add an extra version
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
 
 		response = TestUtils.send("records/" + idToDelete, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
 		response = TestUtils.send("records/" + idToDelete, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		String notFoundResponse = TestUtils.getResult(response, 404, String.class);
@@ -208,7 +204,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	public void should_ingestRecord_when_noRecordIdIsProvided() throws Exception {
 		String body = createJsonBody(null, "Foo");
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
 		String responseString = TestUtils.getResult(response, 201, String.class);
 		JsonObject responseJson = new JsonParser().parse(responseString).getAsJsonObject();
 
@@ -225,14 +221,14 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		String body = createJsonBody(RECORD_ID, "Foo");
 
 		// injesting record
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
 		TestUtils.getResult(response, 201, String.class);
 
 		// getting record
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		String responseString = TestUtils.getResult(response, 200, String.class);
 
-		JsonObject responseJson = new JsonParser().parse(responseString).getAsJsonObject();
+		JsonObject responseJson = JsonParser.parseString(responseString).getAsJsonObject();
 
 		assertEquals(RECORD_ID, responseJson.get("id").getAsString());
 
@@ -249,11 +245,11 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	public void should_returnWholeRecord_when_recordIsIngestedWithOtherTenantInKind() throws Exception {
 		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo", KIND_WITH_OTHER_TENANT);
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
 		TestUtils.getResult(response, 201, String.class);
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		String responseString = TestUtils.getResult(response, 200, String.class);
-		JsonObject responseJson = new JsonParser().parse(responseString).getAsJsonObject();
+		JsonObject responseJson = JsonParser.parseString(responseString).getAsJsonObject();
 		assertEquals(RECORD_ID, responseJson.get("id").getAsString());
 		assertEquals(KIND_WITH_OTHER_TENANT, responseJson.get("kind").getAsString());
 		JsonObject acl = responseJson.get("acl").getAsJsonObject();
@@ -266,7 +262,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 	public void should_insertNewRecord_when_skipDupesIsTrue() throws Exception {
 		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo");
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "?skipdupes=true");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "?skipdupes=true");
 		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
@@ -274,7 +270,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(1, result.recordIdVersions.length);
 		assertEquals(RECORD_ID, result.recordIds[0]);
 		response = TestUtils.send("records/" + RECORD_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 	}
 
 	@Test
@@ -285,10 +281,10 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 		String jsonInput = createJsonBody(RECORD_ID, "TestSpecialCharacters");
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-		String json = response.getEntity(String.class);
-		assertEquals(201, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+		String json = EntityUtils.toString(response.getEntity());
+		assertEquals(201, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(json,
@@ -310,7 +306,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 			// Different CSPs are responding with different status code for this error when a special character like %25 is present in the URL.
 			// Hence the Assert Statement is marked not to be 200.
 			// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
-			assertNotEquals(200, response.getStatus());
+			assertNotEquals(200, response.getCode());
 		}
 
 	}
@@ -320,7 +316,7 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 
 		String jsonInput = createJsonBody(RECORD_ID_3, "tianNew");
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
 		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201,
 				DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);

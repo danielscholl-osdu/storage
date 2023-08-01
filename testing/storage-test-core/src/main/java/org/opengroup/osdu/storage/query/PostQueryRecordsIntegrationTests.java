@@ -14,19 +14,18 @@
 
 package org.opengroup.osdu.storage.query;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.Arrays;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 
@@ -41,8 +40,8 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		LegalTagUtils.create(LEGAL_TAG, token);
 		String jsonInput = RecordUtil.createDefaultJsonRecords(3, RECORD_ID, KIND, LEGAL_TAG);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
+		assertEquals(201, response.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -63,9 +62,9 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		body.add("records", records);
 		body.add("attributes", attributes);
 
-		ClientResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
+		CloseableHttpResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
 				"");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
 
@@ -91,9 +90,9 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		body.add("records", records);
 		body.add("attributes", attributes);
 
-		ClientResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
+		CloseableHttpResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
 				"");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
 
@@ -113,9 +112,9 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		body.add("records", records);
 		body.add("attributes", attributes);
 
-		ClientResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
+		CloseableHttpResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
 				"");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
 
@@ -140,9 +139,9 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		body.add("records", records);
 		body.add("attributes", attributes);
 
-		ClientResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
+		CloseableHttpResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
 				"");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = RECORDS_HELPER.getRecordsMockFromResponse(response);
 

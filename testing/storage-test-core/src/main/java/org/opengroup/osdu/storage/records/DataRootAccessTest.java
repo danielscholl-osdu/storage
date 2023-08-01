@@ -17,25 +17,20 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
-import java.util.Map;
-import java.util.stream.Stream;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.EntitlementsUtil;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestBase;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
+
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class DataRootAccessTest extends TestBase {
 
@@ -53,14 +48,14 @@ public abstract class DataRootAccessTest extends TestBase {
     GROUP_EMAIL = createDataGroup(headers);
     String createRecordBody = RecordUtil.createJsonRecordWithCustomAcl(RECORD_ID, KIND, LEGAL_TAG,
         GROUP_EMAIL);
-    ClientResponse response = TestUtils.send(
+    CloseableHttpResponse response = TestUtils.send(
         "records",
         "PUT",
         headers,
         createRecordBody,
         ""
     );
-    assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+    assertEquals(HttpStatus.SC_CREATED, response.getCode());
   }
 
   public static void classTearDown(String token) throws Exception {
@@ -87,7 +82,7 @@ public abstract class DataRootAccessTest extends TestBase {
         TenantUtils.getTenantName(),
         testUtils.getDataRootUserToken());
 
-    ClientResponse queryResponse = TestUtils.send(
+    CloseableHttpResponse queryResponse = TestUtils.send(
         "query/records",
         "POST",
         headersWithUsersDataRootAccess,
@@ -98,20 +93,20 @@ public abstract class DataRootAccessTest extends TestBase {
     DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(
         queryResponse);
 
-    assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+    assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
     assertEquals(1, responseObject.records.length);
     assertEquals(RECORD_ID, Stream.of(responseObject.records).findFirst().get().id);
   }
 
   protected static String createDataGroup(Map<String, String> headersWithValidAccessToken)
       throws Exception {
-    ClientResponse entitlementsGroup = EntitlementsUtil.createEntitlementsGroup(
+    CloseableHttpResponse entitlementsGroup = EntitlementsUtil.createEntitlementsGroup(
         headersWithValidAccessToken,
         DATA_GROUP_ID,
         GROUP_DESCRIPTION
     );
-    assertTrue(entitlementsGroup.getType().toString().contains("application/json"));
-    String json = entitlementsGroup.getEntity(String.class);
+    assertTrue(entitlementsGroup.getEntity().getContentType().contains("application/json"));
+    String json = EntityUtils.toString(entitlementsGroup.getEntity());
     Gson gson = new Gson();
     JsonObject groupEntity = gson.fromJson(json, JsonObject.class);
     return groupEntity.get("email").getAsString();

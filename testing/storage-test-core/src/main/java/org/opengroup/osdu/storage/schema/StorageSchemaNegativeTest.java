@@ -14,21 +14,20 @@
 
 package org.opengroup.osdu.storage.schema;
 
-import static org.junit.Assert.assertEquals;
-
-import javax.ws.rs.HttpMethod;
-
-import org.apache.http.HttpStatus;
-import org.junit.Test;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
-import com.sun.jersey.api.client.ClientResponse;
+
+import javax.ws.rs.HttpMethod;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class StorageSchemaNegativeTest extends TestBase {
 
@@ -41,70 +40,70 @@ public abstract class StorageSchemaNegativeTest extends TestBase {
 	public void should_notCreateSchema_when_userDoesWrongKindFormat() throws Exception {
 		String kind = "abc";
 		JsonElement jsonInputRecord = createSchemaPayload(kind);
-		ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+		CloseableHttpResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 				jsonInputRecord.toString(), "");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, recordResponse.getStatus());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, recordResponse.getCode());
 	}
 
 	@Test
 	public void should_notCreateSchema_when_schemaAlreadyExists() throws Exception {
 		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			JsonElement jsonInputRecord = createSchemaPayload(this.kind);
-			ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+			CloseableHttpResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					jsonInputRecord.toString(), "");
-			assertEquals(HttpStatus.SC_CREATED, recordResponse.getStatus());
-			ClientResponse recordResponseCreateAgain = TestUtils.send(this.SCHEMAS, HttpMethod.POST,
+			assertEquals(HttpStatus.SC_CREATED, recordResponse.getCode());
+			CloseableHttpResponse recordResponseCreateAgain = TestUtils.send(this.SCHEMAS, HttpMethod.POST,
 					HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputRecord.toString(), "");
-			assertEquals(HttpStatus.SC_CONFLICT, recordResponseCreateAgain.getStatus());
-			ClientResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-			assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getStatus());
+			assertEquals(HttpStatus.SC_CONFLICT, recordResponseCreateAgain.getCode());
+			CloseableHttpResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
 		}
 		}
 
 	@Test
 	public void should_notGetKindDetails_when_userDoesSpecifyNonExistingKind() throws Exception {
 		String kind = "abc";
-		ClientResponse recordResponse = TestUtils.send(this.SCHEMAS + "/" + kind, HttpMethod.GET,
+		CloseableHttpResponse recordResponse = TestUtils.send(this.SCHEMAS + "/" + kind, HttpMethod.GET,
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, recordResponse.getStatus());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, recordResponse.getCode());
 	}
 
 	@Test
 	public void should_notGetSchemaDetails_when_thereIsNoSchemaExist() throws Exception {
 		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			JsonElement jsonInputRecord = createSchemaPayload(this.kind);
-			ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+			CloseableHttpResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					jsonInputRecord.toString(), "");
-			assertEquals(HttpStatus.SC_CREATED, recordResponse.getStatus());
-			ClientResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-			assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getStatus());
-			ClientResponse recordResponseNotFound = TestUtils.send(this.path, HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+			assertEquals(HttpStatus.SC_CREATED, recordResponse.getCode());
+			CloseableHttpResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
+			CloseableHttpResponse recordResponseNotFound = TestUtils.send(this.path, HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 					"");
-			assertEquals(HttpStatus.SC_NOT_FOUND, recordResponseNotFound.getStatus());
+			assertEquals(HttpStatus.SC_NOT_FOUND, recordResponseNotFound.getCode());
 		}
 	}
 
 	@Test
 	public void should_notDeleteSchemaByUsingKind_when_userDoesNotSpecifyWrongKind() throws Exception {
-		ClientResponse deleteResponseWithNoKind = TestUtils.send(this.SCHEMAS + "/" + "abc", HttpMethod.DELETE,
+		CloseableHttpResponse deleteResponseWithNoKind = TestUtils.send(this.SCHEMAS + "/" + "abc", HttpMethod.DELETE,
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, deleteResponseWithNoKind.getStatus());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, deleteResponseWithNoKind.getCode());
 	}
 
 	@Test
 	public void should_notDeleteSchemaByUsingKind_when_no_schemaExist() throws Exception {
 			if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
 			JsonElement jsonInputRecord = createSchemaPayload(this.kind);
-			ClientResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+				CloseableHttpResponse recordResponse = TestUtils.send(this.SCHEMAS, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					jsonInputRecord.toString(), "");
-			assertEquals(HttpStatus.SC_CREATED, recordResponse.getStatus());
-			ClientResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+			assertEquals(HttpStatus.SC_CREATED, recordResponse.getCode());
+				CloseableHttpResponse deleteResponse = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 
-			assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getStatus());
-			ClientResponse deleteResponseAgain = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+			assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
+				CloseableHttpResponse deleteResponseAgain = TestUtils.send(this.path, HttpMethod.DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 					"");
 
-			assertEquals(HttpStatus.SC_NOT_FOUND, deleteResponseAgain.getStatus());
+			assertEquals(HttpStatus.SC_NOT_FOUND, deleteResponseAgain.getCode());
 		}
 	}
 
