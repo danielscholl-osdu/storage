@@ -22,17 +22,20 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.opengroup.osdu.storage</groupId>
-  <artifactId>storage-test-core</artifactId>
-  <version>0.23.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-  <properties>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.main.basedir>${project.basedir}</project.main.basedir>
-  </properties>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.opengroup.osdu.storage</groupId>
+    <artifactId>storage-test-core</artifactId>
+    <version>0.23.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.main.basedir>${project.basedir}</project.main.basedir>
+    </properties>
+
   <dependencies>
     <dependency>
         <groupId>com.sun.jersey</groupId>
@@ -53,7 +56,7 @@
     <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.18.10</version>
+        <version>1.18.28</version>
         <scope>provided</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/junit/junit -->
