@@ -29,6 +29,9 @@
     <packaging>jar</packaging>
     <version>0.23.0-SNAPSHOT</version>
     <properties>
+        <java.version>17</java.version>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
         <azure.appservice.resourcegroup />
         <azure.appservice.plan />
         <azure.appservice.appname />
@@ -37,11 +40,17 @@
         <osdu.storage-core.version>0.23.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
-        <powermock.version>2.0.2</powermock.version>
         <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
         <spring-webmvc.version>5.3.22</spring-webmvc.version>
+        <argLine>
+            --add-opens=java.base/java.util=ALL-UNNAMED
+            --add-opens java.base/java.lang=ALL-UNNAMED
+            --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+            --add-opens java.base/java.text=ALL-UNNAMED
+            --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED
+        </argLine>
     </properties>
 
     <dependencyManagement>
@@ -199,6 +208,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.22</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -240,7 +250,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.4</version>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -287,7 +297,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.3</version>
+                <version>0.8.10</version>
                 <executions>
                 <execution>
                     <goals>

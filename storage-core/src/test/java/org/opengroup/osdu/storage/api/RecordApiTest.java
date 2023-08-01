@@ -14,23 +14,6 @@
 
 package org.opengroup.osdu.storage.api;
 
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
-
 import org.apache.http.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,6 +36,16 @@ import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.lang.reflect.Method;
+import java.util.*;
+
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class RecordApiTest {
