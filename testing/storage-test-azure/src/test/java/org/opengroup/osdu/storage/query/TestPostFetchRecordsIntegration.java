@@ -14,30 +14,19 @@
 
 package org.opengroup.osdu.storage.query;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.*;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
-
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.http.HttpStatus;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.opengroup.osdu.storage.util.AzureTestUtils;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegrationTests {
 
