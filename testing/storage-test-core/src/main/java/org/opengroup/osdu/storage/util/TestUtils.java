@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.gson.Gson;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;

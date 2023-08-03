@@ -17,7 +17,6 @@ package org.opengroup.osdu.storage.records;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
@@ -75,13 +74,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
         this.assertNotAuthorized(response);
     }
-    protected void assertNotAuthorized(ClientResponse response) {
-        Assert.assertEquals(401L, (long)response.getStatus());
-        JsonObject json = (new JsonParser()).parse((String)response.getEntity(String.class)).getAsJsonObject();
-        Assert.assertEquals(401L, (long)json.get("code").getAsInt());
-        Assert.assertEquals("Access denied", json.get("reason").getAsString());
-        Assert.assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
-    }
+
     @Test
     public void should_receiveHttp403_when_userIsNotAuthorizedToPurgeRecord() throws Exception {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), this.testUtils.getNoDataAccessToken());
