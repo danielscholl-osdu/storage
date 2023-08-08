@@ -36,8 +36,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,26 +62,36 @@ public class DpsConversionService {
         List<JsonObject> recordsWithGeoJsonBlock = new ArrayList<>();
 
         List<ConversionRecord> recordsWithoutConversionBlock = this.classifyRecords(originalRecords, conversionStatuses, recordsWithMetaBlock, recordsWithGeoJsonBlock);
-        List<ConversionRecord> allRecords = recordsWithoutConversionBlock;
+        Map<String, ConversionRecord> conversionResults = new HashMap<>();
+        addOrUpdateRecordStatus(conversionResults, recordsWithoutConversionBlock);
 
         if (!conversionStatuses.isEmpty()) {
             RecordsAndStatuses crsConversionResult = null;
-            List<ConversionRecord> conversionRecords = new ArrayList<>();
             if (!recordsWithGeoJsonBlock.isEmpty()) {
+                List<ConversionRecord> geoConvertedRecords = new ArrayList<>();
                 crsConversionResult = this.crsConversionService.doCrsGeoJsonConversion(recordsWithGeoJsonBlock, conversionStatuses);
-                conversionRecords = this.getConversionRecords(crsConversionResult);
+                geoConvertedRecords = this.getConversionRecords(crsConversionResult);
+                addOrUpdateRecordStatus(conversionResults, geoConvertedRecords);
             }
             if (!recordsWithMetaBlock.isEmpty()) {
+                List<ConversionRecord> metaConvertedRecords = new ArrayList<>();
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
-                conversionRecords = this.getConversionRecords(crsConversionResult);
-                this.unitConversionService.convertUnitsToSI(conversionRecords);
-                this.datesConversionService.convertDatesToISO(conversionRecords);
+                metaConvertedRecords = this.getConversionRecords(crsConversionResult);
+                this.unitConversionService.convertUnitsToSI(metaConvertedRecords);
+                this.datesConversionService.convertDatesToISO(metaConvertedRecords);
+                addOrUpdateRecordStatus(conversionResults, metaConvertedRecords);
             }
-            allRecords.addAll(conversionRecords);
         }
-        this.checkMismatchAndLogMissing(originalRecords, allRecords);
+        List<ConversionRecord> out = new ArrayList<>(conversionResults.values());
+        this.checkMismatchAndLogMissing(originalRecords, out);
+        return this.makeResponseStatus(out);
+    }
 
-        return this.MakeResponseStatus(allRecords);
+    private void addOrUpdateRecordStatus(Map<String, ConversionRecord> out, List<ConversionRecord> result) {
+        for (ConversionRecord conversionRecord: result) {
+            String recordId = conversionRecord.getRecordId();
+            out.put(recordId, conversionRecord);
+        }
     }
 
     private List<ConversionRecord> classifyRecords(List<JsonObject> originalRecords, List<ConversionStatus.ConversionStatusBuilder> conversionStatuses, List<JsonObject> recordsWithMetaBlock, List<JsonObject> recordsWithGeoJsonBlock) {
@@ -147,7 +159,7 @@ public class DpsConversionService {
         return null;
     }
 
-    private RecordsAndStatuses MakeResponseStatus(List<ConversionRecord> conversionRecords) {
+    private RecordsAndStatuses makeResponseStatus(List<ConversionRecord> conversionRecords) {
         RecordsAndStatuses result = new RecordsAndStatuses();
         List<JsonObject> records = new ArrayList<>();
         List<ConversionStatus> conversionStatuses = new ArrayList<>();
