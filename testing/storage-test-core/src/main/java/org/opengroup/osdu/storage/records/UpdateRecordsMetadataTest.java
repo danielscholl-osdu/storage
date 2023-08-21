@@ -17,18 +17,21 @@ package org.opengroup.osdu.storage.records;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.junit.*;
-import org.opengroup.osdu.storage.util.*;
-
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.http.HttpStatus.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public abstract class UpdateRecordsMetadataTest extends TestBase {
     protected static final String TAG_KEY = "tagkey1";
@@ -68,18 +71,18 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         LegalTagUtils.create(LEGAL_TAG_2, testUtils.getToken());
         LegalTagUtils.create(LEGAL_TAG_3, testUtils.getToken());
         LegalTagUtils.create(LEGAL_TAG_4, testUtils.getToken());
-        ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
-        ClientResponse response2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID_2, KIND, LEGAL_TAG_2), "");
-        ClientResponse response3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID_3, KIND, LEGAL_TAG_3), "");
-        ClientResponse response4 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response4 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID_4, KIND, LEGAL_TAG_4), "");
-        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-        assertEquals(HttpStatus.SC_CREATED, response2.getStatus());
-        assertEquals(HttpStatus.SC_CREATED, response3.getStatus());
-        assertEquals(HttpStatus.SC_CREATED, response4.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
+        assertEquals(HttpStatus.SC_CREATED, response2.getCode());
+        assertEquals(HttpStatus.SC_CREATED, response3.getCode());
+        assertEquals(HttpStatus.SC_CREATED, response4.getCode());
 
     }
 
@@ -107,9 +110,9 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         Map<String, String> queryHeader = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         queryHeader.put("frame-of-reference", "none");
-        ClientResponse queryResponse1 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
+        CloseableHttpResponse queryResponse1 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, queryResponse1.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse1.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject1 = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse1);
         assertEquals(2, queryResponseObject1.records.length);
@@ -138,14 +141,14 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         updateBody.add("query", query);
         updateBody.add("ops", ops);
 
-        ClientResponse bulkUpdateResponse = TestUtils.send("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), updateBody.toString(),
+        CloseableHttpResponse bulkUpdateResponse = TestUtils.send("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), updateBody.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, bulkUpdateResponse.getStatus());
+        assertEquals(HttpStatus.SC_OK, bulkUpdateResponse.getCode());
 
         //3. query 2 records again, check acls
-        ClientResponse queryResponse2 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
+        CloseableHttpResponse queryResponse2 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, queryResponse2.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse2.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject2 = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse2);
         assertEquals(2, queryResponseObject2.records.length);
@@ -165,9 +168,9 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
 
         Map<String, String> queryHeader = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         queryHeader.put("slb-frame-of-reference", "none");
-        ClientResponse queryResponse1 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
+        CloseableHttpResponse queryResponse1 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, queryResponse1.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse1.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject1 = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse1);
         assertEquals(2, queryResponseObject1.records.length);
@@ -200,14 +203,14 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         updateBody.add("query", query);
         updateBody.add("ops", ops);
 
-        ClientResponse bulkUpdateResponse = TestUtils.send("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), updateBody.toString(),
+        CloseableHttpResponse bulkUpdateResponse = TestUtils.send("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), updateBody.toString(),
                 "");
-        assertEquals(HttpStatus.SC_PARTIAL_CONTENT, bulkUpdateResponse.getStatus());
+        assertEquals(HttpStatus.SC_PARTIAL_CONTENT, bulkUpdateResponse.getCode());
 
         //3. query 2 records again, check acls
-        ClientResponse queryResponse2 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
+        CloseableHttpResponse queryResponse2 = TestUtils.send("query/records:batch", "POST", queryHeader, queryBody.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, queryResponse2.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse2.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject2 = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse2);
         assertEquals(2, queryResponseObject2.records.length);
@@ -220,16 +223,16 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         //add operation
         JsonObject updateBody = RecordUtil.buildUpdateTagBody(RECORD_ID, "add", TAG_KEY + ":" + TAG_VALUE1);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
-        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        assertEquals(SC_OK, updateResponse.getStatus());
-        assertEquals(SC_OK, recordResponse.getStatus());
+        assertEquals(SC_OK, updateResponse.getCode());
+        assertEquals(SC_OK, recordResponse.getCode());
 
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
         assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(TAG_VALUE1, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
 
         //replace operation
@@ -237,7 +240,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(TAG_VALUE2, resultObject.get("tags").getAsJsonObject().get(TAG_KEY).getAsString());
 
         //remove operation
@@ -245,7 +248,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
+        resultObject = JsonParser.parseString(EntityUtils.toString(recordResponse.getEntity())).getAsJsonObject();
         assertNull(resultObject.get("tags"));
     }
 
@@ -253,16 +256,16 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     public void should_return206andUpdateTagsMetadata_whenNotExistedRecordProvided() throws Exception {
         JsonObject updateBody = RecordUtil.buildUpdateTagBody(NOT_EXISTED_RECORD_ID, "replace", TAG_KEY + ":" + TAG_VALUE1);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
-        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getStatus());
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getCode());
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
 
         System.out.println(resultObject.toString());
         assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
     }
 
-    private static ClientResponse sendRequest(String method, String path, String body, String token) throws Exception {
+    private static CloseableHttpResponse sendRequest(String method, String path, String body, String token) throws Exception {
         return TestUtils
             .send(path, method, HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), body, "");
     }
@@ -272,7 +275,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     }
 
     private JsonObject bodyToJsonObject(String json) {
-        return new JsonParser().parse(json).getAsJsonObject();
+        return JsonParser.parseString(json).getAsJsonObject();
     }
 
     @Test
@@ -280,16 +283,16 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         //add operation
         JsonObject updateBody = buildUpdateLegalBody(RECORD_ID, "add", LEGAL_TAG);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
-        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        assertEquals(SC_OK, updateResponse.getStatus());
-        assertEquals(SC_OK, recordResponse.getStatus());
+        assertEquals(SC_OK, updateResponse.getCode());
+        assertEquals(SC_OK, recordResponse.getCode());
 
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
         assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(LEGAL_TAG, resultObject.get("legal").getAsJsonObject().get("legaltags").getAsString());
 
         //replace operation
@@ -297,14 +300,14 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(LEGAL_TAG_2, resultObject.get("legal").getAsJsonObject().get("legaltags").getAsString());
 
         //remove operation
         updateBody = buildUpdateLegalBody(RECORD_ID,"remove", LEGAL_TAG_2);
         updateResponse= sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
-        assertEquals(SC_BAD_REQUEST,updateResponse.getStatus());
+        assertEquals(SC_BAD_REQUEST,updateResponse.getCode());
     }
 
     @Test
@@ -312,16 +315,16 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         //add operation
         JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/viewers", ACL);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
-        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        assertEquals(SC_OK, updateResponse.getStatus());
-        assertEquals(SC_OK, recordResponse.getStatus());
+        assertEquals(SC_OK, updateResponse.getCode());
+        assertEquals(SC_OK, recordResponse.getCode());
 
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
         assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("viewers").getAsJsonArray().get(0).getAsString());
 
         //replace operation
@@ -329,14 +332,14 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(ACL_2, resultObject.get("acl").getAsJsonObject().get("viewers").getAsJsonArray().get(0).getAsString());
 
         //remove operation
         updateBody = buildUpdateAclBody(RECORD_ID,"remove","/acl/viewers", ACL_2);
         updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
-        assertEquals(SC_BAD_REQUEST,updateResponse.getStatus());
+        assertEquals(SC_BAD_REQUEST,updateResponse.getCode());
     }
 
     @Test
@@ -344,16 +347,16 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         //add operation
         JsonObject updateBody = buildUpdateAclBody(RECORD_ID, "add","/acl/owners", ACL);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
-        ClientResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        assertEquals(SC_OK, updateResponse.getStatus());
-        assertEquals(SC_OK, recordResponse.getStatus());
+        assertEquals(SC_OK, updateResponse.getCode());
+        assertEquals(SC_OK, recordResponse.getCode());
 
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
         assertEquals(RECORD_ID, resultObject.get("recordIds").getAsJsonArray().get(0).getAsString());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
 
         //remove operation
@@ -361,7 +364,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
-        resultObject = new JsonParser().parse(recordResponse.getEntity(String.class)).getAsJsonObject();
+        resultObject = JsonParser.parseString(EntityUtils.toString(recordResponse.getEntity())).getAsJsonObject();
 
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
 
@@ -370,7 +373,7 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
         sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
         recordResponse = sendRequest("GET", "records/" + RECORD_ID, EMPTY, testUtils.getToken());
 
-        resultObject = bodyToJsonObject(recordResponse.getEntity(String.class));
+        resultObject = bodyToJsonObject(EntityUtils.toString(recordResponse.getEntity()));
         assertEquals(ACL, resultObject.get("acl").getAsJsonObject().get("owners").getAsJsonArray().get(0).getAsString());
     }
 
@@ -378,10 +381,10 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     public void should_return206andUpdateLegalMetadata_whenNotExistedRecordProvided() throws Exception {
         JsonObject updateBody = buildUpdateLegalBody(NOT_EXISTED_RECORD_ID, "replace", LEGAL_TAG);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
-        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getStatus());
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getCode());
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
 
         System.out.println(resultObject.toString());
         assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());
@@ -391,10 +394,10 @@ public abstract class UpdateRecordsMetadataTest extends TestBase {
     public void should_return206andUpdateAclMetadata_whenNotExistedRecordProvided() throws Exception {
         JsonObject updateBody = buildUpdateAclBody(NOT_EXISTED_RECORD_ID, "replace","/acl/viewers", ACL);
 
-        ClientResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
+        CloseableHttpResponse updateResponse = sendRequest("PATCH", "records", toJson(updateBody), testUtils.getToken());
 
-        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getStatus());
-        JsonObject resultObject = bodyToJsonObject(updateResponse.getEntity(String.class));
+        assertEquals(SC_PARTIAL_CONTENT, updateResponse.getCode());
+        JsonObject resultObject = bodyToJsonObject(EntityUtils.toString(updateResponse.getEntity()));
 
         System.out.println(resultObject.toString());
         assertEquals(NOT_EXISTED_RECORD_ID, resultObject.get("notFoundRecordIds").getAsJsonArray().getAsString());

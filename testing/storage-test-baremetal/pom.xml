@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~  Copyright 2020-2022 Google LLC
-  ~  Copyright 2020-2022 EPAM Systems, Inc
+  ~  Copyright 2020-2023 Google LLC
+  ~  Copyright 2020-2023 EPAM Systems, Inc
   ~
   ~  Licensed under the Apache License, Version 2.0 (the "License");
   ~  you may not use this file except in compliance with the License.
@@ -31,8 +31,9 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
     </properties>

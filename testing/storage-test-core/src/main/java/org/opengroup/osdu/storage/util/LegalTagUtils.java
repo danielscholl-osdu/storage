@@ -14,35 +14,34 @@
 
 package org.opengroup.osdu.storage.util;
 
-import static org.junit.Assert.assertEquals;
-
-import org.apache.http.HttpStatus;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+
+import static org.junit.Assert.assertEquals;
 
 public class LegalTagUtils {
 	public static String createRandomName() {
 		return TenantUtils.getTenantName() + "-storage-" + System.currentTimeMillis();
 	}
 
-	public static ClientResponse create(String legalTagName, String token) throws Exception {
+	public static CloseableHttpResponse create(String legalTagName, String token) throws Exception {
 		return create("US", legalTagName, "2099-01-25", "Public Domain Data", token);
 	}
 
-	protected static ClientResponse create(String countryOfOrigin, String name, String expDate, String dataType, String token)
+	protected static CloseableHttpResponse create(String countryOfOrigin, String name, String expDate, String dataType, String token)
 			throws Exception {
 		String body = getBody(countryOfOrigin, name, expDate, dataType);
-		ClientResponse response = TestUtils.send(getLegalUrl(), "legaltags", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), body,
+		CloseableHttpResponse response = TestUtils.send(getLegalUrl(), "legaltags", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), body,
 				"");
 
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		Thread.sleep(100);
 		return response;
 	}
 
-	public static ClientResponse delete(String legalTagName, String token) throws Exception {
+	public static CloseableHttpResponse delete(String legalTagName, String token) throws Exception {
 		return TestUtils.send(getLegalUrl(), "legaltags/" + legalTagName, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
 	}
 

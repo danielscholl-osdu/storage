@@ -16,21 +16,15 @@ package org.opengroup.osdu.storage.util;
 
 import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
-import com.azure.storage.blob.*;
-
-import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobContainerClientBuilder;
+import com.azure.storage.blob.BlobUrlParts;
+import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
-import org.apache.http.HttpStatus;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 public class DeliveryTestUtils {
@@ -131,35 +125,6 @@ public class DeliveryTestUtils {
         schema.add("schema", schemaItems);
 
         return schema.toString();
-    }
-
-    public static void assertEqualsResponse(ClientResponse response, int expectedProcessed, int expectedUnprocessed) {
-        assertEquals(200, response.getStatus());
-        assertTrue(response.getType().toString().contains("application/json"));
-
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
-        JsonObject processedJson = json.get("processed").getAsJsonObject();
-        JsonArray unprocessedJson = json.get("unprocessed").getAsJsonArray();
-
-        assertEquals(expectedProcessed, processedJson.size());
-        assertEquals(expectedUnprocessed, unprocessedJson.size());
-    }
-
-    public static boolean IndexedDocumentsExist(ClientResponse response, Integer expectedProcessed) {
-        assertEquals(200, response.getStatus());
-        assertTrue(response.getType().toString().contains("application/json"));
-
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
-        JsonObject processedJson = json.get("processed").getAsJsonObject();
-        return processedJson.size() == expectedProcessed;
-    }
-
-    public static void assertNotAuthorized(ClientResponse response) {
-        assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatus());
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
-        assertEquals(403, json.get("code").getAsInt());
-        assertEquals("Access denied", json.get("reason").getAsString());
-        assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
     }
 
     public static void deleteTestBlobs() {

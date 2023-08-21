@@ -14,23 +14,21 @@
 
 package org.opengroup.osdu.storage.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.List;
-
-import org.apache.http.HttpStatus;
-
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.*;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper.CreateRecordResponse;
-import com.sun.jersey.api.client.ClientResponse;
+import org.opengroup.osdu.storage.util.*;
+
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class LogicalRecordDeleteTests extends TestBase {
 
@@ -44,12 +42,12 @@ public abstract class LogicalRecordDeleteTests extends TestBase {
 
 		String body = createBody(RECORD_ID, "anything", Lists.newArrayList(LEGAL_TAG), Lists.newArrayList("BR", "IT"));
 
-		ClientResponse response = TestUtils.send("records", "PUT",
+		CloseableHttpResponse response = TestUtils.send("records", "PUT",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), body, "");
 
-		String responseBody = response.getEntity(String.class);
-		assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		String responseBody = EntityUtils.toString(response.getEntity());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		Gson gson = new Gson();
 		CreateRecordResponse result = gson.fromJson(responseBody, CreateRecordResponse.class);
@@ -71,19 +69,19 @@ public abstract class LogicalRecordDeleteTests extends TestBase {
 		String queryParam = String.format("records/%s:delete", RECORD_ID);
 
 		// deleting
-		ClientResponse response = TestUtils.send(queryParam, "POST",
+		CloseableHttpResponse response = TestUtils.send(queryParam, "POST",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "{'anything':'teste'}", "");
-		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
 		// trying to get
 		response = TestUtils.send("records/" + RECORD_ID, "GET",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 
 		// trying to delete again
 		response = TestUtils.send(queryParam, "POST",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "{'anything':'teste'}", "");
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 	}
 
 	protected static String createBody(String id, String dataValue, List<String> legalTags, List<String> ordc) {

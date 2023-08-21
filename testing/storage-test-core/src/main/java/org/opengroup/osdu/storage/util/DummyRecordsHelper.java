@@ -14,14 +14,17 @@
 
 package org.opengroup.osdu.storage.util;
 
-import static org.junit.Assert.assertTrue;
+import com.google.gson.Gson;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.Gson;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertTrue;
 
 public class DummyRecordsHelper {
 
@@ -29,23 +32,44 @@ public class DummyRecordsHelper {
 
     public final String KIND = TenantUtils.getTenantName() + ":storage:inttest:1.0.0" + NOW;
 
-    public QueryResultMock getQueryResultMockFromResponse(ClientResponse response) {
-        assertTrue(response.getType().toString().contains("application/json"));
-        String json = response.getEntity(String.class);
+    public QueryResultMock getQueryResultMockFromResponse(CloseableHttpResponse response) {
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
+        String json;
+        try {
+            json = EntityUtils.toString(response.getEntity());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         Gson gson = new Gson();
         return gson.fromJson(json, QueryResultMock.class);
     }
 
-    public RecordsMock getRecordsMockFromResponse(ClientResponse response) {
-        assertTrue(response.getType().toString().contains("application/json"));
-        String json = response.getEntity(String.class);
+    public RecordsMock getRecordsMockFromResponse(CloseableHttpResponse response) {
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
+        String json = null;
+        try {
+            json = EntityUtils.toString(response.getEntity());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         Gson gson = new Gson();
         return gson.fromJson(json, RecordsMock.class);
     }
 
-    public ConvertedRecordsMock getConvertedRecordsMockFromResponse(ClientResponse response) {
-        assertTrue(response.getType().toString().contains("application/json"));
-        String json = response.getEntity(String.class);
+    public ConvertedRecordsMock getConvertedRecordsMockFromResponse(CloseableHttpResponse response) {
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
+        String json = null;
+        try {
+            json = EntityUtils.toString(response.getEntity());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         Gson gson = new Gson();
         return gson.fromJson(json, ConvertedRecordsMock.class);
     }

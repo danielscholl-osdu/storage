@@ -14,33 +14,21 @@
 
 package org.opengroup.osdu.storage.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.function.Consumer;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.common.base.Strings;
+import com.google.gson.*;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
-import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
-
-import com.google.common.base.Strings;
 import org.opengroup.osdu.storage.conversion.DpsConversionService;
+import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
@@ -48,6 +36,10 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 public abstract class BatchServiceImpl implements BatchService {

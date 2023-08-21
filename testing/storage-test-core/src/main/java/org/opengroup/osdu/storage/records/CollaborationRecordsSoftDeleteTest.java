@@ -1,7 +1,7 @@
 package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonArray;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Test;
@@ -75,11 +75,11 @@ public abstract class CollaborationRecordsSoftDeleteTest extends TestBase {
     @Test
     public void should_softDeleteSingleRecordWithinCollaborationContext_when_validRecordIdsAndCollaborationIdAreProvided() throws Exception {
         if (!isCollaborationEnabled) return;
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID_1 + ":delete", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID_1 + ":delete", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD1_V3);
@@ -94,14 +94,14 @@ public abstract class CollaborationRecordsSoftDeleteTest extends TestBase {
         JsonArray body = new JsonArray();
         body.add(RECORD_ID_2);
         body.add(RECORD_ID_3);
-        ClientResponse response = TestUtils.send("records/delete", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
-        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+        CloseableHttpResponse response = TestUtils.send("records/delete", "POST", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), body.toString(), "");
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_2, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_3, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID_2, "GET", getHeadersWithxCollaboration(COLLABORATION2_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         assertRecordVersion(response, RECORD2_V2);

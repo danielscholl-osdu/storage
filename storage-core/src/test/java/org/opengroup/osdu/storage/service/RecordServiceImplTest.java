@@ -14,13 +14,6 @@
 
 package org.opengroup.osdu.storage.service;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-
 import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
@@ -52,12 +45,14 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class RecordServiceImplTest {
@@ -468,7 +463,7 @@ public class RecordServiceImplTest {
             verify(dataAuthorizationService, only()).validateOwnerAccess(record, OperationType.delete);
             verify(recordRepository, never()).createOrUpdate(any(), any());
             verify(auditLogger, only()).deleteRecordFail(singletonList(errorMsg));
-            verifyZeroInteractions(pubSubClient);
+            verifyNoMoreInteractions(pubSubClient);
 
 
             assertEquals(1, e.getNotDeletedRecords().size());
@@ -532,7 +527,7 @@ public class RecordServiceImplTest {
             assertEquals("Invalid record id", e.getError().getReason());
             assertEquals(errorMsg, e.getError().getMessage());
 
-            verifyZeroInteractions(recordRepository, entitlementsAndCacheService, auditLogger, pubSubClient);
+            verifyNoMoreInteractions(recordRepository, entitlementsAndCacheService, auditLogger, pubSubClient);
         } catch (Exception e) {
             fail("Should not get different exception");
         }
