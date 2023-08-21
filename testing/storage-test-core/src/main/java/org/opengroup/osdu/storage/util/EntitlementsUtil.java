@@ -18,19 +18,21 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
+
 import java.util.Map;
+
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.springframework.http.HttpMethod;
 
 public class EntitlementsUtil {
 
   public static final String GROUPS_ENDPOINT = "groups";
 
-  public static ClientResponse createEntitlementsGroup(Map<String, String> headers,
-      String groupName,
-      String groupDescription) throws Exception {
+  public static CloseableHttpResponse createEntitlementsGroup(Map<String, String> headers,
+                                                              String groupName,
+                                                              String groupDescription) throws Exception {
     String body = getCreateGroupBody(groupName, groupDescription);
-    ClientResponse response = TestUtils.send(
+    CloseableHttpResponse response = TestUtils.send(
         getEntitlementsUrl(),
         GROUPS_ENDPOINT,
         HttpMethod.POST.name(),
@@ -41,10 +43,10 @@ public class EntitlementsUtil {
     return response;
   }
 
-  public static ClientResponse deleteEntitlementsGroup(Map<String, String> headers,
-      String groupEmail)
+  public static CloseableHttpResponse deleteEntitlementsGroup(Map<String, String> headers,
+                                                              String groupEmail)
       throws Exception {
-    ClientResponse response = TestUtils.send(
+    CloseableHttpResponse response = TestUtils.send(
         getEntitlementsUrl(),
         GROUPS_ENDPOINT,
         HttpMethod.DELETE.name(),

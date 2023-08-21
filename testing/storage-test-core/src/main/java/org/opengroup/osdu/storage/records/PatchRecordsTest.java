@@ -16,29 +16,19 @@ package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestBase;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public abstract class PatchRecordsTest extends TestBase {
 
@@ -57,13 +47,13 @@ public abstract class PatchRecordsTest extends TestBase {
         LegalTagUtils.create(LEGAL_TAG, testUtils.getToken());
         LegalTagUtils.create(LEGAL_TAG_TO_BE_PATCHED, testUtils.getToken());
 
-        ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID1, KIND, LEGAL_TAG), "");
-        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
         response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createDefaultJsonRecord(RECORD_ID2, KIND, LEGAL_TAG), "");
-        assertEquals(HttpStatus.SC_CREATED, response.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
     }
 
     @After
@@ -79,8 +69,8 @@ public abstract class PatchRecordsTest extends TestBase {
         List<String> records = new ArrayList<>();
         records.add(RECORD_ID1);
         records.add(RECORD_ID2);
-        ClientResponse queryResponse = queryRecordsResponse(records);
-        assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+        CloseableHttpResponse queryResponse = queryRecordsResponse(records);
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertQueryResponse(queryResponseObject, 2);
@@ -89,11 +79,11 @@ public abstract class PatchRecordsTest extends TestBase {
         assertEquals(null, queryResponseObject.records[0].modifyTime);
         assertEquals(null, queryResponseObject.records[0].modifyUser);
 
-        ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, false), "");
-        assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
+        CloseableHttpResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, false), "");
+        assertEquals(HttpStatus.SC_OK, patchResponse.getCode());
 
         queryResponse = queryRecordsResponse(records);
-        assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         //modifyUser and modifyTime are not reflected appropriately, please refer to this issue https://community.opengroup.org/osdu/platform/system/storage/-/issues/171
@@ -126,18 +116,18 @@ public abstract class PatchRecordsTest extends TestBase {
     public void should_updateDataAndMetadataVersion_whenOnlyDataIsPatched() throws Exception {
         List<String> records = new ArrayList<>();
         records.add(RECORD_ID1);
-        ClientResponse queryResponse = queryRecordsResponse(records);
-        assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+        CloseableHttpResponse queryResponse = queryRecordsResponse(records);
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertQueryResponse(queryResponseObject, 1);
         String currentVersionRecord1 = queryResponseObject.records[0].version;
 
-        ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, false, true), "");
-        assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
+        CloseableHttpResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, false, true), "");
+        assertEquals(HttpStatus.SC_OK, patchResponse.getCode());
 
         queryResponse = queryRecordsResponse(records);
-        assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertNotEquals(currentVersionRecord1, queryResponseObject.records[0].version);
@@ -151,18 +141,18 @@ public abstract class PatchRecordsTest extends TestBase {
     public void should_updateBothMetadataAndData_whenDataAndMetadataArePatched() throws Exception {
         List<String> records = new ArrayList<>();
         records.add(RECORD_ID1);
-        ClientResponse queryResponse = queryRecordsResponse(records);
-        assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+        CloseableHttpResponse queryResponse = queryRecordsResponse(records);
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertQueryResponse(queryResponseObject, 1);
         String currentVersionRecord = queryResponseObject.records[0].version;
 
-        ClientResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, true), "");
-        assertEquals(HttpStatus.SC_OK, patchResponse.getStatus());
+        CloseableHttpResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getPatchPayload(records, true, true), "");
+        assertEquals(HttpStatus.SC_OK, patchResponse.getCode());
 
         queryResponse = queryRecordsResponse(records);
-        assertEquals(HttpStatus.SC_OK, queryResponse.getStatus());
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
 
         queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
         assertEquals(1, queryResponseObject.records.length);
@@ -184,7 +174,7 @@ public abstract class PatchRecordsTest extends TestBase {
 
     //TODO: add a test to validate same 'op' and 'path' and assert expected behavior
 
-    private ClientResponse queryRecordsResponse(List<String> recordIds) throws Exception {
+    private CloseableHttpResponse queryRecordsResponse(List<String> recordIds) throws Exception {
         JsonArray records = new JsonArray();
         for (String recordId : recordIds) {
             records.add(recordId);

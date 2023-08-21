@@ -14,14 +14,13 @@
 
 package org.opengroup.osdu.storage.records;
 
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
+import org.opengroup.osdu.storage.util.*;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
-import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
 
 public abstract class PurgeRecordsIntegrationTest extends TestBase {
 
@@ -35,9 +34,9 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 		LegalTagUtils.create(LEGAL_TAG, token);
 		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
+		assertEquals(201, response.getCode());
+		assertTrue(response.getEntity().getContentType().contains("application/json"));
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -46,10 +45,10 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_ReturnHttp204_when_purgingRecordSuccessfully() throws Exception {
-		ClientResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 	}
 }

@@ -14,18 +14,21 @@
 
 package org.opengroup.osdu.storage.PubsubEndpoint;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.Assert;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
 public abstract class PubsubEndpointTest extends TestBase {
 	protected static final long NOW = System.currentTimeMillis();
@@ -42,13 +45,13 @@ public abstract class PubsubEndpointTest extends TestBase {
 	public static void classSetup(String token) throws Exception {
 		LegalTagUtils.create(LEGAL_TAG_1, token);
 		String record1 = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_1);
-		ClientResponse responseValid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), record1, "");
-		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid.getStatus());
+		CloseableHttpResponse responseValid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), record1, "");
+		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid.getCode());
 
 		LegalTagUtils.create(LEGAL_TAG_2, token);
 		String record2 = RecordUtil.createDefaultJsonRecord(RECORD_ID_2, KIND, LEGAL_TAG_2);
-		ClientResponse responseValid2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), record2, "");
-		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid2.getStatus());
+		CloseableHttpResponse responseValid2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), record2, "");
+		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid2.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -71,14 +74,14 @@ public abstract class PubsubEndpointTest extends TestBase {
 		legalTagNames.add(LEGAL_TAG_2);
 
 		String requestBody = this.requestBodyToEndpoint(legalTagNames);
-		ClientResponse responseEndpoint = TestUtils.send("push-handlers/legaltag-changed?token=" + PUBSUB_TOKEN, "POST",
+		CloseableHttpResponse responseEndpoint = TestUtils.send("push-handlers/legaltag-changed?token=" + PUBSUB_TOKEN, "POST",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-		System.out.println(" getEntity"  + responseEndpoint.getEntity(String.class));
-		Assert.assertEquals(HttpStatus.SC_OK, responseEndpoint.getStatus());
+		System.out.println(" getEntity"  + EntityUtils.toString(responseEndpoint.getEntity()));
+		Assert.assertEquals(HttpStatus.SC_OK, responseEndpoint.getCode());
 		System.out.println("ok");
-		ClientResponse responseRecordQuery = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+		CloseableHttpResponse responseRecordQuery = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"");
-		Assert.assertEquals(HttpStatus.SC_NOT_FOUND, responseRecordQuery.getStatus());
+		Assert.assertEquals(HttpStatus.SC_NOT_FOUND, responseRecordQuery.getCode());
 
 		long now = System.currentTimeMillis();
 		long later = now + 2000L;
@@ -88,11 +91,11 @@ public abstract class PubsubEndpointTest extends TestBase {
 		String recordIdTemp2 = TenantUtils.getTenantName() + ":endtoend:1.1." + later;
 		String recordTemp2 = RecordUtil.createDefaultJsonRecord(recordIdTemp2, kindTemp, LEGAL_TAG_2);
 
-		ClientResponse responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
-		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, responseInvalid.getStatus());
+		CloseableHttpResponse responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
+		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, responseInvalid.getCode());
 		Assert.assertEquals("Invalid legal tags", this.getResponseReasonFromRecordIngestResponse(responseInvalid));
-		ClientResponse responseValid3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp2, "");
-		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid3.getStatus());
+		CloseableHttpResponse responseValid3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp2, "");
+		Assert.assertEquals(HttpStatus.SC_CREATED, responseValid3.getCode());
 		TestUtils.send("records/" + recordIdTemp2, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 	}
 
@@ -126,8 +129,15 @@ public abstract class PubsubEndpointTest extends TestBase {
 		return output.toString();
 	}
 
-	protected String getResponseReasonFromRecordIngestResponse(ClientResponse response) {
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+	protected String getResponseReasonFromRecordIngestResponse(CloseableHttpResponse response) {
+		JsonObject json = null;
+		try {
+			json = new JsonParser().parse(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (ParseException e) {
+			throw new RuntimeException(e);
+		}
 		return json.get("reason").getAsString();
 	}
 

@@ -2,19 +2,13 @@ package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.junit.After;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestBase;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
 
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opengroup.osdu.storage.records.CollaborationRecordsPurgeTest.COLLABORATION1_ID;
 import static org.opengroup.osdu.storage.records.UpdateRecordsMetadataTest.TAG_KEY;
 import static org.opengroup.osdu.storage.records.UpdateRecordsMetadataTest.TAG_VALUE1;
@@ -48,15 +42,15 @@ public abstract class CollaborationUpdateRecordsMetadataTest extends TestBase {
 
         //update record with tags in one collaboration context
         JsonObject updateBody = RecordUtil.buildUpdateTagBody(RECORD_PATCH_ID, "add", TAG_KEY + ":" + TAG_VALUE1);
-        ClientResponse patchResponse = TestUtils.send("records", "PATCH", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TenantUtils.getTenantName(), testUtils.getToken()), updateBody.toString(), "");
-        assertEquals(SC_OK, patchResponse.getStatus());
+        CloseableHttpResponse patchResponse = TestUtils.send("records", "PATCH", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TenantUtils.getTenantName(), testUtils.getToken()), updateBody.toString(), "");
+        assertEquals(SC_OK, patchResponse.getCode());
     }
 
     @Test
     public void shouldMaintainAndUpdateRecordInRespctiveCollaborationContext() throws Exception {
         if (!isCollaborationEnabled) return;
         //assert record with no collaboration context
-        ClientResponse getResponse = TestUtils.send("records/" + RECORD_PATCH_ID, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
+        CloseableHttpResponse getResponse = TestUtils.send("records/" + RECORD_PATCH_ID, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
         String responseBody = assertRecordVersionAndReturnResponseBody(getResponse, RECORD_PATCH_V1);
         JsonObject resultObject = bodyToJsonObject(responseBody);
         assertNull(resultObject.get("tags"));
@@ -77,6 +71,6 @@ public abstract class CollaborationUpdateRecordsMetadataTest extends TestBase {
     }
 
     private static JsonObject bodyToJsonObject(String json) {
-        return new JsonParser().parse(json).getAsJsonObject();
+        return JsonParser.parseString(json).getAsJsonObject();
     }
 }

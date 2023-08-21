@@ -33,9 +33,9 @@
   <packaging>jar</packaging>
 
   <properties>
-    <java.version>1.8</java.version>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
+    <java.version>17</java.version>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
     <log4j.version>2.17.1</log4j.version>
     <spring-webmvc.version>5.3.22</spring-webmvc.version>
   </properties>
@@ -137,12 +137,6 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito2</artifactId>
-      <version>2.0.9</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -151,7 +145,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>2.7.4</version>
+        <version>3.0.0</version>
         <configuration>
           <profiles>
             <profile>
@@ -196,7 +190,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.7.7.201606060606</version>
+        <version>0.8.10</version>
         <executions>
           <execution>
             <goals>

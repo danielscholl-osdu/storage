@@ -42,8 +42,8 @@ In the current version, the mappers are equipped with several drivers to the sto
 ### Requirements:
 
 1. Mandatory
-   - JDK 8
-   - Lombok 1.16 or later
+   - JDK 17
+   - Lombok 1.28 or later
    - Maven
 2. For Google Cloud only
    - GCloud SDK with java (latest version)
@@ -63,7 +63,7 @@ Check that maven is installed:
 $ mvn --version
 Apache Maven 3.6.0
 Maven home: /usr/share/maven
-Java version: 1.8.0_212, vendor: AdoptOpenJDK, runtime: /usr/lib/jvm/jdk8u212-b04/jre
+Java version: 17.0.7
 ...
 ```
 

@@ -16,24 +16,19 @@ package org.opengroup.osdu.storage.query;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestBase;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 
@@ -48,8 +43,8 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 		LegalTagUtils.create(LEGAL_TAG, token);
 		String jsonInput = RecordUtil.createDefaultJsonRecords(5, RECORD_ID, KIND, LEGAL_TAG);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
+		assertEquals(201, response.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -64,8 +59,8 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_return5Ids_when_requestingKindThatHas5Entries() throws Exception {
-		ClientResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?kind=" + KIND);
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?kind=" + KIND);
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
 		assertEquals(5, responseObject.results.length);
@@ -78,8 +73,8 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 		Set<String> result = new HashSet<>();
 
 		// first call
-		ClientResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2&kind=" + KIND);
-		if (response.getStatus() != 200) {
+		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2&kind=" + KIND);
+		if (response.getCode() != 200) {
 			fail(formResponseCheckingMessage(response));
 		}
 		DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
@@ -94,7 +89,7 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 		// second call
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?limit=2&cursor=" + cursor + "&kind=" + KIND);
-		if (response.getStatus() != 200) {
+		if (response.getCode() != 200) {
 			fail(formResponseCheckingMessage(response));
 		}
 		responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
@@ -109,7 +104,7 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 		// third call
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?limit=2&cursor=" + cursor + "&kind=" + KIND);
-		if (response.getStatus() != 200) {
+		if (response.getCode() != 200) {
 			fail(formResponseCheckingMessage(response));
 		}
 		responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
@@ -122,15 +117,15 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_returnError400_when_usingKindThatHasBadFormat() throws Exception {
-		ClientResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1&kind=bad:kind");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1&kind=bad:kind");
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
 	}
 
 	@Test
 	public void should_returnNoResults_when_usingKindThatDoesNotExist() throws Exception {
-		ClientResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?limit=1&kind=nonexisting:kind:formatted:1.0.0");
-		assertEquals(HttpStatus.SC_OK, response.getStatus());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 		DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
 
 		assertEquals(0, responseObject.results.length);
@@ -138,28 +133,35 @@ public abstract class GetQueryRecordsIntegrationTest extends TestBase {
 
 	@Test
 	public void should_returnError400_when_usingInvalidCursorParameter() throws Exception {
-		ClientResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
+		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?limit=1&cursor=MY_BAD_CURSOR&kind=" + RECORDS_HELPER.KIND);
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
 	}
 
 	@Test
 	public void should_returnError400_when_notProvidingKindParameter() throws Exception {
-		ClientResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1&kind=");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
+		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1&kind=");
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
 
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=1");
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatus());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
 	}
 
-	protected String formResponseCheckingMessage(ClientResponse response) {
-		JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+	protected String formResponseCheckingMessage(CloseableHttpResponse response) {
+		JsonObject json;
+		try {
+			json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (ParseException e) {
+			throw new RuntimeException(e);
+		}
 		StringBuilder output = new StringBuilder();
 		output.append("API is not acting properly, responde code is: ")
-				.append(String.valueOf(response.getStatus()))
+				.append(String.valueOf(response.getCode()))
 				.append(". And the reason is: ")
 				.append(json.get("reason").getAsString())
-		        .append(response.getHeaders().get("correlation-id"));
+		        .append(response.getHeaders("correlation-id")[0]);
 		return  output.toString();
 	}
 }

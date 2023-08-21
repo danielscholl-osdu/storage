@@ -38,12 +38,7 @@ import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -254,7 +249,7 @@ public class BulkUpdateRecordServiceImplTest {
 
         BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, COLLABORATION_CONTEXT);
 
-        verifyZeroInteractions(entitlementsAndCacheService, headers, persistenceService);
+        verifyNoMoreInteractions(entitlementsAndCacheService, headers, persistenceService);
         verify(auditLogger, only()).createOrUpdateRecordsFail(TEST_IDS);
 
         assertTrue(actualResponse.getRecordIds().isEmpty());

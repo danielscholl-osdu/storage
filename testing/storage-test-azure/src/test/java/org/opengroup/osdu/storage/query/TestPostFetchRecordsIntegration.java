@@ -14,29 +14,19 @@
 
 package org.opengroup.osdu.storage.query;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.*;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.sun.jersey.api.client.ClientResponse;
-
-import org.apache.http.HttpStatus;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.opengroup.osdu.storage.util.AzureTestUtils;
-import org.opengroup.osdu.storage.util.DummyRecordsHelper;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegrationTests {
 
@@ -70,8 +60,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     public void should_returnConvertedRecords_whenConversionRequiredAndNoError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -82,9 +72,9 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -94,10 +84,10 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(3, responseObject.records[0].data.size());
 
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
     }
 
     @Override
@@ -105,8 +95,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     public void should_returnOriginalRecordsAndConversionStatusAsNoMeta_whenConversionRequiredAndNoMetaBlockInRecord() throws Exception{
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordNoMetaBlock(2, recordId, KIND, LEGAL_TAG);
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -118,9 +108,9 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -130,10 +120,10 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(3, responseObject.records[0].data.size());
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
     }
 
     @Override
@@ -141,8 +131,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndConversionErrorExists() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordMissingValue(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -153,9 +143,9 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
@@ -164,10 +154,10 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(2, responseObject.records[0].data.size());
-        ClientResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getStatus());
-        ClientResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getStatus());
+        CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse1.getCode());
+        CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+        assertEquals(204, deleteResponse2.getCode());
     }
 
     @Override
@@ -175,8 +165,8 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
-        ClientResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getStatus());
+        CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
+        assertEquals(201, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -186,9 +176,9 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
-        ClientResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(1, responseObject.records.length);

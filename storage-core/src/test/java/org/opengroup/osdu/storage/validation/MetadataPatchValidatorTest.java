@@ -14,16 +14,6 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import static java.util.Collections.singletonList;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,6 +27,14 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.storage.validation.impl.MetadataPatchValidator;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+
+import static java.util.Collections.singletonList;
+import static org.mockito.Mockito.*;
+import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MetadataPatchValidatorTest {
@@ -114,7 +112,7 @@ public class MetadataPatchValidatorTest {
 
         validator.validateTags(singletonList(patchOperation));
 
-        verifyZeroInteractions(legalService, entitlementsAndCacheService, headers);
+        verifyNoMoreInteractions(legalService, entitlementsAndCacheService, headers);
     }
 
     @Test
@@ -124,7 +122,7 @@ public class MetadataPatchValidatorTest {
 
         validator.validateTags(singletonList(patchOperation));
 
-        verifyZeroInteractions(legalService, entitlementsAndCacheService, headers);
+        verifyNoMoreInteractions(legalService, entitlementsAndCacheService, headers);
     }
 
     private PatchOperation buildPatchOperation(String path, String[] value) {

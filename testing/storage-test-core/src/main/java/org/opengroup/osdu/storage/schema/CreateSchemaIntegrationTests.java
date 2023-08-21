@@ -14,20 +14,20 @@
 
 package org.opengroup.osdu.storage.schema;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.apache.http.HttpStatus;
-import org.junit.Test;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
-import com.sun.jersey.api.client.ClientResponse;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class CreateSchemaIntegrationTests extends TestBase {
 
@@ -41,23 +41,22 @@ public abstract class CreateSchemaIntegrationTests extends TestBase {
 			String body = this.validPostBody(this.schema);
 
 			// Create schema
-			ClientResponse response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-			assertEquals(HttpStatus.SC_CREATED, response.getStatus());
-			assertEquals("", response.getEntity(String.class));
+			CloseableHttpResponse response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
+			assertEquals(HttpStatus.SC_CREATED, response.getCode());
+			assertEquals("", EntityUtils.toString(response.getEntity()));
 
 			// Try to create again
 			response = TestUtils.send("schemas", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-			assertEquals(HttpStatus.SC_CONFLICT, response.getStatus());
+			assertEquals(HttpStatus.SC_CONFLICT, response.getCode());
 			assertEquals(
 					"{\"code\":409,\"reason\":\"Schema already registered\",\"message\":\"The schema information for the given kind already exists.\"}",
-					response.getEntity(String.class));
+					EntityUtils.toString(response.getEntity()));
 
 			// Get the schema
 			response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-			assertEquals(HttpStatus.SC_OK, response.getStatus());
+			assertEquals(HttpStatus.SC_OK, response.getCode());
 
-			JsonParser parser = new JsonParser();
-			JsonObject json = parser.parse(response.getEntity(String.class)).getAsJsonObject();
+			JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
 
 			assertEquals(this.schema, json.get("kind").getAsString());
 			assertEquals(2, json.get("schema").getAsJsonArray().size());
@@ -76,14 +75,14 @@ public abstract class CreateSchemaIntegrationTests extends TestBase {
 
 			// get schema by a user belonging to another tenant, make sure DpsHeader/Tenant is per request rather than singleton
 			response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders("common", testUtils.getToken()), "", "");
-			assertTrue(HttpStatus.SC_FORBIDDEN == response.getStatus() || HttpStatus.SC_UNAUTHORIZED == response.getStatus());
+			assertTrue(HttpStatus.SC_FORBIDDEN == response.getCode() || HttpStatus.SC_UNAUTHORIZED == response.getCode());
 
 			// Delete schema
 			response = TestUtils.send("schemas/" + this.schema, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-			assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
+			assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
 
 			response = TestUtils.send("schemas/" + this.schema, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-			assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
+			assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 		}
 	}
 

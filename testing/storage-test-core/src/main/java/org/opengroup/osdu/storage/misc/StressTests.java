@@ -14,18 +14,18 @@
 
 package org.opengroup.osdu.storage.misc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.gson.Gson;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.junit.Test;
+import org.opengroup.osdu.storage.records.RecordsApiAcceptanceTests;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.*;
-
-import com.google.gson.Gson;
-import org.opengroup.osdu.storage.records.RecordsApiAcceptanceTests;
-import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class StressTests extends TestBase {
 
@@ -76,14 +76,14 @@ public abstract class StressTests extends TestBase {
 		json = "[" + json + "]";
 
 		long startMillis = System.currentTimeMillis();
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "");
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "");
 		long totalMillis = System.currentTimeMillis() - startMillis;
 		System.out.println(String.format("Took %s milliseconds to Create %s 1KB records", totalMillis, ids.size()));
 
-		String responseJson = response.getEntity(String.class);
+		String responseJson = EntityUtils.toString(response.getEntity());
 		System.out.println(responseJson);
-		assertEquals(201, response.getStatus());
-		assertTrue(response.getType().toString().contains("application/json"));
+		assertEquals(201, response.getCode());
+		assertTrue(response.getEntity().getContentType().toString().contains("application/json"));
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(responseJson,
 				DummyRecordsHelper.CreateRecordResponse.class);
@@ -94,20 +94,20 @@ public abstract class StressTests extends TestBase {
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "?skipdupes=false");
 		totalMillis = System.currentTimeMillis() - startMillis;
-		assertEquals(201, response.getStatus());
+		assertEquals(201, response.getCode());
 		System.out.println(String.format("Took %s milliseconds to Update %s 1KB records", totalMillis, ids.size()));
 
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "?skipdupes=false");
 		totalMillis = System.currentTimeMillis() - startMillis;
-		assertEquals(201, response.getStatus());
+		assertEquals(201, response.getCode());
 		System.out.println(String.format("Took %s milliseconds to Update %s 1KB records when when skipdupes is true",
 				totalMillis, ids.size()));
 
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records/" + ids.get(0), "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		totalMillis = System.currentTimeMillis() - startMillis;
-		assertEquals(200, response.getStatus());
+		assertEquals(200, response.getCode());
 		System.out.println(String.format("Took %s milliseconds to GET 1 1KB record", totalMillis));
 
 		ids.parallelStream().forEach((id) -> {

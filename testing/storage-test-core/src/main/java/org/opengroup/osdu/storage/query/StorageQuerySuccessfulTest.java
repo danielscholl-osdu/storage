@@ -14,19 +14,18 @@
 
 package org.opengroup.osdu.storage.query;
 
-import static org.junit.Assert.assertEquals;
-
-import javax.ws.rs.HttpMethod;
-
-import org.apache.http.HttpStatus;
-import org.junit.*;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.Test;
 import org.opengroup.osdu.storage.model.CreatedRecordInStorage;
 import org.opengroup.osdu.storage.model.GetCursorValue;
 import org.opengroup.osdu.storage.util.*;
-import com.sun.jersey.api.client.ClientResponse;
+
+import javax.ws.rs.HttpMethod;
+
+import static org.junit.Assert.assertEquals;
 
 
 public abstract class StorageQuerySuccessfulTest extends TestBase {
@@ -54,30 +53,30 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 	@Test
 	public void should_retrieveAllKinds_when_toCursorIdIsGiven() throws Exception {
 		if (configUtils != null && configUtils.getIsSchemaEndpointsEnabled()) {
-			ClientResponse recordResponse = TestUtils.send("query/kinds?limit=10", HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+			CloseableHttpResponse recordResponse = TestUtils.send("query/kinds?limit=10", HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 					"", "");
 			GetCursorValue getCursorValue = TestUtils.getResult(recordResponse, HttpStatus.SC_OK, GetCursorValue.class);
 			String cursorValue = getCursorValue.getCursor();
-			assertEquals(HttpStatus.SC_OK, recordResponse.getStatus());
+			assertEquals(HttpStatus.SC_OK, recordResponse.getCode());
 			assertEquals(cursorValue, getCursorValue.getCursor());
-			ClientResponse recordResponseWithCursorValue = TestUtils.send("query/kinds?cursor=" + cursorValue + "&limit=10",
+			CloseableHttpResponse recordResponseWithCursorValue = TestUtils.send("query/kinds?cursor=" + cursorValue + "&limit=10",
 					HttpMethod.GET, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-			assertEquals(HttpStatus.SC_OK, recordResponseWithCursorValue.getStatus());
+			assertEquals(HttpStatus.SC_OK, recordResponseWithCursorValue.getCode());
 		}
 	}
 
 	@Test
 	public void should_retrieveAllRecords_when_kindIsGiven() throws Exception {
-		ClientResponse recordResponse = createTestRecord(KIND_ONE, KIND_ID_ONE, LEGAL_TAG_NAME);
-		assertEquals(HttpStatus.SC_CREATED, recordResponse.getStatus());
-		ClientResponse recordResponseGet = TestUtils.send("query/records?kind=" + KIND_ONE, HttpMethod.GET,
+		CloseableHttpResponse recordResponse = createTestRecord(KIND_ONE, KIND_ID_ONE, LEGAL_TAG_NAME);
+		assertEquals(HttpStatus.SC_CREATED, recordResponse.getCode());
+		CloseableHttpResponse recordResponseGet = TestUtils.send("query/records?kind=" + KIND_ONE, HttpMethod.GET,
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		assertEquals(HttpStatus.SC_OK, recordResponseGet.getStatus());
+		assertEquals(HttpStatus.SC_OK, recordResponseGet.getCode());
 	}
 
 	@Test
 	public void should_queryToFetchMultipleRecords_when_recordIsGiven() throws Exception {
-		ClientResponse recordResponse = createTestRecord(KIND_ONE, KIND_ID_ONE, LEGAL_TAG_NAME);
+		CloseableHttpResponse recordResponse = createTestRecord(KIND_ONE, KIND_ID_ONE, LEGAL_TAG_NAME);
 		CreatedRecordInStorage recordResult = TestUtils.getResult(recordResponse, HttpStatus.SC_CREATED,
 				CreatedRecordInStorage.class);
 		JsonArray recordIDS = new JsonArray();
@@ -88,12 +87,12 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 		createSearchRecordPayload.add("records", recordIDS);
 		createSearchRecordPayload.add("attributes", attribute);
 		String path = "query/records";
-		ClientResponse recordResponsePost = TestUtils.send(path, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+		CloseableHttpResponse recordResponsePost = TestUtils.send(path, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
 				createSearchRecordPayload.toString(), "");
-		assertEquals(HttpStatus.SC_OK, recordResponsePost.getStatus());
+		assertEquals(HttpStatus.SC_OK, recordResponsePost.getCode());
 	}
 
-	protected ClientResponse createTestRecord(String kind, String id, String legalName) throws Exception {
+	protected CloseableHttpResponse createTestRecord(String kind, String id, String legalName) throws Exception {
 		String jsonInputRecord = RecordUtil.createDefaultJsonRecord(id, kind, legalName);
 		return TestUtils.send(RECORD, HttpMethod.PUT, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputRecord, "");
 	}

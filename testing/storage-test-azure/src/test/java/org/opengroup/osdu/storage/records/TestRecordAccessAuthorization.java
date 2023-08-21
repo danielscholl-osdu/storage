@@ -16,7 +16,8 @@ package org.opengroup.osdu.storage.records;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.ClientResponse;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.*;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
@@ -60,10 +61,10 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
                 testUtils.getNoDataAccessToken());
 
-        ClientResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
+        CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
 
-        assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatus());
-        JsonObject json = new JsonParser().parse(response.getEntity(String.class)).getAsJsonObject();
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
         assertEquals(403, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
         assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());

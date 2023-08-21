@@ -14,19 +14,10 @@
 
 package org.opengroup.osdu.storage.records;
 
-import com.sun.jersey.api.client.ClientResponse;
-
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.opengroup.osdu.storage.util.AzureTestUtils;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.RecordUtil;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.junit.*;
+import org.opengroup.osdu.storage.util.*;
 
 public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
 
@@ -62,7 +53,7 @@ public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
 
 		String record = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG).replace(TestUtils.getAcl(), group);
 
-		ClientResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
 
         // blob storage doesn't have blob level access per user. User has to have at least viewer access
 //        TestUtils.getResult(response, HttpStatus.SC_FORBIDDEN, String.class);
