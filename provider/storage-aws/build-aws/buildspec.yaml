@@ -54,7 +54,9 @@ phases:
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
-      - $(aws ecr get-login --no-include-email --region $AWS_REGION) # authenticate with ECR via the AWS CLI
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+      - echo "Logging into Docker Hub..."
+      - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
   build:
     commands:
       - export REPO_NAME=${PWD##*/}
@@ -84,9 +86,6 @@ phases:
       - sed -i "s|__CONTAINER__|$ECR_IMAGE|"  devops/aws/chart/values.yaml
       - echo "--Copying Helm Charts to ${OUTPUT_DIR:-dist}--"
       - rsync -r devops/aws/* "${OUTPUT_DIR:-dist}"
-
-      - echo "Logging into Docker Hub..."
-      - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
 
       - echo "Building docker image..."
       - docker build -f provider/storage-aws/build-aws/Dockerfile -t ${ECR_IMAGE} .
