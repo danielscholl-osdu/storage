@@ -14,6 +14,9 @@
 
 package org.opengroup.osdu.storage.service;
 
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lambdaworks.redis.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
@@ -31,6 +34,8 @@ import org.opengroup.osdu.core.common.util.Crc32c;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.xml.bind.DataBindingException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +58,8 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
 
     @Autowired
     private JaxRsDpsLog logger;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public String authorize(DpsHeaders headers, String... roles) {
@@ -160,12 +167,26 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
             } catch (EntitlementsException e) {
                 HttpResponse response = e.getHttpResponse();
                 this.logger.error(String.format("Error requesting entitlements service %s", response));
-                throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, ERROR_MSG, e);
+                String errorMessage = this.deserializeErrorMessage(response.getBody());
+                throw new AppException(e.getHttpResponse().getResponseCode(), ERROR_REASON, errorMessage, e);
             } catch (RedisException ex) {
                 this.logger.error(String.format("Error putting key %s into redis: %s", cacheKey, ex.getMessage()), ex);
             }
         }
         return groups;
+    }
+
+    private String deserializeErrorMessage(String response) {
+        try {
+            JsonNode rootNode = objectMapper.readTree(response);
+            JsonNode message = rootNode.get("message");
+            if (message == null) {
+                return ERROR_MSG;
+            }
+            return message.asText();
+        } catch (IOException | DataBindingException e) {
+            return ERROR_MSG;
+        }
     }
 
     protected static String getGroupCacheKey(DpsHeaders headers) {

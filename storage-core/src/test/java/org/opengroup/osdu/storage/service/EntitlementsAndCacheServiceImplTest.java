@@ -151,6 +151,7 @@ public class EntitlementsAndCacheServiceImplTest {
 
         HttpResponse response = mock(HttpResponse.class);
         when(response.getResponseCode()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(response.getBody()).thenReturn("{\"code\":500,\"reason\":\"Access denied\",\"message\":\"The user is not authorized to perform this action\"}");
 
         EntitlementsException expectedException = new EntitlementsException(ERROR_MSG, response);
 
@@ -164,6 +165,33 @@ public class EntitlementsAndCacheServiceImplTest {
             assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, e.getError().getCode());
             assertEquals("Access denied", e.getError().getReason());
             assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
+        } catch (Exception e) {
+            fail("Should not get different exception");
+        }
+    }
+
+    @Test
+    public void should_throwAppExceptionAndPropagateMessage_when_entitlementExceptionHappens() throws EntitlementsException {
+
+        final String ERROR_MSG = "FATAL ERROR";
+
+        HttpResponse response = mock(HttpResponse.class);
+        when(response.getResponseCode()).thenReturn(HttpStatus.SC_FORBIDDEN);
+        when(response.getBody()).thenReturn("{\"code\":403,\n" +
+                "\"reason\":\"Access denied\",\"message\":\"Invalid data partition id\"}");
+
+        EntitlementsException expectedException = new EntitlementsException(ERROR_MSG, response);
+
+        when(this.entitlementService.getGroups()).thenThrow(expectedException);
+
+        try {
+            this.sut.authorize(this.headers, "role3");
+
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("Invalid data partition id", e.getError().getMessage());
         } catch (Exception e) {
             fail("Should not get different exception");
         }
