@@ -36,7 +36,7 @@
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.22.0</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.24.0-rc1</osdu.corelibazure.version>
         <osdu.storage-core.version>0.24.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
@@ -183,7 +183,7 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>0.23.0-rc1</version>
+            <version>0.23.1</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
