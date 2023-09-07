@@ -36,7 +36,7 @@
         <azure.appservice.plan />
         <azure.appservice.appname />
         <azure.appservice.subscription />
-        <osdu.corelibazure.version>0.24.0-rc1</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.24.0-rc2</osdu.corelibazure.version>
         <osdu.storage-core.version>0.24.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
@@ -44,6 +44,7 @@
         <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
         <spring-webmvc.version>5.3.22</spring-webmvc.version>
+        <netty.version>4.1.96.Final</netty.version>
         <argLine>
             --add-opens=java.base/java.util=ALL-UNNAMED
             --add-opens java.base/java.lang=ALL-UNNAMED
@@ -55,6 +56,15 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- netty-bom dependency to be declared before spring-boot-dependencies,
+           to pull all netty-transitive dependencies with same version -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- Inherit managed dependencies from core-lib-azure -->
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
