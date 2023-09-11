@@ -9,7 +9,7 @@
 * [Pubsub configuration](#Pubsub-configuration)
 * [Google Cloud service configuration](#ObjectStoreConfig)
 * [Google loud service account configuration](#Google-cloud-service-account-configuration)
-
+* [License](#License)
 ## Environment variables
 
 Define the following environment variables.
@@ -23,21 +23,22 @@ Must have:
 
 ### Common properties for all environments
 
-| name                             | value                                         | description                                                                           | sensitive? | source                                                     |
-|----------------------------------|-----------------------------------------------|---------------------------------------------------------------------------------------|------------|------------------------------------------------------------|
-| `LOG_PREFIX`                     | `storage`                                     | Logging prefix                                                                        | no         | -                                                          |
-| `SERVER_SERVLET_CONTEXPATH`      | `/api/storage/v2/`                            | Servlet context path                                                                  | no         | -                                                          |
-| `AUTHORIZE_API`                  | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint                                                             | no         | output of infrastructure deployment                        |
-| `LEGALTAG_API`                   | ex `https://legal.com/api/legal/v1`           | Legal API endpoint                                                                    | no         | output of infrastructure deployment                        |
-| `PUBSUB_SEARCH_TOPIC`            | ex `records-changed`                          | PubSub topic name                                                                     | no         | <https://console.cloud.google.com/cloudpubsub/topic>         |
-| `REDIS_STORAGE_HOST`             | ex `127.0.0.1`                                | Redis host for storage                                                                | no         |                                                            |
-| `REDIS_STORAGE_PASSWORD`         | ex `*****`                                    | Redis storage host password                                                           | yes        |                                                            |
-| `REDIS_STORAGE_WITH_SSL`         | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                                            |
-| `REDIS_STORAGE_EXPIRATION`       | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                                            |
-| `POLICY_API`                     | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment                        |
-| `POLICY_ID`                      | ex `storage`                                  | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                                          |
-| `PARTITION_API`                  | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                                          |
-| `GOOGLE_APPLICATION_CREDENTIALS` | ex `/path/to/directory/service-key.json`      | Service account credentials, you only need this if running locally                    | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
+| name                                       | value                                         | description                                                                           | sensitive? | source                                                       |
+|--------------------------------------------|-----------------------------------------------|---------------------------------------------------------------------------------------|------------|--------------------------------------------------------------|
+| `LOG_PREFIX`                               | `storage`                                     | Logging prefix                                                                        | no         | -                                                            |
+| `SERVER_SERVLET_CONTEXPATH`                | `/api/storage/v2/`                            | Servlet context path                                                                  | no         | -                                                            |
+| `AUTHORIZE_API`                            | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint                                                             | no         | output of infrastructure deployment                          |
+| `LEGALTAG_API`                             | ex `https://legal.com/api/legal/v1`           | Legal API endpoint                                                                    | no         | output of infrastructure deployment                          |
+| `PUBSUB_SEARCH_TOPIC`                      | ex `records-changed`                          | PubSub topic name                                                                     | no         | <https://console.cloud.google.com/cloudpubsub/topic>         |
+| `REDIS_STORAGE_HOST`                       | ex `127.0.0.1`                                | Redis host for storage                                                                | no         |                                                              |
+| `REDIS_STORAGE_PASSWORD`                   | ex `*****`                                    | Redis storage host password                                                           | yes        |                                                              |
+| `REDIS_STORAGE_WITH_SSL`                   | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                                              |
+| `REDIS_STORAGE_EXPIRATION`                 | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                                              |
+| `POLICY_API`                               | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment                          |
+| `POLICY_ID`                                | ex `storage`                                  | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                                            |
+| `PARTITION_API`                            | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                                            |
+| `GOOGLE_APPLICATION_CREDENTIALS`           | ex `/path/to/directory/service-key.json`      | Service account credentials, you only need this if running locally                    | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
+| `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                                            |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
@@ -118,6 +119,21 @@ These buckets must be defined in tenants’ “data” Google Cloud projects tha
   </tr>
 </table>
 
+We can use Partition Service to get a bucket name:
+
+```
+curl -L -X PATCH 'https:///api/partition/v1/partitions/opendes' -H 'data-partition-id: opendes' -H 'Authorization: Bearer ...' -H 'Content-Type: application/json' --data-raw '{
+  "properties": {
+    "partition.properties.storage.bucket.name": {
+      "sensitive": true,
+      "value": "PARTITION_PROPERTIES_STORAGE_BUCKET_NAME"
+    }
+  }
+}'
+
+```
+
+
 ## Google Cloud service account configuration
 
 TBD
@@ -164,3 +180,21 @@ Execute following command to build code and run all the integration tests:
  # build + run Google Cloud integration tests.
  $ (cd testing/storage-test-gc/ && mvn clean test)
  ```
+
+## License
+
+Copyright © Google LLC
+
+Copyright © EPAM Systems
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
