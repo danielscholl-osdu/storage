@@ -69,7 +69,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.23.0-rc2</version>
+            <version>0.24.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -151,7 +151,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
+            <artifactId>mockito-inline</artifactId>
             <version>3.9.0</version>
             <scope>test</scope>
         </dependency>
@@ -189,6 +189,14 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <threadCount>1</threadCount>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.owasp</groupId>

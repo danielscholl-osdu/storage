@@ -34,10 +34,12 @@ public class RecordMetadataTypeConverter implements DynamoDBTypeConverter<String
     @Inject
     private JaxRsDpsLog logger;
 
+    @Inject
+    private ObjectMapper objectMapper;
+
     @Override
     // Converts RecordMetadata to a JSON string for DynamoDB
     public String convert(RecordMetadata recordMetadata) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.writeValueAsString(recordMetadata);
         } catch (JsonProcessingException e) {
@@ -49,7 +51,6 @@ public class RecordMetadataTypeConverter implements DynamoDBTypeConverter<String
     @Override
     // Converts a JSON string of an array of RecordMetadata to a RecordMetadata object
     public RecordMetadata unconvert(String recordMetadataString) {
-        ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
             return objectMapper.readValue(recordMetadataString, new TypeReference<RecordMetadata>(){});

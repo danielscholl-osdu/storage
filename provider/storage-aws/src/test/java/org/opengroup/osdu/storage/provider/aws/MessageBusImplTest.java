@@ -12,43 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api;
+package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import com.google.gson.Gson;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
-import org.opengroup.osdu.storage.provider.aws.MessageBusImpl;
-
-import org.springframework.boot.test.context.SpringBootTest;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
-@RunWith(MockitoJUnitRunner.class)
-@SpringBootTest(classes = {StorageApplication.class})
 public class MessageBusImplTest {
 
     @InjectMocks
-    private MessageBusImpl messageBus = new MessageBusImpl();
+    private MessageBusImpl messageBus;
 
     @Mock
     private AmazonSNS snsClient;
@@ -56,7 +47,7 @@ public class MessageBusImplTest {
     @Mock
     private JaxRsDpsLog logger;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         openMocks(this);
     }

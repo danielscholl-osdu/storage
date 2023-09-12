@@ -1,3 +1,4 @@
+
 // Copyright © 2020 Amazon Web Services
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,30 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api;
+package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
-import org.opengroup.osdu.storage.StorageApplication;
-import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -43,16 +40,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-@RunWith(MockitoJUnitRunner.class)
-@SpringBootTest(classes = {StorageApplication.class})
-public class QueryRepositoryTest {
+
+public class QueryRepositoryImplTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
     // due to lazy loading
-    private QueryRepositoryImpl repo = new QueryRepositoryImpl();
+    private QueryRepositoryImpl repo;
 
     @Mock
     private DynamoDBQueryHelperV2 queryHelper;
@@ -63,7 +65,7 @@ public class QueryRepositoryTest {
     @Mock
     private DpsHeaders dpsHeaders;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         openMocks(this);
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
@@ -103,7 +105,7 @@ public class QueryRepositoryTest {
 
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn(dataPartitionId);
         Mockito.when(queryHelper.queryByGSI(Mockito.eq(SchemaDoc.class),
-                Mockito.anyObject(), Mockito.anyInt(), Mockito.eq(cursor)))
+                Mockito.any(), Mockito.anyInt(), Mockito.eq(cursor)))
                 .thenReturn(expectedQueryPageResult);
 
         // Act
@@ -111,6 +113,19 @@ public class QueryRepositoryTest {
 
         // Assert
         Assert.assertEquals(datastoreQueryResult, expectedDatastoreQueryResult);
+    }
+
+    @Test
+    public void getAllKindsThrowsException() throws IllegalArgumentException, UnsupportedEncodingException {
+        String cursor = "abc123";
+        Integer limit = 50;
+        when(queryHelper.queryByGSI(Mockito.eq(SchemaDoc.class),
+                any(), anyInt(), Mockito.eq(cursor)))
+                .thenThrow(UnsupportedEncodingException.class);
+        
+        assertThrows(AppException.class, () -> {
+            repo.getAllKinds(limit, cursor);
+        });
     }
 
     @Test
@@ -137,7 +152,7 @@ public class QueryRepositoryTest {
 
         Mockito.when(queryHelper.queryPage(
             Mockito.eq(RecordMetadataDoc.class),
-            Mockito.anyObject(),
+            Mockito.any(),
             Mockito.anyString(),
             Mockito.anyString(),
             Mockito.anyString(),
@@ -153,7 +168,7 @@ public class QueryRepositoryTest {
         // Assert
         Mockito.verify(queryHelper, Mockito.times(1)).queryPage(
             Mockito.eq(RecordMetadataDoc.class),
-            Mockito.anyObject(),
+            Mockito.any(),
             Mockito.anyString(),
             Mockito.anyString(),
             Mockito.anyString(),
@@ -163,6 +178,29 @@ public class QueryRepositoryTest {
             Mockito.eq(cursor)
             );
         Assert.assertEquals(expectedDatastoreQueryResult, datastoreQueryResult);
+    }
+
+    @Test
+    void getAllRecordIdsFromKindThrowsException() throws InvalidCursorException, IllegalArgumentException, UnsupportedEncodingException {
+        String kind = "tenant:source:type:1.0.0";
+        String cursor = "abc123";
+        Integer limit = 50;
+
+        when(queryHelper.queryPage(
+            eq(RecordMetadataDoc.class),
+            any(),
+            anyString(),
+            anyString(),
+            anyString(),
+            eq(ComparisonOperator.BEGINS_WITH),
+            anyString(),
+            anyInt(),
+            anyString()))
+            .thenThrow(UnsupportedEncodingException.class);
+
+        assertThrows(AppException.class, () -> { 
+            repo.getAllRecordIdsFromKind(kind, limit, cursor, Optional.empty());
+        });
     }
 
     @Test
@@ -189,7 +227,7 @@ public class QueryRepositoryTest {
 
         Mockito.when(queryHelper.queryPage(
                 Mockito.eq(RecordMetadataDoc.class),
-                Mockito.anyObject(),
+                Mockito.any(),
                 Mockito.anyString(),
                 Mockito.anyString(),
                 Mockito.anyString(),
@@ -205,7 +243,7 @@ public class QueryRepositoryTest {
         // Assert
         Mockito.verify(queryHelper, Mockito.times(1)).queryPage(
             Mockito.eq(RecordMetadataDoc.class),
-            Mockito.anyObject(),
+            Mockito.any(),
             Mockito.anyString(),
             Mockito.anyString(),
             Mockito.anyString(),

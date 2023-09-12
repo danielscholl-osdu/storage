@@ -33,10 +33,12 @@ public class LegalTagsTypeConverter implements DynamoDBTypeConverter<String, Set
     @Inject
     private JaxRsDpsLog logger;
 
+    @Inject
+    private ObjectMapper objectMapper;
+
     @Override
     // Converts an array of legaltag strings to a JSON string for DynamoDB
     public String convert(Set<String> legaltags) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.writeValueAsString(legaltags);
         } catch (JsonProcessingException e) {
@@ -48,7 +50,6 @@ public class LegalTagsTypeConverter implements DynamoDBTypeConverter<String, Set
     @Override
     // Converts a JSON string of an array of legaltag strings to a list of legaltag strings
     public Set<String> unconvert(String legaltagsString) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.readValue(legaltagsString, new TypeReference<Set<String>>(){});
         } catch (JsonParseException e) {

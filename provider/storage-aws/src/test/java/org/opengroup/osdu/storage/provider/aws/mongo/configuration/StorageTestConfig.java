@@ -13,19 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api.mongo.configuration;
+package org.opengroup.osdu.storage.provider.aws.mongo.configuration;
 
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.aws.mongodb.MongoDBSimpleFactory;
 import org.opengroup.osdu.core.aws.mongodb.MultiClusteredConfigReader;
 import org.opengroup.osdu.core.aws.mongodb.config.MongoProperties;
+import org.opengroup.osdu.core.aws.partition.PartitionInfoAws;
 import org.opengroup.osdu.storage.service.IngestionService;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.conversion.CrsConversionService;
 import org.opengroup.osdu.storage.provider.aws.CloudStorageImpl;
 import org.opengroup.osdu.storage.provider.aws.MessageBusImpl;
 import org.opengroup.osdu.storage.provider.aws.SchemaRepositoryImpl;
-import org.opengroup.osdu.storage.provider.aws.SomeBasicInterfaceImpl;
 import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
 import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.aws.mongo.mongodb.MultiClusteredConfigReaderStorage;
@@ -63,8 +63,6 @@ public class StorageTestConfig {
     public MessageBusImpl messageBus;
     @MockBean
     public SchemaRepositoryImpl schemaRepository;
-    @MockBean
-    public SomeBasicInterfaceImpl someBasicInterface;
     @MockBean
     public GroupCache groupCache;
     @MockBean
