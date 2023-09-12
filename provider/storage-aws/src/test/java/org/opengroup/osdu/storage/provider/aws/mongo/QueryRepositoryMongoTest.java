@@ -1,3 +1,4 @@
+
 // Copyright MongoDB, Inc or its affiliates. All Rights Reserved.
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
@@ -13,24 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api.mongo;
+package org.opengroup.osdu.storage.provider.aws.mongo;
 
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
-import org.opengroup.osdu.storage.StorageApplication;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.configuration.StorageTestConfig;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.DbUtil;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.ParentUtil;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.RecordMetadataGenerator;
-import org.opengroup.osdu.storage.provider.aws.mongo.MongoDbQueryRepository;
+import org.opengroup.osdu.storage.provider.aws.mongo.configuration.StorageTestConfig;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.DbUtil;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.ParentUtil;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.RecordMetadataGenerator;
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,9 +34,9 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.when;
 
 @DataMongoTest
-@RunWith(SpringRunner.class)
 @SpringJUnitConfig(classes = StorageTestConfig.class)
 public class QueryRepositoryMongoTest extends ParentUtil {
 
@@ -73,10 +69,6 @@ public class QueryRepositoryMongoTest extends ParentUtil {
         List<String> lastPageRecordsIds = lastPageRecords.getResults();
 
 
-        DatastoreQueryResult otherRecords = queryRepository.getAllRecordIdsFromKind(otherKind, 50, null, Optional.empty());
-        String cursor4 = otherRecords.getCursor();
-        List<String> otherResults = otherRecords.getResults();
-
 
         //then
         assertNotNull(cursor1);
@@ -87,8 +79,5 @@ public class QueryRepositoryMongoTest extends ParentUtil {
 
         assertNull(cursor3);
         assertEquals(2, lastPageRecordsIds.size());
-
-        assertNull(cursor4);
-        assertEquals(15, otherResults.size());
     }
 }

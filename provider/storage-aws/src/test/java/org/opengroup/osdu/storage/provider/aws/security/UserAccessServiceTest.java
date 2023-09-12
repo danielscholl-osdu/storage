@@ -12,38 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api;
+package org.opengroup.osdu.storage.provider.aws.security;
 
+
+import org.apache.http.HttpStatus;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.opengroup.osdu.core.common.entitlements.EntitlementsService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.storage.StorageApplication;
+import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
-import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.service.EntitlementsAndCacheServiceImpl;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-@RunWith(MockitoJUnitRunner.class)
-@SpringBootTest(classes={StorageApplication.class})
+
 public class UserAccessServiceTest {
 
     @InjectMocks
@@ -51,41 +62,51 @@ public class UserAccessServiceTest {
 
     Acl acl;
 
+    @Mock
     RecordMetadata record;
 
     @Mock
     EntitlementsAndCacheServiceImpl entitlementsExtension;
 
-    @Before
+    @Mock
+    private DpsHeaders dpsHeaders;
+
+    @Mock
+    private CacheHelper cacheHelper;
+
+    @Mock
+    private GroupCache cache;
+
+    @Mock 
+    private EntitlementsService entitlementsService;
+
+    @Mock
+    private IEntitlementsFactory entitlementsFactory;
+
+    @Mock
+    private IServiceAccountJwtClient serviceAccountClient;
+
+    private Groups groups = new Groups();
+
+    private GroupInfo groupInfo = new GroupInfo();
+
+    @BeforeEach
     public void setUp() {
         openMocks(this);
+        doNothing().when(record).setUser("not a user");
 
-        record = new RecordMetadata();
-        record.setUser("not a user");
-
-        CacheHelper cacheHelper = Mockito.mock(CacheHelper.class);
         ReflectionTestUtils.setField(CUT, "cacheHelper", cacheHelper);
-
-        GroupCache cache = Mockito.mock(GroupCache.class);
         ReflectionTestUtils.setField(CUT, "cache", cache);
-
-        IEntitlementsService entitlementsService = Mockito.mock(IEntitlementsService.class);
-        Groups groups = new Groups();
         List<GroupInfo> groupInfos = new ArrayList<>();
-        GroupInfo groupInfo = new GroupInfo();
-        groupInfo.setName("data.tenant@byoc.local");
+        groupInfo.setName("data.tenant");
         groupInfo.setEmail("data.tenant@byoc.local");
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
         Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
 
-        IEntitlementsFactory factory = Mockito.mock(IEntitlementsFactory.class);
-        ReflectionTestUtils.setField(CUT, "entitlementsFactory", factory);
+        ReflectionTestUtils.setField(CUT, "entitlementsFactory", entitlementsFactory);
 
-        Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
-
-        DpsHeaders dpsHeaders = Mockito.mock(DpsHeaders.class);
         ReflectionTestUtils.setField(CUT, "dpsHeaders", dpsHeaders);
     }
 
@@ -97,8 +118,7 @@ public class UserAccessServiceTest {
         String[] viewers = { "data.tenant@byoc.local" };
         acl.setOwners(owners);
         acl.setViewers(viewers);
-
-        record.setAcl(acl);
+        doNothing().when(record).setAcl(acl);
 
         // Act
         boolean actual = CUT.userHasAccessToRecord(acl);
@@ -114,7 +134,7 @@ public class UserAccessServiceTest {
         acl.setOwners(new String[] {});
         acl.setViewers(new String [] {});
 
-        record.setAcl(acl);
+        doNothing().when(record).setAcl(acl);
 
         // Act
         boolean actual = CUT.userHasAccessToRecord(acl);
@@ -122,4 +142,40 @@ public class UserAccessServiceTest {
         // Assert
         Assert.assertFalse(actual);
     }
+
+    @Test
+    void validateRecordAcl_shouldThrowAppException_whenInvalidGroupName() {
+        // Arrange
+        RecordProcessing recordProcessing = mock(RecordProcessing.class);
+        RecordMetadata recordMetadata = mock(RecordMetadata.class);
+        Acl acl = mock(Acl.class);
+        String[] aclList = {"invalidGroup@domain"};
+        
+        when(acl.flattenAcl(acl)).thenReturn(aclList);
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(recordProcessing.getRecordMetadata()).thenReturn(recordMetadata);
+        
+        assertThrows(AppException.class, () -> {
+            CUT.validateRecordAcl(recordProcessing);
+        });
+    }
+
+    @Test
+    void validateRecordAcl_shouldNotThrowException_whenValidGroupName() {
+        // Arrange
+        RecordProcessing recordProcessing = mock(RecordProcessing.class);
+        RecordMetadata recordMetadata = mock(RecordMetadata.class);
+        Acl acl = mock(Acl.class);
+        String[] aclList = {"data.tenant@byoc.local"};
+
+        when(recordProcessing.getRecordMetadata()).thenReturn(recordMetadata);
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(Acl.flattenAcl(acl)).thenReturn(aclList);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> {
+            CUT.validateRecordAcl(recordProcessing);
+        });
+    }
+
 }

@@ -1,3 +1,4 @@
+
 // Copyright MongoDB, Inc or its affiliates. All Rights Reserved.
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
@@ -13,23 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api.mongo;
+package org.opengroup.osdu.storage.provider.aws.mongo;
 
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.configuration.StorageTestConfig;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.DbUtil;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.ParentUtil;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.RecordMetadataGenerator;
-import org.opengroup.osdu.storage.provider.aws.mongo.MongoDbRecordsMetadataRepository;
+import org.opengroup.osdu.storage.provider.aws.mongo.configuration.StorageTestConfig;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.DbUtil;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.ParentUtil;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.RecordMetadataGenerator;
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -43,7 +41,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @DataMongoTest
-@RunWith(SpringRunner.class)
 @SpringJUnitConfig(classes = StorageTestConfig.class)
 public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
 

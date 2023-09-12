@@ -83,13 +83,11 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                 // Set the core fields (what is expected in every implementation)
                 doc.setId(newRecordMetadata.getId());
                 doc.setMetadata(newRecordMetadata);
-
                 // Add extra indexed fields for querying in DynamoDB
                 doc.setKind(newRecordMetadata.getKind());
                 doc.setLegaltags(newRecordMetadata.getLegal().getLegaltags());
                 doc.setStatus(newRecordMetadata.getStatus().name());
                 doc.setUser(newRecordMetadata.getUser());
-
                 // Store the record to the database
                 recordMetadataQueryHelper.save(doc);
                 saveLegalTagAssociation(newRecordMetadata.getId(), newRecordMetadata.getLegal().getLegaltags());
@@ -111,16 +109,17 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                 // Set the core fields (what is expected in every implementation)
                 doc.setId(recordMetadata.getId());
                 doc.setMetadata(recordMetadata);
-
+                
                 // Add extra indexed fields for querying in DynamoDB
                 doc.setKind(recordMetadata.getKind());
                 doc.setLegaltags(recordMetadata.getLegal().getLegaltags());
                 doc.setStatus(recordMetadata.getStatus().name());
                 doc.setUser(recordMetadata.getUser());
-
+                
                 // Store the record to the database
                 recordMetadataQueryHelper.save(doc);
                 saveLegalTagAssociation(recordMetadata.getId(), recordMetadata.getLegal().getLegaltags());
+                
             }
         }
         return recordsMetadata;

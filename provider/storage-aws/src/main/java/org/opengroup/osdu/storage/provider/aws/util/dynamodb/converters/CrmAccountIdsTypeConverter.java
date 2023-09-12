@@ -32,10 +32,12 @@ public class CrmAccountIdsTypeConverter implements DynamoDBTypeConverter<String,
     @Inject
     private JaxRsDpsLog logger;
 
+    @Inject
+    private ObjectMapper objectMapper;
+
     @Override
     // Converts an array of CRM account ID strings to a JSON string for DynamoDB
     public String convert(List<String> crmAccountIds) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.writeValueAsString(crmAccountIds);
         } catch (JsonProcessingException e) {
@@ -47,7 +49,6 @@ public class CrmAccountIdsTypeConverter implements DynamoDBTypeConverter<String,
     @Override
     // Converts a JSON string of an array of CRM account ID strings to a list of CRM account ID strings
     public List<String> unconvert(String crmAccountIdsString) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.readValue(crmAccountIdsString, new TypeReference<List<String>>(){});
         } catch (JsonParseException e) {

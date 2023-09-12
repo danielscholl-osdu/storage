@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api.mongo.util;
+package org.opengroup.osdu.storage.provider.aws.mongo.util;
 
-import org.junit.Rule;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.aws.partition.PartitionInfoAws;
 import org.opengroup.osdu.core.aws.partition.PartitionServiceClientWithCache;
@@ -37,25 +37,23 @@ public abstract class ParentUtil extends DbUtil {
     @MockBean
     private PartitionServiceClientWithCache partitionServiceClient;
 
-    @Rule
-    public ExternalResource resource = new ExternalResource() {
-        @Override
-        protected void before() {
-            Mockito.when(ParentUtil.this.headers.getPartitionId())
-                    .thenReturn(DATA_PARTITION);
-            ParentUtil.this.mongoTemplateHelper.dropCollections();
-            PartitionInfoAws partitionInfoAws = new PartitionInfoAws();
-            Property tenantIdProperty = new Property();
-            tenantIdProperty.setValue(DATA_PARTITION);
-            partitionInfoAws.setTenantIdProperty(tenantIdProperty);
-            Mockito.when(partitionServiceClient.getPartition(anyString())).thenReturn(partitionInfoAws);
-        }
-
-        @Override
-        protected void after() {
-            ParentUtil.this.mongoTemplateHelper.dropCollections();
-        }
-    };
+    @BeforeEach
+    void setUpMocks() {
+        Mockito.when(this.headers.getPartitionId()).thenReturn(DATA_PARTITION);
+        
+        this.mongoTemplateHelper.dropCollections();
+        
+        PartitionInfoAws partitionInfoAws = new PartitionInfoAws();
+        Property tenantIdProperty = new Property();
+        tenantIdProperty.setValue(DATA_PARTITION);
+        partitionInfoAws.setTenantIdProperty(tenantIdProperty);
+        
+        Mockito.when(partitionServiceClient.getPartition(anyString())).thenReturn(partitionInfoAws);
+    }
+    @AfterEach
+    public void tearDown() {
+        this.mongoTemplateHelper.dropCollections();
+    }
 
     @Autowired
     public void set(MongoTemplate mongoTemplate) {

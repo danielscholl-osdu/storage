@@ -224,9 +224,9 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
+    public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
 
-        Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
+        Map<String, Acl> originalAcls = new HashMap<>();
         Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId, Optional.empty());
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
@@ -248,7 +248,7 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> originalAclRecords = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {
             Acl acl = originalAcls.get(recordMetadata.getId());
