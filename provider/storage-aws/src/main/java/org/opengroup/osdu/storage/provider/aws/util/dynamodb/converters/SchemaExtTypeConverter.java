@@ -36,6 +36,12 @@ public class SchemaExtTypeConverter implements DynamoDBTypeConverter<String, Map
     @Inject
     private ObjectMapper objectMapper;
 
+    {
+        if (objectMapper == null) {
+            objectMapper = new ObjectMapper();
+        }
+    }
+
     @Override
     // Converts a list of SchemaItems to a JSON string for DynamoDB
     public String convert(Map<String, Object> ext) {

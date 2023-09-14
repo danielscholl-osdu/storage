@@ -1,5 +1,6 @@
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb.converters;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -50,6 +51,14 @@ public class RecordMetadataTypeConverterTest {
 
         assertEquals(jsonString, result);
     }
+
+    @Test
+    void convert_shouldNotThrowNullPointerException_whenObjectMapperIsNotInjected() {
+        assertDoesNotThrow(() -> {
+            String result = converter.convert(recordMetadata);
+        });
+    }
+    
 
     @Test
     void convert_shouldLogErrorAndReturnNull_whenExceptionOccurs() throws JsonProcessingException {

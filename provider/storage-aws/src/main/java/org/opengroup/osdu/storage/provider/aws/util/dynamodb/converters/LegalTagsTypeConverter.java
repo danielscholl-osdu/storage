@@ -36,6 +36,12 @@ public class LegalTagsTypeConverter implements DynamoDBTypeConverter<String, Set
     @Inject
     private ObjectMapper objectMapper;
 
+    {
+        if (objectMapper == null) {
+            objectMapper = new ObjectMapper();
+        }
+    }
+
     @Override
     // Converts an array of legaltag strings to a JSON string for DynamoDB
     public String convert(Set<String> legaltags) {

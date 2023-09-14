@@ -37,6 +37,12 @@ public class SchemaItemTypeConverter implements DynamoDBTypeConverter<String, Li
     @Inject 
     private ObjectMapper objectMapper;
 
+    {
+        if (objectMapper == null) {
+            objectMapper = new ObjectMapper();
+        }
+    }
+
     @Override
     // Converts a list of SchemaItems to a JSON string for DynamoDB
     public String convert(List<SchemaItem> schemaItems) {
