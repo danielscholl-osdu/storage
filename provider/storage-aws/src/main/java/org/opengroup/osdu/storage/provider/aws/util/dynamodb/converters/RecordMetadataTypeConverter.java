@@ -36,6 +36,12 @@ public class RecordMetadataTypeConverter implements DynamoDBTypeConverter<String
 
     @Inject
     private ObjectMapper objectMapper;
+    
+    {
+        if (objectMapper == null) {
+            objectMapper = new ObjectMapper();
+        }
+    }
 
     @Override
     // Converts RecordMetadata to a JSON string for DynamoDB

@@ -45,7 +45,7 @@ class GetRecordFromVersionTask implements Callable<GetRecordFromVersionTask> {
         try {
             this.recordContents = s3RecordClient.getRecord(this.versionPath, this.dataPartition);
 
-            if (this.recordContents == null || this.recordContents == ""){
+            if (this.recordContents == null || this.recordContents.equals("")){
                 // s3 wasn't ready to deliver contents
                 exception = new Exception(EMPTY_S3_MSG);
                 result = CallableResult.Fail;

@@ -35,6 +35,12 @@ public class CrmAccountIdsTypeConverter implements DynamoDBTypeConverter<String,
     @Inject
     private ObjectMapper objectMapper;
 
+    {
+        if (objectMapper == null) {
+            objectMapper = new ObjectMapper();
+        }
+    }
+
     @Override
     // Converts an array of CRM account ID strings to a JSON string for DynamoDB
     public String convert(List<String> crmAccountIds) {

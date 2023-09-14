@@ -39,8 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
-import javax.inject.Inject;
-
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;

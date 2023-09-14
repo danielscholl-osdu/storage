@@ -95,7 +95,6 @@ public class CloudStorageImpl implements ICloudStorage {
 
         for(RecordProcessing recordProcessing : recordsProcessing){
             if (recordProcessing.getRecordData().getMeta() == null) {
-                HashMap<String, Object> meta = new HashMap<String, Object>();
                 HashMap<String, Object>[] arrayMeta = new HashMap[0];
                 recordProcessing.getRecordData().setMeta(arrayMeta);
             }
@@ -123,6 +122,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 }
             }
         } catch (Exception e) {
+            Thread.currentThread().interrupt();
             if (e.getCause() instanceof AppException) {
                 throw (AppException) e.getCause();
             } else {

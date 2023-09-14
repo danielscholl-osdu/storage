@@ -80,6 +80,7 @@ public class RecordsUtil {
                 }
             }
         } catch (Exception e) {
+            Thread.currentThread().interrupt();
             if (e.getCause() instanceof AppException) {
                 throw (AppException) e.getCause();
             } else {
@@ -123,6 +124,7 @@ public class RecordsUtil {
                 }
             }
         } catch (Exception e) {
+            Thread.currentThread().interrupt();
             if (e.getCause() instanceof AppException) {
                 throw (AppException) e.getCause();
             } else {
