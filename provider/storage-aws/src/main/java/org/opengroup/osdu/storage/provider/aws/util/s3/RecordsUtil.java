@@ -69,7 +69,7 @@ public class RecordsUtil {
             List<GetRecordFromVersionTask> getRecordFromVersionTasks = results.get();
             for (GetRecordFromVersionTask task : getRecordFromVersionTasks) {
                 if (task.exception != null
-                        || task.result == CallableResult.Fail) {
+                        || task.result == CallableResult.FAIL) {
                     assert task.exception != null;
                     logger.error(String.format("%s failed getting record from S3 with exception: %s"
                             , task.recordId
@@ -116,7 +116,7 @@ public class RecordsUtil {
             List<GetRecordTask> getRecordTasks = results.get();
             for (GetRecordTask task : getRecordTasks) {
                 if (task.exception != null
-                        || task.result == CallableResult.Fail) {
+                        || task.result == CallableResult.FAIL) {
                     logger.error(String.format("%s failed writing to S3 with exception: %s"
                             , task.recordMetadata.getId()
                             , task.exception.getErrorMessage()

@@ -24,7 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class LegalTagsTypeConverterTest {
+class LegalTagsTypeConverterTest {
     @InjectMocks
     private LegalTagsTypeConverter converter = new LegalTagsTypeConverter();
 

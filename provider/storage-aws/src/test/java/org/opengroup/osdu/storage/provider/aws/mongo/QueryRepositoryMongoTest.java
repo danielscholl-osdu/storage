@@ -34,17 +34,16 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.when;
 
 @DataMongoTest
 @SpringJUnitConfig(classes = StorageTestConfig.class)
-public class QueryRepositoryMongoTest extends ParentUtil {
+class QueryRepositoryMongoTest extends ParentUtil {
 
     @Autowired
     private MongoDbQueryRepository queryRepository;
 
     @Test
-    public void getAllRecordIdsFromKind() {
+    void getAllRecordIdsFromKind() {
         //given
         String someKind = "someKind";
         List<RecordMetadataMongoDBDto> firstList = RecordMetadataGenerator.generate(27, someKind);

@@ -29,17 +29,14 @@ import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.util.JsonPatchUtil;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -50,22 +47,18 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-public class RecordsMetadataRepositoryTest {
+class RecordsMetadataRepositoryTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
@@ -215,7 +208,7 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void getRecordMetadata() {
+    void getRecordMetadata() {
         // Arrange
         String id = "opendes:id:15706318658560";
 
@@ -272,7 +265,7 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void getRecordsMetadata() {
+    void getRecordsMetadata() {
         // Arrange
         String id = "opendes:id:15706318658560";
         List<String> ids = new ArrayList<>();
@@ -334,7 +327,7 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void deleteRecordMetadata() {
+    void deleteRecordMetadata() {
         // Arrange
         String id = "opendes:id:15706318658560";
         RecordMetadataDoc expectedRmd = new RecordMetadataDoc();

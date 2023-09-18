@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws.jobs;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,7 +38,7 @@ import java.util.*;
 
 import static org.mockito.MockitoAnnotations.openMocks;
 
-public class LegalComplianceChangeServiceAWSImplTest {
+class LegalComplianceChangeServiceAWSImplTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
@@ -67,7 +66,7 @@ public class LegalComplianceChangeServiceAWSImplTest {
     }
 
     @Test
-    public void updateComplianceOnRecordsTest() throws ComplianceUpdateStoppedException {
+    void updateComplianceOnRecordsTest() throws ComplianceUpdateStoppedException {
         // arrange
         String incompliantTagName = "incompliant-test-tag";
         String incompliantRecordId = "incompliant-record";

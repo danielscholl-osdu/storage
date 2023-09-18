@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordUtilsTest {
+class RecordUtilsTest {
     
     @InjectMocks
     private RecordsUtil recordsUtil;
@@ -49,7 +49,7 @@ public class RecordUtilsTest {
     private String dataPartition = "dummyPartitionName";
 
     @BeforeEach
-    public void setuUp() {
+    void setuUp() {
         openMocks(this);
         when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);
     }

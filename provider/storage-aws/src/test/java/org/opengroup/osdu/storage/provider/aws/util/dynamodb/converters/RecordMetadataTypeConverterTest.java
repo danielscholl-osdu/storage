@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class RecordMetadataTypeConverterTest {
+class RecordMetadataTypeConverterTest {
     @InjectMocks    
     private RecordMetadataTypeConverter converter = new RecordMetadataTypeConverter();
 
