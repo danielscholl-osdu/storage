@@ -53,9 +53,8 @@ public class UserAccessService {
 
     @Inject
     IServiceAccountJwtClient serviceAccountClient;
-    private static final String ACCESS_DENIED_REASON = "Access denied";
-    private static final String ACCESS_DENIED_MSG = "The user is not authorized to perform this action";
-    private static final String servicePrincipalID = "";
+    
+    private static final String SERVICE_PRINCIPAL_ID = "";
     @PostConstruct
     public void init() {
 
@@ -119,7 +118,7 @@ public class UserAccessService {
         newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
         //TODO: Refactor this, use either from SSM or use Istio service account and stop using hard code.
 
-        newHeaders.put(DpsHeaders.USER_ID, servicePrincipalID);
+        newHeaders.put(DpsHeaders.USER_ID, SERVICE_PRINCIPAL_ID);
         Groups groups = this.entitlementsExtensions.getGroups(newHeaders);
         return groups.getGroupNames();
     }

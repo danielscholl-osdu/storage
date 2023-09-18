@@ -106,7 +106,7 @@ public class GroupCache<K,V> implements ICache<K,V>{
 
     @Override
     public V get(K k) {
-        return (V) this.cache.get(k);
+        return this.cache.get(k);
     }
 
     @Override

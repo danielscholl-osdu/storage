@@ -44,6 +44,7 @@ public class MessageBusImpl implements IMessageBus {
     private AmazonSNS snsClient;
     @Value("${AWS.REGION}")
     private String currentRegion;
+    private static final String DATA_TYPE = "String";
 
     @Inject
     private JaxRsDpsLog logger;
@@ -69,20 +70,20 @@ public class MessageBusImpl implements IMessageBus {
             // Attributes
             Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
             messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                    .withDataType("String")
+                    .withDataType(DATA_TYPE)
                     .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
             messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                    .withDataType("String")
+                    .withDataType(DATA_TYPE)
                     .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
             headers.addCorrelationIdIfMissing();
             messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                    .withDataType("String")
+                    .withDataType(DATA_TYPE)
                     .withStringValue(headers.getCorrelationId()));
             messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                    .withDataType("String")
+                    .withDataType(DATA_TYPE)
                     .withStringValue(headers.getUserEmail()));
             messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                    .withDataType("String")
+                    .withDataType(DATA_TYPE)
                     .withStringValue(headers.getAuthorization()));
             PublishRequest publishRequest = new PublishRequest(amazonSNSTopic, json)
                     .withMessageAttributes(messageAttributes);

@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
-public class S3RecordClientTest {
+class S3RecordClientTest {
 
     @InjectMocks
     private S3RecordClient client;
@@ -82,7 +82,7 @@ public class S3RecordClientTest {
     private static final String keyName = "test-key-name";
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         openMocks(this);
         recordMetadata.setKind("test-record-id");
         recordMetadata.setId("test-record-id");
@@ -98,7 +98,7 @@ public class S3RecordClientTest {
     }
 
     @Test
-    public void save() {
+    void save() {
         // arrange
         RecordProcessing recordProcessing = new RecordProcessing();
         recordProcessing.setRecordMetadata(recordMetadata);
@@ -123,7 +123,7 @@ public class S3RecordClientTest {
     }
 
     @Test
-    public void getRecordMain(){
+    void getRecordMain(){
         // arrange
 
         Mockito.when(s3.getObjectAsString(Mockito.eq(recordsBucketName), Mockito.eq(keyName)))
@@ -194,7 +194,7 @@ public class S3RecordClientTest {
     }
 
     @Test
-    public void deleteRecord(){
+    void deleteRecord(){
 
         // act
         client.deleteRecord(recordMetadata, dataPartition);
@@ -256,7 +256,7 @@ public class S3RecordClientTest {
     }
 
     @Test
-    public void checkIfRecordExists(){
+    void checkIfRecordExists(){
         // arrange
         String keyName = recordMetadata.getKind() + "/" + recordMetadata.getId();
 

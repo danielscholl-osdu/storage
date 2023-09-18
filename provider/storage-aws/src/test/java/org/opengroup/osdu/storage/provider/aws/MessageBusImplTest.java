@@ -36,7 +36,7 @@ import java.util.Map;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
-public class MessageBusImplTest {
+class MessageBusImplTest {
 
     @InjectMocks
     private MessageBusImpl messageBus;
@@ -48,12 +48,12 @@ public class MessageBusImplTest {
     private JaxRsDpsLog logger;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         openMocks(this);
     }
 
     @Test
-    public void publishMessage() {
+    void publishMessage() {
         // arrange
         String amazonSNSTopic = null;
         DpsHeaders headers = new DpsHeaders();

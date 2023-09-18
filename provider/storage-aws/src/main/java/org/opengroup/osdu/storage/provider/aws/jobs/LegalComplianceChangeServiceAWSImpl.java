@@ -47,8 +47,8 @@ import static java.util.Collections.singletonList;
 @Service
 public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChangeService {
 
-    private final static String incompliantName = "incompliant";
-    private final static String compliantName = "compliant";
+    private final static String INCOMPLIANT_STRING = "incompliant";
+    private final static String COMPLIANT_STRING = "compliant";
 
     @Autowired
     private IRecordsMetadataRepository recordsMetadataRepository;
@@ -124,9 +124,9 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
     private ComplianceChangeInfo getComplianceChangeInfo(LegalTagChanged lt) {
         ComplianceChangeInfo output = null;
 
-        if (lt.getChangedTagStatus().equalsIgnoreCase(compliantName)) {
+        if (lt.getChangedTagStatus().equalsIgnoreCase(COMPLIANT_STRING)) {
             output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.update, RecordState.active);
-        } else if (lt.getChangedTagStatus().equalsIgnoreCase(incompliantName)) {
+        } else if (lt.getChangedTagStatus().equalsIgnoreCase(INCOMPLIANT_STRING)) {
             this.legalTagCache.delete(lt.getChangedTagName());
             output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
         } else {

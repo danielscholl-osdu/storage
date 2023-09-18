@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
-public class QueryRepositoryImplTest {
+class QueryRepositoryImplTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
@@ -66,14 +66,14 @@ public class QueryRepositoryImplTest {
     private DpsHeaders dpsHeaders;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         openMocks(this);
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
         .thenReturn(queryHelper);
     }
 
     @Test
-    public void getAllKinds() throws UnsupportedEncodingException {
+    void getAllKinds() throws UnsupportedEncodingException {
         // Arrange
         String dataPartitionId = "test-data-partition-id";
         String kind = dataPartitionId + ":source:type:1.0.0";
@@ -116,7 +116,7 @@ public class QueryRepositoryImplTest {
     }
 
     @Test
-    public void getAllKindsThrowsException() throws IllegalArgumentException, UnsupportedEncodingException {
+    void getAllKindsThrowsException() throws IllegalArgumentException, UnsupportedEncodingException {
         String cursor = "abc123";
         Integer limit = 50;
         when(queryHelper.queryByGSI(Mockito.eq(SchemaDoc.class),
@@ -129,7 +129,7 @@ public class QueryRepositoryImplTest {
     }
 
     @Test
-    public void getAllRecordIdsFromKind() throws UnsupportedEncodingException {
+    void getAllRecordIdsFromKind() throws UnsupportedEncodingException {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
         String cursor = "abc123";

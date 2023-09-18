@@ -113,7 +113,7 @@ public class CloudStorageImpl implements ICloudStorage {
             List<RecordProcessor> recordProcessors = results.get();
             for(RecordProcessor recordProcessor : recordProcessors){
                 if(recordProcessor.exception != null
-                        || recordProcessor.result == CallableResult.Fail){
+                        || recordProcessor.result == CallableResult.FAIL){
                     assert recordProcessor.exception != null;
                     logger.error(String.format("%s failed writing to S3 with exception: %s"
                             , recordProcessor.recordId

@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-public class SchemaRepositoryImplTest {
+class SchemaRepositoryImplTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
@@ -53,7 +53,7 @@ public class SchemaRepositoryImplTest {
     private DpsHeaders headers;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         openMocks(this);
 
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
@@ -61,7 +61,7 @@ public class SchemaRepositoryImplTest {
     }
 
     @Test
-    public void createSchema() throws NoSuchFieldException {
+    void createSchema() throws NoSuchFieldException {
         // Arrange
         Schema schema = new Schema();
         schema.setKind("tenant:source:type:1.0.0");
@@ -97,7 +97,7 @@ public class SchemaRepositoryImplTest {
         assertThrows(IllegalArgumentException.class, () -> repo.add(new Schema(), "user"));
     }
     @Test
-    public void getSchema() throws NoSuchFieldException {
+    void getSchema() throws NoSuchFieldException {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
         Schema expectedSchema = new Schema();
@@ -134,7 +134,7 @@ public class SchemaRepositoryImplTest {
     }
 
     @Test
-    public void deleteSchema() throws NoSuchFieldException {
+    void deleteSchema() throws NoSuchFieldException {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
         SchemaDoc expectedSd = new SchemaDoc();

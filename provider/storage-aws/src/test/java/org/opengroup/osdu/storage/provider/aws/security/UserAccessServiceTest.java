@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
-public class UserAccessServiceTest {
+class UserAccessServiceTest {
 
     @InjectMocks
     private UserAccessService CUT = new UserAccessService();
@@ -91,7 +91,7 @@ public class UserAccessServiceTest {
     private GroupInfo groupInfo = new GroupInfo();
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         openMocks(this);
         doNothing().when(record).setUser("not a user");
 
@@ -111,7 +111,7 @@ public class UserAccessServiceTest {
     }
 
     @Test
-    public void userHasAccessToRecord_authorizedUser_ReturnsTrue() {
+    void userHasAccessToRecord_authorizedUser_ReturnsTrue() {
         // Arrange
         acl = new Acl();
         String[] owners = { "data.tenant@byoc.local" };
@@ -128,7 +128,7 @@ public class UserAccessServiceTest {
     }
 
     @Test
-    public void userHasAccessToRecord_unauthorizedUser_ReturnsFalse() {
+    void userHasAccessToRecord_unauthorizedUser_ReturnsFalse() {
         // Arrange
         acl = new Acl();
         acl.setOwners(new String[] {});
