@@ -54,6 +54,14 @@ spec:
           runAsNonRoot: true
         ports:
         - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /health
+          #  port: 8081
+        livenessProbe:
+          httpGet:
+            path: /health
+          #  port: 8081
         resources:
           requests:
             cpu: {{ .Values.data.requestsCpu | quote }}
