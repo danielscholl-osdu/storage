@@ -58,8 +58,8 @@ spec:
           httpGet:
             path: /health
             port: 8080
-          initialDelaySeconds: 270
-          periodSeconds: 10
+        #  initialDelaySeconds: 270
+        #  periodSeconds: 10
         resources:
           requests:
             cpu: {{ .Values.data.requestsCpu | quote }}
