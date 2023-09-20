@@ -57,7 +57,9 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests:
             cpu: {{ .Values.data.requestsCpu | quote }}
