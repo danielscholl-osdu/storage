@@ -18,8 +18,9 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
-import com.google.gson.Gson;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -29,10 +30,11 @@ import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
@@ -47,13 +49,24 @@ class MessageBusImplTest {
     @Mock
     private JaxRsDpsLog logger;
 
+    @Captor
+    private ArgumentCaptor<PublishRequest> publishRequestCaptor;
+
     @BeforeEach
     void setUp() {
         openMocks(this);
     }
 
+    private void assertMessageHasAttributes(PublishRequest message, String key, String value) {
+        Map<String, MessageAttributeValue> attrMap = message.getMessageAttributes();
+        MessageAttributeValue messageAttr = attrMap.get(key);
+        assertNotEquals(null, messageAttr);
+        assertEquals("String", messageAttr.getDataType());
+        assertEquals(value, messageAttr.getStringValue());
+    }
+
     @Test
-    void publishMessage() {
+    public void publishMessage() {
         // arrange
         String amazonSNSTopic = null;
         DpsHeaders headers = new DpsHeaders();
@@ -63,43 +76,21 @@ class MessageBusImplTest {
 
         PubSubInfo[] messages = new PubSubInfo[1];
         messages[0] = message;
-        Mockito.when(snsClient.publish(Mockito.any(PublishRequest.class)))
-                .thenReturn(Mockito.any(PublishResult.class));
-
-        final int BATCH_SIZE = 50;
-        Gson gson = new Gson();
-        PublishRequest publishRequest = new PublishRequest();
-        for (int i =0; i < messages.length; i+= BATCH_SIZE) {
-
-            PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
-            String json = gson.toJson(batch);
-
-            // attributes
-            Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-            messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-            messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-            headers.addCorrelationIdIfMissing();
-            messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getCorrelationId()));
-            messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getUserEmail()));
-            messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(headers.getAuthorization()));
-            publishRequest.setMessage(json);
-            publishRequest.setMessageAttributes(messageAttributes);
-        }
+        Mockito.when(snsClient.publish(publishRequestCaptor.capture()))
+                .thenReturn(any(PublishResult.class));
 
         // act
-        messageBus.publishMessage(headers, message);
+        messageBus.publishMessage(headers, messages);
 
         // assert
-        Mockito.verify(snsClient, Mockito.times(1)).publish(Mockito.eq(publishRequest));
+        Mockito.verify(snsClient, Mockito.times(1)).publish(any(PublishRequest.class));
+
+        PublishRequest receivedRequest = publishRequestCaptor.getValue();
+
+        assertMessageHasAttributes(receivedRequest, DpsHeaders.ACCOUNT_ID, headers.getPartitionIdWithFallbackToAccountId());
+        assertMessageHasAttributes(receivedRequest, DpsHeaders.DATA_PARTITION_ID, headers.getPartitionIdWithFallbackToAccountId());
+        assertMessageHasAttributes(receivedRequest, DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
+        assertMessageHasAttributes(receivedRequest, DpsHeaders.USER_EMAIL, headers.getUserEmail());
+        assertMessageHasAttributes(receivedRequest, DpsHeaders.AUTHORIZATION, headers.getAuthorization());
     }
 }
