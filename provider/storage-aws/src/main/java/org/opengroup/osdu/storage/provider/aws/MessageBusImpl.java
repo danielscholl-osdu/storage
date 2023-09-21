@@ -19,6 +19,7 @@ import com.amazonaws.services.sns.model.PublishRequest;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import com.google.gson.Gson;
 import com.amazonaws.services.sns.AmazonSNS;
+import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -26,8 +27,10 @@ import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -46,11 +49,14 @@ public class MessageBusImpl implements IMessageBus {
     private String currentRegion;
     private static final String DATA_TYPE = "String";
 
+    @Value("${OSDU_TOPIC}")
+    private String osduStorageTopic;
+
     @Inject
     private JaxRsDpsLog logger;
 
     @PostConstruct
-    public void init() throws Exception{
+    public void init() throws K8sParameterNotFoundException {
         String amazonSNSRegion;
         K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
         amazonSNSRegion = provider.getParameterAsStringOrDefault("primary-region", currentRegion);
@@ -61,36 +67,16 @@ public class MessageBusImpl implements IMessageBus {
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
         final int BATCH_SIZE = 50;
-        Gson gson = new Gson();
+        PublishRequestBuilder<PubSubInfo> publishRequestBuilder = new PublishRequestBuilder<>();
+        publishRequestBuilder.setGeneralParametersFromHeaders(headers);
+        logger.info("Storage publishes message " + headers.getCorrelationId());
         for (int i =0; i < messages.length; i+= BATCH_SIZE){
 
             PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
-            String json = gson.toJson(batch);
 
-            // Attributes
-            Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-            messageAttributes.put(DpsHeaders.ACCOUNT_ID, new MessageAttributeValue()
-                    .withDataType(DATA_TYPE)
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-            messageAttributes.put(DpsHeaders.DATA_PARTITION_ID, new MessageAttributeValue()
-                    .withDataType(DATA_TYPE)
-                    .withStringValue(headers.getPartitionIdWithFallbackToAccountId()));
-            headers.addCorrelationIdIfMissing();
-            messageAttributes.put(DpsHeaders.CORRELATION_ID, new MessageAttributeValue()
-                    .withDataType(DATA_TYPE)
-                    .withStringValue(headers.getCorrelationId()));
-            messageAttributes.put(DpsHeaders.USER_EMAIL, new MessageAttributeValue()
-                    .withDataType(DATA_TYPE)
-                    .withStringValue(headers.getUserEmail()));
-            messageAttributes.put(DpsHeaders.AUTHORIZATION, new MessageAttributeValue()
-                    .withDataType(DATA_TYPE)
-                    .withStringValue(headers.getAuthorization()));
-            PublishRequest publishRequest = new PublishRequest(amazonSNSTopic, json)
-                    .withMessageAttributes(messageAttributes);
+            PublishRequest publishRequest = publishRequestBuilder.generatePublishRequest(osduStorageTopic, amazonSNSTopic, Arrays.asList(batch));
 
-            logger.info("Storage publishes message " + headers.getCorrelationId());
             snsClient.publish(publishRequest);
-
         }
     }
 
