@@ -54,6 +54,12 @@ spec:
           runAsNonRoot: true
         ports:
         - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /api/storage/v2/health
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
         resources:
           requests:
             cpu: {{ .Values.data.requestsCpu | quote }}
@@ -64,9 +70,3 @@ spec:
             memory: {{ .Values.data.limitsMemory | quote }}
           {{- end }}
       serviceAccountName: {{ .Values.data.serviceAccountName | quote }}
-      livenessProbe:
-        httpGet:
-          path: /health
-          port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
