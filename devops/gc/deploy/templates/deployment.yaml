@@ -56,10 +56,10 @@ spec:
         - containerPort: 8080
         livenessProbe:
           httpGet:
-            path: /api/storage/v2/health
+            path: /health
             port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 10
+          initialDelaySeconds: 250
+          periodSeconds: 10
         resources:
           requests:
             cpu: {{ .Values.data.requestsCpu | quote }}
