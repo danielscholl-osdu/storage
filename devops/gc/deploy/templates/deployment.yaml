@@ -56,7 +56,7 @@ spec:
         - containerPort: 8080
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/storage/v2/health
             port: 8080
           initialDelaySeconds: 250
           periodSeconds: 10
