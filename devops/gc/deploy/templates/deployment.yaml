@@ -58,7 +58,7 @@ spec:
           httpGet:
             path: /api/storage/v2/health
             port: 8080
-          initialDelaySeconds: 250
+          initialDelaySeconds: 60
           periodSeconds: 10
         resources:
           requests:

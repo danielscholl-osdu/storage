@@ -23,11 +23,3 @@ spec:
             port:
               number: 80
             host: {{ printf "%s.%s.svc.cluster.local" .Values.conf.appName .Release.Namespace | quote }}
-    - match:
-      - uri:
-          exact: "/health"
-      route:
-        - destination:
-            port:
-              number: 8080
-            host: {{ printf "%s.%s.svc.cluster.local" .Values.conf.appName .Release.Namespace | quote }}
