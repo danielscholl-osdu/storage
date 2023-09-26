@@ -30,7 +30,6 @@ import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
 import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -82,6 +81,6 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-        //TODO: To be implemented by aws provider
+        // To be implemented by aws provider
     }
 }

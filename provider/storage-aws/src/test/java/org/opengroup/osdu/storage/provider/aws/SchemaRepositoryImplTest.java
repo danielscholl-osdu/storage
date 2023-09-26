@@ -81,7 +81,7 @@ class SchemaRepositoryImplTest {
         expectedSd.setDataPartitionId(dataPartitionId);
 
         Mockito.when(headers.getPartitionId()).thenReturn(dataPartitionId);
-        Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedSd));
+        Mockito.doNothing().when(queryHelper).save(expectedSd);
 
         // Act
         repo.add(schema, user);

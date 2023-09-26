@@ -70,7 +70,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                                                                   DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
 
-        // TODO: optimize to not have while loop inside a for each
+        // optimize to not have while loop inside a for each
         // We should only get one legal tag change from the queue, the model should
         // reflect that
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {

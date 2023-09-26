@@ -66,7 +66,7 @@ class MessageBusImplTest {
     }
 
     @Test
-    public void publishMessage() {
+    void publishMessage() {
         // arrange
         String amazonSNSTopic = null;
         DpsHeaders headers = new DpsHeaders();

@@ -72,7 +72,7 @@ public class UserAccessService {
      * @param acl
      * @return
      */
-    // TODO: Optimize entitlements record ACL design to not compare list against list
+    // Optimize entitlements record ACL design to not compare list against list
     public boolean userHasAccessToRecord(Acl acl) {
         Groups groups = this.entitlementsExtensions.getGroups(dpsHeaders);
         HashSet<String> allowedGroups = new HashSet<>();
@@ -116,7 +116,7 @@ public class UserAccessService {
     {
         DpsHeaders newHeaders = DpsHeaders.createFromMap(headers.getHeaders());
         newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
-        //TODO: Refactor this, use either from SSM or use Istio service account and stop using hard code.
+        //Refactor this, use either from SSM or use Istio service account and stop using hard code.
 
         newHeaders.put(DpsHeaders.USER_ID, SERVICE_PRINCIPAL_ID);
         Groups groups = this.entitlementsExtensions.getGroups(newHeaders);

@@ -169,7 +169,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         return null;
     }
 
-    //TODO replace with the new method queryByLegal
+    //replace with the new method queryByLegal
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor) {

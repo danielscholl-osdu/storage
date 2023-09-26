@@ -46,7 +46,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
@@ -119,14 +118,14 @@ class S3RecordClientTest {
 
         // assert
         Mockito.verify(s3, Mockito.times(1)).putObject(
-                Mockito.eq(recordsBucketName), Mockito.eq(expectedKeyName), Mockito.eq("{\"data\":{\"test-data\":{}},\"meta\":null,\"modifyUser\":null,\"modifyTime\":0}"));
+                recordsBucketName, expectedKeyName, "{\"data\":{\"test-data\":{}},\"meta\":null,\"modifyUser\":null,\"modifyTime\":0}");
     }
 
     @Test
     void getRecordMain(){
         // arrange
 
-        Mockito.when(s3.getObjectAsString(Mockito.eq(recordsBucketName), Mockito.eq(keyName)))
+        Mockito.when(s3.getObjectAsString(recordsBucketName, keyName))
                 .thenReturn("test-result");
 
         // act
@@ -142,7 +141,7 @@ class S3RecordClientTest {
         String expectedKeyName = recordMetadata.getKind() + "/" + recordMetadata.getId() + "/" + version;
         String expectedRecordContent = "test-result";
 
-        Mockito.when(s3.getObjectAsString(Mockito.eq(recordsBucketName), Mockito.eq(expectedKeyName)))
+        Mockito.when(s3.getObjectAsString(recordsBucketName, expectedKeyName))
         .thenReturn(expectedRecordContent);
 
         // act
@@ -156,7 +155,7 @@ class S3RecordClientTest {
         String expectedKeyName = recordMetadata.getKind() + "/" + recordMetadata.getId() + "/" + version;
         String expectedRecordContent = "test-record-content";
 
-        Mockito.when(s3.getObjectAsString(Mockito.eq(recordsBucketName), Mockito.eq(expectedKeyName)))
+        Mockito.when(s3.getObjectAsString(recordsBucketName, expectedKeyName))
             .thenReturn(expectedRecordContent);
 
         AtomicReference<Map<String, String>> mapReference = new AtomicReference<>(new HashMap<>());
@@ -173,7 +172,7 @@ class S3RecordClientTest {
     @Test
     void testGetRecordWithVersionPath(){
         String expectedRecordContent = "test-record-content";
-        Mockito.when(s3.getObjectAsString(Mockito.eq(recordsBucketName), Mockito.eq(keyName)))
+        Mockito.when(s3.getObjectAsString(recordsBucketName, keyName))
             .thenReturn(expectedRecordContent);
         AtomicReference<Map<String, String>> mapReference = new AtomicReference<>(new HashMap<>());
 
@@ -187,7 +186,7 @@ class S3RecordClientTest {
     void getRecord_throwsException() {
         // arrange
 
-        Mockito.when(s3.getObjectAsString(Mockito.eq(recordsBucketName), Mockito.eq(keyName)))
+        Mockito.when(s3.getObjectAsString(recordsBucketName, keyName))
                 .thenThrow(new SdkClientException("test-exception"));
 
         assertThrows(AppException.class, () -> client.getRecord(keyName, dataPartition));
@@ -227,7 +226,7 @@ class S3RecordClientTest {
         String keyName = recordMetadata.getKind() + "/" + recordMetadata.getId();
 
         Mockito.doReturn(new ListObjectsV2Result()).when(s3)
-                .listObjectsV2(Mockito.eq(recordsBucketName), Mockito.eq(keyName));
+                .listObjectsV2(recordsBucketName, keyName);
 
         // assert
         assertTrue(true);
@@ -239,7 +238,7 @@ class S3RecordClientTest {
         String keyName = recordMetadata.getKind() + "/" + recordMetadata.getId();
 
         Mockito.doThrow(new SdkClientException("test-exception")).when(s3)
-                .listObjectsV2(Mockito.eq(recordsBucketName), Mockito.eq(keyName));
+                .listObjectsV2(recordsBucketName, keyName);
 
         // assert
         assertThrows(AppException.class, () -> client.checkIfRecordExists(recordMetadata, dataPartition));
@@ -261,7 +260,7 @@ class S3RecordClientTest {
         String keyName = recordMetadata.getKind() + "/" + recordMetadata.getId();
 
         Mockito.doReturn(new ListObjectsV2Result()).when(s3)
-                .listObjectsV2(Mockito.eq(recordsBucketName), Mockito.eq(keyName));
+                .listObjectsV2(recordsBucketName, keyName);
 
         // assert
         Assert.assertTrue(true);
