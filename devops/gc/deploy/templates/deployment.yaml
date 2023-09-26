@@ -55,10 +55,11 @@ spec:
         ports:
         - containerPort: 8080
         livenessProbe:
+          failureThreshold: 3
           httpGet:
             path: /api/storage/v2/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 120
           periodSeconds: 10
         resources:
           requests:
