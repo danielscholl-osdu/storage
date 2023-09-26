@@ -158,7 +158,7 @@ class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void createRecordMetadata() {
+    void createRecordMetadata() {
 
         // Arrange
         RecordMetadata recordMetadata = new RecordMetadata();
@@ -198,7 +198,7 @@ class RecordsMetadataRepositoryTest {
         expectedRmd.setUser(recordMetadata.getUser());
         expectedRmd.setMetadata(recordMetadata);
 
-        Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedRmd));
+        Mockito.doNothing().when(queryHelper).save(expectedRmd);
 
         // Act
         repo.createOrUpdate(recordsMetadata, Optional.empty());
@@ -370,5 +370,4 @@ class RecordsMetadataRepositoryTest {
         Mockito.verify(queryHelper, Mockito.times(1)).deleteByPrimaryKey(RecordMetadataDoc.class, id);
     }
 
-    // TODO: Write test for queryByLegalTagName(String legalTagName, int limit, String cursor) once the method is finished
 }

@@ -204,7 +204,7 @@ class QueryRepositoryImplTest {
     }
 
     @Test
-    public void getAllRecordIdsFromDifferentKind() throws UnsupportedEncodingException {
+    void getAllRecordIdsFromDifferentKind() throws UnsupportedEncodingException {
         // Arrange
         String kind = "osdu:source:type:1.0.0";
         String cursor = "abc123";

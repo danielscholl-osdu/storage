@@ -86,8 +86,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public void write(RecordProcessing... recordsProcessing) {
         userAccessService.validateRecordAcl(recordsProcessing);
-        // TODO: throughout this class userId isn't used, seems to be something to integrate with entitlements service
-        // TODO: ensure that the threads come from the shared pool manager from the web server
+        // throughout this class userId isn't used, seems to be something to integrate with entitlements service
+        // ensure that the threads come from the shared pool manager from the web server
         // Using threads to write records to S3 to increase efficiency, no impact to cost
         List<CompletableFuture<RecordProcessor>> futures = new ArrayList<>();
 
