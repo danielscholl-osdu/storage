@@ -14,10 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import com.google.gson.Gson;
 import com.amazonaws.services.sns.AmazonSNS;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -35,8 +33,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -46,7 +42,6 @@ public class MessageBusImpl implements IMessageBus {
     private AmazonSNS snsClient;
     @Value("${AWS.REGION}")
     private String currentRegion;
-    private static final String DATA_TYPE = "String";
 
     @Value("${OSDU_TOPIC}")
     private String osduStorageTopic;
