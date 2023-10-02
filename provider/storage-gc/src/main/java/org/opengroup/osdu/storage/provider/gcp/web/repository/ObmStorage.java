@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright 2020-2023 Google LLC
+ *  Copyright 2020-2023 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,21 +17,9 @@
 
 package org.opengroup.osdu.storage.provider.gcp.web.repository;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
@@ -42,23 +30,28 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.RecordData;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
+import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.partition.PartitionPropertyResolver;
 import org.opengroup.osdu.core.gcp.obm.driver.Driver;
 import org.opengroup.osdu.core.gcp.obm.driver.ObmDriverRuntimeException;
 import org.opengroup.osdu.core.gcp.obm.driver.S3CompatibleErrors;
 import org.opengroup.osdu.core.gcp.obm.model.Blob;
 import org.opengroup.osdu.core.gcp.obm.persistence.ObmDestination;
+import org.opengroup.osdu.storage.provider.gcp.web.config.PartitionPropertyNames;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.service.DataAuthorizationService;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Repository
 @RequiredArgsConstructor
@@ -76,6 +69,10 @@ public class ObmStorage implements ICloudStorage {
     private final IEntitlementsExtensionService entitlementsService;
     private final ExecutorService threadPool;
     private final JaxRsDpsLog log;
+
+    private final PartitionPropertyResolver partitionPropertyResolver;
+
+    private final PartitionPropertyNames partitionPropertyNames;
 
     @Override
     public void write(RecordProcessing... records) {
@@ -394,9 +391,13 @@ public class ObmStorage implements ICloudStorage {
         return true;
     }
 
-    private static String getBucketName(TenantInfo tenant) {
-        return String.format("%s-%s-records", tenant.getProjectId(), tenant.getName());
-    }
+  private String getBucketName(TenantInfo tenant) {
+    return partitionPropertyResolver
+        .getOptionalPropertyValue(
+            partitionPropertyNames.getStorageBucketName(), tenantInfo.getDataPartitionId())
+        .orElseGet(
+            () -> String.format("%s-%s-records", tenant.getProjectId(), tenant.getName()));
+  }
 
     private ObmDestination getDestination() {
         return getDestination(tenantInfo.getDataPartitionId());
