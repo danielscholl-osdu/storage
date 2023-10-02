@@ -16,6 +16,7 @@
 * [Keycloak configuration](#Keycloak-configuration)
 * [Running E2E Tests](#Running-E2E-Tests)
 * [Running locally](#Running-locally)
+* [License](#License)
 
 ## Environment variables
 
@@ -37,20 +38,21 @@ Must have:
 | `<AMQP_ADMIN_PASSWORD_ENV_VARIABLE_NAME>` | ex `AMQP_ADMIN_PASS_OSDU`                  | Amqp admin password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
 | `STORAGE_SERVICE_ACCOUNT_EMAIL`           | `workload-storage@keycloak.com`            | Storage service account email, used during OQM events processing                                                                                                                                                                          | no         | -      |
 
-| name                        | value                                         | description                                                                           | sensitive? | source                              |
-|-----------------------------|-----------------------------------------------|---------------------------------------------------------------------------------------|------------|-------------------------------------|
-| `LOG_PREFIX`                | `storage`                                     | Logging prefix                                                                        | no         | -                                   |
-| `SERVER_SERVLET_CONTEXPATH` | `/api/storage/v2/`                            | Servlet context path                                                                  | no         | -                                   |
-| `AUTHORIZE_API`             | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint                                                             | no         | output of infrastructure deployment |
-| `LEGALTAG_API`              | ex `https://legal.com/api/legal/v1`           | Legal API endpoint                                                                    | no         | output of infrastructure deployment |
-| `PUBSUB_SEARCH_TOPIC`       | ex `records-changed`                          | RabbitMQ topic name                                                                   | no         |                                     |
-| `REDIS_STORAGE_HOST`        | ex `127.0.0.1`                                | Redis host for storage                                                                | no         |                                     |
-| `REDIS_STORAGE_PASSWORD`    | ex `*****`                                    | Redis storage host password                                                           | yes        |                                     |
-| `REDIS_STORAGE_WITH_SSL`    | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                     |
-| `REDIS_STORAGE_EXPIRATION`  | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                     |
-| `POLICY_API`                | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment |
-| `POLICY_ID`                 | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
-| `PARTITION_API`             | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
+| name                                       | value                                         | description                                                                           | sensitive? | source                              |
+|--------------------------------------------|-----------------------------------------------|---------------------------------------------------------------------------------------|------------|-------------------------------------|
+| `LOG_PREFIX`                               | `storage`                                     | Logging prefix                                                                        | no         | -                                   |
+| `SERVER_SERVLET_CONTEXPATH`                | `/api/storage/v2/`                            | Servlet context path                                                                  | no         | -                                   |
+| `AUTHORIZE_API`                            | ex `https://entitlements.com/entitlements/v1` | Entitlements API endpoint                                                             | no         | output of infrastructure deployment |
+| `LEGALTAG_API`                             | ex `https://legal.com/api/legal/v1`           | Legal API endpoint                                                                    | no         | output of infrastructure deployment |
+| `PUBSUB_SEARCH_TOPIC`                      | ex `records-changed`                          | RabbitMQ topic name                                                                   | no         |                                     |
+| `REDIS_STORAGE_HOST`                       | ex `127.0.0.1`                                | Redis host for storage                                                                | no         |                                     |
+| `REDIS_STORAGE_PASSWORD`                   | ex `*****`                                    | Redis storage host password                                                           | yes        |                                     |
+| `REDIS_STORAGE_WITH_SSL`                   | ex `true` or `false`                          | Redis storage host ssl config                                                         | no         |                                     |
+| `REDIS_STORAGE_EXPIRATION`                 | ex `30`                                       | Redis storage cache expiration in seconds                                             | no         |                                     |
+| `POLICY_API`                               | ex `http://localhost:8080/api/policy/v1/`     | Police service endpoint                                                               | no         | output of infrastructure deployment |
+| `POLICY_ID`                                | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
+| `PARTITION_API`                            | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
+| `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                   |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
@@ -302,7 +304,21 @@ OBM connection properties of these servers (url, etc.) are defined as specific p
   </tr>
 </table>
 
+or
 
+We can use Partition Service to get a bucket name:
+
+```
+curl -L -X PATCH 'https:///api/partition/v1/partitions/opendes' -H 'data-partition-id: opendes' -H 'Authorization: Bearer ...' -H 'Content-Type: application/json' --data-raw '{
+  "properties": {
+    "partition.properties.storage.bucket.name": {
+      "sensitive": true,
+      "value": "PARTITION_PROPERTIES_STORAGE_BUCKET_NAME"
+    }
+  }
+}'
+
+```
 
 ### For OQM RabbitMQ
 
@@ -528,3 +544,21 @@ kubectl port-forward <minio_pod_name> 9000:9000
 gcloud components install cloud_sql_proxy
 cloud_sql_proxy -instances=<instance_connection_string> -credential_file=<baremetal_service_account_json_file>
 ```
+
+## License
+
+Copyright © Google LLC
+
+Copyright © EPAM Systems
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
