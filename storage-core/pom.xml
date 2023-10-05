@@ -33,7 +33,7 @@
 		<java.version>17</java.version>
 		<maven.compiler.target>17</maven.compiler.target>
 		<maven.compiler.source>17</maven.compiler.source>
-		<os-core-common.version>0.23.1</os-core-common.version>
+		<os-core-common.version>0.24.0-rc5</os-core-common.version>
 		<spring-webmvc.version>5.3.22</spring-webmvc.version>
 		<argLine>
 			--add-opens=java.base/java.util=ALL-UNNAMED
