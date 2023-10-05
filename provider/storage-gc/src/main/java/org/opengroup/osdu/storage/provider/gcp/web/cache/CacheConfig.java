@@ -56,7 +56,7 @@ public class CacheConfig {
     }
 
     @Bean
-    public ICache<String, Schema> schemaCache(GcpAppServiceConfig gcpAppServiceConfig) {
+    public RedisCache<String, Schema> schemaCache(GcpAppServiceConfig gcpAppServiceConfig) {
         return schemaRedisCacheBuilder.buildRedisCache(
             gcpAppServiceConfig.getRedisStorageHost(),
             gcpAppServiceConfig.getRedisStoragePort(),
