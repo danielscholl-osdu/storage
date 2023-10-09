@@ -44,8 +44,12 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 import static org.opengroup.osdu.storage.util.RecordConstants.METADATA_PREFIX_PATH;
@@ -95,10 +99,11 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         CosmosPatchOperations cosmosPatchOperations;
         Map<String, CosmosPatchOperations> cosmosPatchOperationsPerDoc = new HashMap<>();
         Map<String, String> partitionKeyForDoc = new HashMap<>();
-        for (RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
+        for (Map.Entry<RecordMetadata, JsonPatch> jsonPatchPerRecordEntry : jsonPatchPerRecord.entrySet()) {
+            RecordMetadata recordMetadata = jsonPatchPerRecordEntry.getKey();
             modifyUser = recordMetadata.getModifyUser();
             modifyTime = recordMetadata.getModifyTime();
-            cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatchPerRecord.get(recordMetadata));
+            cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatchPerRecordEntry.getValue());
             String docId = CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext);
             cosmosPatchOperationsPerDoc.put(docId, cosmosPatchOperations);
             partitionKeyForDoc.put(docId, recordMetadata.getId());
@@ -107,8 +112,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         try {
             cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, cosmosPatchOperationsPerDoc, partitionKeyForDoc, 1);
         } catch (AppException e) {
-            if (e.getOriginalException() != null && e.getOriginalException() instanceof AppException) {
-                AppException originalException = (AppException) e.getOriginalException();
+            if (e.getOriginalException() instanceof AppException originalException) {
                 String[] originalExceptionErrors = originalException.getError().getErrors();
                 for (String cosmosError : originalExceptionErrors) {
                     String[] idAndError = cosmosError.split("\\|");
@@ -154,7 +158,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     }
 
     /**
-     * Implementation of createOrUpdate that uses DocumentBulkExecutor to upload all records in parallel to Cosmos.
+     * Implementation of createOrUpdate that uses CosmosClient to upload all records in parallel to Cosmos.
      *
      * @param recordsMetadata records to write to cosmos.
      */
@@ -195,13 +199,11 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
             SqlQuerySpec query = new SqlQuerySpec(queryText);
             final Page<RecordMetadataDoc> docPage = this.find(CosmosStorePageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();
-            docs.forEach(d -> {
-                outputRecords.add(d.getMetadata());
-            });
+            docs.forEach(d -> outputRecords.add(d.getMetadata()));
 
             Pageable pageable = docPage.getPageable();
-            if (pageable instanceof CosmosStorePageRequest) {
-                continuation = ((CosmosStorePageRequest) pageable).getRequestContinuation();
+            if (pageable instanceof CosmosStorePageRequest cosmosStorePageRequest) {
+                continuation = cosmosStorePageRequest.getRequestContinuation();
             }
         } catch (CosmosException e) {
             if (e.getStatusCode() == HttpStatus.SC_BAD_REQUEST && e.getMessage().contains("INVALID JSON in continuation token"))
@@ -309,8 +311,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     private CosmosPatchOperations getCosmosPatchOperations(String modifyUser, Long modifyTime, JsonPatch jsonPatch) {
         CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
-        List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false)
-                .collect(Collectors.toList());
+        List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false).toList();
         for (JsonNode patchOp : patchNodes) {
             switch (patchOp.get(OP).textValue()) {
                 case "add":
