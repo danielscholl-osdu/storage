@@ -78,18 +78,18 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-gc</artifactId>
-      <version>0.21.0-rc4</version>
+      <version>0.23.1</version>
     </dependency>
     <!--    Mappers    -->
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>osm</artifactId>
-      <version>0.21.0-rc3</version>
+      <version>0.23.0</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>oqm</artifactId>
-      <version>0.21.0-rc5</version>
+      <version>0.23.0</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
