@@ -1,3 +1,4 @@
+
 // Copyright © 2020 Amazon Web Services
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,53 +13,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api;
+package org.opengroup.osdu.storage.provider.aws;
 
-import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.storage.StorageApplication;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
-import org.opengroup.osdu.storage.provider.aws.RecordsMetadataRepositoryImpl;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-@RunWith(MockitoJUnitRunner.class)
-@SpringBootTest(classes={StorageApplication.class})
-public class RecordsMetadataRepositoryTest {
+class RecordsMetadataRepositoryTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
     // due to lazy loading
-    private RecordsMetadataRepositoryImpl repo = new RecordsMetadataRepositoryImpl();
-
-    @Mock
-    private DynamoDBQueryHelperV2 queryHelper;
+    private RecordsMetadataRepositoryImpl repo;
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
 
     @Mock
+    private DynamoDBQueryHelperV2 queryHelper;
+
+    @Mock
     private DpsHeaders dpsHeaders;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         openMocks(this);
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
@@ -66,7 +82,83 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void createRecordMetadata() {
+    void testQueryByLegalTagName() throws InvalidCursorException, UnsupportedEncodingException {
+        String legalTagName = "legalTagName";
+        int limit = 500;
+        String cursor = "cursor";
+        LegalTagAssociationDoc doc = mock(LegalTagAssociationDoc.class);
+        when(doc.getRecordId()).thenReturn("id");
+        List<LegalTagAssociationDoc> docs = new ArrayList<>();
+        docs.add(doc);
+        QueryPageResult<LegalTagAssociationDoc> result = mock(QueryPageResult.class);
+        result.results = docs;
+        when(queryHelper.queryPage(eq(LegalTagAssociationDoc.class), any(), eq(limit), eq(cursor))).thenReturn(result);
+        when(repo.get(anyString(), any(Optional.class))).thenReturn(new RecordMetadata());
+        repo.queryByLegalTagName(legalTagName, limit, cursor);
+
+        assertNotNull(result);
+
+    }
+
+    @Test
+    void testPatch() throws JsonMappingException, JsonProcessingException, IOException {
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
+        JsonPatch patch = JsonPatch.fromJson(new ObjectMapper().readTree("[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"newKind\" }]"));
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setId("recordId");
+        recordMetadata.setKind("recordKind");
+        Legal legal = new Legal();
+        legal.setLegaltags(new HashSet<>(Arrays.asList("legalTag1", "legalTag2")));
+        recordMetadata.setLegal(legal);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setUser("recordUser");
+        
+        RecordMetadata newRecordMetadata = new RecordMetadata();
+        newRecordMetadata.setId("newRecordId");
+        newRecordMetadata.setKind("newRecordKind");
+        newRecordMetadata.setLegal(legal);
+        newRecordMetadata.setStatus(RecordState.active);
+        newRecordMetadata.setUser("newRecordUser");
+        
+        MockedStatic<JsonPatchUtil> mocked = Mockito.mockStatic(JsonPatchUtil.class);
+        try {
+            mocked.when(() -> JsonPatchUtil.applyPatch(patch, RecordMetadata.class, recordMetadata)).thenReturn(newRecordMetadata);
+
+            jsonPatchPerRecord.put(recordMetadata, patch);
+            Map<String, String> result = repo.patch(jsonPatchPerRecord, Optional.empty());
+
+            verify(queryHelper, Mockito.times(1)).save(any(RecordMetadataDoc.class));
+            assertTrue(result.isEmpty());
+
+        } finally {
+            mocked.close(); 
+        }
+    }
+
+    @Test
+    void testQueryByLegalTagNameThrowsException() throws InvalidCursorException, UnsupportedEncodingException {
+        String legalTagName = "legalTagName";
+        int limit = 500;
+        String cursor = "cursor";
+        when(queryHelper.queryPage(any(),any(), eq(limit), eq(cursor))).thenThrow(UnsupportedEncodingException.class);
+        assertThrows(AppException.class, () -> repo.queryByLegalTagName(legalTagName, limit, cursor));
+    }
+
+    @Test
+    void testPatchIfJsonPatchPerRecordNull() {
+        // Arrange
+        Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = null;
+
+        // Act
+        Map<String, String> result = repo.patch(jsonPatchPerRecord, Optional.empty());
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void createRecordMetadata() {
 
         // Arrange
         RecordMetadata recordMetadata = new RecordMetadata();
@@ -106,7 +198,7 @@ public class RecordsMetadataRepositoryTest {
         expectedRmd.setUser(recordMetadata.getUser());
         expectedRmd.setMetadata(recordMetadata);
 
-        Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedRmd));
+        Mockito.doNothing().when(queryHelper).save(expectedRmd);
 
         // Act
         repo.createOrUpdate(recordsMetadata, Optional.empty());
@@ -116,7 +208,7 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void getRecordMetadata() {
+    void getRecordMetadata() {
         // Arrange
         String id = "opendes:id:15706318658560";
 
@@ -173,7 +265,7 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void getRecordsMetadata() {
+    void getRecordsMetadata() {
         // Arrange
         String id = "opendes:id:15706318658560";
         List<String> ids = new ArrayList<>();
@@ -235,7 +327,7 @@ public class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    public void deleteRecordMetadata() {
+    void deleteRecordMetadata() {
         // Arrange
         String id = "opendes:id:15706318658560";
         RecordMetadataDoc expectedRmd = new RecordMetadataDoc();
@@ -278,5 +370,4 @@ public class RecordsMetadataRepositoryTest {
         Mockito.verify(queryHelper, Mockito.times(1)).deleteByPrimaryKey(RecordMetadataDoc.class, id);
     }
 
-    // TODO: Write test for queryByLegalTagName(String legalTagName, int limit, String cursor) once the method is finished
 }

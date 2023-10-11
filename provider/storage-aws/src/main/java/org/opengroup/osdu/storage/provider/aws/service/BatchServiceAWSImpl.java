@@ -36,9 +36,6 @@ public class BatchServiceAWSImpl extends BatchServiceImpl {
     @Inject
     private IQueryRepository queryRepository;
 
-//    @Inject
-//    private JaxRsDpsLog logger;
-
     @Override
     public DatastoreQueryResult getAllKinds(String cursor, Integer limit)
     {

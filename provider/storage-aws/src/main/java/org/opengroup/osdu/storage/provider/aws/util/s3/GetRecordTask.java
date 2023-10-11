@@ -15,8 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 import com.amazonaws.AmazonServiceException;
-
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import java.util.Map;
@@ -45,10 +43,10 @@ class GetRecordTask implements Callable<GetRecordTask> {
     public GetRecordTask call() {
         try{
             s3RecordClient.getRecord(recordMetadata, map, dataPartition);
-            result = CallableResult.Pass;
+            result = CallableResult.PASS;
         }
          catch(AmazonServiceException e) {
-            result = CallableResult.Fail;
+            result = CallableResult.FAIL;
             exception = e;
         }
         return this;
