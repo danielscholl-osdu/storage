@@ -46,6 +46,9 @@
 		<jackson.version>2.13.2</jackson.version>
 		<jackson-databind.version>2.13.2.2</jackson-databind.version>
 		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
+		<argLine>
+		--add-opens java.base/java.lang=ALL-UNNAMED
+		</argLine>
 	</properties>
 
 	<repositories>
