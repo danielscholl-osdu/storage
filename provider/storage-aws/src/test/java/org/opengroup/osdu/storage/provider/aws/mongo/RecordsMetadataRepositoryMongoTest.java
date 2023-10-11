@@ -1,3 +1,4 @@
+
 // Copyright MongoDB, Inc or its affiliates. All Rights Reserved.
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
@@ -13,23 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api.mongo;
+package org.opengroup.osdu.storage.provider.aws.mongo;
 
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.configuration.StorageTestConfig;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.DbUtil;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.ParentUtil;
-import org.opengroup.osdu.storage.provider.aws.api.mongo.util.RecordMetadataGenerator;
-import org.opengroup.osdu.storage.provider.aws.mongo.MongoDbRecordsMetadataRepository;
+import org.opengroup.osdu.storage.provider.aws.mongo.configuration.StorageTestConfig;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.DbUtil;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.ParentUtil;
+import org.opengroup.osdu.storage.provider.aws.mongo.util.RecordMetadataGenerator;
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -43,15 +41,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @DataMongoTest
-@RunWith(SpringRunner.class)
 @SpringJUnitConfig(classes = StorageTestConfig.class)
-public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
+class RecordsMetadataRepositoryMongoTest extends ParentUtil {
 
     @Autowired
     private MongoDbRecordsMetadataRepository recordsMetadataRepository;
 
     @Test
-    public void createRecordMetadata() {
+    void createRecordMetadata() {
         //given
         List<RecordMetadataMongoDBDto> allFromHelper = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
         assertEquals(0, allFromHelper.size());
@@ -70,7 +67,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void createAndUpdateRecordMetadata() {
+    void createAndUpdateRecordMetadata() {
         //given
         List<RecordMetadataMongoDBDto> existsList = RecordMetadataGenerator.generate(5, "legalTag");
         mongoTemplateHelper.insert(existsList, DbUtil.DATA_PARTITION);
@@ -104,7 +101,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void delete() {
+    void delete() {
         // given
         RecordMetadataMongoDBDto recordMetadataMongoDBDto = RecordMetadataGenerator.create();
         String id = recordMetadataMongoDBDto.getData().getId();
@@ -122,7 +119,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void deleteIfNotExists() {
+    void deleteIfNotExists() {
         // given
         List<RecordMetadataMongoDBDto> recordMetadataMongoDBDtos = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
         assertEquals(0, recordMetadataMongoDBDtos.size());
@@ -136,7 +133,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void get() {
+    void get() {
         // given
         RecordMetadataMongoDBDto recordMetadataMongoDBDto = RecordMetadataGenerator.create();
         String id = recordMetadataMongoDBDto.getData().getId();
@@ -151,7 +148,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void getNotFound() {
+    void getNotFound() {
         // given
         List<RecordMetadataMongoDBDto> all = mongoTemplateHelper.findAll(DbUtil.DATA_PARTITION);
         assertEquals(0, all.size());
@@ -164,7 +161,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void getList() {
+    void getList() {
         //given
         List<RecordMetadataMongoDBDto> firstList = RecordMetadataGenerator.generate(5, "legalTag");
         List<RecordMetadataMongoDBDto> secondList = RecordMetadataGenerator.generate(5, "otherLegalTag");
@@ -185,7 +182,7 @@ public class RecordsMetadataRepositoryMongoTest extends ParentUtil {
     }
 
     @Test
-    public void queryByLegalTagName() {
+    void queryByLegalTagName() {
         //given
         String legalTagName = "legalTag";
         List<RecordMetadataMongoDBDto> firstList = RecordMetadataGenerator.generate(27, legalTagName);

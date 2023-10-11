@@ -12,40 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api;
+package org.opengroup.osdu.storage.provider.aws;
 
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
-import org.springframework.boot.test.context.SpringBootTest;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.storage.provider.aws.SchemaRepositoryImpl;
 
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
-@RunWith(MockitoJUnitRunner.class)
-@SpringBootTest(classes={StorageApplication.class})
-public class SchemaRepositoryTest {
+class SchemaRepositoryImplTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
     // due to lazy loading
-    private SchemaRepositoryImpl repo = new SchemaRepositoryImpl();
+    private SchemaRepositoryImpl repo;
 
     @Mock
     private DynamoDBQueryHelperV2 queryHelper;
@@ -56,8 +52,8 @@ public class SchemaRepositoryTest {
     @Mock
     private DpsHeaders headers;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         openMocks(this);
 
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
@@ -65,7 +61,7 @@ public class SchemaRepositoryTest {
     }
 
     @Test
-    public void createSchema() throws NoSuchFieldException {
+    void createSchema() throws NoSuchFieldException {
         // Arrange
         Schema schema = new Schema();
         schema.setKind("tenant:source:type:1.0.0");
@@ -85,7 +81,7 @@ public class SchemaRepositoryTest {
         expectedSd.setDataPartitionId(dataPartitionId);
 
         Mockito.when(headers.getPartitionId()).thenReturn(dataPartitionId);
-        Mockito.doNothing().when(queryHelper).save(Mockito.eq(expectedSd));
+        Mockito.doNothing().when(queryHelper).save(expectedSd);
 
         // Act
         repo.add(schema, user);
@@ -95,7 +91,13 @@ public class SchemaRepositoryTest {
     }
 
     @Test
-    public void getSchema() throws NoSuchFieldException {
+    void addScehmaThrowsException() {
+        when(queryHelper.keyExistsInTable(eq(SchemaDoc.class), any())).thenThrow(IllegalArgumentException.class);
+
+        assertThrows(IllegalArgumentException.class, () -> repo.add(new Schema(), "user"));
+    }
+    @Test
+    void getSchema() throws NoSuchFieldException {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
         Schema expectedSchema = new Schema();
@@ -123,7 +125,16 @@ public class SchemaRepositoryTest {
     }
 
     @Test
-    public void deleteSchema() throws NoSuchFieldException {
+    void getSchemaReturnsNull() {
+        String kind = "tenant:source:type:1.0.0";
+        when(queryHelper.loadByPrimaryKey(SchemaDoc.class, kind)).thenReturn(null);
+        Schema result = repo.get(kind);
+
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void deleteSchema() throws NoSuchFieldException {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
         SchemaDoc expectedSd = new SchemaDoc();

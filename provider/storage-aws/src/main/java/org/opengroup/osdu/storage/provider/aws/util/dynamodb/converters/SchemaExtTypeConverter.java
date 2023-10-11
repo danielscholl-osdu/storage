@@ -33,10 +33,18 @@ public class SchemaExtTypeConverter implements DynamoDBTypeConverter<String, Map
     @Inject
     private JaxRsDpsLog logger;
 
+    @Inject
+    private ObjectMapper objectMapper;
+
+    {
+        if (objectMapper == null) {
+            objectMapper = new ObjectMapper();
+        }
+    }
+
     @Override
     // Converts a list of SchemaItems to a JSON string for DynamoDB
     public String convert(Map<String, Object> ext) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.writeValueAsString(ext);
         } catch (JsonProcessingException e) {
@@ -48,7 +56,6 @@ public class SchemaExtTypeConverter implements DynamoDBTypeConverter<String, Map
     @Override
     // Converts a JSON string of an array of SchemaItems to a list of SchemaItem objects
     public Map<String, Object> unconvert(String extString) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.readValue(extString, new TypeReference<Map<String, Object>>(){});
         } catch (JsonParseException e) {

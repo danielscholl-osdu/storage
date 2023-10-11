@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.aws.api;
+package org.opengroup.osdu.storage.provider.aws.jobs;
 
 import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
@@ -29,25 +28,22 @@ import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
-import org.opengroup.osdu.storage.provider.aws.jobs.LegalComplianceChangeServiceAWSImpl;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.springframework.boot.test.context.SpringBootTest;
 import java.util.*;
 
-@RunWith(MockitoJUnitRunner.class)
-@SpringBootTest(classes={StorageApplication.class})
-public class LegalComplianceChangeServiceAWSImplTest {
+import static org.mockito.MockitoAnnotations.openMocks;
+
+class LegalComplianceChangeServiceAWSImplTest {
 
     @InjectMocks
     // Created inline instead of with autowired because mocks were overwritten
     // due to lazy loading
-    private LegalComplianceChangeServiceAWSImpl service = new LegalComplianceChangeServiceAWSImpl();
+    private LegalComplianceChangeServiceAWSImpl service;
 
     @Mock
     private IRecordsMetadataRepository repo;
@@ -64,8 +60,13 @@ public class LegalComplianceChangeServiceAWSImplTest {
     @Mock
     private LegalTagCache legalTagCache;
 
+    @BeforeEach
+    void setUp() {
+        openMocks(this);
+    }
+
     @Test
-    public void updateComplianceOnRecordsTest() throws ComplianceUpdateStoppedException {
+    void updateComplianceOnRecordsTest() throws ComplianceUpdateStoppedException {
         // arrange
         String incompliantTagName = "incompliant-test-tag";
         String incompliantRecordId = "incompliant-record";
