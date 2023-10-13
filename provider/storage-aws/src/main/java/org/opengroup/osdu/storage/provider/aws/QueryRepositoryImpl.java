@@ -14,13 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
-import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -34,8 +32,6 @@ import org.springframework.stereotype.Repository;
 
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb",
@@ -143,24 +139,5 @@ public class QueryRepositoryImpl implements IQueryRepository {
         Collections.sort(ids);
         dqr.setResults(ids);
         return dqr;
-    }
-
-    private Map<String, AttributeValue> deserializeCursor(String cursor) {
-        // The cursor string needs to be deserialized into a DynamoDB-compatible hash map
-        Map<String, AttributeValue> cursorMap = new HashMap<>(); // initialize Map
-        try {
-            cursor = URLDecoder.decode(cursor, StandardCharsets.UTF_8.toString()); // decode the URL-encoded cursor string
-            cursor = cursor.substring(1, cursor.length() - 1); // drop the opening and closing curly braces ({})
-            String[] MapPairs = cursor.split(", "); // split the remaining string into an array of key/value pairs
-            for (String pair : MapPairs) {
-                String[] keyValue = pair.split("="); // split the pair on the equals sign (=)
-                String[] attributeValueSplit = keyValue[1].split("(: )|(,})"); // the attribute values are serialized in a format like '{S: active,}', and we just want the value
-                AttributeValue pairAttributeValue = new AttributeValue(attributeValueSplit[1]);
-                cursorMap.put(keyValue[0], pairAttributeValue); // append the pair to the Map
-            }
-        } catch (Exception e) {
-            throw new InvalidCursorException(e.getMessage());
-        }
-        return cursorMap;
     }
 }

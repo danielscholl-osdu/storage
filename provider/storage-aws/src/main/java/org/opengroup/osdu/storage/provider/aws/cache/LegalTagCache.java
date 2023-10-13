@@ -41,13 +41,26 @@ public class LegalTagCache implements ICache<String, String> {
     @Inject
     private TenantInfo tenant;
 
+    private K8sLocalParameterProvider provider;
+
     private final MultiTenantCache<String> caches;
     private boolean local;
-    public LegalTagCache() throws K8sParameterNotFoundException, JsonProcessingException {
+
+    // overloaded constructor for testing
+    public LegalTagCache() throws JsonProcessingException, K8sParameterNotFoundException {
+        this(null, System.getenv("DISABLE_CACHE"));
+    }
+
+    public LegalTagCache(K8sLocalParameterProvider givenProvider, String disableCacheResult) throws K8sParameterNotFoundException, JsonProcessingException {
         int expTimeSeconds = 60 * 60;
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        if (provider.getLocalMode()){
-            if (Boolean.parseBoolean(System.getenv("DISABLE_CACHE"))){
+        if (givenProvider == null){
+            this.provider = new K8sLocalParameterProvider();
+        }
+        else{
+            this.provider = givenProvider;
+        }
+        if (this.provider.getLocalMode()){
+            if (Boolean.parseBoolean(disableCacheResult)){
                 caches =  new MultiTenantCache<String>(new DummyCache<>());
             }else{
                 caches = new MultiTenantCache<String>(new VmCache<String,String>(expTimeSeconds, 10));

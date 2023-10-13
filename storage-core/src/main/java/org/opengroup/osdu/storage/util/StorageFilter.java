@@ -14,77 +14,81 @@
 
 package org.opengroup.osdu.storage.util;
 
-import java.io.IOException;
-import java.util.Map;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import com.google.common.base.Strings;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.http.ResponseHeadersFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.opengroup.osdu.core.common.model.http.AppError;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+@Order(8)
 @Component
-public class StorageFilter implements Filter {
+public class StorageFilter extends BaseOsduFilter implements Filter {
 
-	private static final String DISABLE_AUTH_PROPERTY = "org.opengroup.osdu.storage.disableAuth";
-	private static final String OPTIONS_STRING = "OPTIONS";
-	private static final String FOR_HEADER_NAME = "frame-of-reference";
+    private static final String DISABLE_AUTH_PROPERTY = "org.opengroup.osdu.storage.disableAuth";
+    private static final String OPTIONS_STRING = "OPTIONS";
+    private static final String FOR_HEADER_NAME = "frame-of-reference";
+    // defaults to * for any front-end, string must be comma-delimited if more than one domain
+    @Value("${ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS:*}")
+    String ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS;
 
-	@Autowired
-	private DpsHeaders dpsHeaders;
+    private ResponseHeadersFactory responseHeadersFactory = new ResponseHeadersFactory();
 
-	// defaults to * for any front-end, string must be comma-delimited if more than one domain
-	@Value("${ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS:*}")
-	String ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS;
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
 
-	private ResponseHeadersFactory responseHeadersFactory = new ResponseHeadersFactory();
+        boolean disableAuth = Boolean.getBoolean(DISABLE_AUTH_PROPERTY);
+        if (disableAuth) {
+            return;
+        }
 
-	@Override
-	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-			throws IOException, ServletException {
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
 
-		boolean disableAuth = Boolean.getBoolean(DISABLE_AUTH_PROPERTY);
-		if (disableAuth) {
-			return;
-		}
+        String fetchConversionHeader = ((HttpServletRequest) request).getHeader(FOR_HEADER_NAME);
+        if (!Strings.isNullOrEmpty(fetchConversionHeader)) {
+            this.dpsHeaders.put(FOR_HEADER_NAME, fetchConversionHeader);
+        }
 
-		HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-		String fetchConversionHeader = ((HttpServletRequest) request).getHeader(FOR_HEADER_NAME);
-		if (!Strings.isNullOrEmpty(fetchConversionHeader)) {
-			this.dpsHeaders.put(FOR_HEADER_NAME, fetchConversionHeader);
-		}
+        this.dpsHeaders.addCorrelationIdIfMissing();
 
-		HttpServletResponse httpResponse = (HttpServletResponse) response;
+        Map<String, String> responseHeaders = responseHeadersFactory.getResponseHeaders(ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS);
+        for (Map.Entry<String, String> header : responseHeaders.entrySet()) {
+            httpResponse.setHeader(header.getKey(), header.getValue());
+        }
+        httpResponse.setHeader(DpsHeaders.CORRELATION_ID, this.dpsHeaders.getCorrelationId());
 
-		this.dpsHeaders.addCorrelationIdIfMissing();
+        // This block handles the OPTIONS preflight requests performed by Swagger. We
+        // are also enforcing requests coming from other origins to be rejected.
+        if (httpRequest.getMethod().equalsIgnoreCase(OPTIONS_STRING)) {
+            httpResponse.setStatus(HttpStatus.SC_OK);
+        }
 
-		Map<String, String> responseHeaders = responseHeadersFactory.getResponseHeaders(ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS);
-		for(Map.Entry<String, String> header : responseHeaders.entrySet()){
-			httpResponse.setHeader(header.getKey(), header.getValue());
-		}
-		httpResponse.setHeader(DpsHeaders.CORRELATION_ID, this.dpsHeaders.getCorrelationId());
+        try {
+            if (!isExcludedPath(httpRequest))
+                validateMandatoryHeaders();
+            chain.doFilter(request, response);
+        } catch (AppException e) {
+            //Unhandled Exceptions thrown by filters are not caught by the ExceptionManagers, instead spring security converts them to 500.
+            // So, catch all the app exceptions(only, since we're throwing that when something bad happens) and convert them to json, instead of 500 if uncaught
+            getErrorResponse(response, new AppError(e.getError().getCode(), e.getError().getReason(), e.getMessage()));
+        }
+    }
 
-		// This block handles the OPTIONS preflight requests performed by Swagger. We
-		// are also enforcing requests coming from other origins to be rejected.
-		if (httpRequest.getMethod().equalsIgnoreCase(OPTIONS_STRING)) {
-			httpResponse.setStatus(HttpStatus.SC_OK);
-		}
 
-		chain.doFilter(request, response);
-	}
-
-	@Override
-	public void destroy() {
-	}
+    @Override
+    public void destroy() {
+    }
 }

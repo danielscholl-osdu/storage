@@ -15,6 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 public enum CallableResult {
-    Pass,
-    Fail
+    PASS,
+    FAIL
 }

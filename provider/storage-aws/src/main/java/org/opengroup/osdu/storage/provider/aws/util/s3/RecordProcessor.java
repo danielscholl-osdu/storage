@@ -16,7 +16,6 @@ package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 import com.amazonaws.AmazonServiceException;
 
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 
 import java.util.concurrent.Callable;
@@ -40,11 +39,11 @@ public class RecordProcessor implements Callable<RecordProcessor> {
         try {
             recordId = recordProcessing.getRecordMetadata().getId();
             s3Client.saveRecord(recordProcessing, dataPartition);
-            result = CallableResult.Pass;
+            result = CallableResult.PASS;
         }
         catch(AmazonServiceException exception) {
             this.exception = exception;
-            result = CallableResult.Fail;
+            result = CallableResult.FAIL;
         }
         return this;
     }
