@@ -86,8 +86,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Override
     public void write(RecordProcessing... recordsProcessing) {
         userAccessService.validateRecordAcl(recordsProcessing);
-        // TODO: throughout this class userId isn't used, seems to be something to integrate with entitlements service
-        // TODO: ensure that the threads come from the shared pool manager from the web server
+        // throughout this class userId isn't used, seems to be something to integrate with entitlements service
+        // ensure that the threads come from the shared pool manager from the web server
         // Using threads to write records to S3 to increase efficiency, no impact to cost
         List<CompletableFuture<RecordProcessor>> futures = new ArrayList<>();
 
@@ -95,7 +95,6 @@ public class CloudStorageImpl implements ICloudStorage {
 
         for(RecordProcessing recordProcessing : recordsProcessing){
             if (recordProcessing.getRecordData().getMeta() == null) {
-                HashMap<String, Object> meta = new HashMap<String, Object>();
                 HashMap<String, Object>[] arrayMeta = new HashMap[0];
                 recordProcessing.getRecordData().setMeta(arrayMeta);
             }
@@ -114,7 +113,7 @@ public class CloudStorageImpl implements ICloudStorage {
             List<RecordProcessor> recordProcessors = results.get();
             for(RecordProcessor recordProcessor : recordProcessors){
                 if(recordProcessor.exception != null
-                        || recordProcessor.result == CallableResult.Fail){
+                        || recordProcessor.result == CallableResult.FAIL){
                     assert recordProcessor.exception != null;
                     logger.error(String.format("%s failed writing to S3 with exception: %s"
                             , recordProcessor.recordId
@@ -123,6 +122,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 }
             }
         } catch (Exception e) {
+            Thread.currentThread().interrupt();
             if (e.getCause() instanceof AppException) {
                 throw (AppException) e.getCause();
             } else {
@@ -224,9 +224,9 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
+    public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
 
-        Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
+        Map<String, Acl> originalAcls = new HashMap<>();
         Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId, Optional.empty());
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
@@ -248,7 +248,7 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
+    public void revertObjectMetadata(List<RecordMetadata> recordsMetadata, Map<String, Acl> originalAcls, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> originalAclRecords = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {
             Acl acl = originalAcls.get(recordMetadata.getId());
