@@ -29,7 +29,7 @@
 		<java.version>17</java.version>
 		<maven.compiler.target>17</maven.compiler.target>
 		<maven.compiler.source>17</maven.compiler.source>
-		<os-core-lib-ibm.version>0.17.0-rc4</os-core-lib-ibm.version>
+		<os-core-lib-ibm.version>0.23.0</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
 		<spring-security-core.version>5.7.7</spring-security-core.version>
