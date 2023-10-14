@@ -21,14 +21,14 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.24.0-SNAPSHOT</version>
+        <version>0.25.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>storage-aws</artifactId>
     <description>Storage service on AWS</description>
-    <version>0.24.0-SNAPSHOT</version>
+    <version>0.25.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -37,7 +37,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <aws.version>1.11.1018</aws.version>
         <deployment.environment>dev</deployment.environment>
-        <version.number>0.24.0-SNAPSHOT</version.number>
+        <version.number>0.25.0-SNAPSHOT</version.number>
         <spring-webmvc.version>5.3.26</spring-webmvc.version>
     </properties>
 
