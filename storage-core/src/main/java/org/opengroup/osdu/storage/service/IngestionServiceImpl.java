@@ -432,6 +432,7 @@ public class IngestionServiceImpl implements IngestionService {
 
 			if (existingRecords.containsKey(id)) {
 				updateRecordsMetadata.add(recordMetadata);
+				updateRecordsMetadata.add(existingRecords.get(id));
 			} else {
 				createRecordsMetadata.add(recordMetadata);
 			}
