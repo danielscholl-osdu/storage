@@ -189,8 +189,11 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
             RecordMetadata metadata = existingRecords.get(id);
             if (metadata == null) continue;
 
-            metadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, bulkUpdateOps, user, currentTimestamp);
             updatedRecordsMetadata.add(metadata);
+            RecordMetadata newMetadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, bulkUpdateOps, user, currentTimestamp);
+            if (newMetadata != metadata) {
+            	updatedRecordsMetadata.add(newMetadata);
+            }
         }
 
         if (!updatedRecordsMetadata.isEmpty()) {
