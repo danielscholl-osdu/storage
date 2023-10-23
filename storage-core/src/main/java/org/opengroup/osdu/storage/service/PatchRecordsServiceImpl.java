@@ -143,7 +143,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         } else {
             Map<String, RecordMetadata> existingRecords = recordRepository.get(recordIds, collaborationContext);
             if (isOpaEnabled) {
-                this.validateUserAccessAndCompliancePolicyConstraints(existingRecords);
+                this.validateUserAccessAndCompliancePolicyConstraints(jsonPatch, existingRecords);
             } else {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);
             }
@@ -226,8 +226,17 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         validateOwnerAccess(recordIds, recordsMetadata);
     }
 
-    private void validateUserAccessAndCompliancePolicyConstraints(Map<String, RecordMetadata> recordsMetadata) {
+    private void validateUserAccessAndCompliancePolicyConstraints(
+    		JsonPatch jsonPatch, Map<String, RecordMetadata> recordsMetadata) {
         List<RecordMetadata> recordMetadataList = new ArrayList<>(recordsMetadata.values());
+        
+        for (RecordMetadata metadata : recordsMetadata.values()) {
+        	RecordMetadata newRecordMetadata = JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, metadata);
+        	if (newRecordMetadata != metadata) {
+        		recordMetadataList.add(newRecordMetadata);
+        	}
+        }
+        
         if (!recordMetadataList.isEmpty()) {
             List<ValidationOutputRecord> dataAuthzResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.update);
             for (ValidationOutputRecord outputRecord : dataAuthzResult) {
