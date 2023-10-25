@@ -1,7 +1,5 @@
 package org.opengroup.osdu.storage.provider.azure.util;
 
-import static org.apache.commons.lang3.StringUtils.isNoneBlank;
-
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -10,6 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
+
+import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 
 @Component
 public class RecordUtil {
@@ -25,15 +26,19 @@ public class RecordUtil {
         }
     }
 
-    public String getKindForVersion(RecordMetadata record, String version) {
-        String versionPath =
-                record.getGcsVersionPaths()
+    public String getKindForVersion(RecordMetadata recordMetadata, String version) {
+        String gcsVersionPath =
+                recordMetadata.getGcsVersionPaths()
                         .stream()
-                        .filter(path -> isNoneBlank(path) && path.contains(version))
+                        .filter(isGcsVersionPathEndsWith(version))
                         .findFirst()
-                        .orElseThrow(() -> throwVersionNotFound(record.getId(), version));
+                        .orElseThrow(() -> throwVersionNotFound(recordMetadata.getId(), version));
 
-        return versionPath.split("/")[0];
+        return gcsVersionPath.split("/")[0];
+    }
+
+    private static Predicate<String> isGcsVersionPathEndsWith(String version) {
+        return gcsVersionPath -> isNoneBlank(gcsVersionPath) && gcsVersionPath.endsWith("/" + version);
     }
 
     private AppException throwVersionNotFound(String id, String version) {
