@@ -49,6 +49,7 @@ public class SchemaEndToEndTest {
     final String tenant1 = "common";
     final String kind = tenant1 + ":welldb:wellbore:1.0.0";
     final String tenant2 = "opendes";
+    final String auth = "auth";
     final String schemaContent = "{" +
                     "\"ext\":{}," +
                     "\"kind\": \"" + kind + "\", " +
@@ -67,6 +68,7 @@ public class SchemaEndToEndTest {
                 .post(schemaApiEndpoint)
                 .with(adminUser)
                 .header(DpsHeaders.DATA_PARTITION_ID, tenant1)
+                .header(DpsHeaders.AUTHORIZATION, auth)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(schemaContent);
         mockMvc.perform(createSchemaRequest).andExpect(status().isCreated());
@@ -78,6 +80,7 @@ public class SchemaEndToEndTest {
                 .get(schemaApiEndpoint + kind)
                 .with(viewerUser)
                 .header(DpsHeaders.DATA_PARTITION_ID, tenant2)
+                .header(DpsHeaders.AUTHORIZATION, auth)
                 .accept(MediaType.APPLICATION_JSON);
         mockMvc.perform(getSchemaRequest).andExpect(status().isOk());
     }
@@ -88,6 +91,7 @@ public class SchemaEndToEndTest {
                 .get(schemaApiEndpoint + kind)
                 .with(viewerUser)
                 .header(DpsHeaders.DATA_PARTITION_ID, tenant1)
+                .header(DpsHeaders.AUTHORIZATION, auth)
                 .accept(MediaType.APPLICATION_JSON);
         mockMvc.perform(getSchemaRequest).andExpect(status().isOk());
     }

@@ -28,6 +28,7 @@ public class RecordUtilTest {
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
     private static final Long VERSION = 10000L;
     private static final String WRONG_VERSION = "11111";
+    private static final String VERSION_SEQUENCE = "1";
     private static final String KIND = "kind";
 
     private static final int RECORD_ID_MAX_LENGTH = 10;
@@ -74,12 +75,26 @@ public class RecordUtilTest {
                 WRONG_VERSION, RECORD_ID_WITH_11_SYMBOLS);
         String errorReason = "Version not found";
 
-        RecordMetadata record = buildRecordMetadata();
+        RecordMetadata recordMetadata = buildRecordMetadata();
 
         exceptionRule.expect(AppException.class);
         exceptionRule.expect(buildAppExceptionMatcher(errorMessage, errorReason, HttpStatus.SC_NOT_FOUND));
 
-        recordUtil.getKindForVersion(record, WRONG_VERSION);
+        recordUtil.getKindForVersion(recordMetadata, WRONG_VERSION);
+    }
+
+    @Test
+    public void shouldFailGetKindForVersion_whenVersionMatches_onlySequence() {
+        String errorMessage = String.format("The version %s can't be found for record %s",
+                VERSION_SEQUENCE, RECORD_ID_WITH_11_SYMBOLS);
+        String errorReason = "Version not found";
+
+        RecordMetadata recordMetadata = buildRecordMetadata();
+
+        exceptionRule.expect(AppException.class);
+        exceptionRule.expect(buildAppExceptionMatcher(errorMessage, errorReason, HttpStatus.SC_NOT_FOUND));
+
+        recordUtil.getKindForVersion(recordMetadata, VERSION_SEQUENCE);
     }
 
     private RecordMetadata buildRecordMetadata() {
