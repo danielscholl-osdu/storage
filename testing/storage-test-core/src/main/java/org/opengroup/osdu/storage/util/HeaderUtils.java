@@ -46,4 +46,32 @@ public class HeaderUtils {
 		}
 		return headers;
 	}
+
+	public static Map<String, String> getHeadersWithoutAuth(String tenantName, String token) {
+		Map<String, String> headers = new HashMap<>();
+		if(tenantName == null || tenantName.isEmpty()) {
+			tenantName = TenantUtils.getTenantName();
+		}
+		headers.put("Data-Partition-Id", tenantName);
+
+		final String correlationId = UUID.randomUUID().toString();
+		System.out.printf("Using correlation-id for the request: %s \n", correlationId);
+		headers.put("correlation-id", correlationId);
+
+		return headers;
+	}
+	public static Map<String, String> getHeadersWithoutDataPartitionId(String tenantName, String token) {
+		Map<String, String> headers = new HashMap<>();
+		if(tenantName == null || tenantName.isEmpty()) {
+			tenantName = TenantUtils.getTenantName();
+		}
+		headers.put("Authorization", token);
+
+		final String correlationId = UUID.randomUUID().toString();
+		System.out.printf("Using correlation-id for the request: %s \n", correlationId);
+		headers.put("correlation-id", correlationId);
+
+		return headers;
+	}
+
 }

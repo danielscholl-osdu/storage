@@ -18,7 +18,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opengroup.osdu</groupId>
 	<artifactId>os-storage-testing</artifactId>
-	<version>0.24.0-SNAPSHOT</version>
+	<version>0.25.0-SNAPSHOT</version>
 	<description>Root Storage Service project</description>
 	<packaging>pom</packaging>
 
@@ -46,6 +46,9 @@
 		<jackson.version>2.13.2</jackson.version>
 		<jackson-databind.version>2.13.2.2</jackson-databind.version>
 		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
+		<argLine>
+		--add-opens java.base/java.lang=ALL-UNNAMED
+		</argLine>
 	</properties>
 
 	<repositories>

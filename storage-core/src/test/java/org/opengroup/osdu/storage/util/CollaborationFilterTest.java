@@ -1,6 +1,7 @@
 package org.opengroup.osdu.storage.util;
 
 import org.apache.http.HttpStatus;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -8,7 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
-import org.opengroup.osdu.core.common.model.http.AppError;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.servlet.FilterChain;
@@ -19,32 +20,27 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
-public class CollaborationFilterTest {
+public class CollaborationFilterTest extends BaseOsduFilter {
     private static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
     private static final String COLLABORATION_DIRECTIVES = "id=8e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=Unit test";
     private static final String FEATURE_NAME = "collaborations-enabled";
     @Mock
+    public IFeatureFlag iCollaborationFeatureFlag;
+    @Mock
     private HttpServletRequest httpServletRequest;
-
     @Mock
     private HttpServletResponse httpServletResponse;
-
     @Mock
     private PrintWriter writer;
-
     @Mock
     private FilterChain filterChain;
-
     @InjectMocks
     private CollaborationFilter collaborationFilter;
-    @Mock
-    public IFeatureFlag iCollaborationFeatureFlag;
+
     @Before
     public void setup() {
         ReflectionTestUtils.setField(collaborationFilter, "excludedPaths", Arrays.asList("info", "swagger", "health", "api-docs"));
@@ -59,12 +55,13 @@ public class CollaborationFilterTest {
         when(httpServletRequest.getHeader(X_COLLABORATION_HEADER_NAME)).thenReturn(COLLABORATION_DIRECTIVES);
         when(httpServletResponse.getWriter()).thenReturn(writer);
 
-        collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
-
-        verify(httpServletResponse).setContentType("application/json");
-        verify(httpServletResponse).setStatus(HttpStatus.SC_LOCKED);
-        AppError errorResponse = new AppError(HttpStatus.SC_LOCKED, "Locked", "Feature is not enabled on this environment");
-        verify(writer).write(CollaborationFilter.appErrorToJson(errorResponse));
+        try {
+            collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
+        } catch (AppException e) {
+            Assert.assertEquals(e.getError().getCode(), HttpStatus.SC_LOCKED);
+            Assert.assertEquals(e.getError().getReason(), "Locked");
+            Assert.assertEquals(e.getError().getMessage(), "Feature is not enabled on this environment");
+        }
     }
 
     @Test

@@ -21,6 +21,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
@@ -60,6 +61,8 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     @Before
     public void setup() {
         Mockito.when(dpsHeaders.getUserEmail()).thenReturn("a@b");
+        Mockito.when(dpsHeaders.getPartitionId()).thenReturn("opendes");
+        Mockito.when(dpsHeaders.getAuthorization()).thenReturn("auth");
         Mockito.when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
     }
 
