@@ -58,6 +58,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
@@ -122,6 +123,7 @@ public class IngestionServiceImplTest {
     private static final String TENANT = "tenant1";
     private static final String[] VALID_ACL = new String[] { "data.email1@tenant1.gmail.com", "data.test@tenant1.gmail.com" };
     private static final String[] INVALID_ACL = new String[] { "data.email1@test.test.com", "data.test@test.test.com" };
+    private static final String[] NON_OWNER_ACL = new String[] { "data.not_owner@test.test.com" };
 
     private Record record1;
     private Record record2;
@@ -831,6 +833,159 @@ public class IngestionServiceImplTest {
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
         assertEquals(new Integer(2), transferInfo.getRecordCount());
+        assertNotNull(transferInfo.getVersion());
+
+        ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
+
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
+        verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
+
+        TransferBatch input = transfer.getValue();
+
+        for (RecordProcessing rp : input.getRecords()) {
+            assertEquals(OperationType.update, rp.getOperationType());
+        }
+    }
+    
+    @Test
+    public void should_return403_when_updatingExistingRecordThatFailDataAuthorizationCheck_IntegrateOPA() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.record1.setAcl(new Acl(VALID_ACL, VALID_ACL));
+        
+        List<Record> processingRecords = new ArrayList<Record>();
+        processingRecords.add(this.record1);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(new Acl(VALID_ACL, NON_OWNER_ACL));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNER_ACL)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+
+        try {
+            this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
+        }
+    }
+    
+    @Test
+    public void should_return403_when_updatingWithNewRecordThatFailDataAuthorizationCheck_IntegrateOPA() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.record1.setAcl(new Acl(VALID_ACL, NON_OWNER_ACL));
+        
+        List<Record> processingRecords = new ArrayList<Record>();
+        processingRecords.add(this.record1);
+        
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(new Acl(VALID_ACL, VALID_ACL));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNER_ACL)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+
+        try {
+            this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
+        }
+    }
+    
+    @Test
+    public void should_success_when_updatingRecordThatPassDataAuthorizationCheck_IntegrateOPA() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.record1.setAcl(new Acl(VALID_ACL, VALID_ACL));
+        
+        List<Record> processingRecords = new ArrayList<Record>();
+        processingRecords.add(this.record1);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(new Acl(VALID_ACL, VALID_ACL));
+        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(RECORD_ID1, existingRecordMetadata1);
+
+        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNER_ACL)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+        when(this.cloudStorage.read(existingRecordMetadata1, 3L, false)).thenReturn(new Gson().toJson(this.record1));
+
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
+        assertEquals(USER, transferInfo.getUser());
+        assertEquals(Integer.valueOf(1), transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
