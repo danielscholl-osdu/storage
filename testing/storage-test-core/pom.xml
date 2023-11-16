@@ -72,7 +72,7 @@
     <dependency>
         <groupId>org.opengroup.osdu</groupId>
         <artifactId>os-core-common</artifactId>
-        <version>0.24.0</version>
+        <version>os-core-common.version</version>
         <scope>compile</scope>
     </dependency>
       <dependency>
