@@ -966,21 +966,6 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
-        List<OpaError> errors = new ArrayList<>();
-        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
-        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
-        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
-        validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateUserAccessToRecords(
-        		argThat( (List<RecordMetadata> recordsMetadata) -> {
-        			for (RecordMetadata recordMetadata : recordsMetadata) {
-        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNER_ACL)) 
-        					return true;
-        				} 
-        			return false;
-        			} 
-        		), 
-        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
         when(this.cloudStorage.read(existingRecordMetadata1, 3L, false)).thenReturn(new Gson().toJson(this.record1));
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
