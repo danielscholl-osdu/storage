@@ -106,8 +106,10 @@ public class DummyRecordsHelper {
         public RecordLegalMock legal;
         public RecordAncestryMock ancestry;
         public Map<String, String> tags;
-        public Timestamp modifyTime;
+        public String modifyTime;
         public String modifyUser;
+        public String createTime;
+        public String createUser;
     }
 
     public class RecordAclMock {
