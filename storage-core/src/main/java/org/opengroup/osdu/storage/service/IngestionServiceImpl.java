@@ -431,7 +431,13 @@ public class IngestionServiceImpl implements IngestionService {
 			recordMetadata.setId(id);
 
 			if (existingRecords.containsKey(id)) {
-				updateRecordsMetadata.add(recordMetadata);
+				// For the update operation, we are sending the existing data record and the new data record to 
+				// the data authorization policy for permission evaluation. The user is allowed to do the update operation
+				// when the data authorization policy decides the user has update permission to both data records.
+				
+				// Add the new data record for the data authorization policy evaluation
+				updateRecordsMetadata.add(recordMetadata);				
+				// Add the existing data record for the data authorization policy evaluation
 				updateRecordsMetadata.add(existingRecords.get(id));
 			} else {
 				createRecordsMetadata.add(recordMetadata);

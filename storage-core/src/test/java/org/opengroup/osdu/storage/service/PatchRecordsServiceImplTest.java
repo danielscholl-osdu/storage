@@ -438,23 +438,6 @@ public class PatchRecordsServiceImplTest {
         		+ new Gson().toJson(OWNERS) + "}]"));
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecordMetadataMap);
         
-        List<OpaError> errors = new ArrayList<>();
-        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
-        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
-        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
-        validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateUserAccessToRecords(
-        		argThat( (List<RecordMetadata> recordsMetadata) -> {
-        			for (RecordMetadata recordMetadata : recordsMetadata) {
-        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNERS)) 
-        					return true;
-        				} 
-        			return false;
-        			} 
-        		), 
-        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
-
-
         PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
 
         assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());

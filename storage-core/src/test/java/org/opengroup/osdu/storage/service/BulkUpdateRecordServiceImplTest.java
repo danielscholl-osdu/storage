@@ -442,22 +442,6 @@ public class BulkUpdateRecordServiceImplTest {
         when(recordUtil.updateRecordMetaDataForPatchOperations(existingRecordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
                 CURRENT_MILLIS)).thenReturn(newRecordMetadata);
         
-        List<OpaError> errors = new ArrayList<>();
-        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
-        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
-        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
-        validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateUserAccessToRecords(
-        		argThat( (List<RecordMetadata> recordsMetadata) -> {
-        			for (RecordMetadata recordMetadata : recordsMetadata) {
-        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNERS)) 
-        					return true;
-        				} 
-        			return false;
-        			} 
-        		), 
-        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
-
         BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
         
         commonVerify(singletonList(TEST_ID), param.getOps());
