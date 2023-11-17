@@ -41,9 +41,9 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		String jsonInput = RecordUtil.createDefaultJsonRecords(3, RECORD_ID, KIND, LEGAL_TAG);
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		ClientResponse modifyRecordsResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
+		CloseableHttpResponse modifyRecordsResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getCode());
-		assertEquals(201, modifyRecordsResponse.getStatus());
+		assertEquals(201, modifyRecordsResponse.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
