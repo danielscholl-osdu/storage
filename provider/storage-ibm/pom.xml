@@ -32,7 +32,6 @@
 		<os-core-lib-ibm.version>0.24.0</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
-		<spring-security-core.version>5.7.7</spring-security-core.version>
 		<tomcat-embed-core.version>9.0.70</tomcat-embed-core.version>
 		<commons-compress.version>1.22</commons-compress.version>
 	</properties>
@@ -51,7 +50,6 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-web</artifactId>
-			<version>${spring-security-core.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
