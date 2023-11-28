@@ -27,15 +27,11 @@
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
-    <version>0.25.0-SNAPSHOT</version>
+    
     <properties>
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <azure.appservice.resourcegroup />
-        <azure.appservice.plan />
-        <azure.appservice.appname />
-        <azure.appservice.subscription />
         <osdu.corelibazure.version>0.24.0</osdu.corelibazure.version>
         <osdu.storage-core.version>0.25.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
@@ -66,6 +62,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+			    <groupId>org.springframework.boot</groupId>
+			    <artifactId>spring-boot-dependencies</artifactId>
+			    <version>2.7.17</version>
+			    <type>pom</type>
+			    <scope>import</scope>
+			</dependency>
+
             <!-- Inherit managed dependencies from core-lib-azure -->
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
@@ -194,7 +198,6 @@
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>os-core-common</artifactId>
-            <version>${os-core-common.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
