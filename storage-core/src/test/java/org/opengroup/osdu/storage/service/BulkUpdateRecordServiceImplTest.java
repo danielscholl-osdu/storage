@@ -23,6 +23,7 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.PatchOperation;
 import org.opengroup.osdu.core.common.model.storage.RecordBulkUpdateParam;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -44,6 +45,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
@@ -61,6 +64,7 @@ public class BulkUpdateRecordServiceImplTest {
 
     private static final String TEST_ID = "test_id";
     private static final String ACL_OWNER = "test_acl";
+    private static final String ACL_NON_OWNER = "test_acl_non_owner";
     private static final String TEST_KIND = "test_kind";
 
     private static final String ID = "test_id";
@@ -70,6 +74,7 @@ public class BulkUpdateRecordServiceImplTest {
         put(TEST_ID, TEST_ID);
     }};
     private final static String[] OWNERS = new String[]{ACL_OWNER};
+    private final static String[] NON_OWNERS = new String[]{ACL_NON_OWNER};
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     //External dependencies
@@ -323,6 +328,131 @@ public class BulkUpdateRecordServiceImplTest {
         assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
         assertTrue(actualResponse.getRecordIds().isEmpty());
         assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+    }
+    
+    @Test
+    public void should_fail_when_patchingExistingRecordThatFailDataAuthorizationCheck_IntegrateOPA() {
+    	RecordMetadata existingRecordMetadata = buildRecordMetadata();
+    	Acl non_owner_acl = new Acl();
+    	non_owner_acl.setOwners(NON_OWNERS);
+    	existingRecordMetadata.setAcl(non_owner_acl);
+        Map<String, RecordMetadata> existingRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, existingRecordMetadata);
+        }};
+        
+        RecordMetadata newRecordMetadata = buildRecordMetadata();
+
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(existingRecordMetadataMap);
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(existingRecordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(newRecordMetadata);
+        
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNERS)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+
+        verify(persistenceService, times(0)).updateMetadata(any(), any(), any(), any());
+        verify(auditLogger, times(1)).createOrUpdateRecordsFail(TEST_IDS);
+        verify(auditLogger, times(0)).createOrUpdateRecordsSuccess(TEST_IDS);
+        
+        assertEquals(TEST_ID, actualResponse.getUnAuthorizedRecordIds().get(0));
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+    }
+    
+    @Test
+    public void should_fail_when_patchingWithNewRecordThatFailDataAuthorizationCheck_IntegrateOPA() {
+    	RecordMetadata existingRecordMetadata = buildRecordMetadata();
+    	Map<String, RecordMetadata> existingRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, existingRecordMetadata);
+        }};
+    	
+    	RecordMetadata newRecordMetadata = buildRecordMetadata();
+    	Acl non_owner_acl = new Acl();
+    	non_owner_acl.setOwners(NON_OWNERS);
+    	newRecordMetadata.setAcl(non_owner_acl);
+        
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(existingRecordMetadataMap);
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(existingRecordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(newRecordMetadata);
+        
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNERS)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+
+        verify(persistenceService, times(0)).updateMetadata(any(), any(), any(), any());
+        verify(auditLogger, times(1)).createOrUpdateRecordsFail(TEST_IDS);
+        verify(auditLogger, times(0)).createOrUpdateRecordsSuccess(TEST_IDS);
+        
+        assertEquals(TEST_ID, actualResponse.getUnAuthorizedRecordIds().get(0));
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getRecordIds().isEmpty());
+    }
+    
+    @Test
+    public void should_success_when_patchingRecordThatPassDataAuthorizationCheck_IntegrateOPA() {
+    	RecordMetadata existingRecordMetadata = buildRecordMetadata();
+    	Map<String, RecordMetadata> existingRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(TEST_ID, existingRecordMetadata);
+        }};
+    	
+    	RecordMetadata newRecordMetadata = buildRecordMetadata();
+        
+        RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
+        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(existingRecordMetadataMap);
+        when(persistenceService.updateMetadata(singletonList(newRecordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
+        .thenReturn(emptyList());
+        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        when(recordUtil.updateRecordMetaDataForPatchOperations(existingRecordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(newRecordMetadata);
+        
+        BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, Optional.empty());
+        
+        commonVerify(singletonList(TEST_ID), param.getOps());
+        verify(persistenceService, times(1)).updateMetadata(singletonList(newRecordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty());
+        verify(auditLogger, times(1)).createOrUpdateRecordsSuccess(TEST_IDS);
+        verify(auditLogger, times(0)).createOrUpdateRecordsFail(TEST_IDS);
+
+        assertEquals(TEST_ID, actualResponse.getRecordIds().get(0));
+        assertTrue(actualResponse.getNotFoundRecordIds().isEmpty());
+        assertTrue(actualResponse.getUnAuthorizedRecordIds().isEmpty());
+        assertTrue(actualResponse.getLockedRecordIds().isEmpty());
     }
 
     private static RecordMetadata buildRecordMetadata() {
