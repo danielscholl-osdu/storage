@@ -188,9 +188,18 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
             String idWithVersion = idMap.get(id);
             RecordMetadata metadata = existingRecords.get(id);
             if (metadata == null) continue;
+            
+            // For the patch operation, we are sending the existing data record and the patched data record to 
+            // the data authorization policy for permission evaluation. The user is allowed to do the patch operation
+            // when the data authorization policy decides the user has update permission to both data records. 
 
-            metadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, bulkUpdateOps, user, currentTimestamp);
+            // Add the existing data record for the data authorization policy evaluation
             updatedRecordsMetadata.add(metadata);
+            RecordMetadata newMetadata = this.recordUtil.updateRecordMetaDataForPatchOperations(metadata, bulkUpdateOps, user, currentTimestamp);
+            if (newMetadata != metadata) {
+            	// Add the patched data record for the data authorization policy evaluation
+            	updatedRecordsMetadata.add(newMetadata);
+            }
         }
 
         if (!updatedRecordsMetadata.isEmpty()) {
