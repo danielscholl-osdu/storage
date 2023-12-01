@@ -2,6 +2,9 @@ package org.opengroup.osdu.storage.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
+import com.google.gson.Gson;
+
+import org.apache.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -9,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -16,6 +20,8 @@ import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.opa.model.OpaError;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
@@ -31,9 +37,11 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static java.util.Collections.singletonList;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class PatchRecordsServiceImplTest {
@@ -42,6 +50,7 @@ public class PatchRecordsServiceImplTest {
     private static final String RECORD_ID2 = "tenant:record:Id2";
     private static final long RECORD_VERSION = 123L;
     private static final String[] OWNERS = new String[]{"owner1@company.com", "owner2@company.com"};
+    private static final String[] NON_OWNERS = new String[]{"not_owner@company.com"};
     private static final String[] VIEWERS = new String[]{"viewer1@company.com", "viewer2@company.com"};
     private static final String USER = "user";
     private static final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.empty();
@@ -333,6 +342,112 @@ public class PatchRecordsServiceImplTest {
         assertThat(result.getNotFoundRecordIds().size(), is(1));
         assertEquals(Collections.emptyList(), result.getFailedRecordIds());
         verify(ingestionService).createUpdateRecords(false, Collections.singletonList(patchedRecord1), USER, COLLABORATION_CONTEXT);
+    }
+    
+    @Test
+    public void shouldFailPatchExistingRecordMetaDataThatFailDataAuthorizationCheck_whenOpaIsEnabled() throws IOException {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        List<String> recordIds = singletonList(RECORD_ID1);
+        
+        RecordMetadata existingRecordMetadata = getRecordMetadata(RECORD_ID1);
+        existingRecordMetadata.setAcl(new Acl(VIEWERS, NON_OWNERS));
+        Map<String, RecordMetadata> existingRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(RECORD_ID1, existingRecordMetadata);
+        }};
+        
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"value\"}]"));
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecordMetadataMap);
+        
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNERS)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+        
+        try {
+        	sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
+        }
+    }
+    
+    @Test
+    public void shouldFailPatchWithNewRecordMetaDataThatFailDataAuthorizationCheck_whenOpaIsEnabled() throws IOException {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        List<String> recordIds = singletonList(RECORD_ID1);
+        
+        RecordMetadata existingRecordMetadata = getRecordMetadata(RECORD_ID1);
+        Map<String, RecordMetadata> existingRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(RECORD_ID1, existingRecordMetadata);
+        }};
+
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"replace\", \"path\":\"/acl/owners\", \"value\":"
+        		+ new Gson().toJson(NON_OWNERS) + "}]"));
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecordMetadataMap);
+        
+        List<OpaError> errors = new ArrayList<>();
+        errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
+        ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
+        List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
+        validationOutputRecords.add(validationOutputRecord1);
+        when(this.opaService.validateUserAccessToRecords(
+        		argThat( (List<RecordMetadata> recordsMetadata) -> {
+        			for (RecordMetadata recordMetadata : recordsMetadata) {
+        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNERS)) 
+        					return true;
+        				} 
+        			return false;
+        			} 
+        		), 
+        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
+        
+        try {
+        	sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+            fail("Should not succeed");
+        } catch (AppException e) {
+            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+            assertEquals("Access denied", e.getError().getReason());
+            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
+        }
+    }
+    
+    @Test
+    public void shouldSuccessPatchRecordMetaDataThatPassDataAuthorizationCheck_whenOpaIsEnabled() throws IOException {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        List<String> recordIds = singletonList(RECORD_ID1);
+        
+        RecordMetadata existingRecordMetadata = getRecordMetadata(RECORD_ID1);
+        Map<String, RecordMetadata> existingRecordMetadataMap = new HashMap<String, RecordMetadata>() {{
+            put(RECORD_ID1, existingRecordMetadata);
+        }};
+
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"replace\", \"path\":\"/acl/owners\", \"value\":"
+        		+ new Gson().toJson(OWNERS) + "}]"));
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecordMetadataMap);
+        
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        assertEquals(Collections.emptyList(), result.getNotFoundRecordIds());
+        assertEquals(Collections.emptyList(), result.getFailedRecordIds());
+        assertEquals(Collections.emptyList(), result.getErrors());
+        List<String> responseRecordIds = new LinkedList<>(Arrays.asList(RECORD_ID1+":"+RECORD_VERSION));
+        assertEquals(responseRecordIds, result.getRecordIds());
+        assertEquals(result.getRecordCount(), Integer.valueOf(1));
+        verify(persistenceService, times(1)).patchRecordsMetadata(anyMap(), eq(COLLABORATION_CONTEXT));
+        verify(auditLogger, times(1)).createOrUpdateRecordsSuccess(result.getRecordIds());
     }
 
     private MultiRecordInfo getMultiRecordInfo() {

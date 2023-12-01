@@ -143,7 +143,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         } else {
             Map<String, RecordMetadata> existingRecords = recordRepository.get(recordIds, collaborationContext);
             if (isOpaEnabled) {
-                this.validateUserAccessAndCompliancePolicyConstraints(existingRecords);
+                this.validateUserAccessAndCompliancePolicyConstraints(jsonPatch, existingRecords);
             } else {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);
             }
@@ -226,8 +226,24 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
         validateOwnerAccess(recordIds, recordsMetadata);
     }
 
-    private void validateUserAccessAndCompliancePolicyConstraints(Map<String, RecordMetadata> recordsMetadata) {
+    private void validateUserAccessAndCompliancePolicyConstraints(
+    		JsonPatch jsonPatch, Map<String, RecordMetadata> recordsMetadata) {
+    	
+    	// For the patch operation, we are sending the existing data record and the patched data record to 
+        // the data authorization policy for permission evaluation. The user is allowed to do the patch operation
+        // when the data authorization policy decides the user has update permission to both data records.
+    	
+    	// Add the existing data records for the data authorization policy evaluation
         List<RecordMetadata> recordMetadataList = new ArrayList<>(recordsMetadata.values());
+        
+        for (RecordMetadata metadata : recordsMetadata.values()) {
+        	RecordMetadata newRecordMetadata = JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, metadata);
+        	if (newRecordMetadata != metadata) {
+        		// Add the patched data record for the data authorization policy evaluation
+        		recordMetadataList.add(newRecordMetadata);
+        	}
+        }
+        
         if (!recordMetadataList.isEmpty()) {
             List<ValidationOutputRecord> dataAuthzResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.update);
             for (ValidationOutputRecord outputRecord : dataAuthzResult) {
