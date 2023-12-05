@@ -30,6 +30,8 @@ import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
+import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpMethod;
@@ -37,6 +39,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -54,6 +57,12 @@ import static org.mockito.ArgumentMatchers.eq;
 @WebMvcTest(controllers = PatchApi.class)
 @ComponentScan("org.opengroup.osdu")
 public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
+
+    @MockBean
+    private ICloudStorage cloudStorage;
+
+    @MockBean
+    private IRecordsMetadataRepository repo;
 
     private final ObjectMapper mapper = new ObjectMapper();
     private Gson gson = new Gson();
