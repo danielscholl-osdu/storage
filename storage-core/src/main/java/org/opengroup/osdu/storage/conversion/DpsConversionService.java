@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
@@ -31,8 +33,14 @@ import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordData;
+import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,15 +54,25 @@ import java.util.stream.Collectors;
 public class DpsConversionService {
 
     @Autowired
+    private ICloudStorage cloudStorage;
+
+    @Autowired
+    private IRecordsMetadataRepository recordsMetadataRepository;
+
+    @Autowired
     private CrsConversionService crsConversionService;
 
     @Autowired
     private JaxRsDpsLog logger;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
     private static final List<String> validAttributes = Arrays.asList("SpatialLocation", "ProjectedBottomHoleLocation", "GeographicBottomHoleLocation", "SpatialArea", "SpatialPoint", "ABCDBinGridSpatialLocation", "FirstLocation", "LastLocation", "LiveTraceOutline");
+    private static final String UNIT_OF_MEASURE_ID = "unitOfMeasureID";
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -191,9 +209,49 @@ public class DpsConversionService {
                 ConversionRecordObj.setConversionMessages(conversionStatus.getErrors());
                 ConversionRecordObj.setConvertStatus(ConvertStatus.valueOf(conversionStatus.getStatus()));
             }
+            // update persistableReefrence value using unitOfMeasureID property
+            this.updatePersistableReference(ConversionRecordObj);
             conversionRecords.add(ConversionRecordObj);
         }
         return conversionRecords;
+    }
+
+    private void updatePersistableReference(ConversionRecord conversionRecord) {
+        JsonObject record = conversionRecord.getRecordJsonObject();
+        JsonArray metaArray = record.getAsJsonArray(Constants.META);
+        if (metaArray == null) {
+            return;
+        }
+        for (JsonElement item : metaArray) {
+            JsonObject metaItem = (JsonObject) item;
+            JsonElement unitOfMeasureIDElement = metaItem.get(UNIT_OF_MEASURE_ID);
+            if (unitOfMeasureIDElement == null || unitOfMeasureIDElement.getAsString().equals("")) {
+                return;
+            }
+            String unitOfMeasureID = unitOfMeasureIDElement.getAsString().replaceAll(":$", "");
+            String persistableReference = this.getPersistableReferenceByUnitOfMeasureID(unitOfMeasureID);
+            if (persistableReference.equals("")) {
+                return;
+            }
+            metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, persistableReference);
+        }
+
+    }
+
+    private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
+        RecordMetadata recordMetadata = this.recordsMetadataRepository.get(unitOfMeasureID, null);
+        if (recordMetadata == null) {
+            this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
+            return "";
+        }
+        RecordData recordData = null;
+        try {
+            recordData = objectMapper.readValue(cloudStorage.read(recordMetadata, recordMetadata.getLatestVersion(), false), RecordData.class);
+        } catch (JsonProcessingException e) {
+            this.logger.warning(String.format("Error occured during parsing record data for unitOfMeasureID: %s, error: %s", unitOfMeasureID, e.getMessage()));
+            return "";
+        }
+        return recordData.getData().get(StringUtils.capitalize(Constants.PERSISTABLE_REFERENCE)).toString();
     }
 
     private void checkMismatchAndLogMissing(List<JsonObject> originalRecords, List<ConversionRecord> convertedRecords) {
