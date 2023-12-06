@@ -33,12 +33,14 @@ public class AzureBootstrapConfig {
     @Value("${azure.cosmosdb.database}")
     private String cosmosDBName;
 
+    @Value("${azure.blobStore.container}")
+    private String containerName;
+
     @Bean
     @Named("STORAGE_CONTAINER_NAME")
     public String containerName() {
-        return "opendes";
+        return containerName;
     }
-
 
     @Bean
     @Named("KEY_VAULT_URL")
