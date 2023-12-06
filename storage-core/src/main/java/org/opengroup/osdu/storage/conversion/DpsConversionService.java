@@ -33,10 +33,8 @@ import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordData;
-import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
-import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.storage.service.QueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -54,10 +52,7 @@ import java.util.stream.Collectors;
 public class DpsConversionService {
 
     @Autowired
-    private ICloudStorage cloudStorage;
-
-    @Autowired
-    private IRecordsMetadataRepository recordsMetadataRepository;
+    private QueryService queryService;
 
     @Autowired
     private CrsConversionService crsConversionService;
@@ -95,6 +90,8 @@ public class DpsConversionService {
                 List<ConversionRecord> metaConvertedRecords = new ArrayList<>();
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 metaConvertedRecords = this.getConversionRecords(crsConversionResult);
+                // update persistableReefrence value using unitOfMeasureID property
+                this.updatePersistableReference(metaConvertedRecords);
                 this.unitConversionService.convertUnitsToSI(metaConvertedRecords);
                 this.datesConversionService.convertDatesToISO(metaConvertedRecords);
                 addOrUpdateRecordStatus(conversionResults, metaConvertedRecords);
@@ -209,49 +206,57 @@ public class DpsConversionService {
                 ConversionRecordObj.setConversionMessages(conversionStatus.getErrors());
                 ConversionRecordObj.setConvertStatus(ConvertStatus.valueOf(conversionStatus.getStatus()));
             }
-            // update persistableReefrence value using unitOfMeasureID property
-            this.updatePersistableReference(ConversionRecordObj);
             conversionRecords.add(ConversionRecordObj);
         }
         return conversionRecords;
     }
 
-    private void updatePersistableReference(ConversionRecord conversionRecord) {
-        JsonObject record = conversionRecord.getRecordJsonObject();
-        JsonArray metaArray = record.getAsJsonArray(Constants.META);
-        if (metaArray == null) {
-            return;
-        }
-        for (JsonElement item : metaArray) {
-            JsonObject metaItem = (JsonObject) item;
-            JsonElement unitOfMeasureIDElement = metaItem.get(UNIT_OF_MEASURE_ID);
-            if (unitOfMeasureIDElement == null || unitOfMeasureIDElement.getAsString().equals("")) {
+    private void updatePersistableReference(List<ConversionRecord> conversionRecords) {
+        for (ConversionRecord conversionRecord : conversionRecords) {
+            JsonObject record = conversionRecord.getRecordJsonObject();
+            JsonArray metaArray = record.getAsJsonArray(Constants.META);
+            if (metaArray == null) {
                 return;
             }
-            String unitOfMeasureID = unitOfMeasureIDElement.getAsString().replaceAll(":$", "");
-            String persistableReference = this.getPersistableReferenceByUnitOfMeasureID(unitOfMeasureID);
-            if (persistableReference.equals("")) {
-                return;
+            for (JsonElement item : metaArray) {
+                JsonObject metaItem = (JsonObject) item;
+                JsonElement unitOfMeasureIDElement = metaItem.get(UNIT_OF_MEASURE_ID);
+                if (unitOfMeasureIDElement == null || unitOfMeasureIDElement.getAsString().equals("")) {
+                    return;
+                }
+                String unitOfMeasureID = unitOfMeasureIDElement.getAsString().replaceAll(":$", "");
+                String persistableReference = this.getPersistableReferenceByUnitOfMeasureID(unitOfMeasureID);
+                if (persistableReference.equals("")) {
+                    return;
+                }
+                // update persistableReference to corresponding to unitOfMeasureID
+                metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, persistableReference);
             }
-            metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, persistableReference);
         }
-
     }
 
     private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
-        RecordMetadata recordMetadata = this.recordsMetadataRepository.get(unitOfMeasureID, null);
-        if (recordMetadata == null) {
+        String record = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
+        if (record == null) {
             this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
             return "";
         }
-        RecordData recordData = null;
+        Record recordObj = null;
         try {
-            recordData = objectMapper.readValue(cloudStorage.read(recordMetadata, recordMetadata.getLatestVersion(), false), RecordData.class);
+            recordObj = objectMapper.readValue(record, Record.class);
         } catch (JsonProcessingException e) {
-            this.logger.warning(String.format("Error occured during parsing record data for unitOfMeasureID: %s, error: %s", unitOfMeasureID, e.getMessage()));
+            this.logger.error(String.format("Error occured during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
             return "";
         }
-        return recordData.getData().get(StringUtils.capitalize(Constants.PERSISTABLE_REFERENCE)).toString();
+        Map<String, Object> recordData = recordObj.getData();
+        if (recordData == null) {
+            return "";
+        }
+        Object persistableReference = recordData.get(StringUtils.capitalize(Constants.PERSISTABLE_REFERENCE));
+        if (persistableReference == null) {
+            return "";
+        }
+        return persistableReference.toString();
     }
 
     private void checkMismatchAndLogMissing(List<JsonObject> originalRecords, List<ConversionRecord> convertedRecords) {
