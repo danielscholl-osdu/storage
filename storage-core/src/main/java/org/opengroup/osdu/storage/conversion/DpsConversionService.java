@@ -34,8 +34,11 @@ import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.conversion.cache.RecordCache;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +59,13 @@ public class DpsConversionService {
 
     @Autowired
     private CrsConversionService crsConversionService;
+
+    @Lazy
+    @Autowired
+    private RecordCache cache;
+
+    @Autowired
+    private DpsHeaders headers;
 
     @Autowired
     private JaxRsDpsLog logger;
@@ -236,19 +246,25 @@ public class DpsConversionService {
     }
 
     private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
-        String record = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
-        if (record == null) {
-            this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
-            return "";
+        Record record = null;
+        String cacheKey = String.format("%s-record-%s", this.headers.getPartitionId(), unitOfMeasureID);
+        if (cache != null && cache.containsKey(cacheKey)) {
+            record = cache.get(cacheKey);
+        } else {
+            String blob = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
+            if (blob == null) {
+                this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
+                return "";
+            }
+            try {
+                record = objectMapper.readValue(blob, Record.class);
+            } catch (JsonProcessingException e) {
+                this.logger.error(String.format("Error occured during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
+                return "";
+            }
+            this.cache.put(cacheKey, record);
         }
-        Record recordObj = null;
-        try {
-            recordObj = objectMapper.readValue(record, Record.class);
-        } catch (JsonProcessingException e) {
-            this.logger.error(String.format("Error occured during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
-            return "";
-        }
-        Map<String, Object> recordData = recordObj.getData();
+        Map<String, Object> recordData = record.getData();
         if (recordData == null) {
             return "";
         }
