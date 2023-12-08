@@ -314,6 +314,24 @@ curl --request POST \
 ```
 </details>
 
+### unitOfMeasureID is now preferred unit declaration
+The UoM Meta[] schema supports association of a Unit of Measure to one or more attributes in a JSON record. The core of the UoM schema is the unitOfMeasureID attribute which associates attributes defined in propertyNames to the ID of the UOM in the Unit of Measure Reference list e.g. for a Wellbore record
+```
+{
+            "kind": "Unit",
+            "name": "ft",
+            "persistableReference": "",
+            "propertyNames": [
+                "FacilitySpecifications[0].FacilitySpecificationQuantity",
+                "VerticalMeasurements[0].VerticalMeasurement"
+            ],
+            "unitOfMeasureID": "osdu:reference-data--UnitOfMeasure:ft:"
+        }
+```
+`unitOfMeasureID` is taking precedence over `persistableReference` attribute.
+`persistableReference` attribute is now updating in fly by fetching `persistableReference` attribute corresponding to `unitOfMeasureID` when `unitOfMeasureID` attribute exists.
+
+
 [Back to table of contents](#TOC)
 
 ## Records <a name="record"></a>
