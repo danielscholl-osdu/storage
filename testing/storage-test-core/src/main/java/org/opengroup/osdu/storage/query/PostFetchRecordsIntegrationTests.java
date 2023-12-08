@@ -42,7 +42,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     protected static final String PERSISTABLE_REFERENCE_UNIT_Z = "{\"baseMeasurement\":{\"ancestry\":\"Length\",\"type\":\"UM\"},\"scaleOffset\":{\"offset\":0.0,\"scale\":0.3048},\"symbol\":\"ft\",\"type\":\"USO\"}";
     private static final String DATETIME_PERSISTABLE_REFERENCE = "{\"type\":\"DAT\",\"format\":\"YYYY-MM-DD\"}";
     private static final String UNIT_PERSISTABLE_REFERENCE = "{\"abcd\":{\"a\":0.0,\"b\":0.3048,\"c\":1.0,\"d\":0.0},\"symbol\":\"ft\",\"baseMeasurement\":{\"ancestry\":\"L\",\"type\":\"UM\"},\"type\":\"UAD\"}";
-    private static final String UNIT_OF_MEASURE_ID = "osdu:reference-data--UnitOfMeasure:ft:";
+    private static final String UNIT_OF_MEASURE_ID = String.format("%s:reference-data--UnitOfMeasure:ft:", TenantUtils.getTenantName());
 
     public static void classSetup(String token) throws Exception {
         LegalTagUtils.create(LEGAL_TAG, token);
