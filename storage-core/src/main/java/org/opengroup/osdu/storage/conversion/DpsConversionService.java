@@ -250,7 +250,6 @@ public class DpsConversionService {
         if (this.cache != null) {
             String cacheKey = this.cache.getCacheKey(this.headers.getPartitionId(), recordId);
             record = this.cache.get(cacheKey);
-            System.out.println(String.format("retrieved from cache, record: %s", record));
         }
         return record;
     }
