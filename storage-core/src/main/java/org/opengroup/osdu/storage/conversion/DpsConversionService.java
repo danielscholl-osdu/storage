@@ -245,12 +245,27 @@ public class DpsConversionService {
         }
     }
 
+    private Record getRecordFromCache(String recordId) {
+        Record record = null;
+        if (this.cache != null) {
+            String cacheKey = this.cache.getCacheKey(this.headers.getPartitionId(), recordId);
+            record = this.cache.get(cacheKey);
+            System.out.println(String.format("retrieved from cache, record: %s", record));
+        }
+        return record;
+    }
+
+    private void putRecordToCache(String recordId, Record record) {
+        if (this.cache != null) {
+            String cacheKey = this.cache.getCacheKey(this.headers.getPartitionId(), recordId);
+            this.cache.put(cacheKey, record);
+        }
+    }
+
     private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
         Record record = null;
-        String cacheKey = String.format("%s-record-%s", this.headers.getPartitionId(), unitOfMeasureID);
-        if (cache != null && cache.containsKey(cacheKey)) {
-            record = cache.get(cacheKey);
-        } else {
+        record = this.getRecordFromCache(unitOfMeasureID);
+        if (record == null) {
             String blob = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
             if (blob == null) {
                 this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
@@ -262,7 +277,7 @@ public class DpsConversionService {
                 this.logger.error(String.format("Error occured during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
                 return "";
             }
-            this.cache.put(cacheKey, record);
+            this.putRecordToCache(unitOfMeasureID, record);
         }
         Map<String, Object> recordData = record.getData();
         if (recordData == null) {

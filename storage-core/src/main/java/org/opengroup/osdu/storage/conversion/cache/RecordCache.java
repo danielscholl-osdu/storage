@@ -16,4 +16,8 @@ public class RecordCache extends VmCache<String, Record> {
     public boolean containsKey(final String key) {
         return this.get(key) != null;
     }
+
+    public String getCacheKey(String partitionId, String recordId) {
+        return String.format("%s-record-%s", partitionId, recordId);
+    }
 }
