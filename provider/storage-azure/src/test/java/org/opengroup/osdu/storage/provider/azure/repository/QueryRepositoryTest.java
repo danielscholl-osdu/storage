@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStore;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
@@ -24,7 +23,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import javax.swing.text.html.Option;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -60,7 +58,7 @@ class QueryRepositoryTest {
 
     @BeforeEach
     public void setUp() {
-        Mockito.when(dpsHeaders.getPartitionId()).thenReturn(dataPartitionID);
+        when(dpsHeaders.getPartitionId()).thenReturn(dataPartitionID);
         ReflectionTestUtils.setField(queryRepository, "record", recordMetadataRepository);
     }
 
@@ -68,7 +66,7 @@ class QueryRepositoryTest {
     void testGetAllKindsNoRecords() {
         // No records found
         List<String> result = new ArrayList<>();
-        Mockito.when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result)); //th
+        when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result)); //th
 
         DatastoreQueryResult datastoreQueryResult = queryRepository.getAllKinds(null, null);
 
@@ -79,7 +77,7 @@ class QueryRepositoryTest {
     void testGetAllKindsOneRecord() {
         List<String> result = new ArrayList<>();
         result.add(KIND1);
-        Mockito.when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result)); //th
+        when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result)); //th
 
         DatastoreQueryResult datastoreQueryResult = queryRepository.getAllKinds(null, null);
 
@@ -93,7 +91,7 @@ class QueryRepositoryTest {
         result.add(KIND1);
         result.add(KIND2);
 
-        Mockito.when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result));
+        when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result));
 
         DatastoreQueryResult datastoreQueryResult = queryRepository.getAllKinds(null, null);
 
@@ -195,7 +193,7 @@ class QueryRepositoryTest {
         recordMetadataDocs.add(new RecordMetadataDoc("id2", createRecord("id2")));
         List<String> expectedResponse = Arrays.asList("id1", "id2");
 
-        when(recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status("kind","active", Optional.empty())).thenReturn(recordMetadataDocs);
+        when(recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status("kind", "active", Optional.empty())).thenReturn(recordMetadataDocs);
 
         DatastoreQueryResult datastoreQueryResult = queryRepository.getAllRecordIdsFromKind("kind", null, null, Optional.empty());
 

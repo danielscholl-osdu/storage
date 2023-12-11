@@ -4,7 +4,6 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +11,7 @@ import org.springframework.data.domain.Sort;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FindQuerySpecGeneratorTest {
@@ -36,7 +36,7 @@ class FindQuerySpecGeneratorTest {
     @Test
     void generateWithQueryTextShouldCreateQueryWithoutOrdering_whenOrderingIsNotPresent() {
         CosmosStoreQuery query = mock(CosmosStoreQuery.class);
-        Mockito.when(query.getSort()).thenReturn(Sort.unsorted());
+        when(query.getSort()).thenReturn(Sort.unsorted());
 
         String queryText = "Select id, f1, f2, f3";
         String expectedQuery = "Select id, f1, f2, f3 ";
@@ -50,7 +50,7 @@ class FindQuerySpecGeneratorTest {
     void generateWithQueryTextShouldThrowIllegalArgumentsException_whenIgnoreCaseIsPresentOnSort() {
         //arrange
         CosmosStoreQuery query = mock(CosmosStoreQuery.class);
-        Mockito.when(query.getSort()).thenReturn(Sort.by(Sort.Order.by("id").ignoreCase()));
+        when(query.getSort()).thenReturn(Sort.by(Sort.Order.by("id").ignoreCase()));
 
         //act
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -62,7 +62,7 @@ class FindQuerySpecGeneratorTest {
     @Test
     void generateShouldGenerateQuery_whenCosmosQueryIsProvided() {
         CosmosStoreQuery query = mock(CosmosStoreQuery.class);
-        Mockito.when(query.getSort()).thenReturn(Sort.by("id"));
+        when(query.getSort()).thenReturn(Sort.by("id"));
         String expectedQuery = "SELECT * FROM c ORDER BY c.id ASC";
 
         SqlQuerySpec sqlQuerySpec = findQuerySpecGenerator.generate(query);
