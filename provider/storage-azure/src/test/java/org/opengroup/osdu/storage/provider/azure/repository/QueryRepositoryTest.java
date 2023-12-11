@@ -66,6 +66,7 @@ class QueryRepositoryTest {
     void testGetAllKindsNoRecords() {
         // No records found
         List<String> result = new ArrayList<>();
+        Mockito.when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result)); //th
 
         DatastoreQueryResult datastoreQueryResult = queryRepository.getAllKinds(null, null);
 
