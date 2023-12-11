@@ -15,41 +15,36 @@
 package org.opengroup.osdu.storage.provider.azure;
 
 import com.microsoft.azure.servicebus.primitives.ServiceBusException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.publisherFacade.MessagePublisher;
-import org.opengroup.osdu.azure.publisherFacade.PubsubConfiguration;
-import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.azure.di.EventGridConfig;
-import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 import org.opengroup.osdu.storage.provider.azure.di.PublisherConfig;
+import org.opengroup.osdu.storage.provider.azure.di.ServiceBusConfig;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.mockito.MockitoAnnotations.initMocks;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MessageBusImplTest {
     private static final String TOPIC_NAME = "recordstopic";
     private final static String RECORDS_CHANGED_EVENT_SUBJECT = "RecordsChanged";
     private final static String RECORDS_CHANGED_EVENT_TYPE = "RecordsChanged";
     private final static String RECORDS_CHANGED_EVENT_DATA_VERSION = "1.0";
-
+    private static final String PUBSUB_BATCH_SIZE = "10";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
-    private final static String FEATURE_NAME = "collaborations-enabled";
-    private final static String PARTITION_ID = "partitionId";
-
     @Mock
     private MessagePublisher messagePublisher;
     @Mock
@@ -59,18 +54,13 @@ public class MessageBusImplTest {
     @Mock
     private PublisherConfig publisherConfig;
     @Mock
-    public IFeatureFlag iCollaborationFeatureFlag;
-    @Mock
-    private PubsubConfiguration pubsubConfiguration;
-    @Mock
     private DpsHeaders dpsHeaders;
     @InjectMocks
-    private MessageBusImpl sut;
+    private MessageBusImpl messageBus;
 
-    @Before
+    @BeforeEach
     public void init() throws ServiceBusException, InterruptedException {
-        initMocks(this);
-        doReturn("10").when(publisherConfig).getPubSubBatchSize();
+        doReturn(PUBSUB_BATCH_SIZE).when(publisherConfig).getPubSubBatchSize();
         doReturn(TOPIC_NAME).when(eventGridConfig).getEventGridTopic();
         doReturn(RECORDS_CHANGED_EVENT_SUBJECT).when(eventGridConfig).getEventSubject();
         doReturn(RECORDS_CHANGED_EVENT_DATA_VERSION).when(eventGridConfig).getEventDataVersion();
@@ -78,30 +68,36 @@ public class MessageBusImplTest {
     }
 
     @Test
-    public void should_publishToMessagePublisher() {
+    public void publishMessage_should_publishesInBatches_when_messageSizeGreaterThanBatchSize() {
         // Set Up
         String[] ids = {"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11"};
         String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5", "kind6", "kind7", "kind8", "kind9", "kind10", "kind11"};
-        doNothing().when(messagePublisher).publishMessage(eq(dpsHeaders), any(), any());
-
         PubSubInfo[] pubSubInfo = new PubSubInfo[11];
         for (int i = 0; i < ids.length; ++i) {
             pubSubInfo[i] = getPubsInfo(ids[i], kinds[i]);
         }
-        sut.publishMessage(dpsHeaders, pubSubInfo);
+
+        messageBus.publishMessage(dpsHeaders, pubSubInfo);
+
+        int batch_size = Integer.parseInt(PUBSUB_BATCH_SIZE);
+        Mockito.verify(messagePublisher, times(ids.length % batch_size + 1)).publishMessage(eq(dpsHeaders), any(), any());
     }
 
     @Test
     public void should_publishToOnlyRecordsEventTopic_WhenCollaborationContextIsProvided() {
         RecordChangedV2[] recordChangedV2s = setUpRecordsChangedV2();
-        sut.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, recordChangedV2s);
+
+        messageBus.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, recordChangedV2s);
+
         verify(messagePublisher, times(1)).publishMessage(any(), any(), eq(COLLABORATION_CONTEXT));
     }
 
     @Test
     public void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
         PubSubInfo[] pubSubInfo = setupPubSubInfo();
-        sut.publishMessage(dpsHeaders, pubSubInfo);
+
+        messageBus.publishMessage(dpsHeaders, pubSubInfo);
+
         verify(messagePublisher, times(1)).publishMessage(any(), any(), eq(Optional.empty()));
     }
 
