@@ -1,13 +1,12 @@
 package org.opengroup.osdu.storage.provider.azure.util;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -18,42 +17,29 @@ import java.util.Set;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-public class EntitlementsHelperTest {
+@ExtendWith(MockitoExtension.class)
+class EntitlementsHelperTest {
 
     private static final String OWNER_ACL = "owner_acl";
     private static final String VIEWER_ACL = "viewer_acl";
 
     private static final String USER = "test_user";
-
+    private final ArgumentCaptor<Set<String>> captor = ArgumentCaptor.forClass(Set.class);
     @Mock
     private DpsHeaders headers;
-
     @Mock
     private EntitlementsAndCacheServiceAzure dataEntitlementsService;
-
     @InjectMocks
     private EntitlementsHelper entitlementsHelper;
-
     @Mock
     private RecordMetadata recordMetadata;
-
     @Mock
     private Acl acl;
 
-    private final ArgumentCaptor<Set<String>> captor = ArgumentCaptor.forClass(Set.class);
-
-
-    @Before
-    public void setup() {
-        when(recordMetadata.getAcl()).thenReturn(acl);
-        when(recordMetadata.getUser()).thenReturn(USER);
-        when(acl.getOwners()).thenReturn(new String[]{OWNER_ACL});
-        when(acl.getViewers()).thenReturn(new String[]{VIEWER_ACL});
-    }
-
     @Test
-    public void hasOwnerAccessToRecord_shouldReturnTrue_ifUserIsOwner() {
+    void hasOwnerAccessToRecord_shouldReturnTrue_ifUserIsOwner() {
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(acl.getOwners()).thenReturn(new String[]{OWNER_ACL});
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(true);
 
         assertTrue(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata));
@@ -64,7 +50,9 @@ public class EntitlementsHelperTest {
     }
 
     @Test
-    public void hasOwnerAccessToRecord_shouldReturnFalse_ifUserIsNotOwner() {
+    void hasOwnerAccessToRecord_shouldReturnFalse_ifUserIsNotOwner() {
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(acl.getOwners()).thenReturn(new String[]{OWNER_ACL});
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(false);
 
         assertFalse(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata));
@@ -75,7 +63,7 @@ public class EntitlementsHelperTest {
     }
 
     @Test
-    public void hasOwnerAccessToRecord_shouldReturnFalse_ifRecordIsNull() {
+    void hasOwnerAccessToRecord_shouldReturnFalse_ifRecordIsNull() {
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(false);
 
         assertFalse(entitlementsHelper.hasOwnerAccessToRecord(null));
@@ -85,7 +73,7 @@ public class EntitlementsHelperTest {
     }
 
     @Test
-    public void hasOwnerAccessToRecord_shouldReturnFalse_ifRecordsAclsAreNull() {
+    void hasOwnerAccessToRecord_shouldReturnFalse_ifRecordsAclsAreNull() {
         when(recordMetadata.getAcl()).thenReturn(null);
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(false);
 
@@ -97,7 +85,11 @@ public class EntitlementsHelperTest {
 
     //-----
     @Test
-    public void hasViewerAccessToRecord_shouldReturnTrue_ifUserIsViewer() {
+    void hasViewerAccessToRecord_shouldReturnTrue_ifUserIsViewer() {
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(recordMetadata.getUser()).thenReturn(USER);
+        when(acl.getViewers()).thenReturn(new String[]{VIEWER_ACL});
+
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(true);
 
         assertTrue(entitlementsHelper.hasViewerAccessToRecord(recordMetadata));
@@ -108,7 +100,11 @@ public class EntitlementsHelperTest {
     }
 
     @Test
-    public void hasViewerAccessToRecord_shouldReturnTrue_ifUserIsNotViewerButOwner() {
+    void hasViewerAccessToRecord_shouldReturnTrue_ifUserIsNotViewerButOwner() {
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(recordMetadata.getUser()).thenReturn(USER);
+        when(acl.getOwners()).thenReturn(new String[]{OWNER_ACL});
+        when(acl.getViewers()).thenReturn(new String[]{VIEWER_ACL});
         when(dataEntitlementsService.hasAccessToData(eq(headers),
                 argThat((ArgumentMatcher<Set>) set -> set.contains(VIEWER_ACL)))).thenReturn(false);
         when(dataEntitlementsService.hasAccessToData(eq(headers),
@@ -126,7 +122,10 @@ public class EntitlementsHelperTest {
 
 
     @Test
-    public void hasViewerAccessToRecord_shouldReturnTrue_ifUserIsNotViewerButCreator() {
+    void hasViewerAccessToRecord_shouldReturnTrue_ifUserIsNotViewerButCreator() {
+        when(recordMetadata.getAcl()).thenReturn(acl);
+        when(recordMetadata.getUser()).thenReturn(USER);
+        when(acl.getViewers()).thenReturn(new String[]{VIEWER_ACL});
         when(dataEntitlementsService.hasAccessToData(eq(headers),
                 argThat((ArgumentMatcher<Set>) set -> set.contains(VIEWER_ACL)))).thenReturn(false);
         when(headers.getUserEmail()).thenReturn(USER);
@@ -138,7 +137,7 @@ public class EntitlementsHelperTest {
     }
 
     @Test
-    public void hasViewerAccessToRecord_shouldReturnFalse_ifRecordIsNull() {
+    void hasViewerAccessToRecord_shouldReturnFalse_ifRecordIsNull() {
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(false);
 
         assertFalse(entitlementsHelper.hasViewerAccessToRecord(null));
@@ -150,7 +149,7 @@ public class EntitlementsHelperTest {
     }
 
     @Test
-    public void hasViewerAccessToRecord_shouldReturnFalse_ifRecordsAclsAreNull() {
+    void hasViewerAccessToRecord_shouldReturnFalse_ifRecordsAclsAreNull() {
         when(recordMetadata.getAcl()).thenReturn(null);
         when(dataEntitlementsService.hasAccessToData(eq(headers), anySet())).thenReturn(false);
 
