@@ -16,6 +16,7 @@ import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
@@ -36,7 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class CloudStorageImplTest {
+class CloudStorageImplTest {
 
     private static final String DATA_PARTITION = "dp";
     private static final String CONTAINER = "opendes";
@@ -63,19 +64,19 @@ public class CloudStorageImplTest {
     private CloudStorageImpl cloudStorage;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         ReflectionTestUtils.setField(cloudStorage, "containerName", CONTAINER);
     }
 
     @Test
-    public void shouldNotInvokeDeleteOnBlobStoreWhenNoVersion() {
+    void shouldNotInvokeDeleteOnBlobStoreWhenNoVersion() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         cloudStorage.delete(recordMetadata);
         verify(blobStore, Mockito.never()).deleteFromStorageContainer(any(String.class), any(String.class), any(String.class));
     }
 
     @Test
-    public void shouldNotInvokeDeleteOnBlobStoreWhenReferencedFromOtherDocuments() {
+    void shouldNotInvokeDeleteOnBlobStoreWhenReferencedFromOtherDocuments() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         recordMetadata.setGcsVersionPaths(List.of("path1"));
         when(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata)).thenReturn(true);
@@ -85,7 +86,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void shouldThrowAppExceptionWhenDeleteWithNoOwnerAccess() {
+    void shouldThrowAppExceptionWhenDeleteWithNoOwnerAccess() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1", "path2"));
         when(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata)).thenReturn(false);
@@ -96,7 +97,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void shouldDeleteAllVersionsFromBlobStoreUponDeleteAction() {
+    void shouldDeleteAllVersionsFromBlobStoreUponDeleteAction() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1", "path2"));
 
@@ -112,7 +113,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void shouldWriteToBlob_when_writeIsCalled() throws InterruptedException {
+    void shouldWriteToBlob_when_writeIsCalled() throws InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(3);
         ReflectionTestUtils.setField(cloudStorage, "threadPool", executorService);
 
@@ -225,7 +226,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void revertObjectMetadata_isSuccessful_whenAllRequirementsAreMet() {
+    void revertObjectMetadata_isSuccessful_whenAllRequirementsAreMet() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
         Acl acl = Acl.builder()
@@ -245,7 +246,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void revertObjectMetadataThrowsInternalServerException_when_recordRepositoryUpdateFails() {
+    void revertObjectMetadataThrowsInternalServerException_when_recordRepositoryUpdateFails() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         Map<String, org.opengroup.osdu.core.common.model.entitlements.Acl> originalAcls = new HashMap<>();
         Acl acl = Acl.builder()
@@ -257,15 +258,17 @@ public class CloudStorageImplTest {
         List<RecordMetadata> recordMetadataList = Collections.singletonList(recordMetadata);
         when(recordRepository.createOrUpdate(any(), any())).
                 thenThrow(RuntimeException.class);
+        
+        Optional<CollaborationContext> context = Optional.empty();
         AppException exception = assertThrows(AppException.class, () ->
-                cloudStorage.revertObjectMetadata(recordMetadataList, originalAcls, Optional.empty()));
+                cloudStorage.revertObjectMetadata(recordMetadataList, originalAcls, context));
 
         assertEquals(originalAcls.get("id1"), recordMetadataList.get(0).getAcl());
         assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, exception.getError().getCode());
     }
 
     @Test
-    public void shouldReadSuccessfullyFromBlobstore_when_readRecords() {
+    void shouldReadSuccessfullyFromBlobstore_when_readRecords() {
         Map<String, String> objects = new HashMap<>();
         objects.put("id1", "path1");
         objects.put("id2", "path2");
@@ -289,11 +292,10 @@ public class CloudStorageImplTest {
                 .readFromStorageContainer(DATA_PARTITION, "path2", CONTAINER);
 
         assertEquals(2, recordIdContentMap.size());
-
     }
 
     @Test
-    public void shouldAttemptRestoreBlob_when_blobStoreReadThrowsException() {
+    void shouldAttemptRestoreBlob_when_blobStoreReadThrowsException() {
         Map<String, String> objectsToRead = new HashMap<>();
         objectsToRead.put("id1", "path1");
         objectsToRead.put("id2", "path2");
@@ -322,7 +324,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void hasAccessReturnsTrue_when_accessToAllRecordsIsPresent() {
+    void hasAccessReturnsTrue_when_accessToAllRecordsIsPresent() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         RecordMetadata recordMetadata2 = setUpRecordMetadata("id2");
         recordMetadata.setStatus(RecordState.active);
@@ -339,7 +341,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void hasAccessReturnsTrue_when_accessToOneActiveRecordIsPresent() {
+    void hasAccessReturnsTrue_when_accessToOneActiveRecordIsPresent() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         RecordMetadata recordMetadata2 = setUpRecordMetadata("id2");
         recordMetadata.setStatus(RecordState.active);
@@ -356,7 +358,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void hasAccessReturnsFalse_when_accessToAnyRecordIsNotPresent() {
+    void hasAccessReturnsFalse_when_accessToAnyRecordIsNotPresent() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         RecordMetadata recordMetadata2 = setUpRecordMetadata("id2");
         recordMetadata.setStatus(RecordState.active);
@@ -374,14 +376,14 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void hasAccess_returnsTrue_whenNoRecordsPresent() {
+    void hasAccess_returnsTrue_whenNoRecordsPresent() {
         boolean access = cloudStorage.hasAccess();
 
         assertTrue(access);
     }
 
     @Test
-    public void hasAccess_returnsTrue_whenRecordsAreDeleted() {
+    void hasAccess_returnsTrue_whenRecordsAreDeleted() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         recordMetadata.setStatus(RecordState.deleted);
 
@@ -391,7 +393,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void hasAccess_returnsTrue_whenRecordsHaveNoVersion() {
+    void hasAccess_returnsTrue_whenRecordsHaveNoVersion() {
         RecordMetadata recordMetadata = setUpRecordMetadata("id1");
         recordMetadata.setStatus(RecordState.active);
 
@@ -401,7 +403,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void deleteVersionIsSuccess_when_ownerAccessIsPresent() {
+    void deleteVersionIsSuccess_when_ownerAccessIsPresent() {
         RecordMetadata recordMeta = setUpRecordMetadata("recordId");
         recordMeta.setGcsVersionPaths(List.of("1"));
         when(entitlementsHelper.hasOwnerAccessToRecord(recordMeta)).thenReturn(true);
@@ -415,7 +417,7 @@ public class CloudStorageImplTest {
 
 
     @Test
-    public void getHash_returnsHashForACollection() {
+    void getHash_returnsHashForACollection() {
         String recordId = "recordId";
         RecordData recordData = createAndGetRandomRecordData();
         RecordMetadata recordMetadata = setUpRecordMetadata(recordId);
@@ -436,7 +438,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void getHash_skipsRecord_whenExceptionOccursForOneItemInList() {
+    void getHash_skipsRecord_whenExceptionOccursForOneItemInList() {
         String recordId = "recordId";
         RecordData recordData = createAndGetRandomRecordData();
         RecordMetadata recordMetadata = setUpRecordMetadata(recordId);
@@ -467,7 +469,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void isDuplicated_returnsTrue_whenDuplicatedRecordsFound() {
+    void isDuplicated_returnsTrue_whenDuplicatedRecordsFound() {
         Map<String, String> hashMap = new HashMap<>();
         RecordData recordData = createAndGetRandomRecordData();
         RecordMetadata recordMetadata = setUpRecordMetadata("recordId");
@@ -486,7 +488,7 @@ public class CloudStorageImplTest {
     }
 
     @Test
-    public void isDuplicated_returnsFalse_whenDuplicatedRecordsNotFound() {
+    void isDuplicated_returnsFalse_whenDuplicatedRecordsNotFound() {
         Map<String, String> hashMap = new HashMap<>();
         RecordData recordData = createAndGetRandomRecordData();
         RecordMetadata recordMetadata = setUpRecordMetadata("recordId");
