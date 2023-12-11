@@ -49,7 +49,7 @@ class LegalComplianceChangeUpdateTest {
     }
 
     @Test
-    void shouldRaiseInRetrieveDataFromMessage() throws Exception {
+    void shouldRaiseInRetrieveDataFromMessage() {
         when(message.getMessageBody()).thenReturn(getMessageBody(emptyMessage));
         try {
             legalComplianceChangeUpdate.updateCompliance(message);

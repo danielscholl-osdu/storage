@@ -1,7 +1,6 @@
 package org.opengroup.osdu.storage.provider.azure.util;
 
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +15,7 @@ import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.util.ReflectionUtils.findField;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,7 +30,7 @@ class RecordUtilTest {
 
     private static final int RECORD_ID_MAX_LENGTH = 10;
 
-    private RecordUtil recordUtil = new RecordUtil();
+    private final RecordUtil recordUtil = new RecordUtil();
 
     @BeforeEach
     void setup() {
@@ -44,7 +44,7 @@ class RecordUtilTest {
         assertEquals(11, RECORD_ID_WITH_11_SYMBOLS.length());
         List<String> listToBeValidated = Arrays.asList(RECORD_ID_WITH_11_SYMBOLS, RECORD_ID_WITH_11_SYMBOLS);
 
-        AppException appException = Assertions.assertThrows(AppException.class, () -> recordUtil.validateIds(listToBeValidated));
+        AppException appException = assertThrows(AppException.class, () -> recordUtil.validateIds(listToBeValidated));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
         assertEquals(ERROR_MESSAGE, appException.getError().getMessage());
@@ -74,7 +74,7 @@ class RecordUtilTest {
 
         RecordMetadata recordMetadata = buildRecordMetadata();
 
-        AppException appException = Assertions.assertThrows(AppException.class, () -> recordUtil.getKindForVersion(recordMetadata, WRONG_VERSION));
+        AppException appException = assertThrows(AppException.class, () -> recordUtil.getKindForVersion(recordMetadata, WRONG_VERSION));
 
         assertEquals(HttpStatus.SC_NOT_FOUND, appException.getError().getCode());
         assertEquals(errorMessage, appException.getError().getMessage());
@@ -89,7 +89,7 @@ class RecordUtilTest {
 
         RecordMetadata recordMetadata = buildRecordMetadata();
 
-        AppException appException = Assertions.assertThrows(AppException.class, () -> recordUtil.getKindForVersion(recordMetadata, VERSION_SEQUENCE));
+        AppException appException = assertThrows(AppException.class, () -> recordUtil.getKindForVersion(recordMetadata, VERSION_SEQUENCE));
 
         assertEquals(HttpStatus.SC_NOT_FOUND, appException.getError().getCode());
         assertEquals(errorMessage, appException.getError().getMessage());

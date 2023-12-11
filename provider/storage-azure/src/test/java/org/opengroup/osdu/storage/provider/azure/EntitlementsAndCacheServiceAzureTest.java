@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EntitlementsAndCacheServiceAzureTest {
@@ -42,7 +43,7 @@ class EntitlementsAndCacheServiceAzureTest {
 
     @Test
     void hasAccessToDataReturnsTrue_when_RequiredGroupsArePresent() {
-        Mockito.when(cache.get(Mockito.any())).thenReturn(createRandomGroup());
+        when(cache.get(Mockito.any())).thenReturn(createRandomGroup());
         Set<String> acls = new HashSet<>();
         acls.add("service.service_name2.user@blabla.com");
 
@@ -52,8 +53,8 @@ class EntitlementsAndCacheServiceAzureTest {
     }
 
     @Test
-    void hasAccessToDataThrowsAppException_when_noRequiredGroupsArePresent() throws EntitlementsException {
-        Mockito.when(cache.get(Mockito.any())).thenReturn(new Groups());
+    void hasAccessToDataThrowsAppException_when_noRequiredGroupsArePresent() {
+        when(cache.get(Mockito.any())).thenReturn(new Groups());
         Set<String> acls = new HashSet<>();
 
         AppException appException = assertThrows(AppException.class, () -> entitlementsAndCacheServiceAzure.hasAccessToData(headers, acls));
@@ -66,7 +67,7 @@ class EntitlementsAndCacheServiceAzureTest {
     void hasAccessToDataThrowsAppException_when_emailIdValidationFails() {
         Groups groups = createRandomGroup();
         groups.getGroups().get(0).setEmail("invalid_email_without_any_dot_coms");
-        Mockito.when(cache.get(Mockito.any())).thenReturn(groups);
+        when(cache.get(Mockito.any())).thenReturn(groups);
         Set<String> acls = new HashSet<>();
 
         AppException appException = assertThrows(AppException.class, () -> entitlementsAndCacheServiceAzure.hasAccessToData(headers, acls));
@@ -78,7 +79,7 @@ class EntitlementsAndCacheServiceAzureTest {
     @Test
     void hasAccessToDataReturnsFalse_when_noAclsPresent() {
         Groups groups = createRandomGroup();
-        Mockito.when(cache.get(Mockito.any())).thenReturn(groups);
+        when(cache.get(Mockito.any())).thenReturn(groups);
         Set<String> acls = new HashSet<>();
 
         boolean bAccessPresent = entitlementsAndCacheServiceAzure.hasAccessToData(headers, acls);
@@ -89,7 +90,7 @@ class EntitlementsAndCacheServiceAzureTest {
     @Test
     void hasAccessToDataReturnsFalse_when_noAclTenantsDontMatch() {
         Groups groups = createRandomGroup();
-        Mockito.when(cache.get(Mockito.any())).thenReturn(groups);
+        when(cache.get(Mockito.any())).thenReturn(groups);
         Set<String> acls = new HashSet<>();
         acls.add("group_not_present_in_groups@different_domain.com");
 
@@ -101,7 +102,7 @@ class EntitlementsAndCacheServiceAzureTest {
     @Test
     void hasAccessToDataReturnsFalse_when_noAclRolesDontMatch() {
         Groups groups = createRandomGroup();
-        Mockito.when(cache.get(Mockito.any())).thenReturn(groups);
+        when(cache.get(Mockito.any())).thenReturn(groups);
         Set<String> acls = new HashSet<>();
         acls.add("group_not_present_in_groups@blabla.com");
 

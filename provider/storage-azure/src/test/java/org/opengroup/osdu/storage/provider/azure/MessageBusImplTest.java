@@ -59,7 +59,7 @@ class MessageBusImplTest {
     private MessageBusImpl messageBus;
 
     @BeforeEach
-     void init() throws ServiceBusException, InterruptedException {
+     void init(){
         doReturn(PUBSUB_BATCH_SIZE).when(publisherConfig).getPubSubBatchSize();
         doReturn(TOPIC_NAME).when(eventGridConfig).getEventGridTopic();
         doReturn(RECORDS_CHANGED_EVENT_SUBJECT).when(eventGridConfig).getEventSubject();

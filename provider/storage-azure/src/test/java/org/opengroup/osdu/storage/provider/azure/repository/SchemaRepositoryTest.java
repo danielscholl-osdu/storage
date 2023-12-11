@@ -2,7 +2,6 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.SqlQuerySpec;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,17 +54,17 @@ class SchemaRepositoryTest {
 
     @Test
     void AddShouldThrowIllegalArgumentException_whenSchemaIsNull() {
-        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(null, "user"));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(null, "user"));
 
-        Assertions.assertTrue(exception.getMessage().contains("schema must not be null"));
+        assertTrue(exception.getMessage().contains("schema must not be null"));
     }
 
 
     @Test
     void AddShouldThrowIllegalArgumentException_whenUserIsNull() {
-        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(mock(Schema.class), null));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(mock(Schema.class), null));
 
-        Assertions.assertTrue(exception.getMessage().contains("user must not be null"));
+        assertTrue(exception.getMessage().contains("user must not be null"));
     }
 
 
@@ -73,9 +73,9 @@ class SchemaRepositoryTest {
         Optional<SchemaDoc> schemaDoc = Optional.of(mock(SchemaDoc.class));
         when(cosmosStore.findItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, KIND, KIND, SchemaDoc.class)).thenReturn(schemaDoc);
 
-        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(schema, "user"));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(schema, "user"));
 
-        Assertions.assertTrue(exception.getMessage().contains(String.format("Schema %s already exists. Can't create again.", KIND)));
+        assertTrue(exception.getMessage().contains(String.format("Schema %s already exists. Can't create again.", KIND)));
     }
 
     @Test
@@ -93,7 +93,7 @@ class SchemaRepositoryTest {
 
         Schema foundItem = schemaRepository.get(KIND);
 
-        Assertions.assertNull(foundItem);
+        assertNull(foundItem);
     }
 
     @Test
@@ -102,7 +102,7 @@ class SchemaRepositoryTest {
 
         Schema foundItem = schemaRepository.get(KIND);
 
-        Assertions.assertNotNull(foundItem);
+        assertNotNull(foundItem);
     }
 
     @Test
@@ -113,9 +113,9 @@ class SchemaRepositoryTest {
 
         Schema schemaReturned = schemaRepository.map(schemaDoc);
 
-        Assertions.assertEquals(schemaReturned.getKind(), schemaDoc.getKind());
-        Assertions.assertEquals(schemaReturned.getSchema(), schemaDoc.getSchemaItems());
-        Assertions.assertEquals(schemaReturned.getExt(), schemaDoc.getExtension());
+        assertEquals(schemaReturned.getKind(), schemaDoc.getKind());
+        assertEquals(schemaReturned.getSchema(), schemaDoc.getSchemaItems());
+        assertEquals(schemaReturned.getExt(), schemaDoc.getExtension());
     }
 
     @Test
@@ -133,7 +133,7 @@ class SchemaRepositoryTest {
 
         verify(cosmosStore).queryItemsPage(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), argumentCaptor.capture(), eq(SchemaDoc.class), eq(1), any(), any(CosmosQueryRequestOptions.class));
 
-        Assertions.assertEquals("SELECT * FROM c ", argumentCaptor.getValue().getQueryText());
+        assertEquals("SELECT * FROM c ", argumentCaptor.getValue().getQueryText());
     }
 
     @Test
@@ -144,6 +144,6 @@ class SchemaRepositoryTest {
 
         verify(cosmosStore).queryItems(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), argumentCaptor.capture(), any(CosmosQueryRequestOptions.class), eq(SchemaDoc.class));
 
-        Assertions.assertEquals(expectedQuery, argumentCaptor.getValue().getQueryText());
+        assertEquals(expectedQuery, argumentCaptor.getValue().getQueryText());
     }
 }

@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,7 +90,7 @@ class CloudStorageImplTest {
         recordMetadata.setGcsVersionPaths(Arrays.asList("path1", "path2"));
         when(entitlementsHelper.hasOwnerAccessToRecord(recordMetadata)).thenReturn(false);
 
-        AppException exception = Assertions.assertThrows(AppException.class, () -> cloudStorage.delete(recordMetadata));
+        AppException exception = assertThrows(AppException.class, () -> cloudStorage.delete(recordMetadata));
 
         validateAccessDeniedException(exception);
     }
@@ -113,7 +112,7 @@ class CloudStorageImplTest {
     }
 
     @Test
-    void shouldWriteToBlob_when_writeIsCalled() throws InterruptedException {
+    void shouldWriteToBlob_when_writeIsCalled() {
         ExecutorService executorService = Executors.newFixedThreadPool(3);
         ReflectionTestUtils.setField(cloudStorage, "threadPool", executorService);
 
@@ -258,7 +257,7 @@ class CloudStorageImplTest {
         List<RecordMetadata> recordMetadataList = Collections.singletonList(recordMetadata);
         when(recordRepository.createOrUpdate(any(), any())).
                 thenThrow(RuntimeException.class);
-        
+
         Optional<CollaborationContext> context = Optional.empty();
         AppException exception = assertThrows(AppException.class, () ->
                 cloudStorage.revertObjectMetadata(recordMetadataList, originalAcls, context));
@@ -538,8 +537,8 @@ class CloudStorageImplTest {
     }
 
     private void validateAccessDeniedException(AppException exception) {
-        Assertions.assertNotNull(exception);
-        Assertions.assertEquals(403, exception.getError().getCode());
-        Assertions.assertEquals("The user is not authorized to perform this action", exception.getError().getMessage());
+        assertNotNull(exception);
+        assertEquals(403, exception.getError().getCode());
+        assertEquals("The user is not authorized to perform this action", exception.getError().getMessage());
     }
 }
