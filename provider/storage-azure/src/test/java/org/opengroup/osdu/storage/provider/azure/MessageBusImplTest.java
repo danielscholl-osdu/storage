@@ -38,7 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class MessageBusImplTest {
+class MessageBusImplTest {
     private static final String TOPIC_NAME = "recordstopic";
     private final static String RECORDS_CHANGED_EVENT_SUBJECT = "RecordsChanged";
     private final static String RECORDS_CHANGED_EVENT_TYPE = "RecordsChanged";
@@ -59,7 +59,7 @@ public class MessageBusImplTest {
     private MessageBusImpl messageBus;
 
     @BeforeEach
-    public void init() throws ServiceBusException, InterruptedException {
+     void init() throws ServiceBusException, InterruptedException {
         doReturn(PUBSUB_BATCH_SIZE).when(publisherConfig).getPubSubBatchSize();
         doReturn(TOPIC_NAME).when(eventGridConfig).getEventGridTopic();
         doReturn(RECORDS_CHANGED_EVENT_SUBJECT).when(eventGridConfig).getEventSubject();
@@ -68,7 +68,7 @@ public class MessageBusImplTest {
     }
 
     @Test
-    public void publishMessage_should_publishesInBatches_when_messageSizeGreaterThanBatchSize() {
+     void publishMessage_should_publishesInBatches_when_messageSizeGreaterThanBatchSize() {
         // Set Up
         String[] ids = {"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11"};
         String[] kinds = {"kind1", "kind2", "kind3", "kind4", "kind5", "kind6", "kind7", "kind8", "kind9", "kind10", "kind11"};
@@ -84,7 +84,7 @@ public class MessageBusImplTest {
     }
 
     @Test
-    public void should_publishToOnlyRecordsEventTopic_WhenCollaborationContextIsProvided() {
+     void should_publishToOnlyRecordsEventTopic_WhenCollaborationContextIsProvided() {
         RecordChangedV2[] recordChangedV2s = setUpRecordsChangedV2();
 
         messageBus.publishMessage(COLLABORATION_CONTEXT, dpsHeaders, recordChangedV2s);
@@ -93,7 +93,7 @@ public class MessageBusImplTest {
     }
 
     @Test
-    public void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
+     void should_publishToBothTopics_WhenCollaborationContextIsNotProvided() {
         PubSubInfo[] pubSubInfo = setupPubSubInfo();
 
         messageBus.publishMessage(dpsHeaders, pubSubInfo);

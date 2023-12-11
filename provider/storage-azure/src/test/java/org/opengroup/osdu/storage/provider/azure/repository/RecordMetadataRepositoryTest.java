@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.apache.http.HttpStatus;
 import org.junit.Rule;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,14 +45,14 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordMetadataRepositoryTest {
+class RecordMetadataRepositoryTest {
     private final static String RECORD_ID1 = "opendes:id1:15706318658560";
     private final static String RECORD_ID2 = "opendes:id2:15706318658560";
     private final static String KIND = "opendes:source:type:1.0.0";
     private final static String STATUS = "active";
     private final ObjectMapper mapper = new ObjectMapper();
     @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
+    ExpectedException exceptionRule = ExpectedException.none();
     @Mock
     private JaxRsDpsLog logger;
     @Mock
@@ -68,7 +67,7 @@ public class RecordMetadataRepositoryTest {
     private RecordMetadataRepository recordMetadataRepository;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         lenient().when(headers.getPartitionId()).thenReturn("opendes");
         ReflectionTestUtils.setField(recordMetadataRepository, "cosmosDBName", "osdu-db");
         ReflectionTestUtils.setField(recordMetadataRepository, "recordMetadataCollection", "collection");
@@ -77,7 +76,7 @@ public class RecordMetadataRepositoryTest {
 
 
     @Test
-    public void shouldFailOnCreateOrUpdate_IfAclIsNull() {
+    void shouldFailOnCreateOrUpdate_IfAclIsNull() {
         try {
             recordMetadataRepository.createOrUpdate(singletonList(new RecordMetadata()), Optional.empty());
         } catch (IllegalArgumentException e) {
@@ -87,7 +86,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldSetCorrectDocId_IfCollaborationContextIsProvided_InParallel() {
+    void shouldSetCorrectDocId_IfCollaborationContextIsProvided_InParallel() {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
         RecordMetadata recordMetadata1 = createRecord(RECORD_ID1);
@@ -102,13 +101,13 @@ public class RecordMetadataRepositoryTest {
         verify(cosmosBulkStore).bulkInsertWithCosmosClient(any(), any(), any(), docCaptor.capture(), any(), eq(1));
         List capturedDocs = docCaptor.getValue();
         RecordMetadataDoc capturedDoc1 = (RecordMetadataDoc) capturedDocs.get(0);
-        assertEquals(capturedDoc1.getId(), CollaborationId.toString() + RECORD_ID1);
+        assertEquals(capturedDoc1.getId(), CollaborationId + RECORD_ID1);
         RecordMetadataDoc capturedDoc2 = (RecordMetadataDoc) capturedDocs.get(1);
-        assertEquals(capturedDoc2.getId(), CollaborationId.toString() + RECORD_ID2);
+        assertEquals(capturedDoc2.getId(), CollaborationId + RECORD_ID2);
     }
 
     @Test
-    public void shouldSetCorrectDocId_IfCollaborationContextIsProvided_InSerial() {
+    void shouldSetCorrectDocId_IfCollaborationContextIsProvided_InSerial() {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
 
@@ -120,7 +119,7 @@ public class RecordMetadataRepositoryTest {
         verify(cosmosStore).upsertItem(any(),
                 any(),
                 eq("collection"),
-                eq(CollaborationId.toString() + RECORD_ID1),
+                eq(CollaborationId + RECORD_ID1),
                 itemCaptor.capture());
 
         RecordMetadataDoc capturedItem = itemCaptor.getValue();
@@ -129,7 +128,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsProvided() throws IOException {
+    void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsProvided() throws IOException {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
         String expectedDocId = CollaborationId + RECORD_ID1;
@@ -144,7 +143,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided() throws IOException {
+    void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided() throws IOException {
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
@@ -156,7 +155,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided_withDuplicateOpAndPath() throws IOException {
+    void shouldPatchRecordsWithCorrectDocId_whenCollaborationContextIsNotProvided_withDuplicateOpAndPath() throws IOException {
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatchWithSameOpAndPath()));
@@ -168,7 +167,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
+    void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
@@ -193,7 +192,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithCollaborationContext() throws IOException {
+    void shouldReturnErrors_whenPatchFailsWithAppExceptionWithCollaborationContext() throws IOException {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
         String expectedDocId = CollaborationId + RECORD_ID1;
@@ -221,7 +220,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldThrowException_whenPatchFailsWithOtherException() throws IOException {
+    void shouldThrowException_whenPatchFailsWithOtherException() throws IOException {
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
@@ -230,8 +229,9 @@ public class RecordMetadataRepositoryTest {
 
         AppException appException = mock(AppException.class);
         doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        Optional<CollaborationContext> context = Optional.empty();
         try {
-            recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
+            recordMetadataRepository.patch(jsonPatchPerRecord, context);
             fail("expected exception");
         } catch (AppException e) {
 
@@ -239,10 +239,10 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsProvided() {
+    void shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsProvided() {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
-        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = '" + KIND + "' AND c.metadata.status = 'active' and STARTSWITH(c.id, '" + CollaborationId.toString() + "') ";
+        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = '" + KIND + "' AND c.metadata.status = 'active' and STARTSWITH(c.id, '" + CollaborationId + "') ";
 
         Pageable pageable = PageRequest.of(0, 8);
 
@@ -264,11 +264,11 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void findIdsByMetadata_kindAndMetadata_status_shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsProvided() {
+    void findIdsByMetadata_kindAndMetadata_status_shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsProvided() {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
 
-        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = '" + KIND + "' AND c.metadata.status = 'active' and STARTSWITH(c.id, '" + CollaborationId.toString() + "')";
+        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = '" + KIND + "' AND c.metadata.status = 'active' and STARTSWITH(c.id, '" + CollaborationId + "')";
 
         List<RecordMetadataDoc> returnList = new ArrayList<>();
         returnList.add(Mockito.mock(RecordMetadataDoc.class));
@@ -294,7 +294,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsNotProvided() {
+    void shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsNotProvided() {
         String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = 'opendes:source:type:1.0.0' AND c.metadata.status = 'active' AND c.id = c.metadata.id ";
 
         Pageable pageable = PageRequest.of(0, 8);
@@ -318,7 +318,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldPatchRecordsWithRemovePatch_whenCollaborationContextIsNotProvided_withDuplicateOpAndPath() throws IOException {
+    void shouldPatchRecordsWithRemovePatch_whenCollaborationContextIsNotProvided_withDuplicateOpAndPath() throws IOException {
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
 
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
@@ -335,7 +335,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void shouldReturnCorrectRecords_when_queryByLegalTagName() {
+    void shouldReturnCorrectRecords_when_queryByLegalTagName() {
         String legalTagName = "legal_tag_name";
         int limit = 200;
         String cursor = "cursor";
@@ -364,7 +364,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void queryByLegalTagName_shouldThrowAppException_when_cosmosStore_throwsInvalidCursorException() {
+    void queryByLegalTagName_shouldThrowAppException_when_cosmosStore_throwsInvalidCursorException() {
         String legalTagName = "legal_tag_name";
         int limit = 200;
         String cursor = "invalid%cursor";
@@ -383,7 +383,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void queryByLegalTagName_shouldThrowCosmosException_when_cosmosStore_throwsGenericCosmosException() {
+    void queryByLegalTagName_shouldThrowCosmosException_when_cosmosStore_throwsGenericCosmosException() {
         String legalTagName = "legal_tag_name";
         int limit = 200;
         String cursor = "invalid%cursor";
@@ -404,7 +404,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void queryByLegalTagName_shouldThrowException_when_cosmosStore_throwsGenericException() {
+    void queryByLegalTagName_shouldThrowException_when_cosmosStore_throwsGenericException() {
         String legalTagName = "legal_tag_name";
         int limit = 200;
         String cursor = "invalid%cursor";
@@ -416,7 +416,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void getById_shouldReturnRecordMetadata_when_called() {
+    void getById_shouldReturnRecordMetadata_when_called() {
         RecordMetadataDoc doc = Mockito.mock(RecordMetadataDoc.class);
 
         doReturn(Optional.of(doc)).when(cosmosStore).findItem("opendes", "osdu-db", "collection", "id", "id", RecordMetadataDoc.class);
@@ -427,7 +427,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void getById_shouldReturnNull_when_blobStoreFindItemReturnsNull() {
+    void getById_shouldReturnNull_when_blobStoreFindItemReturnsNull() {
         doReturn(Optional.empty()).when(cosmosStore).findItem("opendes", "osdu-db", "collection", "id", "id", RecordMetadataDoc.class);
 
         recordMetadataRepository.get("id", Optional.empty());
@@ -436,7 +436,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void getByList_shouldReturnValidResultSet_whenCosmosStoreReturnsValidRecords() {
+    void getByList_shouldReturnValidResultSet_whenCosmosStoreReturnsValidRecords() {
         RecordMetadataDoc doc1 = new RecordMetadataDoc(RECORD_ID1, createRecord(RECORD_ID1));
         RecordMetadataDoc doc2 = new RecordMetadataDoc(RECORD_ID2, createRecord(RECORD_ID2));
 
@@ -456,7 +456,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void getByList_shouldReturnEmptyResultSet_whenCosmosStoreReturnsEmptyRecords() {
+    void getByList_shouldReturnEmptyResultSet_whenCosmosStoreReturnsEmptyRecords() {
         RecordMetadataDoc doc1 = mock(RecordMetadataDoc.class);
         RecordMetadataDoc doc2 = mock(RecordMetadataDoc.class);
 
@@ -476,7 +476,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void getMetadataDocumentCountForBlob_shouldReturnZero_whenEmptyResultSetReturnedFromCosmos() {
+    void getMetadataDocumentCountForBlob_shouldReturnZero_whenEmptyResultSetReturnedFromCosmos() {
         DocumentCount documentCount = Mockito.mock(DocumentCount.class);
         doReturn(Collections.singletonList(documentCount)).when(cosmosStore).queryItems(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), eq(DocumentCount.class));
 
@@ -493,7 +493,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void getMetadataDocumentCountForBlob_shouldReturnValidRecordSize_whenValidResultSetReturnedFromCosmos() {
+    void getMetadataDocumentCountForBlob_shouldReturnValidRecordSize_whenValidResultSetReturnedFromCosmos() {
         DocumentCount documentCount = new DocumentCount(1);
         doReturn(Collections.singletonList(documentCount)).when(cosmosStore).queryItems(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), eq(DocumentCount.class));
 
@@ -511,7 +511,7 @@ public class RecordMetadataRepositoryTest {
     }
 
     @Test
-    public void deleteShould_deleteItemFromCosmos_whenIdIsNotNull() {
+    void deleteShould_deleteItemFromCosmos_whenIdIsNotNull() {
         recordMetadataRepository.delete(RECORD_ID1, Optional.empty());
 
         verify(cosmosStore, times(1)).deleteItem("opendes", "osdu-db", "collection", RECORD_ID1, RECORD_ID1);

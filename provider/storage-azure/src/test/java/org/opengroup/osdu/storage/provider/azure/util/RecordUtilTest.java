@@ -12,13 +12,14 @@ import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.springframework.util.ReflectionUtils.findField;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordUtilTest {
+class RecordUtilTest {
     private static final String RECORD_ID_WITH_11_SYMBOLS = "onetwothree";
     private static final String ERROR_REASON = "Invalid id";
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
@@ -32,17 +33,18 @@ public class RecordUtilTest {
     private RecordUtil recordUtil = new RecordUtil();
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         Field recordIdMaxLength = findField(RecordUtil.class, "recordIdMaxLength");
         recordIdMaxLength.setAccessible(true);
         ReflectionUtils.setField(recordIdMaxLength, recordUtil, RECORD_ID_MAX_LENGTH);
     }
 
     @Test
-    public void shouldFail_CreateUpdateRecords_ifTooLOngRecordIdPresented() {
+    void shouldFail_CreateUpdateRecords_ifTooLOngRecordIdPresented() {
         assertEquals(11, RECORD_ID_WITH_11_SYMBOLS.length());
+        List<String> listToBeValidated = Arrays.asList(RECORD_ID_WITH_11_SYMBOLS, RECORD_ID_WITH_11_SYMBOLS);
 
-        AppException appException = Assertions.assertThrows(AppException.class, () -> recordUtil.validateIds(Arrays.asList(RECORD_ID_WITH_11_SYMBOLS, RECORD_ID_WITH_11_SYMBOLS)));
+        AppException appException = Assertions.assertThrows(AppException.class, () -> recordUtil.validateIds(listToBeValidated));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
         assertEquals(ERROR_MESSAGE, appException.getError().getMessage());
@@ -51,12 +53,12 @@ public class RecordUtilTest {
     }
 
     @Test
-    public void shouldDoNothing_ifNullRecordId_passed() {
+    void shouldDoNothing_ifNullRecordId_passed() {
         recordUtil.validateIds(singletonList(null));
     }
 
     @Test
-    public void shouldGetKindForVersion_successFully() {
+    void shouldGetKindForVersion_successFully() {
         RecordMetadata record = buildRecordMetadata();
 
         String actualKind = recordUtil.getKindForVersion(record, VERSION.toString());
@@ -65,7 +67,7 @@ public class RecordUtilTest {
     }
 
     @Test
-    public void shouldFailGetKindForVersion_whenVersionNotFound() {
+    void shouldFailGetKindForVersion_whenVersionNotFound() {
         String errorMessage = String.format("The version %s can't be found for record %s",
                 WRONG_VERSION, RECORD_ID_WITH_11_SYMBOLS);
         String errorReason = "Version not found";
@@ -74,14 +76,13 @@ public class RecordUtilTest {
 
         AppException appException = Assertions.assertThrows(AppException.class, () -> recordUtil.getKindForVersion(recordMetadata, WRONG_VERSION));
 
-
         assertEquals(HttpStatus.SC_NOT_FOUND, appException.getError().getCode());
         assertEquals(errorMessage, appException.getError().getMessage());
         assertEquals(errorReason, appException.getError().getReason());
     }
 
     @Test
-    public void shouldFailGetKindForVersion_whenVersionMatches_onlySequence() {
+    void shouldFailGetKindForVersion_whenVersionMatches_onlySequence() {
         String errorMessage = String.format("The version %s can't be found for record %s",
                 VERSION_SEQUENCE, RECORD_ID_WITH_11_SYMBOLS);
         String errorReason = "Version not found";

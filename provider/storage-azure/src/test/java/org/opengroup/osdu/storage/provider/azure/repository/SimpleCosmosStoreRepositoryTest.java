@@ -94,11 +94,11 @@ class SimpleCosmosStoreRepositoryTest {
     @Test
     void findByIdShouldCallCosmosStoreAndReturnRecord_whenValidIdIsPassed() {
         ReflectionTestUtils.setField(simpleCosmosStoreRepository, "domainClass", String.class);
-        when(cosmosStore.findItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq("id"), eq("id"), eq(String.class))).thenReturn(Optional.of("record"));
+        when(cosmosStore.findItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, "id", "id", String.class)).thenReturn(Optional.of("record"));
 
         Optional<String> ret = simpleCosmosStoreRepository.findById("id", DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, "id");
 
-        verify(cosmosStore).findItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq("id"), eq("id"), eq(String.class));
+        verify(cosmosStore).findItem(DATA_PARTITION_ID,  COSMOS_DB_NAME,  COLLECTION,  "id",  "id",  String.class);
 
         assertTrue(ret.isPresent());
         assertEquals("record", ret.get());
@@ -164,14 +164,14 @@ class SimpleCosmosStoreRepositoryTest {
     void createItem_shouldCallCosmosStoreAndCreateRecordIfItemIsNotNull() {
         simpleCosmosStoreRepository.createItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, "partitionKey", "New Item");
 
-        verify(cosmosStore).createItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq("partitionKey"), eq("New Item"));
+        verify(cosmosStore).createItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, "partitionKey", "New Item");
     }
 
     @Test
     void createItem_shouldThrowIllegalArgumentsExceptionsIfItemIsNull() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> simpleCosmosStoreRepository.createItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, "partitionKey", null));
 
-        verify(cosmosStore, never()).createItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq("partitionKey"), eq("New Item"));
+        verify(cosmosStore, never()).createItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, "partitionKey", "New Item");
 
         assertTrue(exception.getMessage().contains("entity must not be null"));
     }
@@ -181,7 +181,7 @@ class SimpleCosmosStoreRepositoryTest {
         SqlQuerySpec querySpec = new SqlQuerySpec("query");
         simpleCosmosStoreRepository.queryItemsPage(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, querySpec, String.class, 10, "continuationToken");
 
-        verify(cosmosStore).queryItemsPage(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq(querySpec), eq(String.class), eq(10), eq("continuationToken"));
+        verify(cosmosStore).queryItemsPage(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, querySpec, String.class, 10, "continuationToken");
     }
 
 }

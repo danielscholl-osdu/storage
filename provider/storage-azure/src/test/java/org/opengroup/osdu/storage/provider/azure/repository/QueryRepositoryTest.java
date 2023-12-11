@@ -15,6 +15,7 @@ import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -74,7 +76,7 @@ class QueryRepositoryTest {
     }
 
     @Test
-    public void testGetAllKindsOneRecord() {
+    void testGetAllKindsOneRecord() {
         List<String> result = new ArrayList<>();
         result.add(KIND1);
         Mockito.when(cosmosStore.queryItems(eq(dataPartitionID), eq(cosmosDBName), eq(storageContainer), any(), any(), any())).thenReturn(Collections.singletonList(result)); //th
@@ -86,7 +88,7 @@ class QueryRepositoryTest {
     }
 
     @Test
-    public void testGetAllKindsMultipleRecord() {
+    void testGetAllKindsMultipleRecord() {
         List<String> result = new ArrayList<>();
         result.add(KIND1);
         result.add(KIND2);
@@ -101,7 +103,8 @@ class QueryRepositoryTest {
 
     @Test
     void getAllRecordIdsFromKindShouldThrowIllegalArgumentsException_whenKindIsNull() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> queryRepository.getAllRecordIdsFromKind(null, 10, "cursor", Optional.empty()));
+        Optional<CollaborationContext> context = Optional.empty();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> queryRepository.getAllRecordIdsFromKind(null, 10, "cursor", context));
 
         verify(recordMetadataRepository, never()).findIdsByMetadata_kindAndMetadata_status(any(), any(), any(), any());
 
@@ -128,8 +131,6 @@ class QueryRepositoryTest {
 
     @Test
     void getAllRecordIdsFromKindShouldCallCosmosAgain_whenContinuationTokenIsPresent() {
-
-        //
         Pageable pageable = CosmosStorePageRequest.of(0, 3, "continue");
         RecordMetadataDoc doc1 = new RecordMetadataDoc("id1", createRecord("id1"));
         RecordMetadataDoc doc2 = new RecordMetadataDoc("id2", createRecord("id2"));
@@ -153,7 +154,9 @@ class QueryRepositoryTest {
         doReturn("INVALID JSON in continuation token").when(cosmosException).getMessage();
 
         when(recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status(eq("kind"), eq("active"), any(), eq(Optional.empty()))).thenThrow(cosmosException);
-        AppException exception = assertThrows(AppException.class, () -> queryRepository.getAllRecordIdsFromKind("kind", 10, "cursor", Optional.empty()));
+        Optional<CollaborationContext> context = Optional.empty();
+
+        AppException exception = assertThrows(AppException.class, () -> queryRepository.getAllRecordIdsFromKind("kind", 10, "cursor", context));
 
         verify(recordMetadataRepository).findIdsByMetadata_kindAndMetadata_status(any(), any(), any(), any());
         assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
@@ -166,8 +169,9 @@ class QueryRepositoryTest {
         doReturn("Some other bad request").when(cosmosException).getMessage();
 
         when(recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status(eq("kind"), eq("active"), any(), eq(Optional.empty()))).thenThrow(cosmosException);
+        Optional<CollaborationContext> context = Optional.empty();
 
-        CosmosException exception = assertThrows(CosmosException.class, () -> queryRepository.getAllRecordIdsFromKind("kind", 10, "cursor", Optional.empty()));
+        CosmosException exception = assertThrows(CosmosException.class, () -> queryRepository.getAllRecordIdsFromKind("kind", 10, "cursor", context));
 
         verify(recordMetadataRepository).findIdsByMetadata_kindAndMetadata_status(any(), any(), any(), any());
         assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getStatusCode());
@@ -191,7 +195,7 @@ class QueryRepositoryTest {
         recordMetadataDocs.add(new RecordMetadataDoc("id2", createRecord("id2")));
         List<String> expectedResponse = Arrays.asList("id1", "id2");
 
-        when(recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status(eq("kind"), eq("active"), eq(Optional.empty()))).thenReturn(recordMetadataDocs);
+        when(recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status("kind","active", Optional.empty())).thenReturn(recordMetadataDocs);
 
         DatastoreQueryResult datastoreQueryResult = queryRepository.getAllRecordIdsFromKind("kind", null, null, Optional.empty());
 

@@ -71,7 +71,7 @@ class SchemaRepositoryTest {
     @Test
     void AddShouldThrowIllegalArgumentException_whenKindAlreadyExists() {
         Optional<SchemaDoc> schemaDoc = Optional.of(mock(SchemaDoc.class));
-        when(cosmosStore.findItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq(KIND), eq(KIND), eq(SchemaDoc.class))).thenReturn(schemaDoc);
+        when(cosmosStore.findItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, KIND, KIND, SchemaDoc.class)).thenReturn(schemaDoc);
 
         IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> schemaRepository.add(schema, "user"));
 
@@ -80,7 +80,7 @@ class SchemaRepositoryTest {
 
     @Test
     void AddShouldUpsertSchemaInCosmos_whenNoneExists() {
-        when(cosmosStore.findItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq(KIND), eq(KIND), eq(SchemaDoc.class))).thenReturn(Optional.empty());
+        when(cosmosStore.findItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, KIND, KIND, SchemaDoc.class)).thenReturn(Optional.empty());
 
         schemaRepository.add(schema, "user");
 
@@ -89,7 +89,7 @@ class SchemaRepositoryTest {
 
     @Test
     void GetShouldReturnNull_whenNoRecordsAreReturnedFromCosmos() {
-        when(cosmosStore.findItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq(KIND), eq(KIND), eq(SchemaDoc.class))).thenReturn(Optional.empty());
+        when(cosmosStore.findItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, KIND, KIND, SchemaDoc.class)).thenReturn(Optional.empty());
 
         Schema foundItem = schemaRepository.get(KIND);
 
@@ -98,7 +98,7 @@ class SchemaRepositoryTest {
 
     @Test
     void GetShouldReturnSchema_whenRecordsAreReturnedFromCosmos() {
-        when(cosmosStore.findItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq(KIND), eq(KIND), eq(SchemaDoc.class))).thenReturn(Optional.of(mock(SchemaDoc.class)));
+        when(cosmosStore.findItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, KIND, KIND, SchemaDoc.class)).thenReturn(Optional.of(mock(SchemaDoc.class)));
 
         Schema foundItem = schemaRepository.get(KIND);
 
@@ -122,7 +122,7 @@ class SchemaRepositoryTest {
     void deleteShouldDeleteFromCosmos_whenIdIsNotNull() {
         schemaRepository.delete(KIND);
 
-        verify(cosmosStore).deleteItem(eq(DATA_PARTITION_ID), eq(COSMOS_DB_NAME), eq(COLLECTION), eq(KIND), eq(KIND));
+        verify(cosmosStore).deleteItem(DATA_PARTITION_ID, COSMOS_DB_NAME, COLLECTION, KIND, KIND);
     }
 
     @Test
