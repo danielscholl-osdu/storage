@@ -314,9 +314,27 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <argLine>@{argLine} --add-opens java.base/java.lang=ALL_UNNAMED</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
+                <configuration>
+                    <excludes>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/di/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/*Doc.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/StorageApplication.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/SomeBasicInterfaceImpl.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/model/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/exception/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                 <execution>
                     <goals>

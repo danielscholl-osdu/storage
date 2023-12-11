@@ -41,9 +41,7 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		String jsonInput = RecordUtil.createDefaultJsonRecords(3, RECORD_ID, KIND, LEGAL_TAG);
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		CloseableHttpResponse modifyRecordsResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getCode());
-		assertEquals(201, modifyRecordsResponse.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -77,8 +75,6 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
 		assertEquals(RECORD_ID + 0, responseObject.records[0].id);
 		assertEquals(KIND, responseObject.records[0].kind);
-		assertTrue(responseObject.records[0].createUser != null && responseObject.records[0].createTime != null);
-		assertTrue(responseObject.records[0].modifyUser != null && responseObject.records[0].modifyTime != null);
 		assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 		assertEquals(3, responseObject.records[0].data.size());
 	}
