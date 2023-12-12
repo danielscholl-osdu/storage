@@ -22,7 +22,6 @@ import org.springframework.context.annotation.Primary;
 import javax.inject.Named;
 
 @Component
-@Primary
 public class PolicyCache extends VmCache<String, PolicyStatus> {
 
     public PolicyCache(final @Named("POLICY_CACHE_TIMEOUT") int timeout) {
