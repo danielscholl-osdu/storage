@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.query;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -30,6 +31,8 @@ import static org.junit.Assert.assertTrue;
 import org.opengroup.osdu.core.common.Constants;
 
 public abstract class PostFetchRecordsIntegrationTests extends TestBase {
+    private Gson gson = new Gson();
+
     protected static final long NOW = System.currentTimeMillis();
 
     protected static final String RECORD_ID_PREFIX = TenantUtils.getFirstTenantName() + ":query:";
@@ -400,6 +403,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        System.out.println(String.format("headers: %s", this.gson.toJson(headers)));
+        System.out.println(String.format("body: %s", this.gson.toJson(body)));
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
@@ -434,6 +439,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        System.out.println(String.format("headers: %s", this.gson.toJson(headers)));
+        System.out.println(String.format("body: %s", this.gson.toJson(body)));
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
@@ -469,6 +476,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        System.out.println(String.format("headers: %s", this.gson.toJson(headers)));
+        System.out.println(String.format("body: %s", this.gson.toJson(body)));
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
@@ -503,6 +512,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        System.out.println(String.format("headers: %s", this.gson.toJson(headers)));
+        System.out.println(String.format("body: %s", this.gson.toJson(body)));
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
@@ -538,6 +549,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
         headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        System.out.println(String.format("headers: %s", this.gson.toJson(headers)));
+        System.out.println(String.format("body: %s", this.gson.toJson(body)));
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
