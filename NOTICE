@@ -83,8 +83,8 @@ The following software have components provided under the terms of this license:
 - Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy Java agent (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent)
 - ClassMate (from http://github.com/cowtowncoder/java-classmate)
-- Cloud Key Management Service (KMS) API v1-rev20231012-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
-- Cloud Storage JSON API v1-rev20231202-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
+- Cloud Key Management Service (KMS) API (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
+- Cloud Storage JSON API (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - Collections (from https://repo1.maven.org/maven2/commons-collections/commons-collections)
 - Commons Digester (from http://commons.apache.org/digester/)
 - Converter: Jackson (from https://github.com/square/retrofit, https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-jackson)
@@ -681,7 +681,6 @@ The following software have components provided under the terms of this license:
 - Microsoft Azure common module for Storage (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure internal Avro module for Storage (from https://github.com/Azure/azure-sdk-for-java)
 - Mockito (from http://mockito.org, http://www.mockito.org, https://github.com/mockito/mockito)
-- MongoDB Java Driver (from http://mongodb.org/, http://www.mongodb.org, https://www.mongodb.com/)
 - Netty/Codec/HTTP (from https://repo1.maven.org/maven2/io/netty/netty-codec-http)
 - Netty/Common (from https://repo1.maven.org/maven2/io/netty/netty-common)
 - Project Lombok (from http://projectlombok.org, https://projectlombok.org)
@@ -751,7 +750,6 @@ The following software have components provided under the terms of this license:
 
 - Apache Groovy (from http://groovy-lang.org, http://groovy.codehaus.org/, https://groovy-lang.org)
 - HdrHistogram (from http://hdrhistogram.github.io/HdrHistogram/)
-- JBoss Logging 3 (from http://www.jboss.org)
 - JSON in Java (from https://github.com/douglascrockford/JSON-java)
 - Microsoft Azure client library for Blob Storage (from https://github.com/Azure/azure-sdk-for-java)
 - PostgreSQL JDBC Driver

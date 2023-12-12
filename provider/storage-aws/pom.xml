@@ -21,7 +21,7 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.25.0-SNAPSHOT</version>
+        <version>0.26.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -35,7 +35,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
         <deployment.environment>dev</deployment.environment>
-        <version.number>0.25.0-SNAPSHOT</version.number>
+        <version.number>0.26.0-SNAPSHOT</version.number>
         <spring-webmvc.version>5.3.26</spring-webmvc.version>
     </properties>
 
@@ -60,7 +60,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.25.0-SNAPSHOT</version>
+            <version>0.25.0-rc3</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
