@@ -233,8 +233,8 @@ public class DpsConversionService {
 
     private void updatePersistableReference(List<ConversionRecord> conversionRecords) {
         for (ConversionRecord conversionRecord : conversionRecords) {
-            JsonObject record = conversionRecord.getRecordJsonObject();
-            JsonArray metaArray = record.getAsJsonArray(Constants.META);
+            JsonObject recordObj = conversionRecord.getRecordJsonObject();
+            JsonArray metaArray = recordObj.getAsJsonArray(Constants.META);
             if (metaArray == null) {
                 return;
             }
@@ -260,12 +260,12 @@ public class DpsConversionService {
     }
 
     private Record getRecordFromCache(String recordId) {
-        Record record = null;
+        Record recordObj = null;
         if (this.cache != null) {
             String cacheKey = this.getCacheKey(this.headers.getPartitionId(), recordId);
-            record = this.cache.get(cacheKey);
+            recordObj = this.cache.get(cacheKey);
         }
-        return record;
+        return recordObj;
     }
 
     private void putRecordToCache(String recordId, Record record) {
@@ -276,22 +276,22 @@ public class DpsConversionService {
     }
 
     private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
-        Record record = this.getRecordFromCache(unitOfMeasureID);
-        if (record == null) {
+        Record recordObj = this.getRecordFromCache(unitOfMeasureID);
+        if (recordObj == null) {
             String blob = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
             if (blob == null) {
                 this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
                 return "";
             }
             try {
-                record = objectMapper.readValue(blob, Record.class);
+                recordObj = objectMapper.readValue(blob, Record.class);
             } catch (JsonProcessingException e) {
                 this.logger.error(String.format("Error occured during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
                 return "";
             }
-            this.putRecordToCache(unitOfMeasureID, record);
+            this.putRecordToCache(unitOfMeasureID, recordObj);
         }
-        Map<String, Object> recordData = record.getData();
+        Map<String, Object> recordData = recordObj.getData();
         if (recordData == null) {
             return "";
         }
