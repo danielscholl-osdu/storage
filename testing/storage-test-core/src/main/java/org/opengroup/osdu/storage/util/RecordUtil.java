@@ -16,7 +16,6 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.opengroup.osdu.core.common.Constants;
@@ -760,8 +759,7 @@ public class RecordUtil {
 		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
 		data.add("double-tag", getNumberPropertyObject("score-double", 58377304.471659395));
 		data.addProperty("count", 123456789L);
-		JsonObject record = getRecordWithInputData(id, kind, legalTag, data);
-		return record;
+        return getRecordWithInputData(id, kind, legalTag, data);
 	}
 
 	private static JsonObject getDefaultRecordWithDefaultDataAndDuplicateAclAndLegaltags(String id, String kind, String legalTag) {
@@ -769,8 +767,7 @@ public class RecordUtil {
 		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
 		data.add("double-tag", getNumberPropertyObject("score-double", 58377304.471659395));
 		data.addProperty("count", 123456789L);
-		JsonObject record = getRecordWithInputDataAndDuplicateAclsAndLegaltags(id, kind, legalTag, data);
-		return record;
+        return getRecordWithInputDataAndDuplicateAclsAndLegaltags(id, kind, legalTag, data);
 	}
 
 	private static JsonObject getRecordWithInputData(String id, String kind, String legalTag, JsonObject data) {
