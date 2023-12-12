@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(SpringRunner.class)
 @WebMvcTest(controllers = PatchApi.class)
-@ComponentScan({"org.opengroup.osdu", "org.opengroup.primary"})
+@ComponentScan("org.opengroup.osdu")
 public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
 
     private final ObjectMapper mapper = new ObjectMapper();

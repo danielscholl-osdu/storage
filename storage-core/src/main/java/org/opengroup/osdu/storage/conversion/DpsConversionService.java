@@ -35,14 +35,17 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.storage.conversion.cache.RecordCache;
+import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.VmCache;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,16 +56,16 @@ import java.util.stream.Collectors;
 
 @Service
 public class DpsConversionService {
+    private static final int CACHE_SIZE = 1000;
+
+    @Value("${cache.expiration.sec:60}")
+    private int cacheExpirationSec;
 
     @Autowired
     private QueryService queryService;
 
     @Autowired
     private CrsConversionService crsConversionService;
-
-    @Lazy
-    @Autowired
-    private RecordCache cache;
 
     @Autowired
     private DpsHeaders headers;
@@ -72,6 +75,13 @@ public class DpsConversionService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private ICache<String, Record> cache;
+
+    @PostConstruct
+    private void setup() {
+        cache = new VmCache<>(cacheExpirationSec, CACHE_SIZE);
+    }
 
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
@@ -245,10 +255,14 @@ public class DpsConversionService {
         }
     }
 
+    private String getCacheKey(String partitionId, String recordId) {
+        return String.format("%s-record-%s", partitionId, recordId);
+    }
+
     private Record getRecordFromCache(String recordId) {
         Record record = null;
         if (this.cache != null) {
-            String cacheKey = this.cache.getCacheKey(this.headers.getPartitionId(), recordId);
+            String cacheKey = this.getCacheKey(this.headers.getPartitionId(), recordId);
             record = this.cache.get(cacheKey);
         }
         return record;
@@ -256,14 +270,13 @@ public class DpsConversionService {
 
     private void putRecordToCache(String recordId, Record record) {
         if (this.cache != null) {
-            String cacheKey = this.cache.getCacheKey(this.headers.getPartitionId(), recordId);
+            String cacheKey = this.getCacheKey(this.headers.getPartitionId(), recordId);
             this.cache.put(cacheKey, record);
         }
     }
 
     private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
-        Record record = null;
-        record = this.getRecordFromCache(unitOfMeasureID);
+        Record record = this.getRecordFromCache(unitOfMeasureID);
         if (record == null) {
             String blob = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
             if (blob == null) {
