@@ -20,7 +20,7 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.25.0-SNAPSHOT</version>
+        <version>0.26.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -32,15 +32,15 @@
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <osdu.corelibazure.version>0.24.0</osdu.corelibazure.version>
-        <osdu.storage-core.version>0.25.0-SNAPSHOT</osdu.storage-core.version>
+        <osdu.corelibazure.version>0.25.0-rc2</osdu.corelibazure.version>
+        <osdu.storage-core.version>0.26.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
         <spring-webmvc.version>5.3.22</spring-webmvc.version>
-        <netty.version>4.1.98.Final</netty.version>
+        <netty.version>4.1.101.Final</netty.version>
         <woodstox-core.version>6.4.0</woodstox-core.version>
         <argLine>
             --add-opens=java.base/java.util=ALL-UNNAMED
@@ -314,9 +314,27 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <argLine>@{argLine} --add-opens java.base/java.lang=ALL_UNNAMED</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
+                <configuration>
+                    <excludes>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/di/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/*Doc.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/StorageApplication.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/SomeBasicInterfaceImpl.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/model/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/exception/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                 <execution>
                     <goals>
