@@ -27,7 +27,7 @@
 		<maven.compiler.source>17</maven.compiler.source>
 		<docker.image.prefix>opendes</docker.image.prefix>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<os-core-common.version>0.26.0-SNAPSHOT</os-core-common.version>
+		<os-core-common.version>0.25.0</os-core-common.version>
 		<jackson-databind.version>2.14.0</jackson-databind.version>
 		<jackson.version>2.14.0</jackson.version>
 		<netty.version>4.1.51.Final</netty.version>
