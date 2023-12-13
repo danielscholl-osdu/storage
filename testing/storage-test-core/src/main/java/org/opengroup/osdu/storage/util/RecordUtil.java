@@ -16,12 +16,12 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.opengroup.osdu.core.common.Constants;
 
 public class RecordUtil {
+	private static final String UNIT_OF_MEASURE_ID = "unitOfMeasureID";
 
     public static String createDefaultJsonRecord(String id, String kind, String legalTag) {
         JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
@@ -241,7 +241,7 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordWithNestedArrayOfProperties(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType) {
+	public static String createJsonRecordWithNestedArrayOfProperties(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType, String unitOfMeasureID) {
 		JsonArray records = new JsonArray();
 
 		for (int i = 12; i < 12 + recordsNumber; i++) {
@@ -256,7 +256,7 @@ public class RecordUtil {
 			nestedArray.add(item1);
 			nestedArray.add(item2);
 
-			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[].measuredDepth");
+			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[].measuredDepth", unitOfMeasureID);
 
 			records.add(record);
 		}
@@ -264,7 +264,7 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType) {
+	public static String createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType, String unitOfMeasureID) {
 		JsonArray records = new JsonArray();
 
 		for (int i = 12; i < 12 + recordsNumber; i++) {
@@ -279,7 +279,7 @@ public class RecordUtil {
 			nestedArray.add(item1);
 			nestedArray.add(item2);
 
-			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[].measuredDepth");
+			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[].measuredDepth", unitOfMeasureID);
 
 			records.add(record);
 		}
@@ -287,7 +287,7 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordWithInhomogeneousNestedArrayOfProperties(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType) {
+	public static String createJsonRecordWithInhomogeneousNestedArrayOfProperties(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType, String unitOfMeasureID) {
 		JsonArray records = new JsonArray();
 
 		for (int i = 13; i < 13 + recordsNumber; i++) {
@@ -302,7 +302,7 @@ public class RecordUtil {
 			nestedArray.add(item1);
 			nestedArray.add(item2);
 
-			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[1].measuredDepth");
+			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[1].measuredDepth", unitOfMeasureID);
 
 			records.add(record);
 		}
@@ -310,7 +310,7 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType) {
+	public static String createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType, String unitOfMeasureID) {
 		JsonArray records = new JsonArray();
 
 		for (int i = 13; i < 13 + recordsNumber; i++) {
@@ -325,7 +325,7 @@ public class RecordUtil {
 			nestedArray.add(item1);
 			nestedArray.add(item2);
 
-			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[1].measuredDepth");
+			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[1].measuredDepth", unitOfMeasureID);
 
 			records.add(record);
 		}
@@ -333,7 +333,7 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	public static String createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType) {
+	public static String createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(int recordsNumber, String id, String kind, String legalTag, String fromRef, String conversionType, String unitOfMeasureID) {
 		JsonArray records = new JsonArray();
 
 		for (int i = 13; i < 13 + recordsNumber; i++) {
@@ -348,7 +348,7 @@ public class RecordUtil {
 			nestedArray.add(item1);
 			nestedArray.add(item2);
 
-			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[2].measuredDepth");
+			JsonObject record = createJsonObjectRecordWithNestedArray(nestedArray, id + i, kind, legalTag, conversionType, fromRef, "markers[2].measuredDepth", unitOfMeasureID);
 
 			records.add(record);
 		}
@@ -356,7 +356,7 @@ public class RecordUtil {
 		return records.toString();
 	}
 
-	private static JsonObject createJsonObjectRecordWithNestedArray(JsonArray nestedArray, String id, String kind, String legalTag, String conversionType, String fromRef, String propertyName) {
+	private static JsonObject createJsonObjectRecordWithNestedArray(JsonArray nestedArray, String id, String kind, String legalTag, String conversionType, String fromRef, String propertyName, String unitOfMeasureID) {
 		JsonObject data = new JsonObject();
 		data.addProperty("message", "integration-test-record");
 		data.add("markers", nestedArray);
@@ -367,6 +367,7 @@ public class RecordUtil {
 		JsonObject meta = new JsonObject();
 		meta.addProperty(Constants.KIND, conversionType);
 		meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromRef);
+		meta.addProperty(UNIT_OF_MEASURE_ID, unitOfMeasureID);
 		meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 		JsonArray metaBlocks = new JsonArray();
@@ -378,7 +379,7 @@ public class RecordUtil {
 		return record;
 	}
 
-	private static JsonObject createJsonObjectRecordWithNestedArray(JsonArray nestedArray, String id, String kind, String legalTag, String conversionType, String fromRef) {
+	private static JsonObject createJsonObjectRecordWithNestedArray(JsonArray nestedArray, String id, String kind, String legalTag, String conversionType, String fromRef, String unitOfMeasureID) {
 		JsonObject data = new JsonObject();
 		data.addProperty("message", "integration-test-record");
 		data.add("markers", nestedArray);
@@ -389,6 +390,7 @@ public class RecordUtil {
 		JsonObject meta = new JsonObject();
 		meta.addProperty(Constants.KIND, conversionType);
 		meta.addProperty(Constants.PERSISTABLE_REFERENCE, fromRef);
+		meta.addProperty(UNIT_OF_MEASURE_ID, unitOfMeasureID);
 		meta.add(Constants.PROPERTY_NAMES, propertyNames);
 
 		JsonArray metaBlocks = new JsonArray();
@@ -757,8 +759,7 @@ public class RecordUtil {
 		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
 		data.add("double-tag", getNumberPropertyObject("score-double", 58377304.471659395));
 		data.addProperty("count", 123456789L);
-		JsonObject record = getRecordWithInputData(id, kind, legalTag, data);
-		return record;
+        return getRecordWithInputData(id, kind, legalTag, data);
 	}
 
 	private static JsonObject getDefaultRecordWithDefaultDataAndDuplicateAclAndLegaltags(String id, String kind, String legalTag) {
@@ -766,8 +767,7 @@ public class RecordUtil {
 		data.add("int-tag", getNumberPropertyObject("score-int", 58377304471659395L));
 		data.add("double-tag", getNumberPropertyObject("score-double", 58377304.471659395));
 		data.addProperty("count", 123456789L);
-		JsonObject record = getRecordWithInputDataAndDuplicateAclsAndLegaltags(id, kind, legalTag, data);
-		return record;
+        return getRecordWithInputDataAndDuplicateAclsAndLegaltags(id, kind, legalTag, data);
 	}
 
 	private static JsonObject getRecordWithInputData(String id, String kind, String legalTag, JsonObject data) {

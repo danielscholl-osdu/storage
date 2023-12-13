@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
@@ -31,30 +32,57 @@ import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
+import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.cache.ICache;
+import org.opengroup.osdu.core.common.cache.VmCache;
+import org.opengroup.osdu.storage.service.QueryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.PostConstruct;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class DpsConversionService {
+    private static final int CACHE_SIZE = 1000;
+
+    @Value("${cache.expiration.sec:60}")
+    private int cacheExpirationSec;
+
+    @Autowired
+    private QueryService queryService;
 
     @Autowired
     private CrsConversionService crsConversionService;
 
     @Autowired
+    private DpsHeaders headers;
+
+    @Autowired
     private JaxRsDpsLog logger;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private ICache<String, Record> cache;
+
+    @PostConstruct
+    private void setup() {
+        cache = new VmCache<>(cacheExpirationSec, CACHE_SIZE);
+    }
 
     private UnitConversionImpl unitConversionService = new UnitConversionImpl();
     private DatesConversionImpl datesConversionService = new DatesConversionImpl();
 
     private static final List<String> validAttributes = Arrays.asList("SpatialLocation", "ProjectedBottomHoleLocation", "GeographicBottomHoleLocation", "SpatialArea", "SpatialPoint", "ABCDBinGridSpatialLocation", "FirstLocation", "LastLocation", "LiveTraceOutline");
+    private static final String UNIT_OF_MEASURE_ID = "unitOfMeasureID";
 
     public RecordsAndStatuses doConversion(List<JsonObject> originalRecords) {
         List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -77,6 +105,8 @@ public class DpsConversionService {
                 List<ConversionRecord> metaConvertedRecords = new ArrayList<>();
                 crsConversionResult = this.crsConversionService.doCrsConversion(recordsWithMetaBlock, conversionStatuses);
                 metaConvertedRecords = this.getConversionRecords(crsConversionResult);
+                // update persistableReefrence value using unitOfMeasureID property
+                this.updatePersistableReference(metaConvertedRecords);
                 this.unitConversionService.convertUnitsToSI(metaConvertedRecords);
                 this.datesConversionService.convertDatesToISO(metaConvertedRecords);
                 addOrUpdateRecordStatus(conversionResults, metaConvertedRecords);
@@ -194,6 +224,79 @@ public class DpsConversionService {
             conversionRecords.add(ConversionRecordObj);
         }
         return conversionRecords;
+    }
+
+    private void updatePersistableReference(List<ConversionRecord> conversionRecords) {
+        for (ConversionRecord conversionRecord : conversionRecords) {
+            JsonObject recordObj = conversionRecord.getRecordJsonObject();
+            JsonArray metaArray = recordObj.getAsJsonArray(Constants.META);
+            if (metaArray == null) {
+                return;
+            }
+            for (JsonElement item : metaArray) {
+                JsonObject metaItem = (JsonObject) item;
+                JsonElement unitOfMeasureIDElement = metaItem.get(UNIT_OF_MEASURE_ID);
+                if (unitOfMeasureIDElement == null || unitOfMeasureIDElement.getAsString().equals("")) {
+                    return;
+                }
+                String unitOfMeasureID = unitOfMeasureIDElement.getAsString().replaceAll(":$", "");
+                String persistableReference = this.getPersistableReferenceByUnitOfMeasureID(unitOfMeasureID);
+                if (persistableReference.equals("")) {
+                    return;
+                }
+                // update persistableReference to corresponding to unitOfMeasureID
+                metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, persistableReference);
+            }
+        }
+    }
+
+    private String getCacheKey(String partitionId, String recordId) {
+        return String.format("%s-record-%s", partitionId, recordId);
+    }
+
+    private Record getRecordFromCache(String recordId) {
+        Record recordObj = null;
+        if (this.cache != null) {
+            String cacheKey = this.getCacheKey(this.headers.getPartitionId(), recordId);
+            recordObj = this.cache.get(cacheKey);
+        }
+        return recordObj;
+    }
+
+    private void putRecordToCache(String recordId, Record record) {
+        if (this.cache != null) {
+            String cacheKey = this.getCacheKey(this.headers.getPartitionId(), recordId);
+            this.cache.put(cacheKey, record);
+        }
+    }
+
+    private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
+        Record recordObj = this.getRecordFromCache(unitOfMeasureID);
+        if (recordObj == null) {
+            String blob;
+            try {
+                blob = this.queryService.getRecordInfo(unitOfMeasureID, null, Optional.<CollaborationContext>empty());
+            } catch (AppException e) {
+                this.logger.error(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID), e);
+                return "";
+            }
+            try {
+                recordObj = objectMapper.readValue(blob, Record.class);
+            } catch (JsonProcessingException e) {
+                this.logger.error(String.format("Error occurred during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
+                return "";
+            }
+            this.putRecordToCache(unitOfMeasureID, recordObj);
+        }
+        Map<String, Object> recordData = recordObj.getData();
+        if (recordData == null) {
+            return "";
+        }
+        Object persistableReference = recordData.get(StringUtils.capitalize(Constants.PERSISTABLE_REFERENCE));
+        if (persistableReference == null) {
+            return "";
+        }
+        return persistableReference.toString();
     }
 
     private void checkMismatchAndLogMissing(List<JsonObject> originalRecords, List<ConversionRecord> convertedRecords) {
