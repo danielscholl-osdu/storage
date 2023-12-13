@@ -13,7 +13,7 @@
 // limitations under the License.
 
 package org.opengroup.osdu.storage.query;
-
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     protected static final long NOW = System.currentTimeMillis();
@@ -41,7 +42,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     protected static final String PERSISTABLE_REFERENCE_UNIT_Z = "{\"baseMeasurement\":{\"ancestry\":\"Length\",\"type\":\"UM\"},\"scaleOffset\":{\"offset\":0.0,\"scale\":0.3048},\"symbol\":\"ft\",\"type\":\"USO\"}";
     private static final String DATETIME_PERSISTABLE_REFERENCE = "{\"type\":\"DAT\",\"format\":\"YYYY-MM-DD\"}";
     private static final String UNIT_PERSISTABLE_REFERENCE = "{\"abcd\":{\"a\":0.0,\"b\":0.3048,\"c\":1.0,\"d\":0.0},\"symbol\":\"ft\",\"baseMeasurement\":{\"ancestry\":\"L\",\"type\":\"UM\"},\"type\":\"UAD\"}";
-
+    private static final String UNIT_OF_MEASURE_ID = String.format("%s:reference-data--UnitOfMeasure:ft:", TenantUtils.getTenantName());
     public static void classSetup(String token) throws Exception {
         LegalTagUtils.create(LEGAL_TAG, token);
     }
@@ -385,7 +386,8 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     @Test
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
-        String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+
+        String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit",  UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(201, createResponse.getCode());
 
@@ -401,8 +403,11 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertNotNull(responseObject.records);
         assertEquals(1, responseObject.records.length);
+        assertNotNull(responseObject.notFound);
         assertEquals(0, responseObject.notFound.length);
+        assertNotNull(responseObject.conversionStatuses);
         assertEquals(1, responseObject.conversionStatuses.size());
         assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
         assertEquals(KIND, responseObject.records[0].kind);
@@ -419,7 +424,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     @Test
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
-        String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(201, createResponse.getCode());
 
@@ -454,7 +459,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     @Test
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
-        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(201, createResponse.getCode());
 
@@ -488,7 +493,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     @Test
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
-        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(201, createResponse.getCode());
 
@@ -523,7 +528,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
     @Test
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithIndexOutOfBoundary() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
-        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit");
+        String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(201, createResponse.getCode());
 
