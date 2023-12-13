@@ -20,7 +20,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.Constants;
@@ -34,6 +33,7 @@ import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.model.storage.Record;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.VmCache;
@@ -46,12 +46,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -278,15 +273,17 @@ public class DpsConversionService {
     private String getPersistableReferenceByUnitOfMeasureID(String unitOfMeasureID) {
         Record recordObj = this.getRecordFromCache(unitOfMeasureID);
         if (recordObj == null) {
-            String blob = this.queryService.getRecordInfo(unitOfMeasureID, null, null);
-            if (blob == null) {
-                this.logger.warning(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID));
+            String blob;
+            try {
+                blob = this.queryService.getRecordInfo(unitOfMeasureID, null, Optional.<CollaborationContext>empty());
+            } catch (AppException e) {
+                this.logger.error(String.format("Wrong unitOfMeasureID provided: %s", unitOfMeasureID), e);
                 return "";
             }
             try {
                 recordObj = objectMapper.readValue(blob, Record.class);
             } catch (JsonProcessingException e) {
-                this.logger.error(String.format("Error occured during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
+                this.logger.error(String.format("Error occurred during parsing record for unitOfMeasureID: %s", unitOfMeasureID), e);
                 return "";
             }
             this.putRecordToCache(unitOfMeasureID, recordObj);
