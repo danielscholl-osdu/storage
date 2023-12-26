@@ -336,7 +336,10 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         try {
             queryResults = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
         } catch (AppException e){
-            throw new AppException(503, "Error reaching Cosmos DB service.", e.getMessage(), e);
+            if (e.getError().getCode() == HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                throw new AppException(503, "Error reaching Cosmos DB service.", e.getMessage(), e);
+            else
+                throw e;
         }
 
         return queryResults;
