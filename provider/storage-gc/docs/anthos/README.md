@@ -167,11 +167,11 @@ It can be overridden by:
 
 **PropertySet:**
 
-| Property | Description |
-| --- | --- |
-| osm.postgres.datasource.url | server URL |
-| osm.postgres.datasource.username | username |
-| osm.postgres.datasource.password | password |
+| Property                         | Description |
+|----------------------------------|-------------|
+| osm.postgres.datasource.url      | server URL  |
+| osm.postgres.datasource.username | username    |
+| osm.postgres.datasource.password | password    |
 
 <details><summary>Example of a definition for a single tenant</summary>
 
@@ -330,19 +330,19 @@ It can be overridden by:
 
 **PropertySet** (for two types of connection: messaging and admin operations):
 
-| Property | Description |
-| --- | --- |
-| oqm.rabbitmq.amqp.host | messaging hostname or IP |
-| oqm.rabbitmq.amqp.port | - port |
-| oqm.rabbitmq.amqp.path | - path |
-| oqm.rabbitmq.amqp.username | - username |
-| oqm.rabbitmq.amqp.password | - password |
-| oqm.rabbitmq.admin.schema | admin host schema |
-| oqm.rabbitmq.admin.host | - host name |
-| oqm.rabbitmq.admin.port | - port |
-| oqm.rabbitmq.admin.path | - path |
-| oqm.rabbitmq.admin.username | - username |
-| oqm.rabbitmq.admin.password | - password |
+| Property                    | Description              |
+|-----------------------------|--------------------------|
+| oqm.rabbitmq.amqp.host      | messaging hostname or IP |
+| oqm.rabbitmq.amqp.port      | - port                   |
+| oqm.rabbitmq.amqp.path      | - path                   |
+| oqm.rabbitmq.amqp.username  | - username               |
+| oqm.rabbitmq.amqp.password  | - password               |
+| oqm.rabbitmq.admin.schema   | admin host schema        |
+| oqm.rabbitmq.admin.host     | - host name              |
+| oqm.rabbitmq.admin.port     | - port                   |
+| oqm.rabbitmq.admin.path     | - path                   |
+| oqm.rabbitmq.admin.username | - username               |
+| oqm.rabbitmq.admin.password | - password               |
 
 <details><summary>Example of a single tenant definition</summary>
 
