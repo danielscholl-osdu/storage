@@ -16,10 +16,10 @@ Define the following environment variables.
 
 Must have:
 
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `SPRING_PROFILES_ACTIVE` | ex `gcp` | Spring profile that activate default configuration for Google Cloud environment | false | - |
-| `STORAGE_SERVICE_ACCOUNT_EMAIL` | `workload-storage-gc@nice-etching-277309.iam.gserviceaccount.com` |  Storage service account email, used during OQM events processing |no| - |
+| name                            | value                                                             | description                                                                     | sensitive? | source |
+|---------------------------------|-------------------------------------------------------------------|---------------------------------------------------------------------------------|------------|--------|
+| `SPRING_PROFILES_ACTIVE`        | ex `gcp`                                                          | Spring profile that activate default configuration for Google Cloud environment | false      | -      |
+| `STORAGE_SERVICE_ACCOUNT_EMAIL` | `workload-storage-gc@nice-etching-277309.iam.gserviceaccount.com` | Storage service account email, used during OQM events processing                | no         | -      |
 
 ### Common properties for all environments
 
@@ -43,13 +43,13 @@ Must have:
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
 
-| name | value | description | sensitive? | source |
-| ---  | ---   | ---         | ---        | ---    |
-| `PARTITION_AUTH_ENABLED` | ex `true` or `false` | Disable or enable auth token provisioning for requests to Partition service | no | - |
-| `OQMDRIVER` | `rabbitmq` or `pubsub` | Oqm driver mode that defines which message broker will be used | no | - |
-| `OSMDRIVER` | `datastore` or `postgres`| Osm driver mode that defines which KV storage will be used | no | - |
-| `OBMDRIVER` | `gcs` or `minio` | Obm driver mode that defines which object storage will be used | no | - |
-| `SERVICE_TOKEN_PROVIDER` | `GCP` or `OPENID` |Service account token provider, `GCP` means use Google service account `OPEIND` means use OpenId provider like `Keycloak` | no | - |
+| name                     | value                     | description                                                                                                               | sensitive? | source |
+|--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------|------------|--------|
+| `PARTITION_AUTH_ENABLED` | ex `true` or `false`      | Disable or enable auth token provisioning for requests to Partition service                                               | no         | -      |
+| `OQMDRIVER`              | `rabbitmq` or `pubsub`    | Oqm driver mode that defines which message broker will be used                                                            | no         | -      |
+| `OSMDRIVER`              | `datastore` or `postgres` | Osm driver mode that defines which KV storage will be used                                                                | no         | -      |
+| `OBMDRIVER`              | `gcs` or `minio`          | Obm driver mode that defines which object storage will be used                                                            | no         | -      |
+| `SERVICE_TOKEN_PROVIDER` | `GCP` or `OPENID`         | Service account token provider, `GCP` means use Google service account `OPEIND` means use OpenId provider like `Keycloak` | no         | -      |
 
 ### For Mappers to activate drivers
 
@@ -139,8 +139,8 @@ curl -L -X PATCH 'https:///api/partition/v1/partitions/opendes' -H 'data-partiti
 TBD
 
 | Required roles |
-| ---    |
-| - |
+|----------------|
+| -              |
 
 ### Running E2E Tests
 

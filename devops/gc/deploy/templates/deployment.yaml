@@ -57,7 +57,7 @@ spec:
         livenessProbe:
           failureThreshold: 3
           httpGet:
-            path: /api/storage/v2/health
+            path: /api/storage/v2/liveness_check
             port: 8080
           initialDelaySeconds: 120
           periodSeconds: 10
