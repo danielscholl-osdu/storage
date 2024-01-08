@@ -16,7 +16,6 @@ Apache-1.1
 The following software have components provided under the terms of this license:
 
 - Apache Geronimo JMS Spec 2.0 (from http://geronimo.apache.org/maven/${siteId}/${version})
-- Apache Log4j JUL Adapter (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-jul)
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - Microsoft Application Insights Java Agent (from https://github.com/Microsoft/ApplicationInsights-Java)
 - Microsoft Application Insights Java SDK Spring Boot starter (from https://github.com/Microsoft/ApplicationInsights-Java)
@@ -69,7 +68,7 @@ The following software have components provided under the terms of this license:
 - Apache Log4j JUL Adapter (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-jul)
 - Apache Log4j SLF4J Binding (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl)
 - Apache Log4j to SLF4J Adapter (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-to-slf4j)
-- AssertJ Core (from ${project.organization.url}#${project.artifactId})
+- AssertJ Core (from https://assertj.github.io/doc/#assertj-core)
 - Asynchronous Http Client (from https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client)
 - Asynchronous Http Client Netty Utils (from https://repo1.maven.org/maven2/org/asynchttpclient/async-http-client-netty-utils)
 - AutoValue Annotations (from https://github.com/google/auto/tree/main/value, https://github.com/google/auto/tree/master/value, https://repo1.maven.org/maven2/com/google/auto/value/auto-value-annotations)
@@ -509,7 +508,6 @@ The following software have components provided under the terms of this license:
 - JUnit Jupiter API (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Engine (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Params (from http://junit.org/junit5/, https://junit.org/junit5/)
-- JUnit Platform Commons (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Engine API (from http://junit.org/junit5/, https://junit.org/junit5/)
 - Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - Jakarta Validation API (from https://beanvalidation.org)
@@ -658,7 +656,6 @@ The following software have components provided under the terms of this license:
 - Animal Sniffer Annotations (from https://repo1.maven.org/maven2/org/codehaus/mojo/animal-sniffer-annotations)
 - Apache HttpClient Cache (from http://hc.apache.org/httpcomponents-client, http://hc.apache.org/httpcomponents-client-ga)
 - Apache Log4j API (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api)
-- Apache Log4j SLF4J Binding (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl)
 - Apache Log4j to SLF4J Adapter (from https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-to-slf4j)
 - Azure Java Client Authentication Library for AutoRest (from https://github.com/Azure/autorest-clientruntime-for-java)
 - Azure Java Client Runtime for ARM (from https://github.com/Azure/autorest-clientruntime-for-java)
