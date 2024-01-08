@@ -36,7 +36,7 @@
         <osdu.storage-core.version>0.26.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
-        <nimbus-jose-jwt-azure.version>8.20.1</nimbus-jose-jwt-azure.version>
+        <nimbus-jose-jwt-azure.version>9.30.2</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
         <spring-webmvc.version>5.3.22</spring-webmvc.version>
@@ -49,6 +49,9 @@
             --add-opens java.base/java.text=ALL-UNNAMED
             --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED
         </argLine>
+        <reactor-netty.version>1.1.14</reactor-netty.version>
+        <okhttp.version>4.12.0</okhttp.version>
+        <okio.version>3.7.0</okio.version>
     </properties>
 
     <dependencyManagement>
@@ -262,6 +265,22 @@
             <artifactId>applicationinsights-runtime-attach</artifactId>
             <version>3.4.18</version>
         </dependency>
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+            <version>${reactor-netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okio</groupId>
+            <artifactId>okio</artifactId>
+            <version>${okio.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
