@@ -416,6 +416,21 @@ class RecordMetadataRepositoryTest {
     }
 
     @Test
+    void getById_shouldThrowAppException_when_cosmosStore_throwsServiceUnavailableException(){
+        AppException appException = mock(AppException.class);
+        AppError appError = mock(AppError.class);
+        when(appException.getError()).thenReturn(appError);
+        when(appError.getCode()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+
+        doThrow(appException).when(cosmosStore).queryItems(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), any(Class.class));
+
+        AppException appExceptionResponse = assertThrows(AppException.class, () -> recordMetadataRepository.findIdsByMetadata_kindAndMetadata_status(KIND, STATUS, Optional.empty()));
+
+        assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, appExceptionResponse.getError().getCode());
+        assertEquals("Error reaching Cosmos DB service.", appExceptionResponse.getError().getReason());
+    }
+
+    @Test
     void getById_shouldReturnRecordMetadata_when_called() {
         RecordMetadataDoc doc = Mockito.mock(RecordMetadataDoc.class);
 
