@@ -223,7 +223,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         SqlQuerySpec query = new SqlQuerySpec(sqlQueryString);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
 
-        List<RecordMetadataDoc> queryResults = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
+        List<RecordMetadataDoc> queryResults = queryCosmosItems(query, options);
 
         Map<String, RecordMetadata> results = new HashMap<>();
         for (RecordMetadataDoc doc : queryResults) {
@@ -243,7 +243,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         Assert.notNull(status, "status must not be null");
         SqlQuerySpec query = getIdsByMetadata_kindAndMetada_statusQuery(kind, status, collaborationContext);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
-        return this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
+        return queryCosmosItems(query, options);
     }
 
     public Page<RecordMetadataDoc> findIdsByMetadata_kindAndMetadata_status(String kind, String status, Pageable pageable, Optional<CollaborationContext> collaborationContext) {
@@ -328,5 +328,20 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         cosmosPatchOperations.replace(METADATA_PREFIX_PATH + MODIFY_USER_PATH, modifyUser);
         cosmosPatchOperations.replace(METADATA_PREFIX_PATH + MODIFY_TIME_PATH, modifyTime);
         return cosmosPatchOperations;
+    }
+
+    private List<RecordMetadataDoc> queryCosmosItems(SqlQuerySpec query, CosmosQueryRequestOptions options){
+        List<RecordMetadataDoc> queryResults;
+
+        try {
+            queryResults = this.queryItems(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, query, options);
+        } catch (AppException e){
+            if (e.getError().getCode() == HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                throw new AppException(HttpStatus.SC_SERVICE_UNAVAILABLE, "Error reaching Cosmos DB service.", e.getMessage(), e);
+            else
+                throw e;
+        }
+
+        return queryResults;
     }
 }
