@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 
@@ -17,12 +18,22 @@ public class RecordUtil {
 
     @Value("${record-id.max.length}")
     private Integer recordIdMaxLength;
+    private static final java.util.regex.Pattern endingCharacterPattern = java.util.regex.Pattern.compile(".*[\\.\\\\\\/]$");
 
     public void validateIds(List<String> inputRecords) {
         if (inputRecords.stream().filter(Objects::nonNull)
                 .anyMatch(id -> id.length() > recordIdMaxLength)) {
             String msg = "RecordId values which are exceeded 100 symbols temporarily not allowed";
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid id", msg);
+        }
+
+        for (String record : inputRecords) {
+            Matcher recordIdMatcher = endingCharacterPattern.matcher(record);
+            boolean matchFound = recordIdMatcher.find();
+            if (matchFound) {
+                String msg = "RecordId values ending in dot, backslash, or forward slash not allowed";
+                throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid id", msg);
+            }
         }
     }
 
