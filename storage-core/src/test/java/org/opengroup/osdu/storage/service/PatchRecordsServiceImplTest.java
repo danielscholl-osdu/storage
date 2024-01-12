@@ -223,6 +223,27 @@ public class PatchRecordsServiceImplTest {
     }
 
     @Test
+    public void shouldSuccessfullyPatchMetadata_ifSomeRecordsNotFound() throws IOException {
+        /*
+        Ensure that when one of the records is not found, the others are still updated.
+         */
+        JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/tags\", \"value\":{\"key1\" : \"value1\"}}]"));
+        Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
+        existingRecords.remove(RECORD_ID1);
+        when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
+        when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(true);
+
+        PatchRecordsResponse result = sut.patchRecords(recordIds, jsonPatch, USER, COLLABORATION_CONTEXT);
+
+        assertEquals(List.of(RECORD_ID1), result.getNotFoundRecordIds());
+        assertEquals(Collections.emptyList(), result.getFailedRecordIds());
+        assertEquals(Collections.emptyList(), result.getErrors());
+        List<String> responseRecordIds = new LinkedList<>(List.of(RECORD_ID2 + ":" + RECORD_VERSION));
+        assertEquals(responseRecordIds, result.getRecordIds());
+        assertThat(result.getRecordCount(), is(1));
+    }
+
+    @Test
     public void shouldNotPatchData_ifResultHasEmptyLegaltagsForAllRecords() throws IOException {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/legal/legaltags/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));

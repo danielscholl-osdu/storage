@@ -93,7 +93,6 @@ class RecordsMetadataRepositoryTest {
         QueryPageResult<LegalTagAssociationDoc> result = mock(QueryPageResult.class);
         result.results = docs;
         when(queryHelper.queryPage(eq(LegalTagAssociationDoc.class), any(), eq(limit), eq(cursor))).thenReturn(result);
-        when(repo.get(anyString(), any(Optional.class))).thenReturn(new RecordMetadata());
         repo.queryByLegalTagName(legalTagName, limit, cursor);
 
         assertNotNull(result);
