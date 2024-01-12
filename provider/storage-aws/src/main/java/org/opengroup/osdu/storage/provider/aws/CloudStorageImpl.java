@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.provider.aws.util.s3.S3RecordClient;
 import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
@@ -227,7 +228,7 @@ public class CloudStorageImpl implements ICloudStorage {
     public Map<String, Acl> updateObjectMetadata(List<RecordMetadata> recordsMetadata, List<String> recordsId, List<RecordMetadata> validMetadata, List<String> lockedRecords, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
 
         Map<String, Acl> originalAcls = new HashMap<>();
-        Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId, Optional.empty());
+        Map<String, RecordMetadata> currentRecords = this.recordsMetadataRepository.get(recordsId, collaborationContext);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
             String id = recordMetadata.getId();
@@ -235,14 +236,14 @@ public class CloudStorageImpl implements ICloudStorage {
 
             if (!id.equalsIgnoreCase(idWithVersion)) {
                 long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
-                long currentVersion = currentRecords.get(id).getLatestVersion();
+                long currentVersion = currentRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext)).getLatestVersion();
                 if (previousVersion != currentVersion) {
                     lockedRecords.add(idWithVersion);
                     continue;
                 }
             }
             validMetadata.add(recordMetadata);
-            originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext)).getAcl());
         }
         return originalAcls;
     }
@@ -256,7 +257,7 @@ public class CloudStorageImpl implements ICloudStorage {
             originalAclRecords.add(recordMetadata);
         }
         try {
-            this.recordsMetadataRepository.createOrUpdate(originalAclRecords, Optional.empty());
+            this.recordsMetadataRepository.createOrUpdate(originalAclRecords, collaborationContext);
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
         }
