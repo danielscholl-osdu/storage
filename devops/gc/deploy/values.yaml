@@ -5,7 +5,6 @@
 global:
   domain: ""
   onPremEnabled: false
-  dataBootstrapEnabled: false
   limitsEnabled: true
 
 data:
@@ -20,16 +19,11 @@ data:
   legalHost: "http://legal"
   opaEnabled: false
   opaEndpoint: "http://opa"
-  storageHost: "http://storage"
-  defaultLegalTag: "default-data-tag"
-  dataPartitionId: ""
   # deployments
   requestsCpu: "7m"
   requestsMemory: "450Mi"
   limitsCpu: "1"
   limitsMemory: "3G"
-  bootstrapImage: ""
-  bootstrapServiceAccountName: ""
   image: ""
   imagePullPolicy: "IfNotPresent"
   serviceAccountName: "storage"
@@ -44,7 +38,6 @@ conf:
   minioSecretName: "storage-minio-secret"
   postgresSecretName: "storage-postgres-secret"
   rabbitmqSecretName: "rabbitmq-secret"
-  bootstrapSecretName: "datafier-secret"
   replicas: 3
   storageRedisSecretName: "storage-redis-secret"
 
@@ -53,5 +46,3 @@ istio:
   proxyCPULimit: "200m"
   proxyMemory: "50Mi"
   proxyMemoryLimit: "256Mi"
-  bootstrapProxyCPU: "5m"
-  bootstrapProxyCPULimit: "50m"
