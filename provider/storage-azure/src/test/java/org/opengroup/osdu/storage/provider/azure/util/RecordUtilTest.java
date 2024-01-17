@@ -26,7 +26,7 @@ class RecordUtilTest {
     private static final String RECORD_ID_ENDING_WITH_FORWARDSLASH = "id/";
     private static final String ERROR_REASON = "Invalid id";
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
-    private static final String UNSUPPORTED_CHARACTER_ERROR_MESSAGE = "RecordId values ending in dot, backslash, or forward slash not allowed";
+    private static final String UNSUPPORTED_CHARACTER_ERROR_MESSAGE = "RecordId values ending in dot (.), backslash (\\), or forward slash (/) not allowed";
     private static final Long VERSION = 10000L;
     private static final String WRONG_VERSION = "11111";
     private static final String VERSION_SEQUENCE = "1";
