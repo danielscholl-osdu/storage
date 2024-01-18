@@ -11,7 +11,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
-import org.opengroup.osdu.storage.provider.azure.service.LegalComplianceChangeServiceAzureImpl;
 import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 
 import java.util.Collections;
@@ -27,9 +26,6 @@ class LegalComplianceChangeUpdateTest {
     private static Exception exception = null;
     @InjectMocks
     private LegalComplianceChangeUpdate legalComplianceChangeUpdate;
-
-    @Mock
-    private LegalComplianceChangeServiceAzureImpl legalComplianceChangeServiceAzure;
 
     @Mock
     private MDCContextMap mdcContextMap;
@@ -107,6 +103,7 @@ class LegalComplianceChangeUpdateTest {
         doThrow(exception).when(complianceMessagePullReceiver).receiveMessage(any(), any());
 
         assertThrows(Exception.class, () -> legalComplianceChangeUpdate.updateCompliance(message));
+
         verify(complianceMessagePullReceiver).receiveMessage(any(), any());
     }
 }

@@ -2,6 +2,7 @@ package org.opengroup.osdu.storage.provider.azure.config;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -16,19 +17,20 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class ThreadScopeTest {
-    private String name = "name";
-    private ThreadScope threadScope = new ThreadScope();
     @Mock
-    ObjectFactory<?> factory = null;
+    ObjectFactory<?> factory;
     @Mock
     Object obj;
-    @Mock
-    ThreadScope scope;
+    @InjectMocks
+    ThreadScope sut;
     @Mock
     ThreadScopeContext context;
     @Mock
@@ -39,28 +41,38 @@ class ThreadScopeTest {
     MockHttpServletRequest request;
     @Mock
     MDC mdcContext;
+    private final String name = "name";
 
     @Test
-    void shouldGetObject() {
-        when(scope.get(name,factory)).thenReturn(obj);
-        obj = scope.get(name,factory);
+    void getObjectShouldCleanupContext_AndReturnNonNullObjectOfTypeDpsHeaders() {
+        Map<String, String> headers = getSomeHeadersInAMap();
+        Enumeration<String> headerNames = Collections.enumeration(headers.keySet());
+        when(request.getHeaderNames()).thenReturn(headerNames);
+        when(request.getHeader(any())).thenReturn("header");
+
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        obj = sut.get("bean-name", factory);
+
         assertNotNull(obj);
+        assertEquals(obj.getClass(), dpsHeaders.getClass());
     }
+
     @Test
-    void shouldNotGetObject(){
-        when(scope.get(any(),any())).thenReturn(null);
-        obj = scope.get(any(),any());
-        assertNull(obj);
+    void get_shouldReturnObjectFromSuppliedFactory_ifRequestAttributesAreMissing() {
+        RequestContextHolder.resetRequestAttributes();
+        ObjectFactory<Object> objectFactory = mock(ObjectFactory.class);
+        when(objectFactory.getObject()).thenReturn(obj);
+
+        Object objOut = sut.get(name, objectFactory);
+
+        assertEquals(obj, objOut);
     }
-    @Test
-    void shouldGetObjectofDpsHeaderClass(){
+
+    private Map<String, String> getSomeHeadersInAMap() {
         Map<String, String> headers = new HashMap<>();
         headers.put("header1", "value1");
         headers.put("Content-Type", "text/html");
-        Enumeration<String> headerNames = Collections.enumeration(headers.keySet());
-        when(request.getHeaderNames()).thenReturn(headerNames);
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-        when(request.getHeader(any())).thenReturn("header");
-        assertEquals(threadScope.get(name,factory).getClass(),dpsHeaders.getClass());
+        return headers;
     }
 }
