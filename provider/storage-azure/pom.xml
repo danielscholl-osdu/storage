@@ -352,6 +352,10 @@
                         <exclude>org/opengroup/osdu/storage/provider/azure/SomeBasicInterfaceImpl.class</exclude>
                         <exclude>org/opengroup/osdu/storage/provider/azure/model/**</exclude>
                         <exclude>org/opengroup/osdu/storage/provider/azure/exception/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/security/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/cache/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/config/ThreadScopeBeanFactoryPostProcessor</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/config/ThreadDpsHeaders</exclude>
                     </excludes>
                 </configuration>
                 <executions>
