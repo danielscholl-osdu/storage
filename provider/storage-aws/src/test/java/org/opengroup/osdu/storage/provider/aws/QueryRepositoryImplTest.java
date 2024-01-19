@@ -29,6 +29,7 @@ import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
@@ -143,6 +144,9 @@ class QueryRepositoryImplTest {
         expectedRecordMetadataDoc.setKind(kind);
         expectedRecordMetadataDoc.setUser(user);
         expectedRecordMetadataDoc.setStatus("active");
+        RecordMetadata expectedRecordMetadata = new RecordMetadata();
+        expectedRecordMetadata.setId(recordId);
+        expectedRecordMetadataDoc.setMetadata(expectedRecordMetadata);
         List<RecordMetadataDoc> expectedRecordMetadataDocList = new ArrayList<>();
         expectedRecordMetadataDocList.add(expectedRecordMetadataDoc);
         QueryPageResult<RecordMetadataDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedRecordMetadataDocList);
@@ -218,6 +222,9 @@ class QueryRepositoryImplTest {
         expectedRecordMetadataDoc.setKind(kind);
         expectedRecordMetadataDoc.setUser(user);
         expectedRecordMetadataDoc.setStatus("active");
+        RecordMetadata expectedRecordMetadata = new RecordMetadata();
+        expectedRecordMetadata.setId(recordId);;
+        expectedRecordMetadataDoc.setMetadata(expectedRecordMetadata);
         List<RecordMetadataDoc> expectedRecordMetadataDocList = new ArrayList<>();
         expectedRecordMetadataDocList.add(expectedRecordMetadataDoc);
         QueryPageResult<RecordMetadataDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedRecordMetadataDocList);
