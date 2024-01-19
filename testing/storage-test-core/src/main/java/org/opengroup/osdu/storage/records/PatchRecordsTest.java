@@ -39,6 +39,7 @@ public abstract class PatchRecordsTest extends TestBase {
     private static String KIND_TO_BE_PATCHED = TenantUtils.getFirstTenantName() + ":bulkupdate:test:1.2." + NOW;
     private static String RECORD_ID1 = TenantUtils.getFirstTenantName() + ":test:1.1." + NOW;
     private static String RECORD_ID2 = TenantUtils.getFirstTenantName() + ":test:1.2." + NOW;
+    private static final int MAX_OP_NUMBER = 100;
 
     private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
 
@@ -172,6 +173,33 @@ public abstract class PatchRecordsTest extends TestBase {
 
     }
 
+    @Test
+    public void should_update_whenNumberOfPatchOperationsIsMaximum() throws Exception {
+        List<String> records = new ArrayList<>();
+        records.add(RECORD_ID1);
+        CloseableHttpResponse queryResponse = queryRecordsResponse(records);
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
+
+        DummyRecordsHelper.ConvertedRecordsMock queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
+        assertQueryResponse(queryResponseObject, 1);
+        String currentVersionRecord = queryResponseObject.records[0].version;
+
+        CloseableHttpResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "application/json-patch+json", getMaximumPatchOperationsPayload(records), "");
+        assertEquals(HttpStatus.SC_OK, patchResponse.getCode());
+
+        queryResponse = queryRecordsResponse(records);
+        assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
+
+        queryResponseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(queryResponse);
+        assertEquals(1, queryResponseObject.records.length);
+        assertEquals(currentVersionRecord, queryResponseObject.records[0].version);
+        Map<String, String> tags = queryResponseObject.records[0].tags;
+        assertTrue(tags.containsKey("testTag0"));
+        assertTrue(tags.containsKey("testTag99"));
+        assertEquals("value0", tags.get("testTag0"));
+        assertEquals("value99", tags.get("testTag99"));
+    }
+
     //TODO: add a test to validate same 'op' and 'path' and assert expected behavior
 
     private CloseableHttpResponse queryRecordsResponse(List<String> recordIds) throws Exception {
@@ -260,6 +288,22 @@ public abstract class PatchRecordsTest extends TestBase {
         replaceDataPatch.addProperty("path", "/data");
         replaceDataPatch.add("value", newDataValue);
         return replaceDataPatch;
+    }
+
+    private String getMaximumPatchOperationsPayload(List<String> records) {
+        JsonArray recordsJson = new JsonArray();
+        for (String record : records) {
+            recordsJson.add(record);
+        }
+        JsonArray ops = new JsonArray();
+        for (int i = 0; i < MAX_OP_NUMBER; i++) {
+            JsonObject addTagOperation = new JsonObject();
+            addTagOperation.addProperty("op", "add");
+            addTagOperation.addProperty("path", "/tags/testTag" + i);
+            addTagOperation.addProperty("value", "value" + i);
+            ops.add(addTagOperation);
+        }
+        return getPatchrequestBody(recordsJson, ops);
     }
 
     private String getPatchrequestBody(JsonArray recordsJson, JsonArray ops) {
