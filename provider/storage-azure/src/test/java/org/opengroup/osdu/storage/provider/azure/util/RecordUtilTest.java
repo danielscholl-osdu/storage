@@ -49,6 +49,7 @@ class RecordUtilTest {
         assertEquals(ERROR_MESSAGE, appException.getError().getMessage());
         assertEquals(ERROR_REASON, appException.getError().getReason());
 
+
     }
 
     @Test

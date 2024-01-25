@@ -17,11 +17,12 @@ public class RecordUtil {
     @Value("${record-id.max.length}")
     private Integer recordIdMaxLength;
 
+    private static final String MAX_LENGTH_ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
+
     public void validateIds(List<String> inputRecords) {
         if (inputRecords.stream().filter(Objects::nonNull)
                 .anyMatch(id -> id.length() > recordIdMaxLength)) {
-            String msg = "RecordId values which are exceeded 100 symbols temporarily not allowed";
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid id", msg);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid id", MAX_LENGTH_ERROR_MESSAGE);
         }
     }
 
