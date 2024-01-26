@@ -138,7 +138,7 @@ class RecordMetadataRepositoryTest {
         Map<String, String> partitionKeyForDoc = new HashMap<>();
         partitionKeyForDoc.put(expectedDocId, RECORD_ID1);
         Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.of(collaborationContext));
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        verify(cosmosBulkStore, times(1)).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 
@@ -150,7 +150,7 @@ class RecordMetadataRepositoryTest {
         Map<String, String> partitionKeyForDoc = new HashMap<>();
         partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
         Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        verify(cosmosBulkStore, times(1)).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 
@@ -162,7 +162,7 @@ class RecordMetadataRepositoryTest {
         Map<String, String> partitionKeyForDoc = new HashMap<>();
         partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
         Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        verify(cosmosBulkStore, times(1)).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 
@@ -184,7 +184,7 @@ class RecordMetadataRepositoryTest {
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);
 
-        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        doThrow(appException).when(cosmosBulkStore).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         Map<String, String> patchErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
         assertEquals(2, patchErrors.size());
         assertEquals("unknown error with status 500", patchErrors.get("recordId:123"));
@@ -212,7 +212,7 @@ class RecordMetadataRepositoryTest {
         when(originalException.getError()).thenReturn(appError);
         when(appException.getOriginalException()).thenReturn(originalException);
 
-        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        doThrow(appException).when(cosmosBulkStore).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         Map<String, String> patchErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.of(collaborationContext));
         assertEquals(2, patchErrors.size());
         assertEquals("unknown error with status 500", patchErrors.get("recordId:123"));
@@ -228,7 +228,7 @@ class RecordMetadataRepositoryTest {
         partitionKeyForDoc.put(RECORD_ID1, RECORD_ID1);
 
         AppException appException = mock(AppException.class);
-        doThrow(appException).when(cosmosBulkStore).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        doThrow(appException).when(cosmosBulkStore).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         Optional<CollaborationContext> context = Optional.empty();
         try {
             recordMetadataRepository.patch(jsonPatchPerRecord, context);
@@ -330,7 +330,7 @@ class RecordMetadataRepositoryTest {
         Map<String, String> recordErrors = recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
 
 
-        verify(cosmosBulkStore, times(1)).bulkPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
+        verify(cosmosBulkStore, times(1)).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         assertTrue((recordErrors.isEmpty()));
     }
 

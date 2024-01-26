@@ -32,7 +32,7 @@
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <osdu.corelibazure.version>0.25.0</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.26.0-rc2</osdu.corelibazure.version>
         <osdu.storage-core.version>0.26.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
@@ -352,6 +352,10 @@
                         <exclude>org/opengroup/osdu/storage/provider/azure/SomeBasicInterfaceImpl.class</exclude>
                         <exclude>org/opengroup/osdu/storage/provider/azure/model/**</exclude>
                         <exclude>org/opengroup/osdu/storage/provider/azure/exception/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/security/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/cache/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/config/ThreadScopeBeanFactoryPostProcessor</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/azure/config/ThreadDpsHeaders</exclude>
                     </excludes>
                 </configuration>
                 <executions>

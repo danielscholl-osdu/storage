@@ -89,6 +89,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 List<RecordMetadata> recordsMetadata = results.getValue();
                 PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
 
+                // TODO handle collaboration context
                 this.recordsMetadataRepository.createOrUpdate(recordsMetadata, Optional.empty());
 
                 StringBuilder recordsId = new StringBuilder();

@@ -151,26 +151,29 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             for (String recordId : recordIds) {
                 RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
                 try {
-                    if (JsonPatchUtil.isEmptyAclOrLegal(JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, metadata))) {
+                    if (metadata == null) {
+                        /*
+                        This condition ensures gracefully handling nonexistent records.
+                        */
+                        notFoundRecordIds.add(recordId);
+                    }
+                    else if (JsonPatchUtil.isEmptyAclOrLegal(JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, metadata))) {
                         failedRecordIds.add(recordId);
                         errors.add("Patch operation for record: " + recordId + " aborted. Potentially empty value of legaltags or acl/owners or acl/viewers");
-                    } else {
-                        if (metadata == null) {
-                            notFoundRecordIds.add(recordId);
-                        } else {
-                            metadata.setModifyTime(System.currentTimeMillis());
-                            metadata.setModifyUser(user);
-                            JsonPatch jsonPatchForRecord;
-                            try {
-                                jsonPatchForRecord = JsonPatchUtil.getJsonPatchForRecord(metadata, jsonPatch);
-                            } catch (IOException e) {
-                                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "IOException during patch operation");
-                            }
-                            if (jsonPatchForRecord != null) {
-                                patchPerRecord.put(metadata, jsonPatchForRecord);
-                            }
-                            successfulRecordIds.add(recordId+":"+metadata.getLatestVersion());
+                    }
+                    else {
+                        metadata.setModifyTime(System.currentTimeMillis());
+                        metadata.setModifyUser(user);
+                        JsonPatch jsonPatchForRecord;
+                        try {
+                            jsonPatchForRecord = JsonPatchUtil.getJsonPatchForRecord(metadata, jsonPatch);
+                        } catch (IOException e) {
+                            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "IOException during patch operation");
                         }
+                        if (jsonPatchForRecord != null) {
+                            patchPerRecord.put(metadata, jsonPatchForRecord);
+                        }
+                        successfulRecordIds.add(recordId+":"+metadata.getLatestVersion());
                     }
                 } catch (AppException e) {
                     failedRecordIds.add(recordId);
