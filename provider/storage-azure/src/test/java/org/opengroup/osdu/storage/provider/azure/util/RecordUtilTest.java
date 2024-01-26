@@ -21,8 +21,12 @@ import static org.springframework.util.ReflectionUtils.findField;
 @ExtendWith(MockitoExtension.class)
 class RecordUtilTest {
     private static final String RECORD_ID_WITH_11_SYMBOLS = "onetwothree";
+    private static final String RECORD_ID_ENDING_WITH_DOT = "id.";
+    private static final String RECORD_ID_ENDING_WITH_BACKSLASH = "id\\";
+    private static final String RECORD_ID_ENDING_WITH_FORWARDSLASH = "id/";
     private static final String ERROR_REASON = "Invalid id";
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
+    private static final String UNSUPPORTED_CHARACTER_ERROR_MESSAGE = "RecordId values ending in dot (.), backslash (\\), or forward slash (/) not allowed";
     private static final Long VERSION = 10000L;
     private static final String WRONG_VERSION = "11111";
     private static final String VERSION_SEQUENCE = "1";
@@ -50,6 +54,17 @@ class RecordUtilTest {
         assertEquals(ERROR_MESSAGE, appException.getError().getMessage());
         assertEquals(ERROR_REASON, appException.getError().getReason());
 
+    }
+
+    @Test
+    public void shouldFail_CreateUpdateRecords_ifRecordEndsWithUnsupportedCharacter() {
+        List<String> listToBeValidated = Arrays.asList(RECORD_ID_ENDING_WITH_BACKSLASH, RECORD_ID_ENDING_WITH_DOT, RECORD_ID_ENDING_WITH_FORWARDSLASH);
+
+        AppException appException = assertThrows(AppException.class, () -> recordUtil.validateIds(listToBeValidated));
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals(UNSUPPORTED_CHARACTER_ERROR_MESSAGE, appException.getError().getMessage());
+        assertEquals(ERROR_REASON, appException.getError().getReason());
     }
 
     @Test

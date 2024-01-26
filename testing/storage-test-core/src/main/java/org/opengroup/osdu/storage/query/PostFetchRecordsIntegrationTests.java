@@ -561,7 +561,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypePoint() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypePoint() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -594,7 +594,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPoint() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPoint() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiPoint", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -627,7 +627,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypePolygon() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypePolygon() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPolygon", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -660,7 +660,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPolygon() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPolygon() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiPolygon", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -693,7 +693,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeLineString() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeLineString() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsLineString", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -726,7 +726,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiLineString() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiLineString() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiLineString", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
@@ -759,7 +759,7 @@ public abstract class PostFetchRecordsIntegrationTests extends TestBase {
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
-    public void should_returnRecordsAfterCrsConversion_whenProvidedRecordWithAsIngestedCoordinatesBlockTypeGeometryCollection() throws Exception {
+    public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeGeometryCollection() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsGeometryCollection", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");

@@ -116,6 +116,10 @@ public class QueryRepositoryImpl implements IQueryRepository {
         RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
         recordMetadataKey.setKind(kind);
 
+        String idPrefix = collaborationContext
+                .map(context -> context.getId() + this.headers.getPartitionId())
+                .orElse(this.headers.getPartitionId());
+
         QueryPageResult<RecordMetadataDoc> scanPageResults;
         try {
             scanPageResults = recordMetadataQueryHelper.queryPage(
@@ -125,7 +129,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 "active",
                 "Id",
                 ComparisonOperator.BEGINS_WITH,
-                String.format("%s:", this.headers.getPartitionId()),
+                String.format("%s:", idPrefix),
                 numRecords,
                 cursor);
         } catch (UnsupportedEncodingException e) {
@@ -133,7 +137,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
                     e.getMessage(), e);
         }
         dqr.setCursor(scanPageResults.cursor); // set the cursor for the next page, if applicable
-        scanPageResults.results.forEach(schemaDoc -> ids.add(schemaDoc.getId())); // extract the Kinds from the SchemaDocs
+        scanPageResults.results.forEach(schemaDoc -> ids.add(schemaDoc.getMetadata().getId())); // extract the Kinds from the SchemaDocs
 
         // Sort the IDs alphabetically and set the results
         Collections.sort(ids);

@@ -22,6 +22,7 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
+import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
@@ -62,6 +63,8 @@ import static org.opengroup.osdu.storage.util.RecordConstants.VALUE;
 @Repository
 public class RecordMetadataRepository extends SimpleCosmosStoreRepository<RecordMetadataDoc> implements IRecordsMetadataRepository<String> {
 
+    private static final int AZURE_PATCH_OPERATIONS_LIMIT = 10;
+
     @Autowired
     private DpsHeaders headers;
 
@@ -96,8 +99,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     public Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
         String modifyUser;
         Long modifyTime;
-        CosmosPatchOperations cosmosPatchOperations;
-        Map<String, CosmosPatchOperations> cosmosPatchOperationsPerDoc = new HashMap<>();
+        List<CosmosPatchOperations> cosmosPatchOperations;
+        Map<String, List<CosmosPatchOperations>> cosmosPatchOperationsPerDoc = new HashMap<>();
         Map<String, String> partitionKeyForDoc = new HashMap<>();
         for (Map.Entry<RecordMetadata, JsonPatch> jsonPatchPerRecordEntry : jsonPatchPerRecord.entrySet()) {
             RecordMetadata recordMetadata = jsonPatchPerRecordEntry.getKey();
@@ -110,7 +113,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         }
         Map<String, String> recordIdToError = new HashMap<>();
         try {
-            cosmosBulkStore.bulkPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, cosmosPatchOperationsPerDoc, partitionKeyForDoc, 1);
+            cosmosBulkStore.bulkMultiPatchWithCosmosClient(headers.getPartitionId(), cosmosDBName, recordMetadataCollection, cosmosPatchOperationsPerDoc, partitionKeyForDoc, 1);
         } catch (AppException e) {
             if (e.getOriginalException() instanceof AppException originalException) {
                 String[] originalExceptionErrors = originalException.getError().getErrors();
@@ -309,25 +312,31 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         return sb.toString();
     }
 
-    private CosmosPatchOperations getCosmosPatchOperations(String modifyUser, Long modifyTime, JsonPatch jsonPatch) {
-        CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
+    private List<CosmosPatchOperations> getCosmosPatchOperations(String modifyUser, Long modifyTime, JsonPatch jsonPatch) {
+        List<CosmosPatchOperations> patchOperationsList = new ArrayList<>();
         List<JsonNode> patchNodes = StreamSupport.stream(objectMapper.convertValue(jsonPatch, JsonNode.class).spliterator(), false).toList();
-        for (JsonNode patchOp : patchNodes) {
-            switch (patchOp.get(OP).textValue()) {
-                case "add":
-                    cosmosPatchOperations.add(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
-                    break;
-                case "replace":
-                    cosmosPatchOperations.replace(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
-                    break;
-                case "remove":
-                    cosmosPatchOperations.remove(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue());
-                    break;
-            }
-        }
+
+        List<List<JsonNode>> patchNodesSubList = Lists.partition(patchNodes, AZURE_PATCH_OPERATIONS_LIMIT);
+        patchNodesSubList.forEach(sublist -> {
+            CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
+            sublist.forEach(patchOp -> {
+                switch (patchOp.get(OP).textValue()) {
+                    case "add" ->
+                            cosmosPatchOperations.add(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
+                    case "replace" ->
+                            cosmosPatchOperations.replace(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue(), patchOp.get(VALUE));
+                    case "remove" -> cosmosPatchOperations.remove(METADATA_PREFIX_PATH + patchOp.get(PATH).textValue());
+                }
+            });
+            patchOperationsList.add(cosmosPatchOperations);
+        });
+
+        CosmosPatchOperations cosmosPatchOperations = CosmosPatchOperations.create();
         cosmosPatchOperations.replace(METADATA_PREFIX_PATH + MODIFY_USER_PATH, modifyUser);
         cosmosPatchOperations.replace(METADATA_PREFIX_PATH + MODIFY_TIME_PATH, modifyTime);
-        return cosmosPatchOperations;
+        patchOperationsList.add(cosmosPatchOperations);
+
+        return patchOperationsList;
     }
 
     private List<RecordMetadataDoc> queryCosmosItems(SqlQuerySpec query, CosmosQueryRequestOptions options){
