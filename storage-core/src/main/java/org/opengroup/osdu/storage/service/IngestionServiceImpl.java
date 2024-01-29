@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.service;
 import com.google.common.base.Strings;
 import io.jsonwebtoken.lang.Collections;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -35,6 +36,7 @@ import org.opengroup.osdu.core.common.model.storage.TransferBatch;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.di.GcsVersionPathLimitationConfig;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
@@ -99,6 +101,12 @@ public class IngestionServiceImpl implements IngestionService {
 	@Autowired
 	RecordBlocks recordBlocks;
 
+	@Autowired
+	IFeatureFlag featureFlag;
+
+	@Autowired
+	GcsVersionPathLimitationConfig gcsVersionPathLimitationConfig;
+
 	@Override
 	public TransferInfo createUpdateRecords(boolean skipDupes, List<Record> inputRecords, String user, Optional<CollaborationContext> collaborationContext) {
 		this.validateKindFormat(inputRecords);
@@ -109,6 +117,9 @@ public class IngestionServiceImpl implements IngestionService {
 
 		List<RecordProcessing> recordsToProcess = this.getRecordsForProcessing(skipDupes, inputRecords, transfer, collaborationContext);
 
+		if(featureFlag.isFeatureEnabled(gcsVersionPathLimitationConfig.getFeatureName())){
+			this.applyGcsVersionPathsLimit(recordsToProcess, transfer);
+		}
 		this.sendRecordsForProcessing(recordsToProcess, transfer, collaborationContext);
 		return transfer;
 	}
@@ -455,5 +466,20 @@ public class IngestionServiceImpl implements IngestionService {
 				}
 			}
 		}
+	}
+
+	private void applyGcsVersionPathsLimit(List<RecordProcessing> recordsToProcess, TransferInfo transferInfo) {
+		List<RecordProcessing> skippedRecords = new ArrayList<>();
+		int maxLimit = gcsVersionPathLimitationConfig.getMaxLimit();
+
+		for (RecordProcessing recordProcessing : recordsToProcess) {
+			int versionPathsSize = recordProcessing.getRecordMetadata().getGcsVersionPaths().size();
+			if (versionPathsSize > maxLimit) {
+				logger.warning(String.format("Record %s has %s versions which is higher than the allowed limit of: %s. Record will not be ingested", recordProcessing.getRecordMetadata().getId(), versionPathsSize, maxLimit));
+				transferInfo.getSkippedRecords().add(recordProcessing.getRecordMetadata().getId());
+				skippedRecords.add(recordProcessing);
+			}
+		}
+		recordsToProcess.removeAll(skippedRecords);
 	}
 }
