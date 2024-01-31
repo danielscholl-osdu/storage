@@ -1,5 +1,6 @@
 package org.opengroup.osdu.storage.provider.azure.util;
 
+import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,13 +16,17 @@ import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.util.ReflectionUtils.findField;
 
 @ExtendWith(MockitoExtension.class)
 class RecordUtilTest {
     private static final String RECORD_ID_WITH_11_SYMBOLS = "onetwothree";
+    private static final String RECORD_ID_ENDING_WITH_DOT = "id.";
+    private static final String RECORD_ID_ENDING_WITH_DOUBLE_DOT = "id..";
     private static final String ERROR_REASON = "Invalid id";
     private static final String ERROR_MESSAGE = "RecordId values which are exceeded 100 symbols temporarily not allowed";
+    private static final String UNSUPPORTED_CHARACTER_ERROR_MESSAGE = "RecordId values ending in dot (.) and without dot (.) are not allowed on same request, please split records in separate requests";
     private static final Long VERSION = 10000L;
     private static final String WRONG_VERSION = "11111";
     private static final String VERSION_SEQUENCE = "1";
@@ -55,6 +60,17 @@ class RecordUtilTest {
     @Test
     void shouldDoNothing_ifNullRecordId_passed() {
         recordUtil.validateIds(singletonList(null));
+    }
+
+    @Test
+    public void shouldFail_CreateUpdateRecords_ifRecordEndsWithUnsupportedCharacter() {
+        List<String> listToBeValidated = Arrays.asList(RECORD_ID_ENDING_WITH_DOT, RECORD_ID_ENDING_WITH_DOUBLE_DOT);
+
+        AppException appException = assertThrows(AppException.class, () -> recordUtil.validateIds(listToBeValidated));
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals(UNSUPPORTED_CHARACTER_ERROR_MESSAGE, appException.getError().getMessage());
+        assertEquals(ERROR_REASON, appException.getError().getReason());
     }
 
     @Test
