@@ -15,7 +15,7 @@ import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springdoc.core.customizers.OperationCustomizer;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -28,32 +28,8 @@ import java.util.List;
 @Profile("!noswagger")
 public class SwaggerConfiguration {
 
-    @Value("${api.title}")
-    private String apiTitle;
-
-    @Value("${api.description}")
-    private String apiDescription;
-
-    @Value("${api.version}")
-    private String apiVersion;
-
-    @Value("${api.contact.name}")
-    private String contactName;
-
-    @Value("${api.contact.email}")
-    private String contactEmail;
-
-    @Value("${api.license.name}")
-    private String licenseName;
-
-    @Value("${api.license.url}")
-    private String licenseUrl;
-
-    @Value("${api.server.url}")
-    private String apiServerUrl;
-
-    @Value("${api.server.fullUrl.enabled:false}")
-    private boolean isServerFullUrlEnabled;
+    @Autowired
+    private SwaggerConfigurationProperties configurationProperties;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -74,10 +50,10 @@ public class SwaggerConfiguration {
                 .info(apiInfo())
                 .tags(tags());
 
-        if(isServerFullUrlEnabled)
+        if(configurationProperties.isApiServerFullUrlEnabled())
             return openAPI;
         return openAPI
-                .servers(Arrays.asList(new Server().url(apiServerUrl)));
+                .servers(Arrays.asList(new Server().url(configurationProperties.getApiServerUrl())));
     }
 
     private List<Tag> tags() {
@@ -90,11 +66,11 @@ public class SwaggerConfiguration {
 
     private Info apiInfo() {
         return new Info()
-                .title(apiTitle)
-                .description(apiDescription)
-                .version(apiVersion)
-                .license(new License().name(licenseName).url(licenseUrl))
-                .contact(new Contact().name(contactName).email(contactEmail));
+                .title(configurationProperties.getApiTitle())
+                .description(configurationProperties.getApiDescription())
+                .version(configurationProperties.getApiVersion())
+                .license(new License().name(configurationProperties.getApiLicenseName()).url(configurationProperties.getApiLicenseUrl()))
+                .contact(new Contact().name(configurationProperties.getApiContactName()).email(configurationProperties.getApiContactEmail()));
     }
 
     @Bean
