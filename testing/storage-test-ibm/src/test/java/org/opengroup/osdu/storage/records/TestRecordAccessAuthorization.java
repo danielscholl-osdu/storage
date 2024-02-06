@@ -18,11 +18,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
 import org.junit.*;
 import org.opengroup.osdu.storage.util.*;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -55,33 +57,74 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
     
     @Override
     public void should_receiveHttp403_when_userIsNotAuthorizedToUpdateARecord() throws Exception {
-        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
-            testUtils.getNoDataAccessToken());
+        Map<String, String> headers = HeaderUtils.getHeaders("nonexistenttenant",
+            testUtils.getToken());
 
         CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
             RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
-        assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getCode());
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
         JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
-        assertEquals(401, json.get("code").getAsInt());
+        assertEquals(403, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
         assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
     }
     @Test
     @Override
     public void should_receiveHttp403_when_userIsNotAuthorizedToGetLatestVersionOfARecord() throws Exception {
-        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), this.testUtils.getNoDataAccessToken());
+        Map<String, String> headers = HeaderUtils.getHeaders("nonexistenttenant", this.testUtils.getToken());
         CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
+        this.assertNotAuthorized(response);
+    }
+
+    @Override
+    @Test
+    public void should_receiveHttp403_when_userIsNotAuthorizedToDeleteRecord() throws Exception {
+        Map<String, String> headers = HeaderUtils.getHeaders("nonexistenttenant",
+                testUtils.getToken());
+
+        CloseableHttpResponse response = TestUtils.send("records/", "POST", headers, "{'anything':'anything'}",
+                RECORD_ID + ":delete");
+
+        this.assertNotAuthorized(response);
+    }
+
+    @Override
+    @Test
+    public void should_receiveHttp403_when_userIsNotAuthorizedToGetSpecificVersionOfARecord() throws Exception {
+        Map<String, String> withDataAccessHeader = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+                testUtils.getToken());
+
+        CloseableHttpResponse response = TestUtils.send("records/versions/" + RECORD_ID, "GET", withDataAccessHeader, "", "");
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+        String version = json.get("versions").getAsJsonArray().get(0).toString();
+
+        Map<String, String> withoutDataAccessHeader = HeaderUtils.getHeaders("nonexistenttenant",
+                testUtils.getToken());
+
+        response = TestUtils.send("records/" + RECORD_ID + "/" + version, "GET", withoutDataAccessHeader, "", "");
+
+        this.assertNotAuthorized(response);
+    }
+
+    @Override
+    @Test
+    public void should_receiveHttp403_when_userIsNotAuthorizedToListVersionsOfARecord() throws Exception {
+        Map<String, String> headers = HeaderUtils.getHeaders("nonexistenttenant",
+                testUtils.getToken());
+
+        CloseableHttpResponse response = TestUtils.send("records/versions/" + RECORD_ID, "GET", headers, "", "");
+
         this.assertNotAuthorized(response);
     }
 
     @Test
     public void should_receiveHttp403_when_userIsNotAuthorizedToPurgeRecord() throws Exception {
-        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), this.testUtils.getNoDataAccessToken());
+        Map<String, String> headers = HeaderUtils.getHeaders("nonexistenttenant", this.testUtils.getToken());
         CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
-        Assert.assertEquals(401, response.getCode());
+        Assert.assertEquals(403, response.getCode());
         JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
-        Assert.assertEquals(401, json.get("code").getAsInt());
+        Assert.assertEquals(403, json.get("code").getAsInt());
         Assert.assertEquals("Access denied", json.get("reason").getAsString());
     }
 
@@ -117,6 +160,22 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
 
 
         TestUtils.send("records/" + newRecordId, "DELETE", headersWithNoDataAccessToken, "", "");
+    }
+
+    @Override
+    protected void assertNotAuthorized(CloseableHttpResponse response) {
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
+        JsonObject json = null;
+        try {
+            json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(403, json.get("code").getAsInt());
+        assertEquals("Access denied", json.get("reason").getAsString());
+        assertEquals("Invalid data partition id", json.get("message").getAsString());
     }
 
 }
