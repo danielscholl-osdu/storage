@@ -190,8 +190,8 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
     }
 
     protected static String getGroupCacheKey(DpsHeaders headers) {
-        String key = String.format("entitlement-groups:%s:%s", headers.getPartitionIdWithFallbackToAccountId(),
-                headers.getAuthorization());
+        String key = String.format("entitlement-groups:%s:%s:%s", headers.getPartitionIdWithFallbackToAccountId(),
+                headers.getAuthorization(), headers.getUserId());
         return Crc32c.hashToBase64EncodedString(key);
     }
 }
