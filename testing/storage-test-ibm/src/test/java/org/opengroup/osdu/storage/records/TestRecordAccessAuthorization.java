@@ -67,7 +67,7 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
         assertEquals(403, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
-        assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
+        assertEquals("Invalid data partition id", json.get("message").getAsString());
     }
     @Test
     @Override
