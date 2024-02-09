@@ -43,8 +43,12 @@ import static org.mockito.Mockito.*;
 public class EntitlementsAndCacheServiceImplTest {
 
     private static final String MEMBER_EMAIL = "tester@gmail.com";
+    private static final String MEMBER_EMAIL_2 = "tester2@gmail.com";
     private static final String HEADER_ACCOUNT_ID = "anyTenant";
     private static final String HEADER_AUTHORIZATION = "anyCrazyToken";
+    private static final String USER_ID = "userID";
+
+    private static final String USER_ID_2 = "userID2";
 
     @Mock
     private IEntitlementsFactory entitlementFactory;
@@ -84,6 +88,7 @@ public class EntitlementsAndCacheServiceImplTest {
     private void setDefaultHeaders() {
         headerMap.put(DpsHeaders.ACCOUNT_ID, HEADER_ACCOUNT_ID);
         headerMap.put(DpsHeaders.AUTHORIZATION, HEADER_AUTHORIZATION);
+        headerMap.put(DpsHeaders.USER_ID, USER_ID);
     }
 
     @Test
@@ -221,13 +226,65 @@ public class EntitlementsAndCacheServiceImplTest {
         // First call, getting groups from entitlements
         assertEquals(MEMBER_EMAIL, this.sut.authorize(this.headers, "role2"));
 
-        when(this.cache.get("NLdxKQ==")).thenReturn(groups);
+        when(this.cache.get("5QjU5g==")).thenReturn(groups);
 
         // Second call, getting groups from cache
         assertEquals(MEMBER_EMAIL, this.sut.authorize(this.headers, "role2"));
         verify(this.entitlementService, times(1)).getGroups();
-        verify(this.cache, times(2)).get("NLdxKQ==");
-        verify(this.cache, times(1)).put("NLdxKQ==", groups);
+        verify(this.cache, times(2)).get("5QjU5g==");
+        verify(this.cache, times(1)).put("5QjU5g==", groups);
+    }
+
+    @Test
+    public void should_getGroupsFromCache_when_requestHashIsFoundInCacheTwoDifferentUSerIDs() throws EntitlementsException {
+
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@gmail.com");
+        g1.setName("role1");
+
+        GroupInfo g2 = new GroupInfo();
+        g2.setEmail("role2@gmail.com");
+        g2.setName("role2");
+
+        GroupInfo g3 = new GroupInfo();
+        g3.setEmail("role3@gmail.com");
+        g3.setName("role3");
+
+        GroupInfo g4 = new GroupInfo();
+        g4.setEmail("role4@gmail.com");
+        g4.setName("role4");
+
+        List<GroupInfo> groupsInfo1 = new ArrayList<>();
+        groupsInfo1.add(g1);
+        groupsInfo1.add(g2);
+
+        List<GroupInfo> groupsInfo2 = new ArrayList<>();
+        groupsInfo2.add(g3);
+        groupsInfo2.add(g4);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo1);
+        groups.setDesId(MEMBER_EMAIL);
+
+        Groups groups2 = new Groups();
+        groups2.setGroups(groupsInfo2);
+        groups2.setDesId(MEMBER_EMAIL_2);
+
+        when(this.cache.get("5QjU5g==")).thenReturn(groups);
+        when(this.cache.get("RtEtMQ==")).thenReturn(groups2);
+
+        assertEquals(MEMBER_EMAIL, this.sut.authorize(this.headers, "role2"));
+
+        verify(this.cache, times(1)).get("5QjU5g==");
+
+        headerMap.put(DpsHeaders.USER_ID, USER_ID_2);
+        this.headers = DpsHeaders.createFromMap(headerMap);
+
+        assertEquals(MEMBER_EMAIL_2, this.sut.authorize(this.headers, "role3"));
+
+        // Verifies that cache key is different in case of different user
+        verify(this.cache, times(1)).get("RtEtMQ==");
+
     }
 
     @Test
