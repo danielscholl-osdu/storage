@@ -1,7 +1,7 @@
 ## Running the Storage Service locally
 The Storage Service is a Maven multi-module project with each cloud implemention placed in its submodule.
 
-### Azure
+## Azure
 
 Instructions for running the Azure implementation locally can be found [here](./provider/storage-azure/README.md).
 
@@ -21,6 +21,14 @@ Instructions for running and testing this service can be found [here](./provider
 All the Swagger and OpenAPI related common properties are managed here [swagger.properties](./storage-core/src/main/resources/swagger.properties)
 
 _Note: For Collaboration Filter exclusion, refer 'excluded paths' section in  [docs/tutorial/CollaborationContext.md](./docs/tutorial/CollaborationContext.md#excluded-paths-a-nameexcluded-pathsa)_
+
+
+#### Server Url(full path vs relative path) configuration
+- `api.server.fullUrl.enabled=true` It will generate full server url in the OpenAPI swagger
+- `api.server.fullUrl.enabled=false` It will generate only the contextPath only
+- default value is false (Currently only in Azure it is enabled)
+[Reference]:(https://springdoc.org/faq.html#_how_is_server_url_generated) 
+
 ### Other platforms
 
 1. Navigate to the module of the cloud of interest, for example, ```storage-azure```. Configure ```application.properties``` and optionally ```logback-spring.xml```. Intead of changing these files in the source, you can also provide external files at run time. 
