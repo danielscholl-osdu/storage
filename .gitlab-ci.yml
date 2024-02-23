@@ -33,6 +33,7 @@ variables:
   IBM_HELM_CONFIG_PATH: devops/ibm/ibm-storage-config
   IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
 
+  CORE_BUILD_SUBDIR: storage-core
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
