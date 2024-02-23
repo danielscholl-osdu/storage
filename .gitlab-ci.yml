@@ -74,6 +74,7 @@ include:
     file: "cloud-providers/ibm.yml"
 
   - local: "devops/gc/pipeline/override-stages.yml"
+  - local: "devops/core-plus/pipeline/override-stages.yml"
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there
@@ -180,6 +181,37 @@ eslint-sast:
     - echo "#!/bin/sh" > $MAVEN_FOREACH
     - echo 'xargs -0rI {} $MAVEN_BUILD {} "$@" < $ALL_MAVEN_BUILD_DIRS_Z' >> $MAVEN_FOREACH
 
+
+download_plugins:
+  image: maven:3.8.3-openjdk-17-slim
+  stage: build
+  variables:
+    OSM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1448/packages/maven"
+    OSM_VERSION: "0.25.0-rc2"
+    OBM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1441/packages/maven"
+    OBM_VERSION: "0.25.0-rc1"
+    OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1450/packages/maven"
+    OQM_VERSION: "0.25.0-rc1"
+    APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1445/packages/maven"
+    APD_VERSION: "0.26.0-rc2"
+    
+
+  artifacts:
+    paths:
+      - ./tmp/*.jar
+    when: always
+    expire_in: 1 days
+
+  script:
+    - mvn dependency:copy -DrepoUrl=$OSM_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:os-osm-postgres:$OSM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp"
+    - mvn dependency:copy -DrepoUrl=$OBM_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:os-obm-minio:$OBM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp"
+    - mvn dependency:copy -DrepoUrl=$OQM_PACKAGE_REGISRTY_URL -Dartifact="org.opengroup.osdu:os-oqm-rabbitmq:$OQM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp"
+    - mvn dependency:copy -DrepoUrl=$APD_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:apd-openid:$APD_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp"
+
+  only:
+    variables:
+      - $PROTECTED == '1'
+
 gemnasium-maven-dependency_scanning:
   variables:
     DS_JAVA_VERSION: 17
@@ -193,9 +225,6 @@ azure_test:
 
 aws-test-java:
   image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.0
-
-# aws-mongodb-test-java:
-#   image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.0
 
 fossa-analyze:
   image: $CI_REGISTRY/divido/fossa-with-cache:v0.9-jdk17
