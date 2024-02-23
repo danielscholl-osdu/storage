@@ -174,7 +174,8 @@
 		<module>provider/storage-azure</module>
 		<module>provider/storage-aws</module>
 		<module>provider/storage-ibm</module>
-	</modules>
+      <module>storage-core-plus</module>
+  </modules>
 
 	<repositories>
 		<repository>
