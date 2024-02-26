@@ -5,11 +5,12 @@ import com.github.fge.jsonpatch.JsonPatch;
 import com.google.gson.Gson;
 
 import org.apache.http.HttpStatus;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -35,15 +36,15 @@ import java.util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static java.util.Collections.singletonList;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class PatchRecordsServiceImplTest {
 
     private static final String RECORD_ID1 = "tenant:record:Id1";
@@ -143,7 +144,7 @@ public class PatchRecordsServiceImplTest {
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
         List<RecordMetadata> recordMetadataList = new ArrayList<>(existingRecords.values());
-        when(opaService.validateUserAccessToRecords(recordMetadataList, OperationType.update)).thenReturn(Collections.emptyList());
+        when(opaService.validateUserAccessToRecords(any(), eq(OperationType.update))).thenReturn(Collections.emptyList());
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         jsonPatchPerRecord.put(existingRecords.get(RECORD_ID1), jsonPatch);
         jsonPatchPerRecord.put(existingRecords.get(RECORD_ID2), jsonPatch);

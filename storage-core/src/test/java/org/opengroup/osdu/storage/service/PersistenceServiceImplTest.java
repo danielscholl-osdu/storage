@@ -17,14 +17,14 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -45,13 +45,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEATURE_NAME;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
@@ -90,7 +90,7 @@ public class PersistenceServiceImplTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.createdRecords = new ArrayList<>();
 
@@ -233,7 +233,7 @@ public class PersistenceServiceImplTest {
         verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
     }
 
-    @Ignore
+    @Disabled
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_notPersistRecords_and_throw413AppException_when_datastoreTooBigEntityErrorOccur() {
@@ -255,7 +255,7 @@ public class PersistenceServiceImplTest {
         verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
 
-    @Ignore
+    @Disabled
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_notPersistRecords_and_throw500AppException_when_datastoreOtherErrorOccur() {
@@ -277,7 +277,7 @@ public class PersistenceServiceImplTest {
         verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void should_LogError_AndThrowException_whenDataStoreTooBigEntityErrorOccur() {
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
@@ -463,7 +463,7 @@ public class PersistenceServiceImplTest {
             entities2.add(mock);
         }
 
-        when(this.recordRepository.createOrUpdate(any(List.class), any())).thenReturn(entities1, entities2);
+        lenient().when(this.recordRepository.createOrUpdate(any(List.class), any())).thenReturn(entities1, entities2);
     }
 
     private TransferBatch createBatchTransfer() {

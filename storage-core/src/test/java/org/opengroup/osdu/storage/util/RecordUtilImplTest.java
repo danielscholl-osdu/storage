@@ -16,21 +16,18 @@ package org.opengroup.osdu.storage.util;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
 import java.util.*;
 
 import org.apache.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.legal.Legal;
@@ -40,7 +37,7 @@ import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 
 import com.google.gson.Gson;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RecordUtilImplTest {
 
   private static final String ACL_VIEWER_EXISTING1 = "viewer1@tenant1.gmail.com";
@@ -77,18 +74,15 @@ public class RecordUtilImplTest {
   private static final String VALID_RECORD = TENANT_NAME + ":123:123";
   private static final String INVALID_RECORD = "wrongtenant:123";
 
-  @Rule
-  public ExpectedException exceptionRule = ExpectedException.none();
-
   @Mock
   private TenantInfo tenant;
   private Gson gson = new Gson();
   private RecordUtilImpl recordUtil;
 
-  @Before
+  @BeforeEach
   public void before() {
     recordUtil = new RecordUtilImpl(tenant, gson);
-    when(this.tenant.getName()).thenReturn(TENANT_NAME);
+    lenient().when(this.tenant.getName()).thenReturn(TENANT_NAME);
   }
 
   @Test
@@ -98,12 +92,13 @@ public class RecordUtilImplTest {
 
   @Test
   public void validateRecordIds_shouldThrowException_forInvalidId() {
-    exceptionRule.expect(AppException.class);
-    exceptionRule.expect(buildAppExceptionMatcher("The record '" + INVALID_RECORD
-        + "' does not follow the naming convention: the first id component must be '"
-        + TENANT_NAME + "'", "Invalid record id"));
-
-    recordUtil.validateRecordIds(singletonList(INVALID_RECORD));
+    AppException exception = assertThrows(AppException.class, () -> {
+      recordUtil.validateRecordIds(singletonList(INVALID_RECORD));
+    });
+    assertEquals("The record '" + INVALID_RECORD
+            + "' does not follow the naming convention: the first id component must be '"
+            + TENANT_NAME + "'", exception.getMessage());
+    assertEquals("Invalid record id", exception.getError().getReason());
   }
 
   @Test
@@ -209,17 +204,17 @@ public class RecordUtilImplTest {
   public void should_throwAppExceptionWithBadRequestCode_whenAllLegaltagsAreRemoved_withRemoveOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
     PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, PATCH_OPERATION_REMOVE, LEGAL_LEGALTAG_EXISTED1, LEGAL_LEGALTAG_EXISTED2);
-    try {
-      RecordMetadata updatedMetadata = recordUtil
-              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
-                      TIMESTAMP);
-    }catch(AppException e){
-      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-      assertEquals("Cannot remove all legaltags", e.getError().getReason());
-      assertEquals("Cannot delete", e.getError().getMessage());
-    }catch (Exception e){
-      Assert.fail("Should not get different exception");
-    }
+
+    AppException exception = assertThrows(AppException.class, ()->{
+      recordUtil.updateRecordMetaDataForPatchOperations(
+              recordMetadata,
+              singletonList(patchOperation),
+              TEST_USER,
+              TIMESTAMP);
+    });
+    assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+    assertEquals("Cannot remove all legaltags", exception.getError().getReason());
+    assertEquals("Cannot delete", exception.getError().getMessage());
   }
 
   @Test
@@ -232,7 +227,7 @@ public class RecordUtilImplTest {
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                     TIMESTAMP);
 
-    assertEquals(new String[]{ACL_VIEWER_NEW,ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2}, updatedMetadata.getAcl().getViewers());
+    assertArrayEquals(new String[]{ACL_VIEWER_NEW,ACL_VIEWER_EXISTING1,ACL_VIEWER_EXISTING2}, updatedMetadata.getAcl().getViewers());
   }
 
   @Test
@@ -244,27 +239,23 @@ public class RecordUtilImplTest {
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                     TIMESTAMP);
 
-    assertEquals(new String[]{ACL_VIEWER_NEW}, updatedMetadata.getAcl().getViewers());
+    assertArrayEquals(new String[]{ACL_VIEWER_NEW}, updatedMetadata.getAcl().getViewers());
   }
 
   @Test
   public void should_throwAppExceptionWithBadRequestCode_whenAllAclViewersAreRemoved_withRemoveOperation() {
     RecordMetadata recordMetadata = buildRecordMetadata();
-    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, ACL_VIEWER_EXISTING2);
+    PatchOperation patchOperation = buildPatchOperation(PATH_ACL_VIEWERS, PATCH_OPERATION_REMOVE, new String[]{ACL_VIEWER_EXISTING1, ACL_VIEWER_EXISTING2});
+    List<PatchOperation> op = singletonList(patchOperation);
 
-    try {
-      RecordMetadata updatedMetadata = recordUtil
-              .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
+    AppException exception = assertThrows(AppException.class, ()->{
+      recordUtil.updateRecordMetaDataForPatchOperations(recordMetadata, op, TEST_USER,
                       TIMESTAMP);
-      //Assert.("Should not suceed");
-    }catch(AppException e){
-      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-      assertEquals("Cannot remove all acl viewers", e.getError().getReason());
-      assertEquals("Cannot delete", e.getError().getMessage());
-    }catch (Exception e){
-      Assert.fail("Should not get different exception");
-    }
+    });
 
+    assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+    assertEquals("Cannot remove all acl viewers", exception.getError().getReason());
+    assertEquals("Cannot delete", exception.getError().getMessage());
   }
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclViewers_withRemoveOperation()  {
@@ -275,7 +266,7 @@ public class RecordUtilImplTest {
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                     TIMESTAMP);
 
-    assertEquals(new String[]{ACL_VIEWER_EXISTING1}, updatedMetadata.getAcl().getViewers());
+    assertArrayEquals(new String[]{ACL_VIEWER_EXISTING1}, updatedMetadata.getAcl().getViewers());
   }
 
   @Test
@@ -288,7 +279,7 @@ public class RecordUtilImplTest {
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                     TIMESTAMP);
 
-    assertEquals(new String[]{ACL_OWNER_NEW,ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2}, updatedMetadata.getAcl().getOwners());
+    assertArrayEquals(new String[]{ACL_OWNER_NEW,ACL_OWNER_EXISTING1,ACL_OWNER_EXISTING2}, updatedMetadata.getAcl().getOwners());
   }
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withReplaceOperation() {
@@ -299,7 +290,7 @@ public class RecordUtilImplTest {
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                     TIMESTAMP);
 
-    assertEquals(new String[]{ACL_OWNER_NEW}, updatedMetadata.getAcl().getOwners());
+    assertArrayEquals(new String[]{ACL_OWNER_NEW}, updatedMetadata.getAcl().getOwners());
   }
   @Test
   public void updateRecordMetaDataForPatchOperations_shouldUpdateForAclOwners_withRemoveOperation() {
@@ -310,7 +301,7 @@ public class RecordUtilImplTest {
             .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                     TIMESTAMP);
 
-    assertEquals(new String[]{ACL_OWNER_EXISTING1}, updatedMetadata.getAcl().getOwners());
+    assertArrayEquals(new String[]{ACL_OWNER_EXISTING1}, updatedMetadata.getAcl().getOwners());
   }
 
   @Test
@@ -318,18 +309,14 @@ public class RecordUtilImplTest {
     RecordMetadata recordMetadata = buildRecordMetadata();
     PatchOperation patchOperation = buildPatchOperation(PATH_ACL_OWNERS, PATCH_OPERATION_REMOVE, ACL_OWNER_EXISTING1, ACL_OWNER_EXISTING2);
 
-    try {
+    AppException exception = assertThrows(AppException.class, ()->{
       RecordMetadata updatedMetadata = recordUtil
               .updateRecordMetaDataForPatchOperations(recordMetadata, singletonList(patchOperation), TEST_USER,
                       TIMESTAMP);
-    }catch(AppException e){
-      assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-      assertEquals("Cannot remove all acl owners", e.getError().getReason());
-      assertEquals("Cannot delete", e.getError().getMessage());
-    }catch (Exception e){
-      Assert.fail("Should not get different exception");
-    }
-
+    });
+    assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+    assertEquals("Cannot remove all acl owners", exception.getError().getReason());
+    assertEquals("Cannot delete", exception.getError().getMessage());
   }
 
   @Test

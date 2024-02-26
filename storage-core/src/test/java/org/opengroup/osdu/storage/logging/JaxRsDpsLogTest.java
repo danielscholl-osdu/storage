@@ -14,12 +14,13 @@
 
 package org.opengroup.osdu.storage.logging;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.logging.ILogger;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
@@ -31,7 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class JaxRsDpsLogTest {
 
     @Mock
@@ -43,7 +44,7 @@ public class JaxRsDpsLogTest {
     @InjectMocks
     private JaxRsDpsLog sut;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         ReflectionTestUtils.setField(sut, "LOG_PREFIX", "storage");
     }

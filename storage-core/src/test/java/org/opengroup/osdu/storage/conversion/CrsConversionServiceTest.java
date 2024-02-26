@@ -18,13 +18,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.crs.CrsConversionServiceErrorMessages;
 import org.opengroup.osdu.core.common.crs.CrsConverterFactory;
 import org.opengroup.osdu.core.common.crs.CrsConverterService;
@@ -39,10 +38,13 @@ import org.opengroup.osdu.storage.di.SpringConfig;
 
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CrsConversionServiceTest {
 
     @Mock
@@ -114,7 +116,7 @@ public class CrsConversionServiceTest {
     private static final String CONVERTED_RECORD_8 = "{\"id\":\"unit-test-20\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"Nested\":{\"X\":15788.036,\"Y\":9567.4},\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"Nested.X\",\"Nested.Y\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
     private static final String CONVERTED_RECORD_9 = "{\"id\":\"unit-test-21\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"Nested\":{\"X\":15788.036,\"Y\":9567.4},\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"Nested.X\",\"Nested.Y\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception{
         Point convertedPoint1 = new Point();
         convertedPoint1.setZ(0.0);
@@ -132,14 +134,14 @@ public class CrsConversionServiceTest {
         this.pairProperty.put("x", "y");
         this.pairProperty.put("lon", "lat");
          
-        when(this.crsPropertySet.getPropertyPairing()).thenReturn(this.pairProperty);
-        when(this.crsPropertySet.getNestedPropertyNames()).thenReturn(this.nestedPropertyNames);
+        lenient().when(this.crsPropertySet.getPropertyPairing()).thenReturn(this.pairProperty);
+        lenient().when(this.crsPropertySet.getNestedPropertyNames()).thenReturn(this.nestedPropertyNames);
 
-        when(this.crsConverterFactory.create(any(), any(RequestConfig.class))).thenReturn(this.crsConverterService);
-        when(this.crsConverterService.convertPoints(any())).thenReturn(this.convertPointsResponse);
+        lenient().when(this.crsConverterFactory.create(any(), any(RequestConfig.class))).thenReturn(this.crsConverterService);
+        lenient().when(this.crsConverterService.convertPoints(any())).thenReturn(this.convertPointsResponse);
 
-        when(this.jwtClient.getIdToken(any())).thenReturn("auth-token-unit-test");
-        when(this.springConfig.isCreateCrsJWTToken()).thenReturn(true);
+        lenient().when(this.jwtClient.getIdToken(any())).thenReturn("auth-token-unit-test");
+        lenient().when(this.springConfig.isCreateCrsJWTToken()).thenReturn(true);
     }
 
     @Test
@@ -152,10 +154,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-13").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
-        Assert.assertEquals(2, crsResult.getConversionStatuses().get(0).getErrors().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_13));
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(2, crsResult.getConversionStatuses().get(0).getErrors().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_13));
     }
 
     @Test
@@ -164,8 +166,8 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-3").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_3));
+        assertEquals(1, crsResult.getRecords().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_3));
     }
 
     @Test
@@ -174,9 +176,9 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-3").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_19));
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_19));
     }
 
     @Test
@@ -185,13 +187,13 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-4").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_4));
+        assertEquals(1, crsResult.getRecords().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_4));
         String message = String.format(CrsConversionServiceErrorMessages.MISSING_PROPERTY,"X");
         List<String> errorMsg = crsResult.getConversionStatuses().get(0).getErrors();
-        Assert.assertEquals(2, errorMsg.size());
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
-        Assert.assertTrue(errorMsg.contains(message));
+        assertEquals(2, errorMsg.size());
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
+        assertTrue(errorMsg.contains(message));
     }
 
     @Test
@@ -200,14 +202,14 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-6").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getRecords().size());
 
         String converted = String.format(CONVERTED_RECORD_7, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
         List<String> errorMsg = crsResult.getConversionStatuses().get(0).getErrors();
-        Assert.assertEquals(2, errorMsg.size());
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 't'."));
+        assertEquals(2, errorMsg.size());
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 't'."));
     }
 
     @Test
@@ -216,12 +218,12 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-5").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_5));
+        assertEquals(1, crsResult.getRecords().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_5));
         List<String> errorMsg = crsResult.getConversionStatuses().get(0).getErrors();
-        Assert.assertEquals(2, errorMsg.size());
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'y'."));
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
+        assertEquals(2, errorMsg.size());
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'y'."));
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
     }
 
     @Test
@@ -230,10 +232,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-7").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_3, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
     }
 
     @Test
@@ -244,12 +246,12 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-2").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(2, crsResult.getRecords().size());
-        Assert.assertEquals(2, crsResult.getConversionStatuses().size());
+        assertEquals(2, crsResult.getRecords().size());
+        assertEquals(2, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_1, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
         String converted1 = String.format(CONVERTED_RECORD_2, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(1).toString().equalsIgnoreCase(converted1));
+        assertTrue(crsResult.getRecords().get(1).toString().equalsIgnoreCase(converted1));
     }
 
     @Test
@@ -258,10 +260,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-1").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_6, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
     }
 
     @Test
@@ -270,10 +272,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-8").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_4, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
     }
 
     @Test
@@ -282,11 +284,11 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-9").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String message = String.format(CrsConversionServiceErrorMessages.INVALID_NESTED_PROPERTY_NAME,"nestedProperty");
-        Assert.assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(message));
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_9));
+        assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(message));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_9));
     }
 
     @Test
@@ -295,11 +297,11 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-10").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String message = String.format(CrsConversionServiceErrorMessages.MISSING_PROPERTY,"validNestedProperty");
-        Assert.assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(message));
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_10));
+        assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(message));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_10));
     }
 
     @Test
@@ -308,13 +310,13 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-14").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_14));
+        assertEquals(1, crsResult.getRecords().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_14));
         String message = String.format(CrsConversionServiceErrorMessages.MISSING_PROPERTY,"X");
         List<String> errorMsg = crsResult.getConversionStatuses().get(0).getErrors();
-        Assert.assertEquals(2, errorMsg.size());
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
-        Assert.assertTrue(errorMsg.contains(message));
+        assertEquals(2, errorMsg.size());
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
+        assertTrue(errorMsg.contains(message));
     }
 
     @Test
@@ -323,13 +325,13 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-15").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_15));
+        assertEquals(1, crsResult.getRecords().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_15));
         String message = String.format(CrsConversionServiceErrorMessages.ILLEGAL_PROPERTY_VALUE,"X", "For input string: \"yes\"");
         List<String> errorMsg = crsResult.getConversionStatuses().get(0).getErrors();
-        Assert.assertEquals(2, errorMsg.size());
-        Assert.assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
-        Assert.assertTrue(errorMsg.contains(message));
+        assertEquals(2, errorMsg.size());
+        assertTrue(errorMsg.contains("CRS conversion: Unknown coordinate pair 'z'."));
+        assertTrue(errorMsg.contains(message));
     }
 
     @Test
@@ -338,9 +340,9 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-16").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_16));
-        Assert.assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK));
+        assertEquals(1, crsResult.getRecords().size());
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_16));
+        assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(CrsConversionServiceErrorMessages.MISSING_DATA_BLOCK));
     }
 
     @Test
@@ -349,10 +351,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-11").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
-        Assert.assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(CrsConversionServiceErrorMessages.MISSING_POINTS_IN_NESTED_PROPERTY));
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_11));
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
+        assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(CrsConversionServiceErrorMessages.MISSING_POINTS_IN_NESTED_PROPERTY));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_11));
     }
 
     @Test
@@ -361,10 +363,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-12").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_5, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
     }
 
     @Test
@@ -373,11 +375,11 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-17").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String message = String.format(CrsConversionServiceErrorMessages.ILLEGAL_DATA_IN_NESTED_PROPERTY, "validNestedProperty","Not a JSON Object: [[16.00,10.00],[16.00,10.00]]");
-        Assert.assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(message));
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_17));
+        assertTrue(crsResult.getConversionStatuses().get(0).getErrors().get(0).equalsIgnoreCase(message));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(RECORD_17));
     }
 
     @Test
@@ -386,10 +388,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-20").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_8, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
     }
 
     @Test
@@ -398,10 +400,10 @@ public class CrsConversionServiceTest {
         this.conversionStatuses.add(ConversionStatus.builder().id("unit-test-21").status(ConvertStatus.SUCCESS.toString()));
 
         RecordsAndStatuses crsResult = this.sut.doCrsConversion(this.originalRecords, this.conversionStatuses);
-        Assert.assertEquals(1, crsResult.getRecords().size());
-        Assert.assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_9, TO_CRS);
-        Assert.assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+        assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
     }
 }
 
