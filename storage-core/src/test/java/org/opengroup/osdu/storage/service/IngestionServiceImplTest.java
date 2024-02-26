@@ -18,14 +18,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
@@ -59,12 +59,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class IngestionServiceImplTest {
 
     @Mock
@@ -140,7 +142,7 @@ public class IngestionServiceImplTest {
     private List<Record> records;
     private Acl acl;
 
-    @Before
+    @BeforeEach
     public void setup() throws PartitionException, EntitlementsException {
 
         List<String> userHeaders = new ArrayList<>();
@@ -178,8 +180,8 @@ public class IngestionServiceImplTest {
         this.record1.setAcl(this.acl);
         this.record2.setAcl(this.acl);
 
-        when(this.tenant.getName()).thenReturn(TENANT);
-        when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
+        lenient().when(this.tenant.getName()).thenReturn(TENANT);
+        lenient().when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
         recordBlocks = new RecordBlocks(cloudStorage, crcHashGenerator);
         sut.recordBlocks = recordBlocks;
     }
@@ -200,16 +202,13 @@ public class IngestionServiceImplTest {
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals("Bad request", e.getError().getReason());
-            assertEquals("Cannot update the same record multiple times in the same request. Id: tenant1:record:123",
-                    e.getError().getMessage());
-        }
+        });
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+        assertEquals("Bad request", exception.getError().getReason());
+        assertEquals("Cannot update the same record multiple times in the same request. Id: tenant1:record:123",
+                exception.getError().getMessage());
     }
 
     @Test
@@ -225,17 +224,14 @@ public class IngestionServiceImplTest {
         RecordMetadata existingRecordMetadata2 = new RecordMetadata();
         existingRecordMetadata2.setUser(NEW_USER);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals("Invalid record id", e.getError().getReason());
-            assertEquals(
-                    "The record 'gasguys:record:123' does not follow the naming convention: The record id must be in the format of <tenantId>:<kindSubType>:<uniqueId>. Example: tenant1:kind:<uuid>",
-                    e.getError().getMessage());
-        }
+        });
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+        assertEquals("Invalid record id", exception.getError().getReason());
+        assertEquals(
+                "The record 'gasguys:record:123' does not follow the naming convention: The record id must be in the format of <tenantId>:<kindSubType>:<uniqueId>. Example: tenant1:kind:<uuid>",
+                exception.getError().getMessage());
     }
 
     @Test
@@ -250,7 +246,7 @@ public class IngestionServiceImplTest {
         when(this.cloudStorage.hasAccess(new RecordMetadata[] {})).thenReturn(true);
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-        assertEquals(new Integer(2), transferInfo.getRecordCount());
+        assertEquals(2, transferInfo.getRecordCount());
 
         ArgumentCaptor<List> ids = ArgumentCaptor.forClass(List.class);
         verify(this.recordRepository).get(ids.capture(), any());
@@ -298,14 +294,12 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata)).thenReturn(false);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
-            assertEquals("Access denied", e.getError().getReason());
-            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
-        }
+        });
+        assertEquals(HttpStatus.SC_FORBIDDEN, exception.getError().getCode());
+        assertEquals("Access denied", exception.getError().getReason());
+        assertEquals("The user is not authorized to perform this action", exception.getError().getMessage());
     }
 
     @Test
@@ -334,14 +328,13 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
-            assertEquals("User Unauthorized", e.getError().getReason());
-            assertEquals("User is not authorized to update records.", e.getError().getMessage());
-        }
+        });
+        assertEquals(HttpStatus.SC_FORBIDDEN, exception.getError().getCode());
+        assertEquals("User Unauthorized", exception.getError().getReason());
+        assertEquals("User is not authorized to update records.", exception.getError().getMessage());
+
     }
 
     @Test
@@ -380,7 +373,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(2), transferInfo.getRecordCount());
+        assertEquals(2, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
@@ -424,7 +417,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, Collections.singletonList(this.record1), USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(1), transferInfo.getRecordCount());
+        assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
@@ -478,7 +471,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(1), transferInfo.getRecordCount());
+        assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
         verify(this.persistenceService, times(0)).persistRecordBatch(any(), any());
     }
@@ -521,7 +514,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(1), transferInfo.getRecordCount());
+        assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
         verify(this.persistenceService, times(0)).persistRecordBatch(any(), any());
     }
@@ -571,7 +564,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(1), transferInfo.getRecordCount());
+        assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
         verify(this.persistenceService, times(1)).persistRecordBatch(any(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
@@ -624,7 +617,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(true, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(1), transferInfo.getRecordCount());
+        assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
         verify(this.persistenceService, times(1)).persistRecordBatch(any(), any());
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
@@ -639,18 +632,16 @@ public class IngestionServiceImplTest {
         this.acl.setViewers(INVALID_ACL);
         this.acl.setOwners(INVALID_ACL);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_BAD_REQUEST, e.getError().getCode());
-            assertEquals("Invalid ACL", e.getError().getReason());
-            assertEquals(
-                    "Acl not match with tenant or domain",
-                    e.getError().getMessage());
-        } catch (Exception e) {
-            fail("should not throw any other exception");
-        }
+        });
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+        assertEquals("Invalid ACL", exception.getError().getReason());
+        assertEquals(
+                "Acl not match with tenant or domain",
+                exception.getError().getMessage());
+
     }
 
     @Test
@@ -690,7 +681,7 @@ public class IngestionServiceImplTest {
         verify(this.persistenceService).persistRecordBatch(captor.capture(), any());
 
         TransferBatch batch = captor.getValue();
-        assertEquals(new Integer(1), batch.getTransferInfo().getRecordCount());
+        assertEquals(1, batch.getTransferInfo().getRecordCount());
         assertEquals(RecordState.active, batch.getRecords().get(0).getRecordMetadata().getStatus());
     }
 
@@ -719,13 +710,11 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
-            assertEquals("Record not found", e.getError().getReason());
-        }
+        });
+        assertEquals(HttpStatus.SC_NOT_FOUND, exception.getError().getCode());
+        assertEquals("Record not found", exception.getError().getReason());
     }
 
     @Test
@@ -753,13 +742,11 @@ public class IngestionServiceImplTest {
 
         when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
-            assertEquals("RecordMetadata version not found", e.getError().getReason());
-        }
+        });
+        assertEquals(HttpStatus.SC_NOT_FOUND, exception.getError().getCode());
+        assertEquals("RecordMetadata version not found", exception.getError().getReason());
     }
 
     @Test
@@ -790,14 +777,12 @@ public class IngestionServiceImplTest {
         validationOutputRecords.add(validationOutputRecord1);
         when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_UNAUTHORIZED, e.getError().getCode());
-            assertEquals("User Unauthorized", e.getError().getReason());
-            assertEquals("User is not authorized to create or update records.", e.getError().getMessage());
-        }
+        });
+        assertEquals(HttpStatus.SC_UNAUTHORIZED, exception.getError().getCode());
+        assertEquals("User Unauthorized", exception.getError().getReason());
+        assertEquals("User is not authorized to create or update records.", exception.getError().getMessage());
     }
 
     @Test
@@ -841,7 +826,7 @@ public class IngestionServiceImplTest {
 
         TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
         assertEquals(USER, transferInfo.getUser());
-        assertEquals(new Integer(2), transferInfo.getRecordCount());
+        assertEquals(2, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
@@ -883,25 +868,15 @@ public class IngestionServiceImplTest {
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateUserAccessToRecords(
-        		argThat( (List<RecordMetadata> recordsMetadata) -> {
-        			for (RecordMetadata recordMetadata : recordsMetadata) {
-        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNER_ACL)) 
-        					return true;
-        				} 
-        			return false;
-        			} 
-        		), 
-        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
 
-        try {
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+        AppException e = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
-            assertEquals("Access denied", e.getError().getReason());
-            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
-        }
+        });
+        assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+        assertEquals("Access denied", e.getError().getReason());
+        assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
     }
     
     @Test
@@ -931,25 +906,16 @@ public class IngestionServiceImplTest {
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
-        when(this.opaService.validateUserAccessToRecords(
-        		argThat( (List<RecordMetadata> recordsMetadata) -> {
-        			for (RecordMetadata recordMetadata : recordsMetadata) {
-        				if (Arrays.equals(recordMetadata.getAcl().owners, NON_OWNER_ACL)) 
-        					return true;
-        				} 
-        			return false;
-        			} 
-        		), 
-        		argThat( (OperationType operationType) -> operationType == OperationType.update))).thenReturn(validationOutputRecords);
 
-        try {
+        when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
+        AppException e = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
-            fail("Should not succeed");
-        } catch (AppException e) {
-            assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
-            assertEquals("Access denied", e.getError().getReason());
-            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
-        }
+        });
+
+        assertEquals(HttpStatus.SC_FORBIDDEN, e.getError().getCode());
+        assertEquals("Access denied", e.getError().getReason());
+        assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
     }
     
     @Test

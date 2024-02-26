@@ -14,12 +14,10 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
@@ -36,7 +34,6 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
-import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
 @ExtendWith(MockitoExtension.class)
 public class MetadataPatchValidatorTest {
@@ -72,7 +69,7 @@ public class MetadataPatchValidatorTest {
             validator.validateDuplicates(operations);
         });
         assertEquals("Users can only update a path once per request.", exception.getMessage());
-        assertEquals("Duplicate paths", exception.getError());
+        assertEquals("Duplicate paths", exception.getError().getReason());
     }
 
     @Test
@@ -85,7 +82,7 @@ public class MetadataPatchValidatorTest {
             validator.validateAcls(singletonList(patchOperation));
         });
         assertEquals("Invalid ACLs provided in acl path.", exception.getMessage());
-        assertEquals("Invalid ACLs", exception.getError());
+        assertEquals("Invalid ACLs", exception.getError().getReason());
     }
 
     @Test
@@ -107,7 +104,7 @@ public class MetadataPatchValidatorTest {
             validator.validateTags(singletonList(patchOperation));
         });
         assertEquals("Invalid tags values provided", exception.getMessage());
-        assertEquals("Invalid tags", exception.getError());
+        assertEquals("Invalid tags", exception.getError().getReason());
 
     }
 
