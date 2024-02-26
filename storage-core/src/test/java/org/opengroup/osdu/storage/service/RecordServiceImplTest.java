@@ -106,8 +106,7 @@ public class RecordServiceImplTest {
     @BeforeEach
     public void setup() {
         mock(PersistenceHelper.class);
-
-        when(this.tenant.getName()).thenReturn(TENANT_NAME);
+        lenient().when(this.tenant.getName()).thenReturn(TENANT_NAME);
     }
 
     @Test

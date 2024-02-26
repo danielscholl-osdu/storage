@@ -14,13 +14,13 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -33,10 +33,12 @@ import java.util.HashSet;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MetadataPatchValidatorTest {
 
     private static final String PATH = "/path";
@@ -56,9 +58,6 @@ public class MetadataPatchValidatorTest {
     @Mock
     private DpsHeaders headers;
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-
     @InjectMocks
     private MetadataPatchValidator validator;
 
@@ -67,12 +66,13 @@ public class MetadataPatchValidatorTest {
         PatchOperation patchOperation = buildPatchOperation(PATH, VALUES);
         PatchOperation duplicatedPatchOperation = buildPatchOperation(PATH, VALUES);
 
-        exceptionRule.expect(AppException.class);
-        exceptionRule.expect(buildAppExceptionMatcher("Users can only update a path once per request.", "Duplicate paths"));
-
         List<PatchOperation> operations = Arrays.asList(patchOperation, duplicatedPatchOperation);
 
-        validator.validateDuplicates(operations);
+        AppException exception = assertThrows(AppException.class, ()->{
+            validator.validateDuplicates(operations);
+        });
+        assertEquals("Users can only update a path once per request.", exception.getMessage());
+        assertEquals("Duplicate paths", exception.getError());
     }
 
     @Test
@@ -81,29 +81,34 @@ public class MetadataPatchValidatorTest {
 
         when(entitlementsAndCacheService.isValidAcl(headers, new HashSet<>(Arrays.asList(VALUES)))).thenReturn(false);
 
-        exceptionRule.expect(AppException.class);
-        exceptionRule.expect(buildAppExceptionMatcher("Invalid ACLs provided in acl path.", "Invalid ACLs"));
-
-        validator.validateAcls(singletonList(patchOperation));
+        AppException exception = assertThrows(AppException.class, ()->{
+            validator.validateAcls(singletonList(patchOperation));
+        });
+        assertEquals("Invalid ACLs provided in acl path.", exception.getMessage());
+        assertEquals("Invalid ACLs", exception.getError());
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void shouldFail_onInvalidLegal() {
         PatchOperation patchOperation = buildPatchOperation(PATH_LEGAL, VALUES);
 
         doThrow(new RuntimeException()).when(legalService).validateLegalTags(new HashSet<>(Arrays.asList(VALUES)));
 
-        validator.validateLegalTags(singletonList(patchOperation));
+        RuntimeException exception = assertThrows(RuntimeException.class, ()->{
+            validator.validateLegalTags(singletonList(patchOperation));
+        });
     }
 
     @Test
     public void shouldFail_onInvalidTagFormat() {
         PatchOperation patchOperation = buildPatchOperation(PATH_TAGS, INVALID_TAGS);
 
-        exceptionRule.expect(AppException.class);
-        exceptionRule.expect(buildAppExceptionMatcher("Invalid tags values provided", "Invalid tags"));
+        AppException exception = assertThrows(AppException.class, ()->{
+            validator.validateTags(singletonList(patchOperation));
+        });
+        assertEquals("Invalid tags values provided", exception.getMessage());
+        assertEquals("Invalid tags", exception.getError());
 
-        validator.validateTags(singletonList(patchOperation));
     }
 
     @Test
