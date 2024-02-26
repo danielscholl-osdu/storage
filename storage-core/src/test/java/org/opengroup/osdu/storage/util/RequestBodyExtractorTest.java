@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.io.BufferedReader;
@@ -23,17 +25,16 @@ import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.http.RequestBodyExtractor;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class RequestBodyExtractorTest {
     private static String REQUEST_BODY = "{\"message\":{\"messageId\":\"unit-test-message-id\",\"data\":\"eyJzdGF0dXNDaGFuZ2VkVGFncyI6W3siY2hhbmdlZFRhZ05hbWUiOiJ0YWcxIiwiY2hhbmdlZFRhZ1N0YXR1cyI6ImluY29tcGxpYW50In0seyJjaGFuZ2VkVGFnTmFtZSI6InRhZzIiLCJjaGFuZ2VkVGFnU3RhdHVzIjoiaW5jb21wbGlhbnQifV19\",\"attributes\":{\"account-id\":\"test-tenant\",\"test-user\":\"unittest@gmail.com\"}}}";
     private static String REQUEST_BODY_DP = "{\"message\":{\"messageId\":\"unit-test-message-id\",\"data\":\"eyJzdGF0dXNDaGFuZ2VkVGFncyI6W3siY2hhbmdlZFRhZ05hbWUiOiJ0YWcxIiwiY2hhbmdlZFRhZ1N0YXR1cyI6ImluY29tcGxpYW50In0seyJjaGFuZ2VkVGFnTmFtZSI6InRhZzIiLCJjaGFuZ2VkVGFnU3RhdHVzIjoiaW5jb21wbGlhbnQifV19\",\"attributes\":{\"data-partition-id\":\"test-tenant\",\"test-user\":\"unittest@gmail.com\"}}}";
@@ -58,7 +59,7 @@ public class RequestBodyExtractorTest {
         expectedAttributes.put("test-user", "unittest@gmail.com");
 
         Map<String, String> attributes = this.sut.extractAttributesFromRequestBody();
-        Assert.assertEquals(expectedAttributes, attributes);
+        assertEquals(expectedAttributes, attributes);
     }
 
     @Test
@@ -70,7 +71,7 @@ public class RequestBodyExtractorTest {
         expectedAttributes.put("test-user", "unittest@gmail.com");
 
         Map<String, String> attributes = this.sut.extractAttributesFromRequestBody();
-        Assert.assertEquals(expectedAttributes, attributes);
+        assertEquals(expectedAttributes, attributes);
     }
 
     @Test
@@ -78,13 +79,10 @@ public class RequestBodyExtractorTest {
         this.createRequestStream(REQUEST_BODY_NOTENANT);
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
 
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             this.sut.extractAttributesFromRequestBody();
-            Assert.fail("Expected exception");
-        }catch(AppException e){
-            Assert.assertEquals(400, e.getError().getCode());
-        }
-
+        });
+        assertEquals(400, exception.getError().getCode());
     }
 
     @Test
@@ -94,14 +92,17 @@ public class RequestBodyExtractorTest {
         String expectedData = "{\"statusChangedTags\":[{\"changedTagName\":\"tag1\",\"changedTagStatus\":\"incompliant\"},{\"changedTagName\":\"tag2\",\"changedTagStatus\":\"incompliant\"}]}";
 
         String data = this.sut.extractDataFromRequestBody();
-        Assert.assertEquals(expectedData, data);
+        assertEquals(expectedData, data);
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwException_whenRequestBodyIsNotPubsubEndpoint() throws Exception {
         this.createRequestStream(NON_JSON_REQUEST_BODY);
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
-        this.sut.extractAttributesFromRequestBody();
+
+        assertThrows(AppException.class, ()->{
+            this.sut.extractAttributesFromRequestBody();
+        });
     }
 
     private void createRequestStream(String requestBody) {
