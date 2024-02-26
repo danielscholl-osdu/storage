@@ -16,6 +16,10 @@ analyze:
       type: mvn
       target: storage-core/pom.xml
       path: .
+    - name: storage-core-plus
+      type: mvn
+      target: storage-core-plus/pom.xml
+      path: .
     - name: storage-gc
       type: mvn
       target: provider/storage-gc/pom.xml

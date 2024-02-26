@@ -82,8 +82,8 @@ The following software have components provided under the terms of this license:
 - Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy Java agent (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent)
 - ClassMate (from http://github.com/cowtowncoder/java-classmate)
-- Cloud Key Management Service (KMS) API v1-rev20231212-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
-- Cloud Storage JSON API v1-rev20240205-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
+- Cloud Key Management Service (KMS) API v1-rev20240131-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
+- Cloud Storage JSON API v1-rev20240209-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - Collections (from https://repo1.maven.org/maven2/commons-collections/commons-collections)
 - Commons Digester (from http://commons.apache.org/digester/)
 - Converter: Jackson (from https://github.com/square/retrofit, https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-jackson)
@@ -287,11 +287,13 @@ The following software have components provided under the terms of this license:
 - io.grpc:grpc-core (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-googleapis (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-grpclb (from https://github.com/grpc/grpc-java)
+- io.grpc:grpc-inprocess (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-netty-shaded (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-protobuf (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-protobuf-lite (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-services (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-stub (from https://github.com/grpc/grpc-java)
+- io.grpc:grpc-util (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-xds (from https://github.com/grpc/grpc-java)
 - ion-java (from https://github.com/amzn/ion-java/, https://github.com/amznlabs/ion-java/)
 - jackson-coreutils (from https://github.com/java-json-tools/jackson-coreutils)
@@ -508,8 +510,6 @@ The following software have components provided under the terms of this license:
 - JUnit Jupiter Engine (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Params (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Platform Engine API (from http://junit.org/junit5/, https://junit.org/junit5/)
-- Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
-- Jakarta Validation API (from https://beanvalidation.org)
 - Logback Contrib :: JSON :: Classic (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-classic)
 - Logback Contrib :: JSON :: Core (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-core)
 - Logback Contrib :: Jackson (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-jackson)
@@ -545,7 +545,6 @@ GPL-2.0-only
 The following software have components provided under the terms of this license:
 
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
-- Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 - OSGi resource locator (from https://repo1.maven.org/maven2/org/glassfish/hk2/osgi-resource-locator)
 - tomcat-embed-core (from http://tomcat.apache.org/)
 
@@ -578,7 +577,6 @@ GPL-3.0-only
 The following software have components provided under the terms of this license:
 
 - Expression Language 3.0 (from http://el-spec.java.net, http://uel.java.net, https://projects.eclipse.org/projects/ee4j.el)
-- Jakarta Annotations API (from https://projects.eclipse.org/projects/ee4j.ca)
 
 ========================================================================
 GPL-3.0-or-later
