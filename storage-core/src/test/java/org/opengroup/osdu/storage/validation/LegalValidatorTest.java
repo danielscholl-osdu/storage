@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,20 +23,20 @@ import static org.mockito.Mockito.when;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.ConstraintValidatorContext.ConstraintViolationBuilder;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
 import com.google.common.collect.Sets;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordAncestry;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.legal.validation.LegalValidator;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class LegalValidatorTest {
 
     @Mock
@@ -48,7 +48,7 @@ public class LegalValidatorTest {
 
     private LegalValidator sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.sut = new LegalValidator();
         this.record = new Record();

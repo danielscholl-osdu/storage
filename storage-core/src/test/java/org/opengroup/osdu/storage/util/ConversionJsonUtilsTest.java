@@ -2,14 +2,14 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ConversionJsonUtilsTest {
 
     public static final String UNEXPECTED_DATA_FORMAT_JSON_OBJECT = "CRS conversion: unexpected data format. Field %s should be a JsonObject";

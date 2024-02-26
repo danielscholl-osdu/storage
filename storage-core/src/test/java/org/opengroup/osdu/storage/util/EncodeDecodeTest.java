@@ -1,16 +1,19 @@
 package org.opengroup.osdu.storage.util;
 
 import org.apache.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.http.AppException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class EncodeDecodeTest {
 
     private EncodeDecode encodeDecode;
 
-    @Before
+    @BeforeEach
     public void setup(){
         encodeDecode = new EncodeDecode();
     }
@@ -21,18 +24,16 @@ public class EncodeDecodeTest {
         String inputString = "hello+world";
 
         String resultString = encodeDecode.deserializeCursor(encodeDecode.serializeCursor(inputString));
-        Assert.assertEquals(inputString, resultString);
+        assertEquals(inputString, resultString);
     }
 
     @Test
     public void should_throwError_onNonBase64Input() {
         String inputString = "invalid_cursor";
-        try {
+        AppException exception = assertThrows(AppException.class, ()->{
             encodeDecode.deserializeCursor(inputString);
-            Assert.fail();
-        }catch (AppException exception){
-            Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
-        }
+        });
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
     }
 
 }
