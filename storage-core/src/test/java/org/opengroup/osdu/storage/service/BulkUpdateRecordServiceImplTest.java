@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -480,11 +479,11 @@ public class BulkUpdateRecordServiceImplTest {
                              boolean hasOwnerAccess,
                              boolean isLockedRecord) {
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
-        when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
+        lenient().when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
                 .thenReturn(isLockedRecord ? new ArrayList<>(singletonList(TEST_ID)) : emptyList());
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
-        when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);
-        when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
+        lenient().when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);
+        lenient().when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
     }
 

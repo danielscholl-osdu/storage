@@ -41,6 +41,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
+import static org.mockito.Mockito.lenient;
+
 public abstract class ApiTest<T> {
     @MockBean
     protected ICache cache;
@@ -116,8 +118,8 @@ public abstract class ApiTest<T> {
         Groups groups = new Groups();
         groups.setGroups(Collections.singletonList(groupInfo));
         groups.setMemberEmail("a@b");
-        Mockito.when(iEntitlementsService.getGroups()).thenReturn(groups);
-        Mockito.when(iEntitlementsFactory.create(ArgumentMatchers.any())).thenReturn(iEntitlementsService);
+        lenient().when(iEntitlementsService.getGroups()).thenReturn(groups);
+        lenient().when(iEntitlementsFactory.create(ArgumentMatchers.any())).thenReturn(iEntitlementsService);
     }
 
     protected ResultActions sendRequest(T dto, Object... uriVars) throws Exception {

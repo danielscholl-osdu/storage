@@ -47,6 +47,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(controllers = PatchApi.class)
@@ -58,10 +59,10 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
 
     @BeforeEach
     public void setup() {
-        Mockito.when(dpsHeaders.getUserEmail()).thenReturn("a@b");
-        Mockito.when(dpsHeaders.getPartitionId()).thenReturn("opendes");
-        Mockito.when(dpsHeaders.getAuthorization()).thenReturn("auth");
-        Mockito.when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
+        lenient().when(dpsHeaders.getUserEmail()).thenReturn("a@b");
+        lenient().when(dpsHeaders.getPartitionId()).thenReturn("opendes");
+        lenient().when(dpsHeaders.getAuthorization()).thenReturn("auth");
+        lenient().when(collaborationFeatureFlag.isFeatureEnabled(RecordConstants.COLLABORATIONS_FEATURE_NAME)).thenReturn(false);
     }
 
     @Test
