@@ -17,12 +17,11 @@ package org.opengroup.osdu.storage.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.gson.Gson;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.storage.model.PatchRecordsRequestModel;
@@ -34,7 +33,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -46,11 +44,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(controllers = PatchApi.class)
 @ComponentScan("org.opengroup.osdu")
 public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
@@ -58,7 +56,7 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
     private final ObjectMapper mapper = new ObjectMapper();
     private Gson gson = new Gson();
 
-    @Before
+    @BeforeEach
     public void setup() {
         Mockito.when(dpsHeaders.getUserEmail()).thenReturn("a@b");
         Mockito.when(dpsHeaders.getPartitionId()).thenReturn("opendes");
@@ -73,9 +71,9 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isForbidden()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
-        Assert.assertEquals(403, appError.getCode());
-        Assert.assertEquals("Access denied", appError.getReason());
-        Assert.assertEquals("The user is not authorized to perform this action", appError.getMessage());
+        assertEquals(403, appError.getCode());
+        assertEquals("Access denied", appError.getReason());
+        assertEquals("The user is not authorized to perform this action", appError.getMessage());
     }
 
     @Test
@@ -85,9 +83,9 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         ResultActions result = sendRequest(getRequestPayload(getInValidInputJsonBadOp(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
-        Assert.assertEquals(400, appError.getCode());
-        Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals(ValidationDoc.INVALID_PATCH_OPERATION, appError.getMessage());
+        assertEquals(400, appError.getCode());
+        assertEquals("Validation failed", appError.getReason());
+        assertEquals(ValidationDoc.INVALID_PATCH_OPERATION, appError.getMessage());
     }
 
     @Test
@@ -97,9 +95,9 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         ResultActions result = sendRequest(getRequestPayload(getInValidInputJsonBadPath(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
-        Assert.assertEquals(400, appError.getCode());
-        Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals(ValidationDoc.INVALID_PATCH_PATH_START, appError.getMessage());
+        assertEquals(400, appError.getCode());
+        assertEquals("Validation failed", appError.getReason());
+        assertEquals(ValidationDoc.INVALID_PATCH_PATH_START, appError.getMessage());
     }
 
     @Test
@@ -109,9 +107,9 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
-        Assert.assertEquals(400, appError.getCode());
-        Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals(ValidationDoc.PATCH_RECORDS_MAX, appError.getMessage());
+        assertEquals(400, appError.getCode());
+        assertEquals("Validation failed", appError.getReason());
+        assertEquals(ValidationDoc.PATCH_RECORDS_MAX, appError.getMessage());
     }
 
     @Test
@@ -121,9 +119,9 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
-        Assert.assertEquals(400, appError.getCode());
-        Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals(ValidationDoc.RECORD_ID_LIST_NOT_EMPTY, appError.getMessage());
+        assertEquals(400, appError.getCode());
+        assertEquals("Validation failed", appError.getReason());
+        assertEquals(ValidationDoc.RECORD_ID_LIST_NOT_EMPTY, appError.getMessage());
     }
 
     @Test
@@ -133,9 +131,9 @@ public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
         ResultActions result = sendRequest(getRequestPayload(getValidInputJson(), recordQueryPatch));
         MockHttpServletResponse response = result.andExpect(MockMvcResultMatchers.status().isBadRequest()).andReturn().getResponse();
         AppError appError = gson.fromJson(response.getContentAsString(), AppError.class);
-        Assert.assertEquals(400, appError.getCode());
-        Assert.assertEquals("Validation failed", appError.getReason());
-        Assert.assertEquals(ValidationDoc.RECORD_ID_LIST_NOT_EMPTY, appError.getMessage());
+        assertEquals(400, appError.getCode());
+        assertEquals("Validation failed", appError.getReason());
+        assertEquals(ValidationDoc.RECORD_ID_LIST_NOT_EMPTY, appError.getMessage());
     }
 
     @Test
