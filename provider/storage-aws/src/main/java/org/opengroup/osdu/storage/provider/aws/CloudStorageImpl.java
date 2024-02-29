@@ -39,13 +39,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Repository
@@ -67,22 +64,12 @@ public class CloudStorageImpl implements ICloudStorage {
     private UserAccessService userAccessService;
 
     @Inject
-    private IRecordsMetadataRepository recordsMetadataRepository;
+    private IRecordsMetadataRepository<String> recordsMetadataRepository;
 
-    private ExecutorService threadPool;    
 
     @Inject
     private DpsHeaders headers;
 
-    @PostConstruct
-    public void init(){
-       this.threadPool = Executors.newFixedThreadPool(maxNumOfRecordThreads);        
-    }
-
-    // Used specifically in the unit tests
-    public void init(ExecutorService threadPool){
-        this.threadPool = threadPool;
-    }
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
@@ -137,8 +124,8 @@ public class CloudStorageImpl implements ICloudStorage {
     public Map<String, String> getHash(Collection<RecordMetadata> records) {
         Collection<RecordMetadata> accessibleRecords = new ArrayList<>();
 
-        for (RecordMetadata record : records) {
-            accessibleRecords.add(record);
+        for (RecordMetadata recordMetadata : records) {
+            accessibleRecords.add(recordMetadata);
         }
 
         Gson gson = new Gson();
@@ -160,19 +147,19 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public void delete(RecordMetadata record) {
-        if (!record.hasVersion()) {
-            this.logger.warning(String.format("Record %s does not have versions available", record.getId()));
+    public void delete(RecordMetadata recordMetadata) {
+        if (!recordMetadata.hasVersion()) {
+            this.logger.warning(String.format("Record %s does not have versions available", recordMetadata.getId()));
             return;
         }
 
-        s3RecordClient.deleteRecord(record, headers.getPartitionIdWithFallbackToAccountId());
+        s3RecordClient.deleteRecord(recordMetadata, headers.getPartitionIdWithFallbackToAccountId());
 
     }
 
     @Override
-    public void deleteVersion(RecordMetadata record, Long version) {
-        s3RecordClient.deleteRecordVersion(record, version, headers.getPartitionIdWithFallbackToAccountId());
+    public void deleteVersion(RecordMetadata recordMetadata, Long version) {
+        s3RecordClient.deleteRecordVersion(recordMetadata, version, headers.getPartitionIdWithFallbackToAccountId());
     }
 
     @Override
@@ -192,8 +179,8 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
-    public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
-        return s3RecordClient.getRecord(record, version, headers.getPartitionIdWithFallbackToAccountId());
+    public String read(RecordMetadata recordMetadata, Long version, boolean checkDataInconsistency) {
+        return s3RecordClient.getRecord(recordMetadata, version, headers.getPartitionIdWithFallbackToAccountId());
     }
 
     @Override

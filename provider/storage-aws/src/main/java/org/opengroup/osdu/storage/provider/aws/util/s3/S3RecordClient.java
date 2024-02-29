@@ -81,16 +81,16 @@ public class S3RecordClient {
     public boolean getRecord(RecordMetadata recordMetadata, AtomicReference<Map<String, String>> map, String dataPartition) {
         Map<String, String> mapVal = map.get();
         String keyName = getKeyNameForLatestVersion(recordMetadata);
-        String record = getRecord(keyName, dataPartition);
-        mapVal.put(recordMetadata.getId(), record);
+        String recordStr = getRecord(keyName, dataPartition);
+        mapVal.put(recordMetadata.getId(), recordStr);
         map.set(mapVal);
         return true;
     }
 
     public boolean getRecord(String recordId, String versionPath, AtomicReference<Map<String, String>> map, String dataPartition) {
         Map<String, String> mapVal = map.get();
-        String record = getRecord(versionPath, dataPartition);
-        mapVal.put(recordId, record);
+        String recordStr = getRecord(versionPath, dataPartition);
+        mapVal.put(recordId, recordStr);
         map.set(mapVal);
         return true;
     }
@@ -146,13 +146,13 @@ public class S3RecordClient {
         AmazonS3 s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
 
-        String record = "";
+        String recordStr = "";
         try {
-            record = s3.getObjectAsString(recordsBucketName, keyName);
+            recordStr = s3.getObjectAsString(recordsBucketName, keyName);
         } catch (SdkClientException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error getting record", e.getMessage(), e);
         }
-        return record;
+        return recordStr;
     }
 
     private String getKeyNameForLatestVersion(RecordMetadata recordMetadata) {
