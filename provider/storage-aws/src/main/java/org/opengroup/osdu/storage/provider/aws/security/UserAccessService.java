@@ -17,14 +17,11 @@ package org.opengroup.osdu.storage.provider.aws.security;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 
 import org.apache.http.HttpStatus;
 
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -32,8 +29,6 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
-import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
-import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.stereotype.Service;
 
@@ -41,27 +36,14 @@ import org.springframework.stereotype.Service;
 public class UserAccessService {
 
 
-    private CacheHelper cacheHelper;
-    @Inject
-    private GroupCache cache;
-    @Inject
-    private IEntitlementsFactory entitlementsFactory;
     @Inject
     private DpsHeaders dpsHeaders;
     @Inject
     private IEntitlementsExtensionService entitlementsExtensions;
-
     @Inject
     IServiceAccountJwtClient serviceAccountClient;
     
     private static final String SERVICE_PRINCIPAL_ID = "";
-    @PostConstruct
-    public void init() {
-
-        cacheHelper = new CacheHelper();
-
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-    }
 
     /**
      * Unideal way to check if user has access to record because a list is being compared
@@ -99,8 +81,8 @@ public class UserAccessService {
         //Records can be written by a user using ANY existing valid ACL
         List<String> groupNames = this.getPartitionGroupsforServicePrincipal(dpsHeaders);
 
-        for (RecordProcessing record : records) {
-            for (String acl : Acl.flattenAcl(record.getRecordMetadata().getAcl())) {
+        for (RecordProcessing recordProcessing : records) {
+            for (String acl : Acl.flattenAcl(recordProcessing.getRecordMetadata().getAcl())) {
                 String groupName = acl.split("@")[0].toLowerCase();
                 if (!groupNames.contains(groupName)) {
                     throw new AppException(

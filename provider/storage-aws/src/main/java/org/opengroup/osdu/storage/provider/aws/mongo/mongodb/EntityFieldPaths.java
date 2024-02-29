@@ -16,6 +16,11 @@
 package org.opengroup.osdu.storage.provider.aws.mongo.mongodb;
 
 public class EntityFieldPaths {
+
+    private EntityFieldPaths() {
+        //Private Constructor, do nothing here
+    }
+
     public static final String ID = "_id";
     public static final String DATA_KIND = "data.kind";
     public static final String DATA_LEGAL_LEGALTAGS = "data.legal.legaltags";

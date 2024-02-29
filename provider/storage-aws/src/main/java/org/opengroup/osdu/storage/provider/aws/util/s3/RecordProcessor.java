@@ -41,8 +41,8 @@ public class RecordProcessor implements Callable<RecordProcessor> {
             s3Client.saveRecord(recordProcessing, dataPartition);
             result = CallableResult.PASS;
         }
-        catch(AmazonServiceException exception) {
-            this.exception = exception;
+        catch(AmazonServiceException e) {
+            this.exception = e;
             result = CallableResult.FAIL;
         }
         return this;
