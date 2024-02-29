@@ -44,7 +44,6 @@ public class LegalTagCache implements ICache<String, String> {
     private K8sLocalParameterProvider provider;
 
     private final MultiTenantCache<String> caches;
-    private boolean local;
 
     // overloaded constructor for testing
     public LegalTagCache() throws JsonProcessingException, K8sParameterNotFoundException {
@@ -77,7 +76,6 @@ public class LegalTagCache implements ICache<String, String> {
             }
             caches = new MultiTenantCache<String>(new RedisCache<>(host, port, password, expTimeSeconds, String.class, String.class));
         }
-        local = caches instanceof AutoCloseable;
 
     }
 

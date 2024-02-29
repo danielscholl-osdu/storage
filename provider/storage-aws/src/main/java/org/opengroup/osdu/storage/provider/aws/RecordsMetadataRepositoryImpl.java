@@ -22,8 +22,6 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
@@ -37,17 +35,12 @@ import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
+import java.util.Map.Entry;
 
 @ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb",
         matchIfMissing = true)
 @Repository
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {  
-
-    @Inject
-    private JaxRsDpsLog logger;
-
-    @Inject
-    private UserAccessService userAccessService;
 
     @Inject
     private DpsHeaders headers;
@@ -74,10 +67,10 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         if (Objects.nonNull(jsonPatchPerRecord)) {
             DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
 
-            for (RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
-                JsonPatch jsonPatch = jsonPatchPerRecord.get(recordMetadata);
+            for (Entry<RecordMetadata, JsonPatch> recordEntry : jsonPatchPerRecord.entrySet()) {
+                JsonPatch jsonPatch = recordEntry.getValue();
                 RecordMetadata newRecordMetadata =
-                        JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordMetadata);
+                        JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordEntry.getKey());
                 // user should be part of the acl of the record being saved
                 RecordMetadataDoc doc = new RecordMetadataDoc();
 
@@ -93,7 +86,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                 recordMetadataQueryHelper.save(doc);
                 saveLegalTagAssociation(CollaborationUtil.getIdWithNamespace(newRecordMetadata.getId(), collaborationContext),
                         newRecordMetadata.getLegal().getLegaltags());
-              }
+            }
           }
           return new HashMap<>();    
     }
@@ -160,10 +153,17 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         for (String id: ids) {            
             RecordMetadataDoc doc = recordMetadataQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class,
                     CollaborationUtil.getIdWithNamespace(id, collaborationContext));
-            if (doc == null) continue;
-            RecordMetadata rmd = doc.getMetadata();
-            if (rmd == null) continue;
+
+            RecordMetadata rmd;
+
+            if (doc == null) {
+                continue;
+            } else {
+                rmd = doc.getMetadata();
+            }
+            if (rmd != null) {
                 output.put(doc.getId(), rmd);
+            }
         }
 
         return output;
