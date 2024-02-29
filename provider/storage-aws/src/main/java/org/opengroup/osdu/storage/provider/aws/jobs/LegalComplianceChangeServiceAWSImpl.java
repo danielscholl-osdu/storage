@@ -51,7 +51,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
     private final static String COMPLIANT_STRING = "compliant";
 
     @Autowired
-    private IRecordsMetadataRepository recordsMetadataRepository;
+    private IRecordsMetadataRepository<String> recordsMetadataRepository;
 
     @Autowired
     private IMessageBus storageMessageBus;
