@@ -54,7 +54,6 @@ public class CollaborationFilterTest extends BaseOsduFilter {
         when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
         when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(false);
         when(httpServletRequest.getHeader(X_COLLABORATION_HEADER_NAME)).thenReturn(COLLABORATION_DIRECTIVES);
-//        when(httpServletResponse.getWriter()).thenReturn(writer);
 
         AppException e = assertThrows(AppException.class, () -> {
             collaborationFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
