@@ -39,16 +39,10 @@ import org.opengroup.osdu.storage.service.EntitlementsAndCacheServiceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -95,8 +89,6 @@ class UserAccessServiceTest {
         openMocks(this);
         doNothing().when(record).setUser("not a user");
 
-        ReflectionTestUtils.setField(CUT, "cacheHelper", cacheHelper);
-        ReflectionTestUtils.setField(CUT, "cache", cache);
         List<GroupInfo> groupInfos = new ArrayList<>();
         groupInfo.setName("data.tenant");
         groupInfo.setEmail("data.tenant@byoc.local");
@@ -104,8 +96,6 @@ class UserAccessServiceTest {
         groups.setGroups(groupInfos);
 
         Mockito.when(entitlementsExtension.getGroups(Mockito.any())).thenReturn(groups);
-
-        ReflectionTestUtils.setField(CUT, "entitlementsFactory", entitlementsFactory);
 
         ReflectionTestUtils.setField(CUT, "dpsHeaders", dpsHeaders);
     }

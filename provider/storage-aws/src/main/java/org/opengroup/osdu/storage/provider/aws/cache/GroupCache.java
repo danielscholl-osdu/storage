@@ -66,7 +66,7 @@ public class GroupCache<K,V> implements ICache<K,V>{
         }
         if (provider.getLocalMode()){
             if (Boolean.parseBoolean(disableCacheResult)){
-                this.cache =  new DummyCache();
+                this.cache =  new DummyCache<>();
             }
             this.cache =  this.cacheFactory.getVmCache(60, 10);
 
