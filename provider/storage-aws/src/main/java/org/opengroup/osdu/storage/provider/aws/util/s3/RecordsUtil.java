@@ -35,14 +35,12 @@ public class RecordsUtil {
     private JaxRsDpsLog logger;
 
     private S3RecordClient s3RecordClient;
-    private ExecutorService threadPool;
 
     @Inject
     private DpsHeaders headers;
 
-    public RecordsUtil(S3RecordClient s3RecordClient, ExecutorService threadPool){
-        this.s3RecordClient = s3RecordClient;
-        this.threadPool = threadPool;        
+    public RecordsUtil(S3RecordClient s3RecordClient){
+        this.s3RecordClient = s3RecordClient;       
     }
 
     public Map<String, String> getRecordsValuesById(Map<String, String> objects) {

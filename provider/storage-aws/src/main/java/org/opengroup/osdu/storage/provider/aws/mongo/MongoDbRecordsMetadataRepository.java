@@ -72,7 +72,7 @@ public class MongoDbRecordsMetadataRepository implements IRecordsMetadataReposit
         String collection = getCollection(dataPartitionId);
         recordsMetadata.stream()
                 .map(RecordMetadataMongoDBDto::new)
-                .forEach(record -> mongoDBMultiClusterFactory.getHelper(dataPartitionId).save(record, collection));
+                .forEach(recordMetadata -> mongoDBMultiClusterFactory.getHelper(dataPartitionId).save(recordMetadata, collection));
         return recordsMetadata;
     }
 
