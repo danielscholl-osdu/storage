@@ -14,13 +14,12 @@
 
 package org.opengroup.osdu.storage.jobs;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagWithReason;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
@@ -33,12 +32,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class LegalTagConsistencyValidatorTest {
 
     private LegalTagChangedCollection toBeValidatedDto = new LegalTagChangedCollection();
@@ -54,7 +54,7 @@ public class LegalTagConsistencyValidatorTest {
     @Mock
     private JaxRsDpsLog logger;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initMocks(this);
 
@@ -95,7 +95,7 @@ public class LegalTagConsistencyValidatorTest {
         try {
             LegalTagChangedCollection validatedTags = this.sut
                     .checkLegalTagStatusWithLegalService(this.toBeValidatedDto);
-            Assert.assertEquals(expected, validatedTags);
+            assertEquals(expected, validatedTags);
             verify(this.logger).warning("Inconsistency between pubsub message and legal: test-legaltag-2. Expected incompliant.");
         } catch (Exception e) {
             fail("should not throw exception");

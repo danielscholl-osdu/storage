@@ -16,13 +16,13 @@ package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -49,12 +49,12 @@ import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class RecordServiceImplTest {
 
     private static final String RECORD_ID = "tenant1:record:anyId";
@@ -102,11 +102,10 @@ public class RecordServiceImplTest {
     @Mock
     private IFeatureFlag collaborationFeatureFlag;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mock(PersistenceHelper.class);
-
-        when(this.tenant.getName()).thenReturn(TENANT_NAME);
+        lenient().when(this.tenant.getName()).thenReturn(TENANT_NAME);
     }
 
     @Test

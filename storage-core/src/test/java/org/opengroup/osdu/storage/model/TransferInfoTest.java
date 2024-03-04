@@ -14,10 +14,10 @@
 
 package org.opengroup.osdu.storage.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 
 public class TransferInfoTest {
@@ -28,7 +28,7 @@ public class TransferInfoTest {
         TransferInfo sut = new TransferInfo("testUser", 10);
 
         assertEquals("testUser", sut.getUser());
-        assertEquals(new Integer(10), sut.getRecordCount());
+        assertEquals(10, sut.getRecordCount());
         assertTrue(sut.getVersion() > 0);
     }
 
@@ -37,7 +37,7 @@ public class TransferInfoTest {
         TransferInfo sut = new TransferInfo("anyone", 10);
 
         assertEquals("anyone", sut.getUser());
-        assertEquals(new Integer(10), sut.getRecordCount());
+        assertEquals(10, sut.getRecordCount());
         assertTrue(sut.getVersion() > 0);
     }
 }

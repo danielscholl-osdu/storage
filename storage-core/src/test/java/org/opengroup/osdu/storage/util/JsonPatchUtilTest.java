@@ -16,10 +16,9 @@ package org.opengroup.osdu.storage.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.storage.Record;
@@ -32,7 +31,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
 public class JsonPatchUtilTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -42,9 +43,9 @@ public class JsonPatchUtilTest {
         Record record = getRecord();
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
         Record patchedRecord = JsonPatchUtil.applyPatch(jsonPatch, Record.class, record);
-        Assert.assertTrue(Arrays.stream(patchedRecord.getAcl().getViewers()).anyMatch("viewer3"::equals));
+        assertTrue(Arrays.stream(patchedRecord.getAcl().getViewers()).anyMatch("viewer3"::equals));
         patchedRecord.getData().containsKey("Hello");
-        Assert.assertEquals("world", patchedRecord.getData().get("Hello"));
+        assertEquals("world", patchedRecord.getData().get("Hello"));
     }
 
     @Test
@@ -52,25 +53,25 @@ public class JsonPatchUtilTest {
         RecordMetadata recordMetadata = getRecordMetadata();
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}]"));
         RecordMetadata patchedRecordMetadata = JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordMetadata);
-        Assert.assertTrue(Arrays.stream(patchedRecordMetadata.getAcl().getViewers()).anyMatch("viewer3"::equals));
+        assertTrue(Arrays.stream(patchedRecordMetadata.getAcl().getViewers()).anyMatch("viewer3"::equals));
     }
 
     @Test
     public void shouldReturnTrue_when_dataIsBeingPatched() throws Exception {
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
-        Assert.assertTrue(JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch));
+        assertTrue(JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch));
     }
 
     @Test
     public void shouldReturnTrue_when_metaIsBeingPatched() throws Exception {
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}, {\"op\":\"add\", \"path\":\"/meta\", \"value\":[{\"Hello\" : \"world\"}]}]"));
-        Assert.assertTrue(JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch));
+        assertTrue(JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch));
     }
 
     @Test
     public void shouldReturnFalse_when_neitherDataOrMetaIsBeingPatched() throws Exception {
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}]"));
-        Assert.assertFalse(JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch));
+        assertFalse(JsonPatchUtil.isDataOrMetaBeingUpdated(jsonPatch));
     }
 
     @Test
@@ -80,83 +81,83 @@ public class JsonPatchUtilTest {
         JsonPatch jsonPatchNewAcl = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}]"));
         JsonPatch jsonPatchNewAndDuplicate = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}]"));
         JsonPatch resultPatchEmpty = JsonPatchUtil.getJsonPatchForRecord(recordMetadata, jsonPatchDuplicateAcl);
-        Assert.assertTrue(resultPatchEmpty.toString().equals("[]"));
+        assertTrue(resultPatchEmpty.toString().equals("[]"));
         JsonPatch resultPatchSame = JsonPatchUtil.getJsonPatchForRecord(recordMetadata, jsonPatchNewAcl);
-        Assert.assertEquals(jsonPatchNewAcl.toString(), resultPatchSame.toString());
+        assertEquals(jsonPatchNewAcl.toString(), resultPatchSame.toString());
         JsonPatch resultPatchRemovedDuplicate = JsonPatchUtil.getJsonPatchForRecord(recordMetadata, jsonPatchNewAndDuplicate);
-        Assert.assertEquals(resultPatchRemovedDuplicate.toString(), jsonPatchNewAcl.toString());
+        assertEquals(resultPatchRemovedDuplicate.toString(), jsonPatchNewAcl.toString());
     }
 
     @Test
     public void shouldReturnTrue_when_emptyViewersAclRecordMetadata() {
         RecordMetadata recordMetadata = getRecordMetadata();
         recordMetadata.getAcl().setViewers(new String[0]);
-        Assert.assertTrue(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
+        assertTrue(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
     }
 
     @Test
     public void shouldReturnTrue_when_emptyOwnersAclRecordMetadata() {
         RecordMetadata recordMetadata = getRecordMetadata();
         recordMetadata.getAcl().setOwners(new String[0]);
-        Assert.assertTrue(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
+        assertTrue(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
     }
 
     @Test
     public void shouldReturnTrue_when_emptyLegalRecordMetadata() {
         RecordMetadata recordMetadata = getRecordMetadata();
         recordMetadata.getLegal().setLegaltags(new HashSet<>());
-        Assert.assertTrue(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
+        assertTrue(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
     }
 
     @Test
     public void shouldReturnFalse_when_nonEmptyAclAndLegalRecordMetadata() {
         RecordMetadata recordMetadata = getRecordMetadata();
-        Assert.assertFalse(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
+        assertFalse(JsonPatchUtil.isEmptyAclOrLegal(recordMetadata));
     }
 
     @Test
     public void shouldReturnTrue_when_emptyViewersAclRecord() {
         Record record = getRecord();
         record.getAcl().setViewers(new String[0]);
-        Assert.assertTrue(JsonPatchUtil.isEmptyAclOrLegal(record));
+        assertTrue(JsonPatchUtil.isEmptyAclOrLegal(record));
     }
 
     @Test
     public void shouldReturnTrue_when_emptyOwnersAclRecord() {
         Record record = getRecord();
         record.getAcl().setOwners(new String[0]);
-        Assert.assertTrue(JsonPatchUtil.isEmptyAclOrLegal(record));
+        assertTrue(JsonPatchUtil.isEmptyAclOrLegal(record));
     }
 
     @Test
     public void shouldReturnTrue_when_emptyLegalRecord() {
         Record record = getRecord();
         record.getLegal().setLegaltags(new HashSet<>());
-        Assert.assertTrue(JsonPatchUtil.isEmptyAclOrLegal(record));
+        assertTrue(JsonPatchUtil.isEmptyAclOrLegal(record));
     }
 
     @Test
     public void shouldReturnFalse_when_nonEmptyAclAndLegalRecord() {
         Record record = getRecord();
-        Assert.assertFalse(JsonPatchUtil.isEmptyAclOrLegal(record));
+        assertFalse(JsonPatchUtil.isEmptyAclOrLegal(record));
     }
 
     @Test
     public void shouldReturnTrue_when_kindIsUpdated() throws Exception {
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}, {\"op\":\"replace\", \"path\":\"/kind\", \"value\":\"newKind\"}]"));
-        Assert.assertTrue(JsonPatchUtil.isKindBeingUpdated(jsonPatch));
+        assertTrue(JsonPatchUtil.isKindBeingUpdated(jsonPatch));
     }
 
     @Test
     public void shouldReturnFalse_when_kindIsNotUpdated() throws Exception {
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
-        Assert.assertFalse(JsonPatchUtil.isKindBeingUpdated(jsonPatch));
+        assertFalse(JsonPatchUtil.isKindBeingUpdated(jsonPatch));
     }
 
     @Test
     public void shouldReturnKindFromJsonPatch() throws Exception {
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"viewer3\"}, {\"op\":\"replace\", \"path\":\"/kind\", \"value\":\"newKind\"}]"));
-        Assert.assertEquals("newKind", JsonPatchUtil.getNewKindFromPatchInput(jsonPatch));
+        assertEquals("newKind", JsonPatchUtil.getNewKindFromPatchInput(jsonPatch));
     }
 
     private Record getRecord() {

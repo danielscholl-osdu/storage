@@ -14,7 +14,8 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,17 +24,17 @@ import static org.mockito.Mockito.when;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.ConstraintValidatorContext.ConstraintViolationBuilder;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.validation.AclValidator;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class AclValidatorTest {
 
     private static final String INVALID_GROUP = "nodata.email@gmail.com";
@@ -47,17 +48,17 @@ public class AclValidatorTest {
     @Mock
     private ConstraintValidatorContext context;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.sut = new AclValidator();
         this.acl = new Acl();
 
         ConstraintViolationBuilder builder = mock(ConstraintViolationBuilder.class);
-        when(this.context.buildConstraintViolationWithTemplate(ValidationDoc.RECORD_ACL_VIEWERS_NOT_EMPTY))
+        lenient().when(this.context.buildConstraintViolationWithTemplate(ValidationDoc.RECORD_ACL_VIEWERS_NOT_EMPTY))
                 .thenReturn(builder);
-        when(this.context.buildConstraintViolationWithTemplate(ValidationDoc.RECORD_ACL_OWNERS_NOT_EMPTY))
+        lenient().when(this.context.buildConstraintViolationWithTemplate(ValidationDoc.RECORD_ACL_OWNERS_NOT_EMPTY))
                 .thenReturn(builder);
-        when(this.context.buildConstraintViolationWithTemplate("Invalid group name 'nodata.email@gmail.com'"))
+        lenient().when(this.context.buildConstraintViolationWithTemplate("Invalid group name 'nodata.email@gmail.com'"))
                 .thenReturn(builder);
     }
 

@@ -14,17 +14,17 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.storage.validation.NotNullArrayValidator;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NotNullArrayValidatorTest {
 
     private NotNullArrayValidator sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.sut = new NotNullArrayValidator();
     }

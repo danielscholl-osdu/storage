@@ -14,13 +14,13 @@
  */
 package org.opengroup.osdu.storage.logging;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.cache.VmCache;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -37,7 +37,7 @@ import java.util.Map;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class ReadAuditLogsConsumerTest {
 
     @Mock
@@ -52,7 +52,7 @@ public class ReadAuditLogsConsumerTest {
 
     private ICache<String, Boolean> readAuditLogSwitchCache;
 
-    @Before
+    @BeforeEach
     public void setup() {
         readAuditLogSwitchCache = new VmCache<>(60, 2);
     }

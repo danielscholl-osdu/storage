@@ -15,12 +15,12 @@
 package org.opengroup.osdu.storage.api;
 
 import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -41,13 +41,14 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class RecordApiTest {
 
     private final String USER = "user";
@@ -77,12 +78,12 @@ public class RecordApiTest {
     @InjectMocks
     private RecordApi sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initMocks(this);
 
-        when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
-        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+        lenient().when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
+        lenient().when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);
     }

@@ -16,19 +16,19 @@ package org.opengroup.osdu.storage.validation;
 
 import java.util.ArrayList;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.Lists;
 import org.opengroup.osdu.core.common.model.storage.validation.NotNullCollectionValidator;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NotNullCollectionValidatorTest {
 
     private NotNullCollectionValidator sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.sut = new NotNullCollectionValidator();
     }

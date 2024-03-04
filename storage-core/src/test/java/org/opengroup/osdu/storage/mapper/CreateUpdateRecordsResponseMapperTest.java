@@ -14,21 +14,21 @@
 
 package org.opengroup.osdu.storage.mapper;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CreateUpdateRecordsResponseMapperTest {
 
   private final CreateUpdateRecordsResponseMapper mapper = new CreateUpdateRecordsResponseMapper();
@@ -58,7 +58,7 @@ public class CreateUpdateRecordsResponseMapperTest {
 
     CreateUpdateRecordsResponse response = mapper.map(transfer, records);
 
-    assertEquals(new Integer(4), response.getRecordCount());
+    assertEquals(4, response.getRecordCount());
     assertArrayEquals(new String[]{"my id 2:"+ version, "my id 3:" + version}, response.getRecordIdVersions().toArray());
     assertArrayEquals(new String[]{"my id 2", "my id 3"}, response.getRecordIds().toArray());
     assertArrayEquals(new String[]{"my id 4", "my id 1"}, response.getSkippedRecordIds().toArray());

@@ -14,13 +14,12 @@
 
 package org.opengroup.osdu.storage.validation;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.validation.impl.BulkQueryPatchValidator;
 
@@ -28,24 +27,23 @@ import javax.validation.ConstraintValidatorContext;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.DUPLICATE_RECORD_ID;
 import static org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc.INVALID_PAYLOAD;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_RECORD_ID_PATCH;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.PATCH_RECORDS_MAX;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.RECORD_ID_LIST_NOT_EMPTY;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class BulkQueryPatchValidatorTest {
     @Mock
     private ConstraintValidatorContext context;
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-
     private BulkQueryPatchValidator sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         sut = new BulkQueryPatchValidator();
     }
@@ -116,8 +114,9 @@ public class BulkQueryPatchValidatorTest {
     }
 
     private void exceptionRulesAndMethodRun(RecordQueryPatch recordQueryPatch, String errorMessage) {
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(errorMessage);
-        sut.isValid(recordQueryPatch, context);
+        RequestValidationException exception = assertThrows(RequestValidationException.class, ()->{
+                sut.isValid(recordQueryPatch, context);
+        });
+        assertEquals(errorMessage, exception.getMessage());
     }
 }
