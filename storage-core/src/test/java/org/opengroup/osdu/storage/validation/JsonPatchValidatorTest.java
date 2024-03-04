@@ -16,22 +16,22 @@ package org.opengroup.osdu.storage.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.storage.validation.impl.JsonPatchValidator;
 
 import javax.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opengroup.osdu.storage.util.RecordConstants.MAX_OP_NUMBER;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class JsonPatchValidatorTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -39,12 +39,9 @@ public class JsonPatchValidatorTest {
     @Mock
     private ConstraintValidatorContext context;
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-
     private JsonPatchValidator sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         sut = new JsonPatchValidator();
     }
@@ -69,10 +66,11 @@ public class JsonPatchValidatorTest {
             jsonString.append("{\"op\": \"add\", \"path\": \"/acl/viewers\", \"value\": \"value\"},");
         }
         jsonString.deleteCharAt(jsonString.length() - 1).append("]");
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(ValidationDoc.INVALID_PATCH_OPERATION_SIZE);
 
-        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString.toString())), context);
+        RequestValidationException exception = assertThrows( RequestValidationException.class, ()->{
+            sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString.toString())), context);
+        });
+        assertEquals(ValidationDoc.INVALID_PATCH_OPERATION_SIZE, exception.getMessage());
     }
 
     @Test
@@ -210,7 +208,7 @@ public class JsonPatchValidatorTest {
         exceptionRulesAndMethodRun(jsonString, ValidationDoc.INVALID_PATCH_SINGLE_VALUE_FORMAT_FOR_ACL_LEGAL_ANCESTRY);
     }
 
-    @Test(expected = RequestValidationException.class)
+    @Test
     public void should_returnFalse_ifPatchHasInvalidPath() throws IOException {
         String jsonString = "[{" +
                 "             \"op\": \"add\"," +
@@ -218,7 +216,9 @@ public class JsonPatchValidatorTest {
                 "             \"value\": \"some_value\"" +
                 "            }]";
 
-        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+        assertThrows(RequestValidationException.class, ()->{
+            sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+        });
     }
 
     @Test
@@ -374,9 +374,9 @@ public class JsonPatchValidatorTest {
     }
 
     private void exceptionRulesAndMethodRun(String jsonString, String message) throws IOException {
-        exceptionRule.expect(RequestValidationException.class);
-        exceptionRule.expectMessage(message);
-
-        sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+        RequestValidationException exception = assertThrows(RequestValidationException.class, () -> {
+            sut.isValid(JsonPatch.fromJson(mapper.readTree(jsonString)), context);
+        });
+        assertEquals(message, exception.getMessage());
     }
 }

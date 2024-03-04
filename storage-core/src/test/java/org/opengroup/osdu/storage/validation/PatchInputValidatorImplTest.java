@@ -16,13 +16,11 @@ package org.opengroup.osdu.storage.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -35,6 +33,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -46,7 +46,7 @@ import static org.opengroup.osdu.core.common.model.storage.validation.Validation
 import static org.opengroup.osdu.storage.util.TestUtils.buildAppExceptionMatcher;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PatchInputValidatorImplTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -63,16 +63,17 @@ public class PatchInputValidatorImplTest {
     @InjectMocks
     private PatchInputValidatorImpl sut;
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
 
-    @Test(expected = AppException.class)
+    @Test
     public void shouldThrowException_ifPatchHasDuplicates() throws IOException {
         String jsonString = "[" +
                 "{ \"op\": \"add\", \"path\": \"/acl/viewers\", \"value\": \"some_value\"}," +
                 "{ \"op\": \"add\", \"path\": \"/acl/viewers\", \"value\": \"some_value\"}" +
                 "]";
-        sut.validateDuplicates(JsonPatch.fromJson(mapper.readTree(jsonString)));
+
+        assertThrows(AppException.class, ()->{
+            sut.validateDuplicates(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        });
     }
 
     @Test
@@ -94,10 +95,11 @@ public class PatchInputValidatorImplTest {
 
         when(entitlementsAndCacheService.isValidAcl(headers, valueSet)).thenReturn(false);
 
-        exceptionRule.expect(AppException.class);
-        exceptionRule.expect(buildAppExceptionMatcher("Invalid ACLs provided in acl path.", "Invalid ACLs"));
-
-        sut.validateAcls(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        AppException exception = assertThrows(AppException.class, ()->{
+            sut.validateAcls(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        });
+        assertEquals("Invalid ACLs provided in acl path.", exception.getMessage());
+        assertEquals("Invalid ACLs", exception.getError().getReason());
     }
 
     @Test
@@ -173,11 +175,12 @@ public class PatchInputValidatorImplTest {
     public void shouldFail_whenKindDoesNotFollowNamingConvention() throws IOException {
         String jsonString = "[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"kindValue\"}]";
 
-        exceptionRule.expect(RequestValidationException.class);
         String message = String.format(KIND_DOES_NOT_FOLLOW_THE_REQUIRED_NAMING_CONVENTION, "kindValue");
-        exceptionRule.expectMessage(message);
+        RequestValidationException exception = assertThrows( RequestValidationException.class, ()->{
+            sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        });
 
-        sut.validateKind(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        assertEquals(message, exception.getMessage());
     }
 
     @Test
@@ -191,22 +194,26 @@ public class PatchInputValidatorImplTest {
     public void shouldFail_whenAncestryParentsDoesNotFollowBaseNamingConvention() throws IOException {
         String jsonString = "[{ \"op\": \"add\", \"path\": \"/ancestry/parents\", \"value\": \"invalidValue\"}]";
 
-        exceptionRule.expect(RequestValidationException.class);
         String message = String.format(INVALID_PARENT_RECORD_ID_FORMAT, "invalidValue");
-        exceptionRule.expectMessage(message);
 
-        sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        RequestValidationException exception = assertThrows(RequestValidationException.class, () -> {
+            sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        });
+
+        assertEquals(message, exception.getMessage());
     }
 
     @Test
     public void shouldFail_whenAncestryParentsDoesNotFollowVersionNamingConvention() throws IOException {
         String jsonString = "[{ \"op\": \"add\", \"path\": \"/ancestry/parents\", \"value\": \"opendes:test:test:invalidVersion\"}]";
 
-        exceptionRule.expect(RequestValidationException.class);
         String message = String.format(INVALID_PARENT_RECORD_VERSION_FORMAT, "opendes:test:test:invalidVersion");
-        exceptionRule.expectMessage(message);
 
-        sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        RequestValidationException exception = assertThrows( RequestValidationException.class, ()-> {
+            sut.validateAncestry(JsonPatch.fromJson(mapper.readTree(jsonString)));
+        });
+
+        assertEquals(message, exception.getMessage());
     }
 
     @Test

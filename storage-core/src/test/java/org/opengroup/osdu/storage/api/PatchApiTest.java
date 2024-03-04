@@ -1,11 +1,11 @@
 package org.opengroup.osdu.storage.api;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -24,12 +24,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class PatchApiTest {
     private final String USER = "user";
     private final String TENANT = "tenant1";
@@ -54,13 +55,13 @@ public class PatchApiTest {
     @InjectMocks
     private PatchApi sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
         initMocks(this);
 
-        when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
+        lenient().when(this.httpHeaders.getUserEmail()).thenReturn(this.USER);
 
-        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+        lenient().when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
 
         TenantInfo tenant = new TenantInfo();
         tenant.setName(this.TENANT);

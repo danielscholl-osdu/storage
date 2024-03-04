@@ -17,12 +17,12 @@ package org.opengroup.osdu.storage.service;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.http.HttpResponse;
 import org.opengroup.osdu.core.common.legal.ILegalFactory;
@@ -41,11 +41,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class LegalServiceImplTest {
 
     @Mock
@@ -66,9 +66,9 @@ public class LegalServiceImplTest {
     @InjectMocks
     private LegalServiceImpl sut;
 
-    @Before
+    @BeforeEach
     public void setup() {
-        when(this.factory.create(this.headers)).thenReturn(this.legalService);
+        lenient().when(this.factory.create(this.headers)).thenReturn(this.legalService);
     }
 
     @Test

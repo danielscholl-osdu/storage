@@ -15,12 +15,12 @@
 package org.opengroup.osdu.storage.service;
 
 import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
@@ -36,10 +36,10 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
+@ExtendWith(MockitoExtension.class)
 public class EntitlementsAndCacheServiceImplTest {
 
     private static final String MEMBER_EMAIL = "tester@gmail.com";
@@ -75,14 +75,14 @@ public class EntitlementsAndCacheServiceImplTest {
 
     private static final Map<String, String> headerMap = new HashMap<>();
 
-    @Before
+    @BeforeEach
     public void setup() {
 
         setDefaultHeaders();
 
         this.headers = DpsHeaders.createFromMap(headerMap);
 
-        when(this.entitlementFactory.create(this.headers)).thenReturn(this.entitlementService);
+        lenient().when(this.entitlementFactory.create(this.headers)).thenReturn(this.entitlementService);
     }
 
     private void setDefaultHeaders() {
@@ -383,7 +383,7 @@ public class EntitlementsAndCacheServiceImplTest {
         assertEquals(true, this.sut.hasOwnerAccess(this.headers, ownerList));
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwAppException_when_NoGroupGotFromCacheOrEntitlements() throws EntitlementsException {
         List<GroupInfo> groupsInfo = new ArrayList<>();
         Groups groups = new Groups();
@@ -393,10 +393,12 @@ public class EntitlementsAndCacheServiceImplTest {
         Set<String> acls = new HashSet<>();
         acls.add("valid@tenant.gmail.com");
 
-        this.sut.isValidAcl(this.headers, acls);
+        assertThrows(AppException.class, ()->{
+            this.sut.isValidAcl(this.headers, acls);
+        });
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwAppException_when_EmailOfGroupNotMatchingValidRegex_NoAtSymbol()
             throws EntitlementsException {
         GroupInfo g1 = new GroupInfo();
@@ -411,10 +413,12 @@ public class EntitlementsAndCacheServiceImplTest {
         Set<String> acls = new HashSet<>();
         acls.add("valid@tenant.gmail.com");
 
-        this.sut.isValidAcl(this.headers, acls);
+        assertThrows(AppException.class, ()->{
+            this.sut.isValidAcl(this.headers, acls);
+        });
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwAppException_when_EmailOfGroupNotMatchingValidRegex_NoGroupName()
             throws EntitlementsException {
         GroupInfo g1 = new GroupInfo();
@@ -429,10 +433,12 @@ public class EntitlementsAndCacheServiceImplTest {
         Set<String> acls = new HashSet<>();
         acls.add("valid@tenant.gmail.com");
 
-        this.sut.isValidAcl(this.headers, acls);
+        assertThrows( AppException.class, ()->{
+            this.sut.isValidAcl(this.headers, acls);
+        });
     }
 
-    @Test(expected = AppException.class)
+    @Test
     public void should_throwAppException_when_EmailOfGroupNotMatchingValidRegex_DomainTooSimple()
             throws EntitlementsException {
         GroupInfo g1 = new GroupInfo();
@@ -447,7 +453,9 @@ public class EntitlementsAndCacheServiceImplTest {
         Set<String> acls = new HashSet<>();
         acls.add("valid@tenant.gmail.com");
 
-        this.sut.isValidAcl(this.headers, acls);
+        assertThrows(AppException.class, ()->{
+            this.sut.isValidAcl(this.headers, acls);
+        });
     }
 
     @Test
