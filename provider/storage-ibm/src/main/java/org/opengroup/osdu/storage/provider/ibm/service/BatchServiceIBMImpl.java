@@ -5,7 +5,7 @@ package org.opengroup.osdu.storage.provider.ibm.service;
 
 import static java.util.Collections.singletonList;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;

@@ -25,7 +25,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.io.IOException;
 
 // Converts the complex type of RecordMetadata to a string and vice-versa.

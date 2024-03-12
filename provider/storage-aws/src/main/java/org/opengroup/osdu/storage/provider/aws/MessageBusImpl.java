@@ -30,8 +30,8 @@ import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.Optional;
 
