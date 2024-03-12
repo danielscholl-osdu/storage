@@ -33,7 +33,7 @@ import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;

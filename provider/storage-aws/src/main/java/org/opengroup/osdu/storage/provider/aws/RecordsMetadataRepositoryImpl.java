@@ -32,7 +32,7 @@ import org.springframework.stereotype.Repository;
 
 import com.github.fge.jsonpatch.JsonPatch;
 import org.opengroup.osdu.storage.util.JsonPatchUtil;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.Map.Entry;

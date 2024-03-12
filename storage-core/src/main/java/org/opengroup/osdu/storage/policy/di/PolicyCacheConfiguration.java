@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 @Configuration
 @Getter

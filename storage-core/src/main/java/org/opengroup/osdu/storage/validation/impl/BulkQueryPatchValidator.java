@@ -6,8 +6,8 @@ import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.opengroup.osdu.storage.validation.api.ValidBulkQueryPatch;
 import org.springframework.util.CollectionUtils;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

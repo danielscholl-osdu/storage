@@ -25,7 +25,7 @@ import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.api.ValidBulkQueryPatch;
 import org.opengroup.osdu.storage.validation.api.ValidJsonPatch;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import static org.opengroup.osdu.storage.swagger.SwaggerDoc.PATCH_RECORD_OPERATIONS;
 

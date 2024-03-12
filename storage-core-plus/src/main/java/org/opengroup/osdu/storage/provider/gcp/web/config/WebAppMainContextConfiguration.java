@@ -18,7 +18,7 @@
 package org.opengroup.osdu.storage.provider.gcp.web.config;
 
 import java.util.Arrays;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.opengroup.osdu.storage.StorageApplication;
 import org.opengroup.osdu.storage.provider.gcp.messaging.config.MessagingCustomContextConfiguration;

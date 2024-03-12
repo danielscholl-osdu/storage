@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 @Component("CursorCache")
 @ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)

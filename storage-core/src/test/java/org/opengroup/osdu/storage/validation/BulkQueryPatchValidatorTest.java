@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.validation.impl.BulkQueryPatchValidator;
 
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.ArrayList;
 import java.util.List;
 

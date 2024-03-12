@@ -22,7 +22,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.storage.service.BatchServiceImpl;
 import org.springframework.stereotype.Service;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import java.util.Optional;
 

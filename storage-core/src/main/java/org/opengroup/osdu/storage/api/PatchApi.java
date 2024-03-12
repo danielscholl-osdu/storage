@@ -45,7 +45,7 @@ import org.springframework.web.context.annotation.RequestScope;
 
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Optional;
 
 @RestController

@@ -23,7 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.storage.validation.impl.JsonPatchValidator;
 
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidatorContext;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

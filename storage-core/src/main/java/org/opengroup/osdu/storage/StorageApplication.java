@@ -19,7 +19,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.PropertySource;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 
 @SpringBootApplication

@@ -20,7 +20,7 @@ package org.opengroup.osdu.storage.provider.gcp.messaging.jobs;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 import java.util.Map;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
