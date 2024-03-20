@@ -10,7 +10,6 @@ global:
 data:
   # configmaps
   logLevel: "ERROR"
-  springProfilesActive: "gcp"
   defaultDataCountry: "US"
   storageServiceAccountEmail: "storage@service.local"
   entitlementsHost: "http://entitlements"
