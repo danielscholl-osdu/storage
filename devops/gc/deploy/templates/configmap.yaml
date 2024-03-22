@@ -13,7 +13,11 @@ data:
   LOG_LEVEL: {{ .Values.data.logLevel | quote }}
   PARTITION_HOST: {{ .Values.data.partitionHost | quote }}
   STORAGE_SERVICE_ACCOUNT_EMAIL: {{ .Values.data.storageServiceAccountEmail | quote }}
-  SPRING_PROFILES_ACTIVE: {{ .Values.data.springProfilesActive | quote }}
+  {{- if .Values.global.onPremEnabled }}
+  SPRING_PROFILES_ACTIVE: "anthos"
+  {{- else }}
+  SPRING_PROFILES_ACTIVE: "gcp"
+  {{- end }}
   OPA_ENABLED: {{ .Values.data.opaEnabled | quote }}
   OPA_ENDPOINT: {{ .Values.data.opaEndpoint | quote }}
   {{- if .Values.data.redisStorageHost }}

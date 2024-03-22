@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.api;
 
-import com.azure.spring.autoconfigure.aad.UserPrincipal;
+import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;

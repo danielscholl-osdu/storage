@@ -29,7 +29,7 @@
 		<java.version>17</java.version>
 		<maven.compiler.target>17</maven.compiler.target>
 		<maven.compiler.source>17</maven.compiler.source>
-		<os-core-lib-ibm.version>0.25.0</os-core-lib-ibm.version>
+		<os-core-lib-ibm.version>0.26.0-rc8</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
 		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
 		<tomcat-embed-core.version>9.0.70</tomcat-embed-core.version>
@@ -46,10 +46,17 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework</groupId>
+					<artifactId>spring-jcl</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-web</artifactId>
+			<version>6.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opengroup.osdu</groupId>
@@ -92,11 +99,6 @@
 					<artifactId>spring-security-core</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.tomcat.embed</groupId>
-			<artifactId>tomcat-embed-core</artifactId>
-			<version>${tomcat-embed-core.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

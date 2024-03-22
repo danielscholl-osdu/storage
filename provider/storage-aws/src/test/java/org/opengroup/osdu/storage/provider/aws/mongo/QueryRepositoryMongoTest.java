@@ -16,7 +16,6 @@
 
 package org.opengroup.osdu.storage.provider.aws.mongo;
 
-
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.provider.aws.mongo.configuration.StorageTestConfig;
@@ -26,6 +25,7 @@ import org.opengroup.osdu.storage.provider.aws.mongo.util.RecordMetadataGenerato
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.List;
@@ -37,6 +37,7 @@ import static org.junit.Assert.assertNull;
 
 @DataMongoTest
 @SpringJUnitConfig(classes = StorageTestConfig.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class QueryRepositoryMongoTest extends ParentUtil {
 
     @Autowired

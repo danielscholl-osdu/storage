@@ -27,19 +27,19 @@
     <artifactId>storage-azure</artifactId>
     <description>Storage service on Azure</description>
     <packaging>jar</packaging>
-    
+
     <properties>
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <osdu.corelibazure.version>0.26.0-rc5</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.26.0-rc6</osdu.corelibazure.version>
         <osdu.storage-core.version>0.26.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <nimbus-jose-jwt-azure.version>9.30.2</nimbus-jose-jwt-azure.version>
-        <azure-storage-blob.version>12.10.2</azure-storage-blob.version>
-        <azure-spring-data-cosmos.version>3.21.0</azure-spring-data-cosmos.version>
-        <spring-webmvc.version>5.3.22</spring-webmvc.version>
+        <azure-storage-blob.version>12.25.2</azure-storage-blob.version>
+        <azure-spring-data-cosmos.version>5.9.1</azure-spring-data-cosmos.version>
+        <spring-webmvc.version>6.1.4</spring-webmvc.version>
         <netty.version>4.1.101.Final</netty.version>
         <woodstox-core.version>6.4.0</woodstox-core.version>
         <argLine>
@@ -66,17 +66,17 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-			    <groupId>org.springframework.boot</groupId>
-			    <artifactId>spring-boot-dependencies</artifactId>
-			    <version>2.7.17</version>
-			    <type>pom</type>
-			    <scope>import</scope>
-			</dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <!-- Inherit managed dependencies from core-lib-azure -->
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
-                <artifactId>core-lib-azure</artifactId>
+                <artifactId>core-lib-azure-spring6</artifactId>
                 <version>${osdu.corelibazure.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -96,47 +96,10 @@
                 <artifactId>azure-spring-data-cosmos</artifactId>
                 <version>${azure-spring-data-cosmos.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-to-slf4j</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-jul</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <!--Azure core has xml deserialization issue after 1.34 due to headers not fetched from
-                NettyToAzureCoreHttpHeadersWrapper class and fails in undelete/restore soft-deleted blobs path during record read
-                If we use azure-core-http-netty there is no such issue and we get azure-core 1.35 which
-                is the current version in core-lib-azure -->
-            <!--Also refer to this issue for more details -->
-            <!--https://community.opengroup.org/osdu/platform/system/lib/cloud/azure/os-core-lib-azure/-/issues/32 -->
-            <artifactId>azure-core-http-netty</artifactId>
-            <groupId>com.azure</groupId>
-            <version>1.12.8</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/com.nimbusds/nimbus-jose-jwt -->
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
@@ -144,7 +107,8 @@
         </dependency>
         <dependency>
             <groupId>com.azure.spring</groupId>
-            <artifactId>azure-spring-boot-starter-active-directory</artifactId>
+            <artifactId>spring-cloud-azure-starter-active-directory</artifactId>
+            <version>5.10.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
@@ -185,7 +149,7 @@
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
-            <artifactId>core-lib-azure</artifactId>
+            <artifactId>core-lib-azure-spring6</artifactId>
             <version>${osdu.corelibazure.version}</version>
             <exclusions>
                 <exclusion>
@@ -199,8 +163,13 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+        <dependency>
             <groupId>org.opengroup.osdu</groupId>
-            <artifactId>os-core-common</artifactId>
+            <artifactId>os-core-common-spring6</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -280,7 +249,11 @@
             <artifactId>okio</artifactId>
             <version>${okio.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -288,7 +261,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.2.3</version>
                 <executions>
                     <execution>
                         <goals>
@@ -296,7 +269,7 @@
                         </goals>
                         <configuration>
                             <classifier>spring-boot</classifier>
-                            <mainClass>org.opengroup.osdu.storage.provider.azure.StorageApplication</mainClass>
+                            <mainClass>org.opengroup.osdu.storage.provider.azure.StorageAzureApplication</mainClass>
                         </configuration>
                     </execution>
                 </executions>
@@ -359,18 +332,18 @@
                     </excludes>
                 </configuration>
                 <executions>
-                <execution>
-                    <goals>
-                    <goal>prepare-agent</goal>
-                    </goals>
-                </execution>
-                <execution>
-                    <id>report</id>
-                    <phase>prepare-package</phase>
-                    <goals>
-                    <goal>report</goal>
-                    </goals>
-                </execution>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
