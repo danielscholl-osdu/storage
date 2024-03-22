@@ -39,28 +39,17 @@
         <spring-webmvc.version>5.3.26</spring-webmvc.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.opengroup.osdu</groupId>
-                <artifactId>os-core-common</artifactId>
-                <version>${os-core-common.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <!-- Internal packages -->
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
-            <artifactId>os-core-common</artifactId>
+            <artifactId>os-core-common-spring6</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.26.0-rc2</version>
+            <version>0.26.0-spring6-rc1</version>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
@@ -95,33 +84,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${spring-webmvc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
-            <version>5.8.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-core</artifactId>
-            <version>9.0.85</version>
-        </dependency>
 
         <!-- Testing packages -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            <version>3.9.0</version>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -136,7 +104,8 @@
         </dependency>
         <dependency>
             <groupId>de.flapdoodle.embed</groupId>
-            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <artifactId>de.flapdoodle.embed.mongo.spring31x</artifactId>
+            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -144,9 +113,20 @@
     <build>
         <plugins>
             <plugin>
+                <!-- Avoid errors like ` Mapping Parameter org.springframework.data.mapping.Parameter@8efd4ab3 does not have a name`-->
+                <!-- note that `spring-boot-starter-parent` (not used here) set also that option by default, see https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#using-->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.2.3</version>
                 <executions>
                     <execution>
                         <goals>
@@ -162,7 +142,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.2.5</version>
                 <configuration>
                     <threadCount>1</threadCount>
                 </configuration>

@@ -39,7 +39,6 @@ First you need to set variables in **values.yaml** file using any code editor. S
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
 **data.logLevel** | logging level | string | `ERROR` | yes
-**data.springProfilesActive** | active spring profile | string | `gcp` | yes
 **data.defaultDataCountry** | Data storage region | string | `US` | yes
 **data.storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | `storage@service.local` | yes
 **data.entitlementsHost** | Entitlements service host address | string | `http://entitlements` | yes

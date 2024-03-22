@@ -27,6 +27,7 @@ import org.opengroup.osdu.storage.provider.aws.mongo.util.RecordMetadataGenerato
 import org.opengroup.osdu.storage.provider.aws.mongo.dto.RecordMetadataMongoDBDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.util.AbstractMap;
@@ -42,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 @DataMongoTest
 @SpringJUnitConfig(classes = StorageTestConfig.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class RecordsMetadataRepositoryMongoTest extends ParentUtil {
 
     @Autowired

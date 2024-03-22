@@ -34,10 +34,10 @@ import org.springframework.context.annotation.PropertySource;
 )
 @PropertySource("classpath:swagger.properties")
 @SpringBootApplication
-public class StorageApplication {
+public class StorageAzureApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(StorageApplication.class, args);
+        SpringApplication.run(StorageAzureApplication.class, args);
     }
 
 }
