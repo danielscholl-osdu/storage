@@ -42,6 +42,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
@@ -152,7 +153,7 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
     @NonNull
     protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(@NonNull HttpRequestMethodNotSupportedException e,
                                                                          @NonNull HttpHeaders headers,
-                                                                         @NonNull HttpStatus status,
+                                                                         @NonNull HttpStatusCode status,
                                                                          @NonNull WebRequest request) {
         return this.getErrorResponse(
                 new AppException(org.apache.http.HttpStatus.SC_METHOD_NOT_ALLOWED, "Method not found.",
@@ -163,7 +164,7 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
     @NonNull
     protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException e,
                                                                   @NonNull HttpHeaders headers,
-                                                                  @NonNull HttpStatus status,
+                                                                  @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
         if (e.getCause() instanceof ValueInstantiationException) {
             return this.getErrorResponse(
