@@ -16,42 +16,44 @@ package org.opengroup.osdu.storage.provider.azure.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import com.azure.spring.autoconfigure.aad.AADAppRoleStatelessAuthenticationFilter;
+import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.AadAppRoleStatelessAuthenticationFilter;
 
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @ConditionalOnProperty(value = "azure.istio.auth.enabled", havingValue = "false", matchIfMissing = false)
-public class AADSecurityConfig extends WebSecurityConfigurerAdapter {
-    @Autowired
-    private AADAppRoleStatelessAuthenticationFilter appRoleAuthFilter;
+public class AADSecurityConfig {
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            .csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER)
-            .and()
-            .authorizeRequests()
-                .antMatchers("/", "/index.html",
-                    "/api-docs.yaml",
-                    "/api-docs/swagger-config",
-                    "/api-docs/**",
-                    "/configuration/security",
-                    "/configuration/ui",
-                    "/swagger",
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/swagger-resources/**",
-                    "/webjars/**").permitAll()
-                .anyRequest().authenticated()
-            .and()
-            .addFilterBefore(appRoleAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    private static final String[] AUTH_ALLOWLIST = {"/", "/index.html",
+            "/api-docs.yaml",
+            "/api-docs/swagger-config",
+            "/api-docs/**",
+            "/configuration/security",
+            "/configuration/ui",
+            "/swagger",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/swagger-resources/**",
+            "/webjars/**"
+    };
+
+    @Autowired
+    private AadAppRoleStatelessAuthenticationFilter appRoleAuthFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement((sess) -> sess.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+                .authorizeHttpRequests(request -> request.requestMatchers(AUTH_ALLOWLIST).permitAll())
+                .addFilterBefore(appRoleAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 }

@@ -36,7 +36,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
         <MY_TENANT>opendes</MY_TENANT>
-        <os-core-lib-ibm.version>0.25.0</os-core-lib-ibm.version>
+        <os-core-lib-ibm.version>0.26.0-rc8</os-core-lib-ibm.version>
     </properties>
     <dependencies>
         <!-- Internal packages -->
@@ -54,21 +54,14 @@
 
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
-            <artifactId>os-core-common</artifactId>
-            <version>0.25.0</version>
+            <artifactId>os-core-common-spring6</artifactId>
+            <version>${os-core-common.version}</version>
+            <scope>compile</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/jakarta.json/jakarta.json-api -->
+
 
         <!-- third party Apache 2.0 license packages -->
-        <dependency>
-            <groupId>javax.json</groupId>
-            <artifactId>javax.json-api</artifactId>
-            <version>1.1.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-            <version>1.1.2</version>
-        </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>

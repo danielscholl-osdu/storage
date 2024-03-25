@@ -19,7 +19,7 @@ import org.opengroup.osdu.core.common.model.policy.PolicyStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 @Component
 public class PolicyCache extends VmCache<String, PolicyStatus> {

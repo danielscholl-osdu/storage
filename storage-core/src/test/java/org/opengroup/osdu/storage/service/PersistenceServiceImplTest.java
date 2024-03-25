@@ -396,7 +396,7 @@ public class PersistenceServiceImplTest {
         for (RecordMetadata metadata : recordMetadataList)
             jsonPatchPerRecord.put(metadata, jsonPatchInput);
         patchErrors = this.sut.patchRecordsMetadata(jsonPatchPerRecord, Optional.empty());
-        verify(pubSubClient, times(1)).publishMessage(eq(headers), any());
+        verify(pubSubClient, times(1)).publishMessage(eq(headers), any(PubSubInfo[].class));
         assertTrue(patchErrors.isEmpty());
     }
 
@@ -410,7 +410,7 @@ public class PersistenceServiceImplTest {
         for (RecordMetadata metadata : recordMetadataList)
             jsonPatchPerRecord.put(metadata, jsonPatchInput);
         patchErrors = this.sut.patchRecordsMetadata(jsonPatchPerRecord, Optional.empty());
-        verify(pubSubClient, times(1)).publishMessage(eq(headers), any());
+        verify(pubSubClient, times(1)).publishMessage(eq(headers), any(PubSubInfo[].class));
         assertTrue(patchErrors.isEmpty());
     }
 
@@ -517,13 +517,15 @@ public class PersistenceServiceImplTest {
 
     @SuppressWarnings("unchecked")
     private void assertPubsubInfo(int successfullRecords, Object capturedPubsubList) {
+        List<PubSubInfo[]> pubsubList = (ArrayList<PubSubInfo[]>) capturedPubsubList;
+        // Captured variable arguments are inside an ArrayList of size 1
+        // if you find a better way to capture them, feel free to improve
+        assertEquals(1, pubsubList.size());
+        PubSubInfo[] innerList = pubsubList.get(0);
 
-        List<PubSubInfo> pubsubList = (ArrayList<PubSubInfo>) capturedPubsubList;
-
-        assertEquals(successfullRecords, pubsubList.size());
-
-        for (int i = 0; i < pubsubList.size(); i++) {
-            PubSubInfo pubSubInfo = pubsubList.get(i);
+        assertEquals(successfullRecords, innerList.length);
+        for (int i = 0; i < innerList.length; i++) {
+            PubSubInfo pubSubInfo = innerList[i];
             assertEquals("anyKind", pubSubInfo.getKind());
             assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, pubSubInfo.getOp());
             assertNull(pubSubInfo.getPreviousVersionKind());
@@ -533,12 +535,16 @@ public class PersistenceServiceImplTest {
 
     private void assertRecordChangedV2Info(int successfullRecords, Object capturedRecordChangedV2List) {
 
-        List<RecordChangedV2> recordChangedV2s = (ArrayList<RecordChangedV2>) capturedRecordChangedV2List;
+        List<RecordChangedV2[]> recordChangedV2s = (ArrayList<RecordChangedV2[]>) capturedRecordChangedV2List;
+        // Captured variable arguments are inside an ArrayList of size 1
+        // if you find a better way to capture them, feel free to improve
+        assertEquals(1, recordChangedV2s.size());
+        RecordChangedV2[] innerList = recordChangedV2s.get(0);
 
-        assertEquals(successfullRecords, recordChangedV2s.size());
+        assertEquals(successfullRecords, innerList.length);
 
-        for (int i = 0; i < recordChangedV2s.size(); i++) {
-            RecordChangedV2 recordChangedV2 = recordChangedV2s.get(i);
+        for (int i = 0; i < innerList.length; i++) {
+            RecordChangedV2 recordChangedV2 = innerList[i];
             assertEquals("anyKind", recordChangedV2.getKind());
             assertEquals(i % 2 == 0 ? OperationType.create : OperationType.update, recordChangedV2.getOp());
             assertNull(recordChangedV2.getPreviousVersionKind());

@@ -5,7 +5,7 @@ package org.opengroup.osdu.storage.provider.ibm;
 
 import java.net.MalformedURLException;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.ibm.auth.ServiceCredentials;

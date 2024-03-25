@@ -17,7 +17,7 @@ package org.opengroup.osdu.storage.provider.aws.util.s3;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
