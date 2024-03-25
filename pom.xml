@@ -37,9 +37,9 @@
         <woodstox-core.version>6.5.1</woodstox-core.version>
         <json-smart.version>2.5.0</json-smart.version>
         <jackson.version>2.16.1</jackson.version>
-        <spring-framework-version>6.1.4</spring-framework-version>
-        <spring-boot.version>3.2.3</spring-boot.version>
-        <spring-security.version>6.2.2</spring-security.version>
+        <spring-framework-version>6.1.5</spring-framework-version>
+        <spring-boot.version>3.2.4</spring-boot.version>
+        <spring-security.version>6.2.3</spring-security.version>
     </properties>
 
     <licenses>
