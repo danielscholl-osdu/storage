@@ -3,7 +3,7 @@
 
 package org.opengroup.osdu.storage.provider.ibm.cache;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;

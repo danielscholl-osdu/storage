@@ -23,7 +23,7 @@ import org.opengroup.osdu.storage.model.CreatedRecordInStorage;
 import org.opengroup.osdu.storage.model.GetCursorValue;
 import org.opengroup.osdu.storage.util.*;
 
-import javax.ws.rs.HttpMethod;
+import jakarta.ws.rs.HttpMethod;
 
 import static org.junit.Assert.assertEquals;
 

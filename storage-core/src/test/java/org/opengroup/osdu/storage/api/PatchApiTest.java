@@ -18,7 +18,7 @@ import org.opengroup.osdu.storage.service.BulkUpdateRecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

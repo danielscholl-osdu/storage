@@ -25,7 +25,7 @@ import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 

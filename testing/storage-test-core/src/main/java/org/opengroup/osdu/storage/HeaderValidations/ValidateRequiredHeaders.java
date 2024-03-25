@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.storage.util.*;
 
-import javax.ws.rs.HttpMethod;
+import jakarta.ws.rs.HttpMethod;
 
 public abstract class ValidateRequiredHeaders extends TestBase {
     protected static final String RECORD = "records";

@@ -25,8 +25,8 @@ import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.api.ValidJsonPatch;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 

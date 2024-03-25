@@ -38,7 +38,7 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import java.util.*;
 import java.util.concurrent.*;
 

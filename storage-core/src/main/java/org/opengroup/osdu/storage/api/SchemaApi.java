@@ -14,8 +14,8 @@
 
 package org.opengroup.osdu.storage.api;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import org.opengroup.osdu.core.common.model.http.AppException;

@@ -46,7 +46,7 @@ class LegalComplianceChangeServiceAWSImplTest {
     private LegalComplianceChangeServiceAWSImpl service;
 
     @Mock
-    private IRecordsMetadataRepository repo;
+    private IRecordsMetadataRepository<String> recordsMetadataRepository;
 
     @Mock
     private IMessageBus storageMessageBus;
@@ -135,10 +135,10 @@ class LegalComplianceChangeServiceAWSImplTest {
         expectedOutput.put(compliantRecordId, LegalCompliance.compliant);
 
         // mock methods called
-        Mockito.when(repo.queryByLegalTagName(Mockito.eq(incompliantTagName), Mockito.eq(500), Mockito.any()))
+        Mockito.when(recordsMetadataRepository.queryByLegalTagName(Mockito.eq(incompliantTagName), Mockito.eq(500), Mockito.any()))
                 .thenReturn(incompliantResult);
 
-        Mockito.when(repo.queryByLegalTagName(Mockito.eq(compliantTagName), Mockito.eq(500), Mockito.any()))
+        Mockito.when(recordsMetadataRepository.queryByLegalTagName(Mockito.eq(compliantTagName), Mockito.eq(500), Mockito.any()))
                 .thenReturn(compliantResult);
 
         ArgumentCaptor<PubSubInfo[]> pubSubArg = ArgumentCaptor.forClass(PubSubInfo[].class);
@@ -148,16 +148,16 @@ class LegalComplianceChangeServiceAWSImplTest {
 
         // assert
         // that create is called on the record returned for compliant
-        Mockito.verify(repo, Mockito.times(1)).createOrUpdate(compliantRecordMetaDatas, Optional.empty());
+        Mockito.verify(recordsMetadataRepository, Mockito.times(1)).createOrUpdate(compliantRecordMetaDatas, Optional.empty());
 
         // that storageMessageBus publishMessage is called with the right pubsubinfos
         Mockito.verify(storageMessageBus, Mockito.times(2))
                 .publishMessage(Mockito.any(), pubSubArg.capture());
         List<PubSubInfo[]> captured = pubSubArg.getAllValues();
-        Object incompliantPubSubObj = captured.get(0);
-        PubSubInfo incompliantPubSub = (PubSubInfo) incompliantPubSubObj;
-        Object compliantPubSubObj = captured.get(1);
-        PubSubInfo compliantPubSub = (PubSubInfo) compliantPubSubObj;
+        Object[] incompliantPubSubObj = captured.get(0);
+        PubSubInfo incompliantPubSub = (PubSubInfo) incompliantPubSubObj[0];
+        Object[] compliantPubSubObj = captured.get(1);
+        PubSubInfo compliantPubSub = (PubSubInfo) compliantPubSubObj[0];
 
         Assert.assertEquals(incompliantPubSubInfos[0].getId(), incompliantPubSub.getId());
         Assert.assertEquals(incompliantPubSubInfos[0].getOp(), incompliantPubSub.getOp());
