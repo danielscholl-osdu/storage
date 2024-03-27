@@ -1,19 +1,10 @@
-# Collaboration context
+# Collaboration Context
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Collaboration Context <a name="collaboration-context">](#collaboration-context)
-    - [HTTP header syntax <a name="http-header-syntax"></a>](#http-header-syntax)
-    - [Request directives <a name="request-directives"></a>](#request-directives)
-    - [Examples <a name="example-requests"></a>](#example-requests)
-    - [Excluded Paths <a name="excluded-paths"></a>](#excluded-paths)
-- [Reference <a name="reference"></a>](#reference)
-
-## Introduction <a name="introduction"></a>
+## Introduction
 
 Collaboration enables domain users to always consume quality data from the OSDU, share data within your team and control how and what you want to share back. This maintains the data integrity of the OSDU while enabling teams to succeed in creating new value.
 
-## Collaboration Context <a name="collaboration-context"></a>
+## Collaboration Context
 All APIs in storage service can be collaboration context-aware. Please refer to the [Collaboration Integration](CollaborationIntegration.md) tutorial for further implementation details. This functionality is behind a collaboration feature flag which is set to false by default. The functionality of the existing storage service will not be changed with this feature flag set to false.
 When it is set to true the old functionality is still not changed however you can work with Records in new contexts using the x-collaboration header when it is optionally provided.
 
@@ -77,18 +68,18 @@ The message contains the collaboration context header as an atribute when a chan
 }
 ```
 
-### HTTP header syntax <a name="http-header-syntax"></a>
+### HTTP header syntax
 * Caching directives are case-insensitive but lowercase is recommended
 * Multiple directives are comma-separated
 
-### Request directives <a name="request-directives"></a>
+### Request directives
 | Directive    | Optionality | Description                                                                                                              |
 |:-------------|:------------|:-------------------------------------------------------------------------------------------------------------------------|
 | id          | Mandatory   | ID of the collaboration to handle the request against.                                                                   |
 | application | Mandatory   | Name of the application sending the request                                                                              |
 | other directives | Optional    | Other directives include but not limited to transaction ID to handle this request against. The transaction must exist and be in an active state on the collaboration |
 
-### Example requests <a name="example-requests"></a>
+### Example requests
 <details><summary>GET the latest version of a record in collaboration context</summary>
 
 ```
@@ -128,7 +119,7 @@ curl --request PUT \
 ```
 </details>
 
-### Excluded Paths <a name="excluded-paths"></a> 
+### Excluded Paths
 CollaborationFilter, when enabled with data partition _feature flag strategy_, makes a call to Partition service. This call requires `data-partition-id` header, which is not passed/required for certain apis (_info, swagger, health, etc_)
 We can short-circuit the CollaborationFilter class when url contains one of these paths.
 
@@ -137,5 +128,5 @@ Property used (CSP Specific)
 - customized using ``collaborationFilter.excludedPaths=info,swagger,health,api-docs``
 
 
-##### Reference <a name="reference"></a>
+##### Reference
 More info about __Namespacing storage records__ can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/issues/149).
