@@ -60,9 +60,6 @@ include:
     file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "publishing/pages.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
@@ -76,6 +73,7 @@ include:
 
   - local: "devops/gc/pipeline/override-stages.yml"
   - local: "devops/core-plus/pipeline/override-stages.yml"
+  - local: "/publish.yml"
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there
