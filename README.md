@@ -1,3 +1,6 @@
+## Documentation
+Official documentation [https://osdu.pages.opengroup.org/platform/system/storage/](https://osdu.pages.opengroup.org/platform/system/storage/)
+
 ## Running the Storage Service locally
 The Storage Service is a Maven multi-module project with each cloud implemention placed in its submodule.
 
