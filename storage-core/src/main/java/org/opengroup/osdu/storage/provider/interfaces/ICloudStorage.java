@@ -50,6 +50,8 @@ public interface ICloudStorage {
 
     void deleteVersion(RecordMetadata record, Long version);
 
+    void deleteVersions(List<String> versionPaths);
+
     boolean hasAccess(RecordMetadata... records);
 
     String read(RecordMetadata record, Long version, boolean checkDataInconsistency);

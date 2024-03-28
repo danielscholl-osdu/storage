@@ -15,13 +15,11 @@
 package org.opengroup.osdu.storage.logging;
 
 import com.google.common.base.Strings;
+import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
 import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
-import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 
 import java.util.List;
-
-import static java.util.Collections.singletonList;
 
 public class StorageAuditEvents {
     private static final String CREATE_OR_UPDATE_RECORD_ACTION_ID = "ST001";
@@ -56,6 +54,7 @@ public class StorageAuditEvents {
     private static final String READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID = "ST014";
     private static final String READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE = "Read multiple records with optional conversion";
 
+    private static final String PURGE_RECORD_VERSIONS_ACTION_ID = "ST015";
     private final String user;
 
     public StorageAuditEvents(String user) {
@@ -216,6 +215,28 @@ public class StorageAuditEvents {
                 .status(AuditStatus.FAILURE)
                 .actionId(PURGE_RECORD_ACTION_ID)
                 .message(PURGE_RECORD_MESSAGE)
+                .resources(resources)
+                .user(user)
+                .build();
+    }
+
+    public AuditPayload getPurgeRecordVersionsEventSuccess(String recordId, List<String> resources) {
+        return AuditPayload.builder()
+                .action(AuditAction.DELETE)
+                .status(AuditStatus.SUCCESS)
+                .actionId(PURGE_RECORD_VERSIONS_ACTION_ID)
+                .message(String.format("Record `%s` versions purged", recordId))
+                .resources(resources)
+                .user(user)
+                .build();
+    }
+
+    public AuditPayload getPurgeRecordVersionsEventFail(String recordId, List<String> resources) {
+        return AuditPayload.builder()
+                .action(AuditAction.DELETE)
+                .status(AuditStatus.FAILURE)
+                .actionId(PURGE_RECORD_VERSIONS_ACTION_ID)
+                .message(String.format("Record `%s` versions purged", recordId))
                 .resources(resources)
                 .user(user)
                 .build();

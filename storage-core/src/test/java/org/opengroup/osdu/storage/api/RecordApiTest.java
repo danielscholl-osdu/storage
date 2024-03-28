@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Record;
@@ -55,6 +56,7 @@ public class RecordApiTest {
     private final String TENANT = "tenant1";
     private final String RECORD_ID = "osdu:anyID:any";
     private final String COLLABORATION_DIRECTIVES = "id=9e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=TestApp";
+    private final Integer LIMIT = 2;
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
     @Mock
@@ -210,6 +212,24 @@ public class RecordApiTest {
         doNothing().when(recordService).purgeRecord(RECORD_ID, COLLABORATION_CONTEXT);
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
         ResponseEntity response = this.sut.purgeRecord(COLLABORATION_DIRECTIVES, RECORD_ID);
+
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void should_returnHttp204_when_purgingRecordVersionsSuccessfully() {
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+        doNothing().when(recordService).purgeRecordVersions(RECORD_ID, LIMIT, USER, Optional.empty());
+        ResponseEntity response = this.sut.purgeRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID, LIMIT);
+
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void should_returnHttp204_when_purgingRecordVersionsSuccessfullyWithCollaborationContext() {
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
+        doNothing().when(recordService).purgeRecordVersions(RECORD_ID, LIMIT, USER, COLLABORATION_CONTEXT);
+        ResponseEntity response = this.sut.purgeRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID, LIMIT);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
     }

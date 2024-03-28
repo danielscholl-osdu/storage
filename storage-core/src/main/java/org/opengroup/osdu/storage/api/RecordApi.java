@@ -22,6 +22,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -44,13 +49,19 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,6 +72,7 @@ import java.util.Optional;
 @Validated
 public class RecordApi {
 
+	private static final String INVALID_LIMIT_ERROR_MESSAGE = "Invalid Limit. It should be greater than 0";
 	@Autowired
 	private DpsHeaders headers;
 
@@ -147,6 +159,29 @@ public class RecordApi {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
 		this.recordService.purgeRecord(id, collaborationContext);
 		return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+	}
+
+	@Operation(summary = "${recordApi.purgeRecordVersions.summary}", description = "${recordApi.purgeRecordVersions.description}",
+			security = {@SecurityRequirement(name = "Authorization")}, tags = { "records" })
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "204", description = "Record versions purged successfully."),
+			@ApiResponse(responseCode = "401", description = "Unauthorized",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
+			@ApiResponse(responseCode = "403", description = "Forbidden",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
+			@ApiResponse(responseCode = "404", description = "Record not found.",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
+			@ApiResponse(responseCode = "500", description = "Internal Server Error",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
+			@ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class ))})
+	})
+	@DeleteMapping(value = "/{id}/versions", produces = MediaType.APPLICATION_JSON_VALUE)
+	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
+	public ResponseEntity<Void> purgeRecordVersions(@Parameter(description = "x-collaboration")
+											@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+											@Parameter(description = "Record id", example = "tenant1:well:123456789") @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+													message = ValidationDoc.INVALID_RECORD_ID) String id,
+													@Parameter(description = "limit", example = "500") @RequestParam @Min(value = 1, message = INVALID_LIMIT_ERROR_MESSAGE) Integer limit) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		this.recordService.purgeRecordVersions(id, limit, headers.getUserEmail(), collaborationContext);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	@Operation(summary = "${recordApi.deleteRecord.summary}", description = "${recordApi.deleteRecord.description}",
@@ -238,4 +273,5 @@ public class RecordApi {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
 		return new ResponseEntity<RecordVersions>(this.queryService.listVersions(id, collaborationContext), HttpStatus.OK);
 	}
+
 }
