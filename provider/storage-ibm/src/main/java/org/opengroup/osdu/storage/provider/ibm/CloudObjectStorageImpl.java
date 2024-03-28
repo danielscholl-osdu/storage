@@ -133,6 +133,11 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 		String itemName = getItemName(record, version);
 		deleteItem(itemName);
 	}
+
+	@Override
+	public void deleteVersions(List<String> versionPaths) {
+		versionPaths.stream().forEach(versionPath -> deleteItem(versionPath));
+	}
 	
 	private void deleteItem(String itemName) {
 		logger.info("Delete item: " + itemName);
