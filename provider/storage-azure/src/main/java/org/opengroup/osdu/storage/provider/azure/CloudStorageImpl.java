@@ -42,8 +42,6 @@ import jakarta.inject.Named;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static java.util.Optional.ofNullable;
-
 @Repository
 public class CloudStorageImpl implements ICloudStorage {
     @Autowired
@@ -204,6 +202,12 @@ public class CloudStorageImpl implements ICloudStorage {
         validateOwnerAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
         blobStore.deleteFromStorageContainer(headers.getPartitionId(), path, containerName);
+    }
+
+    @Override
+    public void deleteVersions(List<String> versionPaths) {
+        versionPaths.stream().forEach(versionPath ->
+                blobStore.deleteFromStorageContainer(headers.getPartitionId(), versionPath, containerName));
     }
 
     @Override

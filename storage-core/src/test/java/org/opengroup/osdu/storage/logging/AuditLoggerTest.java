@@ -14,25 +14,27 @@
 
 package org.opengroup.osdu.storage.logging;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.logging.audit.AuditAction;
+import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
+import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-
-import java.util.Collections;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.mockito.junit.MockitoJUnitRunner;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -82,6 +84,40 @@ public class AuditLoggerTest {
         this.sut.purgeRecordFail(resource);
 
         verify(this.log, times(2)).audit(any());
+    }
+
+    @Test
+    public void should_writePurgeRecordVersionsSuccessEvent() {
+        List<String> resource = Arrays.asList("version1", "version2");
+        AuditPayload auditPayloadForSuccess = AuditPayload.builder()
+                .action(AuditAction.DELETE)
+                .status(AuditStatus.SUCCESS)
+                .actionId("ST015")
+                .message(String.format("Record `%s` versions purged", "recordId1"))
+                .resources(resource)
+                .user("user")
+                .build();
+
+        this.sut.purgeRecordVersionsSuccess("recordId1", resource);
+
+        verify(this.log, times(1)).audit(auditPayloadForSuccess);
+    }
+
+    @Test
+    public void should_writePurgeRecordVersionsFailureEvent() {
+        List<String> resource = Arrays.asList("version1", "version2");
+        AuditPayload auditPayloadForFailure = AuditPayload.builder()
+                .action(AuditAction.DELETE)
+                .status(AuditStatus.FAILURE)
+                .actionId("ST015")
+                .message(String.format("Record `%s` versions purged", "recordId1"))
+                .resources(resource)
+                .user("user")
+                .build();
+
+        this.sut.purgeRecordVersionsFail("recordId1", resource);
+
+        verify(this.log, times(1)).audit(auditPayloadForFailure);
     }
 
     @Test

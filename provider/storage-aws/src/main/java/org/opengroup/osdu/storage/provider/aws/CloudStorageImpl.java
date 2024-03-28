@@ -163,6 +163,12 @@ public class CloudStorageImpl implements ICloudStorage {
     }
 
     @Override
+    public void deleteVersions(List<String> versionPaths) {
+        versionPaths.stream().forEach(versionPath ->
+                s3RecordClient.deleteRecordVersion(versionPath, headers.getPartitionIdWithFallbackToAccountId()));
+    }
+
+    @Override
     public boolean hasAccess(RecordMetadata... records) {
         for (RecordMetadata recordMetadata : records) {
             if (!recordMetadata.hasVersion()) {

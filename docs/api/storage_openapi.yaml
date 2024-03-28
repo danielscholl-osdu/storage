@@ -885,6 +885,63 @@ paths:
                 $ref: '#/components/schemas/AppError'
       security:
         - Authorization: []
+  /records/{id}/versions:
+    delete:
+      tags:
+        - Records
+      summary: Purge record versions
+      description: "The API for the given record id, performs the permanent physical deletion record versions excluding latest version and any linked records or files if there are any. 
+        If 'limit' query parameter is used then it will delete oldest versions defined by 'limit'.
+        This operation cannot be undone. Required roles: 'users.datalake.admins' who is the OWNER of the record."
+      operationId: Purge record versions
+      parameters:
+        - name: id
+          in: path
+          description: Valid record id following "^[\\w\\-\\.]+:[\\w-\\.]+:[\\w\\-\\.\\:\\%]+$" pattern
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of oldest record versions to be deleted. Value must not exceed number of record versions (excluding latest version)
+          required: true
+          schema:
+            type: integer
+        - name: data-partition-id
+          in: header
+          description: Tenant Id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Record Versions deleted successfully.
+        "400":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppError"
+        "403":
+          description: User not authorized to perform the action.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppError"
+        "404":
+          description: Record not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppError"
+        "500":
+          description: Unknown Error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppError"
+      security:
+        - Authorization: []
   /records/versions/{id}:
     get:
       tags:
