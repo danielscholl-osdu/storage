@@ -414,6 +414,18 @@ class CloudStorageImplTest {
         verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, "kind/recordId/1", CONTAINER);
     }
 
+    @Test
+    void shouldDeleteVersionsSuccessfully() {
+
+        List<String> versionPaths = Arrays.asList("versionPath1", "versionPath2");
+        when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
+
+        cloudStorage.deleteVersions(versionPaths);
+
+        versionPaths.forEach(versionPath ->
+                verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, versionPath, CONTAINER));
+
+    }
 
     @Test
     void getHash_returnsHashForACollection() {

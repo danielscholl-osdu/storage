@@ -123,6 +123,18 @@ public class S3RecordClient {
         }
     }
 
+    public void deleteRecordVersion(String versionPath, String dataPartition) {
+
+        S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
+        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        String recordsBucketName = s3ClientWithBucket.getBucketName();
+        try {
+            s3.deleteObject(new DeleteObjectRequest(recordsBucketName, versionPath));
+        } catch (SdkClientException e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error deleting record", e.getMessage(), e);
+        }
+    }
+
     public boolean checkIfRecordExists(RecordMetadata recordMetadata, String dataPartition) {
         
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);

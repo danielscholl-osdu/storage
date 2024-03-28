@@ -54,6 +54,7 @@ import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEA
 @Service
 public class RecordServiceImpl implements RecordService {
 
+    public static final String ACCESS_DENIED = "Access denied";
     @Autowired
     private IRecordsMetadataRepository recordRepository;
 
@@ -88,7 +89,7 @@ public class RecordServiceImpl implements RecordService {
 
         if (!hasOwnerAccess) {
             this.auditLogger.purgeRecordFail(singletonList(recordId));
-            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied",
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED,
                     "The user is not authorized to purge the record");
         }
 
@@ -116,6 +117,73 @@ public class RecordServiceImpl implements RecordService {
         if (!collaborationContext.isPresent()) {
             this.pubSubClient.publishMessage(this.headers, new PubSubDeleteInfo(recordId, recordMetadata.getKind(), DeletionType.hard));
         }
+    }
+
+    @Override
+    public void purgeRecordVersions(String recordId, Integer limit, String user, Optional<CollaborationContext> collaborationContext) {
+        RecordMetadata recordMetadata = getRecordMetadata(recordId, true, collaborationContext);
+        List<String> currentRecordVersionPaths = recordMetadata.getGcsVersionPaths();
+
+        validateOwnerAccess(recordMetadata);
+        validateVersionPathCount(currentRecordVersionPaths, recordId, limit);
+
+        Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair = deleteVersionsPathsByLimit(currentRecordVersionPaths, limit);
+        List<RecordMetadata> recordMetadataList = new ArrayList<>();
+        recordMetadata.setGcsVersionPaths(recordVersionPathsToRetainDeletePair.getLeft());
+        recordMetadata.setModifyTime(System.currentTimeMillis());
+        recordMetadata.setModifyUser(user);
+        recordMetadataList.add(recordMetadata);
+
+        try {
+            this.recordRepository.createOrUpdate(recordMetadataList, collaborationContext);
+        } catch (AppException appException) {
+            this.auditLogger.purgeRecordVersionsFail(recordId, recordVersionPathsToRetainDeletePair.getRight());
+            throw appException;
+        }
+
+        try {
+            this.cloudStorage.deleteVersions(recordVersionPathsToRetainDeletePair.getRight());
+        } catch (AppException appException) {
+            recordMetadata.setGcsVersionPaths(currentRecordVersionPaths);
+            this.recordRepository.createOrUpdate(recordMetadataList, collaborationContext);
+            this.auditLogger.purgeRecordVersionsFail(recordId, recordVersionPathsToRetainDeletePair.getRight());
+            throw appException;
+        }
+
+        this.auditLogger.purgeRecordVersionsSuccess(recordId, recordVersionPathsToRetainDeletePair.getRight());
+    }
+
+    private void validateVersionPathCount(List<String> currentRecordVersionPaths, String recordId, Integer limit) {
+        if (currentRecordVersionPaths.size() == 1) {
+            String message = String.format("The record '%s' has only one version", recordId);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "No Record versions to purge", message);
+        }
+        if (currentRecordVersionPaths.size() - 1 < limit) {
+            String message = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", recordId, currentRecordVersionPaths.size() - 1, limit);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid limit", message);
+        }
+    }
+
+    private void validateOwnerAccess(RecordMetadata recordMetadata) {
+        boolean hasOwnerAccess = dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.purge);
+        if (!hasOwnerAccess) {
+            auditLogger.purgeRecordVersionsFail(recordMetadata.getId(), singletonList(recordMetadata.getId()));
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED,
+                    "The user is not authorized to purge the record versions");
+        }
+    }
+
+    private Pair<List<String>, List<String>> deleteVersionsPathsByLimit(List<String> currentRecordVersionPaths, Integer limit) {
+        List<String> recordVersionPathsToRetain = new ArrayList<>();
+        List<String> recordVersionPathsToDelete = new ArrayList<>();
+        for (int i = 0; i < currentRecordVersionPaths.size(); i++) {
+            String currentRecordVersionPath = currentRecordVersionPaths.get(i);
+            if (i < limit)
+                recordVersionPathsToDelete.add(currentRecordVersionPath);
+            else
+                recordVersionPathsToRetain.add(currentRecordVersionPath);
+        }
+        return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
     }
 
     @Override
@@ -206,25 +274,24 @@ public class RecordServiceImpl implements RecordService {
         }
     }
 
-    private RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest, Optional<CollaborationContext> collaborationContext) {
+    protected RecordMetadata getRecordMetadata(String recordId, boolean isPurgeRequest, Optional<CollaborationContext> collaborationContext) {
 
         String tenantName = tenant.getName();
         if (!Record.isRecordIdValidFormatAndTenant(recordId, tenantName)) {
             String msg = String.format("The record '%s' does not belong to account '%s'", recordId, tenantName);
-
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record ID", msg);
         }
 
-        RecordMetadata record = this.recordRepository.get(recordId, collaborationContext);
+        RecordMetadata recordMetadata = this.recordRepository.get(recordId, collaborationContext);
         String msg = String.format("Record with id '%s' does not exist", recordId);
-        if ((record == null || record.getStatus() != RecordState.active) && !isPurgeRequest) {
+        if ((recordMetadata == null || recordMetadata.getStatus() != RecordState.active) && !isPurgeRequest) {
             throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found", msg);
         }
-        if (record == null && isPurgeRequest) {
+        if (recordMetadata == null && isPurgeRequest) {
             throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found", msg);
         }
 
-        return record;
+        return recordMetadata;
     }
 
     private List<RecordMetadata> getRecordsMetadata(List<String> recordIds, List<Pair<String, String>> notDeletedRecords, Optional<CollaborationContext> collaborationContext) {
@@ -244,7 +311,7 @@ public class RecordServiceImpl implements RecordService {
     private void validateDeleteAllowed(RecordMetadata recordMetadata) {
         if (!this.dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.delete)) {
             this.auditLogger.deleteRecordFail(singletonList(recordMetadata.getId()));
-            throw new AppException(HttpStatus.SC_FORBIDDEN, "Access denied", "The user is not authorized to perform this action");
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED, "The user is not authorized to perform this action");
         }
     }
 

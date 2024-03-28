@@ -45,14 +45,32 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.only;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class RecordServiceImplTest {
@@ -68,6 +86,7 @@ public class RecordServiceImplTest {
     private static final String[] OWNERS = new String[]{"owner1@slb.com", "owner2@slb.com"};
     private static final String[] VIEWERS = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
+    private final Optional<CollaborationContext> EMPTY_COLLABORATION_CONTEXT = Optional.empty();
 
     @Mock
     private IRecordsMetadataRepository recordRepository;
@@ -153,7 +172,6 @@ public class RecordServiceImplTest {
         verify(this.pubSubClient).publishMessage(this.headers, pubSubDeleteInfo);
     }
 
-
     @Test
     public void should_return403_when_recordExistsButWithoutOwnerPermissions() {
         Acl storageAcl = new Acl();
@@ -233,7 +251,6 @@ public class RecordServiceImplTest {
         }
     }
 
-
     @Test
     public void should_rollbackDatastoreRecord_when_deletingRecordInGCSFails() {
         Acl storageAcl = new Acl();
@@ -264,6 +281,213 @@ public class RecordServiceImplTest {
             fail("Should not get different exception");
         }
     }
+
+    @Test
+    public void shouldPurgeRecordVersionsSuccessfully() {
+
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3", "path/4"));
+
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        this.sut.purgeRecordVersions(RECORD_ID, 2, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+
+        RecordMetadata updatedRecordMetadata = recordMetadata;
+        updatedRecordMetadata.setGcsVersionPaths(Arrays.asList("path/3", "path/4"));
+        List<RecordMetadata> recordMetadataList = Arrays.asList(recordMetadata);
+
+        verify(this.recordRepository).createOrUpdate(recordMetadataList, EMPTY_COLLABORATION_CONTEXT);
+        verify(this.cloudStorage).deleteVersions(Arrays.asList("path/1", "path/2"));
+        verify(this.auditLogger).purgeRecordVersionsSuccess(RECORD_ID, Arrays.asList("path/1", "path/2"));
+
+    }
+
+    @Test
+    public void shouldThrowNotFoundAppException_whenPurgeRecordVersions_forRecordWhichDoesNotExist() {
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(null);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, 2, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+
+        assertEquals(HttpStatus.SC_NOT_FOUND, appException.getError().getCode());
+        assertEquals("Record not found", appException.getError().getReason());
+        assertEquals("Record with id '" + RECORD_ID + "' does not exist", appException.getError().getMessage());
+    }
+
+    @Test
+    public void shouldThrowForbiddenAppException_whenPurgeRecordVersions_forRecordWithoutOwnerPermissions() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3", "path/4"));
+
+        when(this.recordRepository.get(RECORD_ID, Optional.empty())).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, 2, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+
+        assertEquals(403, appException.getError().getCode());
+        assertEquals("Access denied", appException.getError().getReason());
+        assertEquals("The user is not authorized to purge the record versions", appException.getError().getMessage());
+
+    }
+
+    @Test
+    public void shouldThrowOriginalAppException_whenPurgeRecordVersions_deletingRecordVersionInDatastoreFails() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path/1", "path/2", "path/3", "path/4"));
+
+        AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
+
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        doThrow(originalException).when(this.recordRepository).createOrUpdate(any(), eq(EMPTY_COLLABORATION_CONTEXT));
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, 2, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+        verify(this.auditLogger).purgeRecordVersionsFail( any(), any());
+        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, appException.getError().getCode());
+        assertEquals("error", appException.getError().getReason());
+        assertEquals("msg", appException.getError().getMessage());
+    }
+    @Test
+    public void shouldRollBackDatastoreRecordAndThrowOriginalAppException_whenPurgeRecordVersions_deletingRecordVersionInCloudStorageFails() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        List<String> currentVersionPaths = asList("path/1", "path/2", "path/3", "path/4");
+        recordMetadata.setGcsVersionPaths(currentVersionPaths);
+
+        AppException originalException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error", "msg");
+
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        doThrow(originalException).when(this.cloudStorage).deleteVersions(Arrays.asList("path/1", "path/2"));
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, 2, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+
+        verify(this.recordRepository, times(2)).createOrUpdate(any(), eq(EMPTY_COLLABORATION_CONTEXT));
+        verify(this.auditLogger).purgeRecordVersionsFail( any(), any());
+        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, appException.getError().getCode());
+        assertEquals("error", appException.getError().getReason());
+        assertEquals("msg", appException.getError().getMessage());
+    }
+
+    @Test
+    public void shouldThrowBadRequestAppException_whenPurgeRecordVersions_forRecordWithLessVersionsCountThanLimit() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path/1", "path/2"));
+
+        int limit = 2;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, limit, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals("Invalid limit", appException.getError().getReason());
+        String errorMessage = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", RECORD_ID, recordMetadata.getGcsVersionPaths().size() - 1, limit);
+        assertEquals(errorMessage, appException.getError().getMessage());
+    }
+
+    @Test
+    public void shouldThrowBadRequestAppException_whenPurgeRecordVersions_forInvalidLimitValue() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path/1", "path/2"));
+
+        int limit = 2;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, limit, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals("Invalid limit", appException.getError().getReason());
+        String errorMessage = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", RECORD_ID, recordMetadata.getGcsVersionPaths().size() - 1, limit);
+        assertEquals(errorMessage, appException.getError().getMessage());
+    }
+
+    @Test
+    public void shouldThrowBadRequestAppException_whenPurgeRecordVersions_forRecordWithOnlyOneVersion() {
+        Acl storageAcl = new Acl();
+        String[] viewers = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
+        String[] owners = new String[]{"owner1@slb.com", "owner2@slb.com"};
+        storageAcl.setViewers(viewers);
+        storageAcl.setOwners(owners);
+
+        RecordMetadata recordMetadata = new RecordMetadata();
+        recordMetadata.setKind("any kind");
+        recordMetadata.setAcl(storageAcl);
+        recordMetadata.setStatus(RecordState.active);
+        recordMetadata.setGcsVersionPaths(Arrays.asList("path/1"));
+
+        int limit = 1;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, limit, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals("No Record versions to purge", appException.getError().getReason());
+        String errorMessage = String.format("The record '%s' has only one version", RECORD_ID);
+        assertEquals(errorMessage, appException.getError().getMessage());
+    }
+
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -441,6 +665,7 @@ public class RecordServiceImplTest {
         assertEquals(USER_NAME, record.getModifyUser());
 
     }
+
     @Test
     public void shouldThrowDeleteRecordsException_when_tryingToDeleteRecordsWhichUserDoesNotHaveAccessTo() {
         RecordMetadata record = buildRecordMetadata();
@@ -536,7 +761,7 @@ public class RecordServiceImplTest {
         ArgumentCaptor<PubSubDeleteInfo> pubsubMessageCaptor = ArgumentCaptor.forClass(PubSubDeleteInfo.class);
         ArgumentCaptor<RecordChangedV2Delete> recordChangedV2DeleteArgumentCaptor = ArgumentCaptor.forClass(RecordChangedV2Delete.class);
 
-        if(isCollaborationFFEnabled) {
+        if (isCollaborationFFEnabled) {
             verify(this.pubSubClient).publishMessage(eq(collaborationContext), eq(this.headers), recordChangedV2DeleteArgumentCaptor.capture());
             RecordChangedV2Delete capturedMessage = recordChangedV2DeleteArgumentCaptor.getValue();
             assertEquals(RECORD_ID, capturedMessage.getId());

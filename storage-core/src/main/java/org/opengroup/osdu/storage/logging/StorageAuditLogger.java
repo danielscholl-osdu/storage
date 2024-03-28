@@ -14,9 +14,9 @@
 
 package org.opengroup.osdu.storage.logging;
 
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
@@ -68,6 +68,14 @@ public class StorageAuditLogger {
 
 	public void purgeRecordFail(List<String> resource) {
 		this.writeLog(this.getAuditEvents().getPurgeRecordEventFail(resource));
+	}
+
+	public void purgeRecordVersionsSuccess(String recordId, List<String> resource) {
+		this.writeLog(this.getAuditEvents().getPurgeRecordVersionsEventSuccess(recordId, resource));
+	}
+
+	public void purgeRecordVersionsFail(String recordId, List<String> resource) {
+		this.writeLog(this.getAuditEvents().getPurgeRecordVersionsEventFail(recordId, resource));
 	}
 
 	public void readAllVersionsOfRecordSuccess(List<String> resource) {

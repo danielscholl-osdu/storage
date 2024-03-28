@@ -225,6 +225,32 @@ curl --request POST \
 ```
 </details>
 
+### Purge record versions <a name="Purge-record-versions"></a>
+The API performs the permanent physical deletion of the given record versions excluding latest version and any linked records or files if there are any.
+If 'limit' query parameter is used then it will delete oldest versions defined by 'limit'.
+This operation cannot be undone.
+```
+DELETE api/storage/v2/records/{id}/versions
+```
+
+#### Parameters <a name="parameters"></a>
+
+| Parameter | Description                                                                             |
+| :--- |:----------------------------------------------------------------------------------------|
+| limit | API will delete oldest versions defined by 'limit', excluding the latest record version |
+
+<details><summary>curl</summary>
+
+```
+curl --request DELETE \
+   --url 'api/storage/v2/records/{id}/versions?limit=2' \
+   --header 'accept: application/json' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'content-type: application/json'\
+   --header 'Data-Partition-Id: common'
+```
+</details>
+
 ## Metadata update api
 
 This API allows update of records metadata in batch. It takes an array of record ids with/without version

@@ -192,6 +192,20 @@ class CloudStorageImplTest {
     }
 
     @Test
+    void shouldDeleteVersionsSuccessfully() {
+
+        List<String> versionPaths = Arrays.asList("versionPath1", "versionPath2");
+        when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);
+
+        repo.deleteVersions(versionPaths);
+
+        versionPaths.forEach(versionPath ->
+                verify(s3RecordClient, times(1)).deleteRecordVersion(versionPath, dataPartition));
+
+    }
+
+
+    @Test
     void isDuplicateRecord_shouldReturnTrue_whenRecordIsDuplicate() {
         Map<String, String> hashMap = new HashMap<>();
         Map.Entry<RecordMetadata, RecordData> kv = new AbstractMap.SimpleEntry<>(record, recordData);
