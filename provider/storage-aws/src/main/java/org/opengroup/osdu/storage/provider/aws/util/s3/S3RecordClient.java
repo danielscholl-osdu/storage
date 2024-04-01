@@ -49,6 +49,12 @@ public class S3RecordClient {
     @Value("${aws.s3.recordsBucket.ssm.relativePath}")
     private String s3RecordsBucketParameterRelativePath;
 
+    private final static String RECORD_DELETE_ERROR_MSG = "Error deleting record";
+
+    private final static String RECORD_FIND_ERROR_MSG = "Error finding record";
+
+    private final static String RECORD_GET_ERROR_MSG = "Error getting record";
+
     private S3ClientWithBucket getS3ClientWithBucket(String dataPartition) {
         return s3ClientFactory.getS3ClientForPartition(dataPartition, s3RecordsBucketParameterRelativePath);
     } 
@@ -105,7 +111,7 @@ public class S3RecordClient {
         try {
             s3.deleteObject(new DeleteObjectRequest(recordsBucketName, keyName));
         } catch (SdkClientException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error deleting record", e.getMessage(), e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_DELETE_ERROR_MSG, e.getMessage(), e);
         }
     }
 
@@ -119,7 +125,7 @@ public class S3RecordClient {
         try {
             s3.deleteObject(new DeleteObjectRequest(recordsBucketName, keyName));
         } catch (SdkClientException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error deleting record", e.getMessage(), e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_DELETE_ERROR_MSG, e.getMessage(), e);
         }
     }
 
@@ -131,7 +137,7 @@ public class S3RecordClient {
         try {
             s3.deleteObject(new DeleteObjectRequest(recordsBucketName, versionPath));
         } catch (SdkClientException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error deleting record", e.getMessage(), e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_DELETE_ERROR_MSG, e.getMessage(), e);
         }
     }
 
@@ -147,7 +153,7 @@ public class S3RecordClient {
             ListObjectsV2Result result = s3.listObjectsV2(recordsBucketName, keyName);
             exists = result.getKeyCount() > 0;
         } catch (SdkClientException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error finding record", e.getMessage(), e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_FIND_ERROR_MSG, e.getMessage(), e);
         }
         return exists;
     }
@@ -162,7 +168,7 @@ public class S3RecordClient {
         try {
             recordStr = s3.getObjectAsString(recordsBucketName, keyName);
         } catch (SdkClientException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error getting record", e.getMessage(), e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_GET_ERROR_MSG, e.getMessage(), e);
         }
         return recordStr;
     }
