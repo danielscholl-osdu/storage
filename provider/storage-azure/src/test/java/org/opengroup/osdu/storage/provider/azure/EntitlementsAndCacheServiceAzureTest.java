@@ -1,5 +1,6 @@
 package org.opengroup.osdu.storage.provider.azure;
 
+import io.vavr.collection.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,25 @@ class EntitlementsAndCacheServiceAzureTest {
         when(cache.get(Mockito.any())).thenReturn(createRandomGroup());
         Set<String> acls = new HashSet<>();
         acls.add("service.service_name2.user@blabla.com");
+
+        boolean result = entitlementsAndCacheServiceAzure.hasAccessToData(headers, acls);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void hasAccessToDataReturnsTrue_when_ItIsDataRootUser() {
+        Groups groups = new Groups();
+        GroupInfo groupInfo = new GroupInfo();
+        groupInfo.setEmail("users.data.root@blabla.com");
+        groupInfo.setName("users.data.root");
+        groupInfo.setDescription("description");
+        groups.setDesId("username@blabla.com");
+        groups.setMemberEmail("username@blabla.com");
+        groups.setGroups(List.of(groupInfo));
+        when(cache.get(Mockito.any())).thenReturn(groups);
+        Set<String> acls = new HashSet<>();
+        acls.add("group_not_present_in_groups@different_domain.com");
 
         boolean result = entitlementsAndCacheServiceAzure.hasAccessToData(headers, acls);
 
