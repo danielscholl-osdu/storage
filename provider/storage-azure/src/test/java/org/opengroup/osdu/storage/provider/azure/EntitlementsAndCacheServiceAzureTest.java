@@ -1,6 +1,5 @@
 package org.opengroup.osdu.storage.provider.azure;
 
-import io.vavr.collection.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +19,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
