@@ -35,6 +35,9 @@ public class EntitlementsAndCacheServiceAzure extends EntitlementsAndCacheServic
     private JaxRsDpsLog logger;
 
     public boolean hasAccessToData(DpsHeaders headers, Set<String> acls) {
+        if (this.isDataManager(headers)) {
+            return true;
+        }
         Groups groups = this.getGroups(headers);
         if (groups.getGroups() == null || groups.getGroups().isEmpty()) {
             this.logger.error("Error on getting groups for user: " + headers.getUserEmail());
