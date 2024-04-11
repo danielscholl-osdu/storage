@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
 import static org.mockito.Mockito.*;
@@ -103,6 +104,8 @@ class CloudStorageImplTest {
     private Gson gson = new Gson();
 
     String userId = "test-user-id";
+
+    String path = "path";
     
 
     Collection<RecordMetadata> records = new ArrayList<RecordMetadata>();
@@ -167,22 +170,28 @@ class CloudStorageImplTest {
     @Test
     void delete(){
         // arrange
-        Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(record), Mockito.eq(dataPartition));
+        Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(path), Mockito.eq(dataPartition));
         when(record.hasVersion()).thenReturn(true);
         
+        List<String> list = new ArrayList<String>();
+        list.add(path);
+        when(record.getGcsVersionPaths()).thenReturn(list);
+
         // act
         repo.delete(record);
 
         // assert
-        verify(s3RecordClient, Mockito.times(1)).deleteRecord(record, dataPartition);
+        verify(s3RecordClient, Mockito.times(1)).deleteRecord(eq(path), eq(dataPartition));
     }
 
     @Test
     void deleteTestNoVersion() {
         when(record.hasVersion()).thenReturn(false);
+        List<String> list = new ArrayList<String>();
+        list.add(path);
+        when(record.getGcsVersionPaths()).thenReturn(list);
         repo.delete(record);
-        when(record.getId()).thenReturn("record1");
-        verify(s3RecordClient, times(0)).deleteRecord(any(), any());
+        verify(s3RecordClient, times(0)).deleteRecord(anyString(), any());
     }
 
     @Test
