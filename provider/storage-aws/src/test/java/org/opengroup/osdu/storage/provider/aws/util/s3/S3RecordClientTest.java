@@ -18,6 +18,7 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.PutObjectResult;
+
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.s3.S3ClientFactory;
@@ -195,8 +196,10 @@ class S3RecordClientTest {
     @Test
     void deleteRecord(){
 
+        String keyName = recordMetadata.getKind() + "/" + recordMetadata.getId();
+
         // act
-        client.deleteRecord(recordMetadata, dataPartition);
+        client.deleteRecord(keyName, dataPartition);
 
         // assert
         Mockito.verify(s3, Mockito.times(1)).deleteObject(
@@ -205,12 +208,14 @@ class S3RecordClientTest {
 
     @Test
     void testDeleteRecord_throwsException() {
+
         // arrange
+        String keyName = recordMetadata.getKind() + "/" + recordMetadata.getId();
         Mockito.doThrow(new SdkClientException("test-exception")).when(s3)
                 .deleteObject(any());
 
         // assert
-        assertThrows(AppException.class, () -> client.deleteRecord(recordMetadata, dataPartition));
+        assertThrows(AppException.class, () -> client.deleteRecord(keyName, dataPartition));
     }
 
     @Test 
