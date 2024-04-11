@@ -153,8 +153,9 @@ public class CloudStorageImpl implements ICloudStorage {
             return;
         }
 
-        s3RecordClient.deleteRecord(recordMetadata, headers.getPartitionIdWithFallbackToAccountId());
-
+        for(String path : recordMetadata.getGcsVersionPaths()){
+            s3RecordClient.deleteRecord(path, headers.getPartitionIdWithFallbackToAccountId());
+        }
     }
 
     @Override
@@ -255,6 +256,5 @@ public class CloudStorageImpl implements ICloudStorage {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error while reverting metadata: in revertObjectMetadata.","Internal server error.", e);
         }
     }
-
 
 }

@@ -101,13 +101,12 @@ public class S3RecordClient {
         return true;
     }
 
-    public void deleteRecord(RecordMetadata recordMetadata, String dataPartition) {
+    public void deleteRecord(String keyName, String dataPartition) {
 
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
         AmazonS3 s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
-
-        String keyName = getKeyNameForAllVersions(recordMetadata);
+        
         try {
             s3.deleteObject(new DeleteObjectRequest(recordsBucketName, keyName));
         } catch (SdkClientException e) {
