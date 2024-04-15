@@ -32,7 +32,7 @@
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <osdu.corelibazure.version>0.26.0-rc6</osdu.corelibazure.version>
+        <osdu.corelibazure.version>0.26.0</osdu.corelibazure.version>
         <osdu.storage-core.version>0.27.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>

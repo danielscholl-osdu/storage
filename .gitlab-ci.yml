@@ -207,11 +207,11 @@ download_plugins:
   stage: build
   variables:
     OSM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1448/packages/maven"
-    OSM_VERSION: "0.25.0-rc2"
+    OSM_VERSION: "0.26.0"
     OBM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1441/packages/maven"
-    OBM_VERSION: "0.25.0-rc1"
+    OBM_VERSION: "0.26.1"
     OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1450/packages/maven"
-    OQM_VERSION: "0.25.0-rc1"
+    OQM_VERSION: "0.26.0"
     APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1445/packages/maven"
     APD_VERSION: "0.26.0-rc2"
 
