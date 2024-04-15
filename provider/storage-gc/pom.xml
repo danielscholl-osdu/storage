@@ -43,7 +43,7 @@
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>libraries-bom</artifactId>
-        <version>26.10.0</version>
+        <version>26.29.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -59,23 +59,23 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-gc-spring6</artifactId>
-      <version>0.26.0-rc5</version>
+      <version>0.26.0</version>
     </dependency>
     <!--    Mappers    -->
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>osm</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>oqm</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>obm</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
