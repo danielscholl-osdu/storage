@@ -41,7 +41,7 @@
 	<properties>
 		<maven.compiler.target>17</maven.compiler.target>
 		<maven.compiler.source>17</maven.compiler.source>
-		<os-core-common.version>0.26.0-rc2</os-core-common.version>
+		<os-core-common.version>0.26.0</os-core-common.version>
 		<java.version>17</java.version>
 		<log4j.version>2.23.0</log4j.version>
 		<jackson.version>2.16.1</jackson.version>
