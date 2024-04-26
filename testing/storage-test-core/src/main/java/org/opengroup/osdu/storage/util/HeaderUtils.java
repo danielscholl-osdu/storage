@@ -22,56 +22,71 @@ import java.util.UUID;
 
 public class HeaderUtils {
 
-	protected static final String COLLABORATION_HEADER = "x-collaboration";
+  protected static final String COLLABORATION_HEADER = "x-collaboration";
 
-	public static Map<String, String> getHeaders(String tenantName, String token) {
-		Map<String, String> headers = new HashMap<>();
-		if(tenantName == null || tenantName.isEmpty()) {
-			tenantName = TenantUtils.getTenantName();
-		}
-		headers.put("Data-Partition-Id", tenantName);
-		headers.put("Authorization", token);
+  public static Map<String, String> getHeaders(String tenantName, String token) {
+    Map<String, String> headers = new HashMap<>();
+    if (tenantName == null || tenantName.isEmpty()) {
+      tenantName = TenantUtils.getTenantName();
+    }
+    headers.put("Data-Partition-Id", tenantName);
+    headers.put("Authorization", token);
 
-		final String correlationId = UUID.randomUUID().toString();
-		System.out.printf("Using correlation-id for the request: %s \n", correlationId);
-		headers.put("correlation-id", correlationId);
+    final String correlationId = UUID.randomUUID().toString();
+    System.out.printf("Using correlation-id for the request: %s \n", correlationId);
+    headers.put("correlation-id", correlationId);
 
-		return headers;
-	}
+    return headers;
+  }
 
-	public static Map<String, String> getHeadersWithxCollaboration(String collaborationId, String applicationName, String tenantName, String token) {
-		Map<String, String> headers = getHeaders(tenantName, token);
-		if (!Strings.isNullOrEmpty(collaborationId)) {
-			headers.put(COLLABORATION_HEADER, "id=" + collaborationId + ",application=" + applicationName);
-		}
-		return headers;
-	}
+  public static Map<String, String> getHeadersWithxCollaboration(String collaborationId,
+      String applicationName, String tenantName, String token) {
+    Map<String, String> headers = getHeaders(tenantName, token);
+    if (!Strings.isNullOrEmpty(collaborationId)) {
+      headers.put(COLLABORATION_HEADER,
+          "id=" + collaborationId + ",application=" + applicationName);
+    }
+    return headers;
+  }
 
-	public static Map<String, String> getHeadersWithoutAuth(String tenantName, String token) {
-		Map<String, String> headers = new HashMap<>();
-		if(tenantName == null || tenantName.isEmpty()) {
-			tenantName = TenantUtils.getTenantName();
-		}
-		headers.put("Data-Partition-Id", tenantName);
+  public static Map<String, String> getHeadersWithxCollaborationWithoutId(String collaborationId,
+      String applicationName, String tenantName, String token) {
+    Map<String, String> headers = getHeaders(tenantName, token);
+    if (Strings.isNullOrEmpty(collaborationId)) {
+      headers.put(COLLABORATION_HEADER, "application=" + applicationName);
+    }else {
+      headers.put(COLLABORATION_HEADER, "id=" + collaborationId + ",application=" + applicationName);
+    }
+    return headers;
+  }
 
-		final String correlationId = UUID.randomUUID().toString();
-		System.out.printf("Using correlation-id for the request: %s \n", correlationId);
-		headers.put("correlation-id", correlationId);
+  public static Map<String, String> getHeadersWithoutAuth(String tenantName, String token) {
+    Map<String, String> headers = new HashMap<>();
+    if (tenantName == null || tenantName.isEmpty()) {
+      tenantName = TenantUtils.getTenantName();
+    }
+    headers.put("Data-Partition-Id", tenantName);
 
-		return headers;
-	}
-	public static Map<String, String> getHeadersWithoutDataPartitionId(String tenantName, String token) {
-		Map<String, String> headers = new HashMap<>();
-		if(tenantName == null || tenantName.isEmpty()) {
-			tenantName = TenantUtils.getTenantName();
-		}
-		headers.put("Authorization", token);
+    final String correlationId = UUID.randomUUID().toString();
+    System.out.printf("Using correlation-id for the request: %s \n", correlationId);
+    headers.put("correlation-id", correlationId);
 
-		final String correlationId = UUID.randomUUID().toString();
-		System.out.printf("Using correlation-id for the request: %s \n", correlationId);
-		headers.put("correlation-id", correlationId);
+    return headers;
+  }
 
-		return headers;
-	}
+  public static Map<String, String> getHeadersWithoutDataPartitionId(String tenantName,
+      String token) {
+    Map<String, String> headers = new HashMap<>();
+    if (tenantName == null || tenantName.isEmpty()) {
+      tenantName = TenantUtils.getTenantName();
+    }
+    headers.put("Authorization", token);
+
+    final String correlationId = UUID.randomUUID().toString();
+    System.out.printf("Using correlation-id for the request: %s \n", correlationId);
+    headers.put("correlation-id", correlationId);
+
+    return headers;
+  }
 
 }

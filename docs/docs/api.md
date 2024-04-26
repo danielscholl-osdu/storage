@@ -225,6 +225,35 @@ curl --request POST \
 ```
 </details>
 
+### Copy record references
+This API copies record reference from one namespace to another. 
+This API attempts to copy all the Record references it is provided from the given source namespace to the target namespace. 
+All references will be copied or all will fail as a transaction. If the target namespace does not exist it will be created. 
+It requires 'services.storage.admin' permission to call
+```
+PUT /api/storage/v2/records/copy
+```
+
+<details><summary>curl</summary>
+
+```
+curl --location --request PUT 'http://localhost:8080/api/storage/v2/records/copy' \
+--header 'Content-Type: application/json' \
+--header 'Data-Partition-Id: common' \
+--header 'x-collaboration: id=<source-collaboration-id>,application=<app-name>;' \
+--header 'Authorization: Bearer <JWT>' \
+--data '{
+    "target": "<target-collaboration-id>",
+    "records": [
+        "id": "<record-id>"
+        "version": "<record-version>",
+
+    ]
+}'
+
+```
+</details>
+
 ### Purge record versions <a name="Purge-record-versions"></a>
 The API performs the permanent physical deletion of the given record versions excluding latest version and any linked records or files if there are any.
 If 'limit' query parameter is used then it will delete oldest versions defined by 'limit'.
