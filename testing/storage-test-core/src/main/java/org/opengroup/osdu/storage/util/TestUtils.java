@@ -15,6 +15,8 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -236,4 +238,14 @@ public abstract class TestUtils {
     return cm;
   }
 
+    public static JsonObject getCopyRecordRequest(String target, String stringId) {
+        JsonObject data = new JsonObject();
+        JsonArray array = new JsonArray();
+        JsonObject records = new JsonObject();
+        records.addProperty("id", stringId);
+        array.add(records);
+        data.addProperty("target", target);
+        data.add("records", array);
+        return data;
+    }
 }

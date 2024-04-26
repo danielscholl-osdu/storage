@@ -54,6 +54,9 @@ public abstract class ApiTest<T> {
     protected CrsConversionService crsConversionService;
 
     @MockBean
+    protected BatchService batchService;
+
+    @MockBean
     protected ReadAuditLogsConsumer readAuditLogsConsumer;
 
     @MockBean
