@@ -37,6 +37,7 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 
 	protected static final String RECORD_ID = TenantUtils.getTenantName() + ":getrecord:" + NOW;
 	protected static final String RECORD_ID1 = TenantUtils.getTenantName() + ":getrecord1:" + NOW;
+	protected static final String RECORD_ID2 = TenantUtils.getTenantName() + ":getrecord2:" + NOW;
 	protected static final String KIND = TenantUtils.getTenantName() + ":ds:getrecord:1.0." + NOW;
 	protected static final String LEGAL_TAG = LegalTagUtils.createRandomName();
 	public static final String HTTP_DELETE = "DELETE";
@@ -45,21 +46,29 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 		LegalTagUtils.create(LEGAL_TAG, token);
 		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG);
 		String jsonInput1 = RecordUtil.createDefaultJsonRecord(RECORD_ID1, KIND, LEGAL_TAG);
+		String jsonInput2 = RecordUtil.createDefaultJsonRecord(RECORD_ID2, KIND, LEGAL_TAG);
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		assertEquals(201, response.getCode());
 		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		for(int i=0; i < 4; i++) {
-			// Create 4 record versions
+			// Create 4 record versions - for limit scenario
 			CloseableHttpResponse response1 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput1, "");
 			assertEquals(201, response1.getCode());
 			assertTrue(response1.getEntity().getContentType().contains("application/json"));
+
+			// Create 4 record versions - for versionIds scenario
+			CloseableHttpResponse response2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput2, "");
+			assertEquals(201, response2.getCode());
+			assertTrue(response2.getEntity().getContentType().contains("application/json"));
+
 		}
 	}
 
 	public static void classTearDown(String token) throws Exception {
 		TestUtils.send("records/" + RECORD_ID1, HTTP_DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
+		TestUtils.send("records/" + RECORD_ID2, HTTP_DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), "", "");
 
 		LegalTagUtils.delete(LEGAL_TAG, token);
 	}
@@ -74,7 +83,7 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 	}
 
 	@Test
-	public void shouldReturnHttp204_whenPurgeRecordVersionsIsSuccess() throws Exception {
+	public void shouldReturnHttp204_whenPurgeRecordVersions_byLimit_isSuccess() throws Exception {
 		String queryParams= "?limit=2";
 		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID1 + "/versions", HTTP_DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", queryParams);
 		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
@@ -86,5 +95,25 @@ public abstract class PurgeRecordsIntegrationTest extends TestBase {
 		assertEquals(HttpStatus.SC_OK, getVersionResponse.getCode());
 		assertEquals(RECORD_ID1, json.get("recordId").getAsString());
 		assertEquals(2, versions.size());
+	}
+
+	@Test
+	public void shouldReturnHttp204_whenPurgeRecordVersions_byVersionIds_isSuccess() throws Exception {
+		CloseableHttpResponse getVersionResponse = TestUtils.send("records/versions/" + RECORD_ID2, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		JsonObject json = JsonParser.parseString(EntityUtils.toString(getVersionResponse.getEntity())).getAsJsonObject();
+		JsonArray versions = json.get("versions").getAsJsonArray();
+		String versionIds = versions.get(0).getAsString() + "," + versions.get(1).getAsString();
+
+		String queryParams = "?limit=2&versionIds="+versionIds;
+		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID2 + "/versions", HTTP_DELETE, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", queryParams);
+		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
+
+		CloseableHttpResponse getVersionResponse1 = TestUtils.send("records/versions/" + RECORD_ID2, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
+		JsonObject json1 = JsonParser.parseString(EntityUtils.toString(getVersionResponse1.getEntity())).getAsJsonObject();
+		JsonArray versions1 = json1.get("versions").getAsJsonArray();
+		// Record version : 4, versionIds to delete: 2, Deleted version paths: 2
+		assertEquals(HttpStatus.SC_OK, getVersionResponse1.getCode());
+		assertEquals(RECORD_ID2, json1.get("recordId").getAsString());
+		assertEquals(2, versions1.size());
 	}
 }
