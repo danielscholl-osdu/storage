@@ -32,4 +32,8 @@ public class ValidationDoc {
     public static final String RECORD_ID_LIST_NOT_EMPTY = "The list of record IDs cannot be empty";
     public static final String PATCH_RECORDS_MAX = "Up to 100 records can be patched at a time";
     public static final String INVALID_RECORD_ID_PATCH = "Invalid record format: '%s'. The following format is expected: {tenant-name}:{object-type}:{unique-identifier}";
+    public static final String INVALID_VERSION_IDS_SIZE = "Invalid Version Ids size : '%d'. The number of versionId can only be between 1 and 50";
+    public static final String INVALID_VERSION_IDS_FOR_LATEST_VERSION = "Invalid Version Ids. The versionIds contains latest record version '%d'";
+    public static final String INVALID_VERSION_IDS_FOR_NON_EXISTING_VERSIONS = "Invalid Version Ids. The versionIds contains non existing version(s) '%s'";
+
 }

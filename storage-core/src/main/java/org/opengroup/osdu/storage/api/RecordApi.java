@@ -43,6 +43,7 @@ import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.IngestionService;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
+import org.opengroup.osdu.storage.validation.api.ValidVersionIds;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -176,11 +177,13 @@ public class RecordApi {
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
 	public ResponseEntity<Void> purgeRecordVersions(@Parameter(description = "x-collaboration")
 											@RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
-											@Parameter(description = "Record id", example = "tenant1:well:123456789") @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
-													message = ValidationDoc.INVALID_RECORD_ID) String id,
-													@Parameter(description = "limit", example = "500") @RequestParam @Min(value = 1, message = INVALID_LIMIT_ERROR_MESSAGE) Integer limit) {
+											@Parameter(description = "Record id", example = "tenant1:well:123456789") @PathVariable("id")
+														@Pattern(regexp = ValidationDoc.RECORD_ID_REGEX, message = ValidationDoc.INVALID_RECORD_ID) String id,
+											@Parameter(description = "comma separated version Ids", example = "1710393736116773,1710393736116774")
+														@RequestParam(required = false) @ValidVersionIds String versionIds,
+											@Parameter(description = "limit", example = "500") @RequestParam(required = false) Integer limit) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		this.recordService.purgeRecordVersions(id, limit, headers.getUserEmail(), collaborationContext);
+		this.recordService.purgeRecordVersions(id, versionIds, limit, headers.getUserEmail(), collaborationContext);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 

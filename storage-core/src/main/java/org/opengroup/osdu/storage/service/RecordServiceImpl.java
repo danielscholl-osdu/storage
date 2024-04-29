@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -37,10 +38,12 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
+import org.opengroup.osdu.storage.validation.impl.VersionIdsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +58,8 @@ import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEA
 public class RecordServiceImpl implements RecordService {
 
     public static final String ACCESS_DENIED = "Access denied";
+    public static final String INVALID_VERSION_IDS = "Invalid versionIds";
+    public static final String INVALID_LIMIT = "Invalid limit";
     @Autowired
     private IRecordsMetadataRepository recordRepository;
 
@@ -120,14 +125,32 @@ public class RecordServiceImpl implements RecordService {
     }
 
     @Override
-    public void purgeRecordVersions(String recordId, Integer limit, String user, Optional<CollaborationContext> collaborationContext) {
+    public void purgeRecordVersions(String recordId, String versionIds, Integer limit, String user, Optional<CollaborationContext> collaborationContext) {
+        if (Strings.isNullOrEmpty(versionIds) && null == limit) {
+            String message = "Either [versionIds or limit] value is required";
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid versionIds/limit", message);
+        }
+
         RecordMetadata recordMetadata = getRecordMetadata(recordId, true, collaborationContext);
-        List<String> currentRecordVersionPaths = recordMetadata.getGcsVersionPaths();
+        List<String> existingRecordVersionPaths = recordMetadata.getGcsVersionPaths();
+        int existingVersionPathsCount = existingRecordVersionPaths.size();
 
         validateOwnerAccess(recordMetadata);
-        validateVersionPathCount(currentRecordVersionPaths, recordId, limit);
 
-        Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair = deleteVersionsPathsByLimit(currentRecordVersionPaths, limit);
+        if (existingVersionPathsCount == 1) {
+            String message = String.format("The record '%s' has only one version", recordId);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "No Record versions to purge", message);
+        }
+
+        if (!Strings.isNullOrEmpty(versionIds)) {
+            VersionIdsValidator.validate(versionIds, recordMetadata.getLatestVersion(), existingRecordVersionPaths);
+        }
+
+        if (Strings.isNullOrEmpty(versionIds)) {
+            validateLimit(limit, recordId, existingVersionPathsCount);
+        }
+
+        Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair = extractRecordVersionPathsToRetainAndDelete(versionIds, limit, existingRecordVersionPaths);
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadata.setGcsVersionPaths(recordVersionPathsToRetainDeletePair.getLeft());
         recordMetadata.setModifyTime(System.currentTimeMillis());
@@ -144,46 +167,13 @@ public class RecordServiceImpl implements RecordService {
         try {
             this.cloudStorage.deleteVersions(recordVersionPathsToRetainDeletePair.getRight());
         } catch (AppException appException) {
-            recordMetadata.setGcsVersionPaths(currentRecordVersionPaths);
+            recordMetadata.setGcsVersionPaths(existingRecordVersionPaths);
             this.recordRepository.createOrUpdate(recordMetadataList, collaborationContext);
             this.auditLogger.purgeRecordVersionsFail(recordId, recordVersionPathsToRetainDeletePair.getRight());
             throw appException;
         }
 
         this.auditLogger.purgeRecordVersionsSuccess(recordId, recordVersionPathsToRetainDeletePair.getRight());
-    }
-
-    private void validateVersionPathCount(List<String> currentRecordVersionPaths, String recordId, Integer limit) {
-        if (currentRecordVersionPaths.size() == 1) {
-            String message = String.format("The record '%s' has only one version", recordId);
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "No Record versions to purge", message);
-        }
-        if (currentRecordVersionPaths.size() - 1 < limit) {
-            String message = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", recordId, currentRecordVersionPaths.size() - 1, limit);
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid limit", message);
-        }
-    }
-
-    private void validateOwnerAccess(RecordMetadata recordMetadata) {
-        boolean hasOwnerAccess = dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.purge);
-        if (!hasOwnerAccess) {
-            auditLogger.purgeRecordVersionsFail(recordMetadata.getId(), singletonList(recordMetadata.getId()));
-            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED,
-                    "The user is not authorized to purge the record versions");
-        }
-    }
-
-    private Pair<List<String>, List<String>> deleteVersionsPathsByLimit(List<String> currentRecordVersionPaths, Integer limit) {
-        List<String> recordVersionPathsToRetain = new ArrayList<>();
-        List<String> recordVersionPathsToDelete = new ArrayList<>();
-        for (int i = 0; i < currentRecordVersionPaths.size(); i++) {
-            String currentRecordVersionPath = currentRecordVersionPaths.get(i);
-            if (i < limit)
-                recordVersionPathsToDelete.add(currentRecordVersionPath);
-            else
-                recordVersionPathsToRetain.add(currentRecordVersionPath);
-        }
-        return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
     }
 
     @Override
@@ -325,5 +315,64 @@ public class RecordServiceImpl implements RecordService {
                 recordsMetadata.remove(recordMetadata);
             }
         });
+    }
+
+    private Pair<List<String>, List<String>> extractRecordVersionPathsToRetainAndDelete(String versionIds, Integer limit, List<String> existingRecordVersionPaths) {
+        Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair;
+        if (!Strings.isNullOrEmpty(versionIds)) {
+            List<String> versionIdList = Arrays.stream(versionIds.split(",")).toList();
+            recordVersionPathsToRetainDeletePair = extractVersionsPathsByVersionIds(existingRecordVersionPaths, versionIdList);
+        } else {
+            recordVersionPathsToRetainDeletePair = extractVersionsPathsByLimit(existingRecordVersionPaths, limit);
+        }
+        return recordVersionPathsToRetainDeletePair;
+    }
+
+    private void validateOwnerAccess(RecordMetadata recordMetadata) {
+        boolean hasOwnerAccess = dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.purge);
+        if (!hasOwnerAccess) {
+            auditLogger.purgeRecordVersionsFail(recordMetadata.getId(), singletonList(recordMetadata.getId()));
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED,
+                    "The user is not authorized to purge the record versions");
+        }
+    }
+
+    private static void validateLimit(Integer limit, String recordId, int existingVersionPathsCount) {
+        if(limit <= 0){
+            String message = String.format("Invalid limit value '%d'. It should be greater than 0", limit);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_LIMIT, message);
+        }
+        if (existingVersionPathsCount - 1 < limit) {
+            String message = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", recordId, existingVersionPathsCount - 1, limit);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_LIMIT, message);
+        }
+    }
+
+    private Pair<List<String>, List<String>> extractVersionsPathsByVersionIds(List<String> existingRecordVersionPaths, List<String> versionIdList) {
+        List<String> recordVersionPathsToRetain = new ArrayList<>();
+        List<String> recordVersionPathsToDelete = new ArrayList<>();
+
+        for (int i = 0; i < existingRecordVersionPaths.size(); i++) {
+            String recordVersionPath = existingRecordVersionPaths.get(i);
+            boolean isVersionFound = versionIdList.stream().anyMatch(recordVersionPath::endsWith);
+            if (isVersionFound)
+                recordVersionPathsToDelete.add(recordVersionPath);
+            else
+                recordVersionPathsToRetain.add(recordVersionPath);
+        }
+        return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
+    }
+
+    private Pair<List<String>, List<String>> extractVersionsPathsByLimit(List<String> existingRecordVersionPaths, Integer limit) {
+        List<String> recordVersionPathsToRetain = new ArrayList<>();
+        List<String> recordVersionPathsToDelete = new ArrayList<>();
+        for (int i = 0; i < existingRecordVersionPaths.size(); i++) {
+            String recordVersionPath = existingRecordVersionPaths.get(i);
+            if (i < limit)
+                recordVersionPathsToDelete.add(recordVersionPath);
+            else
+                recordVersionPathsToRetain.add(recordVersionPath);
+        }
+        return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
     }
 }
