@@ -255,18 +255,23 @@ curl --location --request PUT 'http://localhost:8080/api/storage/v2/records/copy
 </details>
 
 ### Purge record versions <a name="Purge-record-versions"></a>
-The API performs the permanent physical deletion of the given record versions excluding latest version and any linked records or files if there are any.
-If 'limit' query parameter is used then it will delete oldest versions defined by 'limit'.
-This operation cannot be undone.
+The API performs the permanent physical deletion of the given record versions excluding latest version and any linked records or files if there are any.This operation cannot be undone.
+`versionIds`, `limit` query parameters used to delete the record versions.
+<ul>
+<li>versionIds : comma separated value of version ids(excluding the latest version). Maximum 50 record versions can be deleted per request.</li>
+<li>limit: API will delete oldest versions defined by 'limit'.</li>
+</ul>
+`versionIds` explicit version should always take precedence than `limit` query parameter
 ```
 DELETE api/storage/v2/records/{id}/versions
 ```
 
 #### Parameters <a name="parameters"></a>
 
-| Parameter | Description                                                                             |
-| :--- |:----------------------------------------------------------------------------------------|
-| limit | API will delete oldest versions defined by 'limit', excluding the latest record version |
+| Parameter  | Description                                                                                                    |
+|:-----------|:---------------------------------------------------------------------------------------------------------------|
+| versionIds | API will delete the list of versions provided in the `versionIds`, excluding the latest record version         |
+| limit      | API will delete oldest versions defined by `limit`, excluding the latest record version                         |
 
 <details><summary>curl</summary>
 
