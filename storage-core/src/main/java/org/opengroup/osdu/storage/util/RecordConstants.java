@@ -30,4 +30,7 @@ public class RecordConstants {
     public static final int MIN_OP_NUMBER = 1;
     public static final int MAX_OP_NUMBER = 100;
     public static final int MAX_RECORD_ID_NUMBER = 100;
+    public static final String REGEX_VERSION_IDS = "[0-9]+(,[0-9]+)*";
+    public static final int MAX_VERSION_IDS_NUMBER = 50;
+
 }
