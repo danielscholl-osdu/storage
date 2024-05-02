@@ -138,6 +138,16 @@ public class StorageAuditLogger {
 		readAuditLogsConsumer.accept(getAuditEvents().getReadMultipleRecordsWithOptionalConversionFail(resource));
 	}
 
+	public void createReplayRequestFail(List<String> resource)
+	{
+		this.writeLog(this.getAuditEvents().getCreateReplayRequestFail(resource));
+	}
+
+	public void createReplayRequestSuccess(List<String> resource)
+	{
+		this.writeLog(this.getAuditEvents().getCreateReplayRequestSuccess(resource));
+	}
+
 	private void writeLog(AuditPayload log) {
 		this.logger.audit(log);
 	}

@@ -9,12 +9,15 @@ import static com.cloudant.client.api.query.Operation.and;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -23,6 +26,9 @@ import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.ibm.auth.ServiceCredentials;
 import org.opengroup.osdu.core.ibm.cloudant.IBMCloudantClientFactory;
+import org.opengroup.osdu.storage.model.RecordId;
+import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -142,7 +148,27 @@ public class QueryRepositoryImpl implements IQueryRepository {
         
         return result;
     }
-	
+
+	@Override
+	public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor) {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind) {
+		throw new  NotImplementedException();
+	}
+
+	@Override
+	public HashMap<String, Long> getActiveRecordsCount() {
+		throw new  NotImplementedException();
+	}
+
+	@Override
+	public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
+		throw new  NotImplementedException();
+	}
+
 	public static String validateCursor(String cursor, Database db) {
     	if (cursor != null && !cursor.isEmpty()) {
     		if (db.contains(cursor)) {

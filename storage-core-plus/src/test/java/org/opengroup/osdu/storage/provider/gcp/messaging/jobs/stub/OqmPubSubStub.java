@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -42,6 +43,16 @@ public class OqmPubSubStub implements IMessageBus {
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-        //TODO: to be implemented by gcp provider
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, PubSubInfo... messages) {
+        throw new NotImplementedException();
     }
 }

@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
@@ -23,6 +24,9 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.storage.model.RecordId;
+import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
@@ -143,5 +147,25 @@ public class QueryRepositoryImpl implements IQueryRepository {
         Collections.sort(ids);
         dqr.setResults(ids);
         return dqr;
+    }
+
+    @Override
+    public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor) {
+        return null;
+    }
+
+    @Override
+    public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public HashMap<String, Long> getActiveRecordsCount() {
+        throw new  NotImplementedException();
+    }
+
+    @Override
+    public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
+        throw new  NotImplementedException();
     }
 }

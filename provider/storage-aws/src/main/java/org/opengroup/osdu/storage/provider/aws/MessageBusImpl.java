@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.model.PublishRequest;
+import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import com.amazonaws.services.sns.AmazonSNS;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
@@ -32,7 +33,10 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -62,7 +66,7 @@ public class MessageBusImpl implements IMessageBus {
         PublishRequestBuilder<PubSubInfo> publishRequestBuilder = new PublishRequestBuilder<>();
         publishRequestBuilder.setGeneralParametersFromHeaders(headers);
         logger.info("Storage publishes message " + headers.getCorrelationId());
-        for (int i =0; i < messages.length; i+= BATCH_SIZE){
+        for (int i = 0; i < messages.length; i += BATCH_SIZE) {
 
             PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
 
@@ -75,5 +79,15 @@ public class MessageBusImpl implements IMessageBus {
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
         // To be implemented by aws provider
+    }
+
+    @Override
+    public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, PubSubInfo... messages) {
+        throw new NotImplementedException();
     }
 }
