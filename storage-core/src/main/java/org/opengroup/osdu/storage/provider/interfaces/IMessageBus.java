@@ -18,12 +18,21 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import java.util.Collection;
 
 public interface IMessageBus {
 
     void publishMessage(DpsHeaders headers, PubSubInfo... messages);
 
     void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages);
+
+    void publishMessage(DpsHeaders headers,Map<String,String> routingInfo, List<?> messageList);
+
+    void publishMessage(DpsHeaders headers, Map<String,String> routingInfo, PubSubInfo... messages);
 }

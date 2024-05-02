@@ -41,5 +41,4 @@ public class ServiceBusConfig {
 
     @Value("${azure.legal.servicebus.topic-subscription}")
     private String legalServiceBusTopicSubscription;
-
 }

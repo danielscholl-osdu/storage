@@ -24,6 +24,8 @@ tags:
   - name: records
     description: Records management operations
   - name: info
+    description: Replay records
+  - name: info
     description: Version info endpoint
 paths:
   /records:
@@ -1215,6 +1217,156 @@ paths:
                 $ref: '#/components/schemas/AppError'
       security:
         - Authorization: []
+
+  /replay/status/{id}:
+    get:
+      tags:
+        - replay
+      summary: get status of replay operation
+      description: |-
+        By passing replayId , you can get the replay operation status. 
+        Allowed roles: `users.datalake.ops`
+      parameters:
+        - name: id
+          in: path
+          description: replayId
+          required: true
+          schema:
+            type: string
+        - name: data-partition-id
+          in: header
+          description: Tenant Id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: search results matching criteria and returns details of replay operation.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReplayStatus'
+              examples:
+                Status:
+                  $ref: '#/components/examples/Status'
+                StatusFailed:
+                  $ref: '#/components/examples/StatusFailed'
+                StatusFailedForKind:
+                  $ref: '#/components/examples/StatusFailedForKind'
+                StatusPassedForKind:
+                  $ref: '#/components/examples/StatusPassedForKind'
+
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppError'
+        "502":
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppError'
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppError'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppError'
+        "404":
+          description: Record not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppError'
+    security:
+      - Authorization: []
+  /replay:
+    post:
+      tags:
+        - replay
+      summary: replay based on type
+      description:
+        Replay all the kinds. Allowed roles `users.datalake.ops`
+      parameters:
+        - name: data-partition-id
+          in: header
+          description: Tenant Id
+          required: true
+          schema:
+          type: string
+      requestBody:
+        description: replay based on type
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplayRequest'
+            examples:
+              KindAll:
+                $ref: '#/components/examples/KindAll'
+              Kinds:
+                $ref: '#/components/examples/Kinds'
+      responses:
+        "202":
+          description: A response object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        "500":
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppError'
+      "502":
+        description: Bad Gateway
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppError'
+      "503":
+        description: Service Unavailable
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppError'
+      "403":
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppError'
+      "401":
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppError'
+      "404":
+        description: Record not found.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppError'
+      security:
+        - Authorization: []
+
   /whoami:
     get:
       tags:
@@ -1804,6 +1956,176 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ConnectedOuterService'
+    ReplayRequest:
+      type: object
+      required:
+        - operation
+      properties:
+        operation:
+          type: string
+        filter:
+          anyOf:
+            - $ref: '#/components/schemas/Kind'
+    ReplayStatus:
+      required:
+        - replayId
+        - operation
+        - totalRecords
+        - processedRecords
+        - overallState
+        - totalTime
+        - status
+      type: object
+      properties:
+        kind:
+          type: string
+        replayId:
+          type: string
+        totalRecords:
+          type: integer
+          format: int64
+        processedRecords:
+          type: integer
+          format: int64
+        overallState:
+          type: string
+        startedAt:
+          type: string
+          format: date
+        filter:
+          type: array
+          items:
+            type: object
+        status:
+          type: array
+          items:
+            type: object
+          properties:
+            kind:
+              type: string
+            totalRecords:
+              type: integer
+              format: int64
+            processedRecords:
+              type: integer
+              format: int64
+            state:
+              type: string
+            startedAt:
+              type: string
+              format: date
+            elapsedTime:
+              type: string
+              format: duration
+            avgProcessingTimePerMinute:
+              type: integer
+              format: int64
+    Status:
+      required:
+        - replayId
+      type: object
+      properties:
+        replayId:
+          type: integer
+          example: 1000
+    Kind:
+      type: array
+      items:
+        type: string
+        example: "osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0"
+  examples:
+    KindAll:
+      value:
+        operation: reindex
+    Kinds:
+      value:
+        operation: reindex
+        filter: {"kinds":["osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0"]}
+    Status:
+      value:
+        replayId: "1000"
+        operation: "reindex"
+        totalRecordsOverall: 2
+        processedRecordsOverall: 1
+        startedAt: 2023-07-21T17:32:28Z
+        OverallState: IN_PROGRESS
+        filter: {}
+        status:
+          [
+            {
+              kind: "*",
+              totalRecords: 2,
+              processedRecords: 1,
+              state: "IN_PROGRESS",
+              startedAt: "2023-07-21T17:32:28Z",
+              elapsedTime: "23",
+              avgProcessingTimePerMinute: "1",
+            }
+          ]
+    StatusFailed:
+      value:
+        replayId: "1000"
+        operation: "reindex"
+        totalRecords: 2
+        processedRecords: 1
+        startedAt: 2023-07-21T17:32:28Z
+        state: "FAILED"
+        filter: {}
+        status:
+          [
+            {
+              kind: "*",
+              totalRecords: 2,
+              processedRecords: 1,
+              state: "FAILED",
+              startedAt: "2023-07-21T17:32:28Z",
+              elapsedTime: "23",
+              avgProcessingTimePerMinute: "1",
+            }
+          ]
+
+    StatusFailedForKind:
+      value:
+        replayId: "1000"
+        operation: "reindex"
+        totalRecords: 2
+        processedRecords: 1
+        startedAt: 2023-07-21T17:32:28Z
+        state: "FAILED"
+        filter: {"kinds":["osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0"]}
+        status:
+          [
+            {
+              kind: "osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0",
+              totalRecords: 2,
+              processedRecords: 1,
+              state: "FAILED",
+              startedAt: "2023-07-21T17:32:28Z",
+              elapsedTime: "23",
+              avgProcessingTimePerMinute: "1",
+            }
+          ]
+    StatusPassedForKind:
+      value:
+        replayId: "1000"
+        operation: "reindex"
+        totalRecordsOverall: 2
+        processedRecordsOverall: 1
+        startedAt: 2023-07-21T17:32:28Z
+        OverallState: IN_PROGRESS
+        filter: {"kinds":["osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0"]}
+        status:
+          [
+            {
+              kind: "osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0",
+              totalRecords: 2,
+              processedRecords: 1,
+              state: "IN_PROGRESS",
+              startedAt: "2023-07-21T17:32:28Z",
+              elapsedTime: "23",
+              avgProcessingTimePerMinute: "1",
+            }
+          ]
   securitySchemes:
     Authorization:
       type: http

@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
 
+
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosPatchOperations;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
@@ -32,7 +33,7 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
+import org.opengroup.osdu.storage.provider.azure.model.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
 import org.opengroup.osdu.storage.provider.azure.model.DocumentCount;
