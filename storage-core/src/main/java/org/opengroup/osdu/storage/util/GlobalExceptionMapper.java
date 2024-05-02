@@ -47,7 +47,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
@@ -195,5 +197,14 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
         node.put("reason", reason);
         node.put("message", message);
         return node;
+    }
+
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        BindingResult bindingResult = ex.getBindingResult();
+        String errorMessage = bindingResult.getAllErrors().get(0).getDefaultMessage();
+        return this.getErrorResponse(
+                new AppException(HttpStatus.BAD_REQUEST.value(), "Validation error.",errorMessage));
     }
 }

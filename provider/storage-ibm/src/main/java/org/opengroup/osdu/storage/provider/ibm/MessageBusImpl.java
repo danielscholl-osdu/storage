@@ -5,11 +5,13 @@ package org.opengroup.osdu.storage.provider.ibm;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -49,7 +51,17 @@ public class MessageBusImpl implements IMessageBus {
 
 	@Override
 	public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-		//TODO: to be implemented by ibm provider
+		throw new  NotImplementedException();
+	}
+
+	@Override
+	public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
+		throw new  NotImplementedException();
+	}
+
+	@Override
+	public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, PubSubInfo... messages) {
+		throw new NotImplementedException();
 	}
 
 }

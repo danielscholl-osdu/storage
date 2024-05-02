@@ -835,3 +835,68 @@ properties:
 
 ## Using Storage APIs in the Collaboration context
 Query, Records and Patch API can also be used in the [Collaboration context](CollaborationContext.md)
+
+## Replay
+### Get Replay Status
+This API returns replay status.
+```
+GET /api/storage/v2/replay/status/{replayId}
+```
+
+<details><summary>curl</summary>
+
+```
+
+curl --request GET \
+  --url '/api/storage/v2/replay/status/{replayId}' \
+  --header 'Authorization: Bearer <JWT>' \
+  --header 'Content-Type: application/json' \
+  --header 'data-partition-id: common'
+  
+
+
+```
+</details>
+
+### Replay 
+This API provides a replay ID that enables tracking of the replay operation's status. It's utilized to initiate the replay operation, which reindexes records according to the request type. Presently, two operation values are accepted: "replay" and "reindex." The replay operation utilizes the default service bus, the "recordtopic," while the reindex operation utilizes the "reindex" topic. Currently replay all or replay of single kind is supported.
+```
+POST /api/storage/v2/replay
+
+To reindex all the records
+<details><summary>curl</summary>
+
+```
+curl --request POST \
+  --url  '/api/storage/v2/replay' \
+  --header 'Authorization: Bearer <JWT>' \
+  --header 'Content-Type: application/json' \
+  --header 'data-partition-id: common' \
+  --data '{
+  "operation": "replay"
+}'
+
+```
+</details>
+
+To reindex single kind.
+
+<details><summary>curl</summary>
+
+```
+curl --request POST \
+   --url '/api/storage/v2/replay' \
+   --header 'Authorization: Bearer <JWT>' \
+   --header 'Content-Type: application/json' \
+   --header 'data-partition-id: common' \
+   --data '{
+   "operation": "replay",
+   "filter": {
+   "kinds": [
+   "osdu:wks:reference-data--VelocityAnalysisMethod:1.0.0"
+   ]
+   }
+}'
+
+```
+</details>
