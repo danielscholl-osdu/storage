@@ -25,11 +25,14 @@ import static org.opengroup.osdu.storage.provider.gcp.web.repository.OsmRecordsM
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
@@ -42,6 +45,9 @@ import org.opengroup.osdu.core.gcp.osm.model.query.GetQuery;
 import org.opengroup.osdu.core.gcp.osm.service.Context;
 import org.opengroup.osdu.core.gcp.osm.translate.Outcome;
 import org.opengroup.osdu.core.gcp.osm.translate.ViewResult;
+import org.opengroup.osdu.storage.model.RecordId;
+import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
@@ -71,6 +77,26 @@ public class OsmQueryRepository implements IQueryRepository {
         GetQuery<RecordMetadata> q = new GetQuery<>(RecordMetadata.class, getDestination(), and(eq(KIND, kind), eq(STATUS, RecordState.active)));
         Outcome<ViewResult> out = context.getViewResults(q, null, getLimitTuned(limit), Collections.singletonList("id"), false, cursor).outcome();
         return new DatastoreQueryResult(out.getPointer(), out.getList().stream().map(e -> (String) e.get("id")).collect(Collectors.toList()));
+    }
+
+    @Override
+    public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public HashMap<String, Long> getActiveRecordsCount() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
+        throw new NotImplementedException();
     }
 
     private int getLimitTuned(Integer limit) {

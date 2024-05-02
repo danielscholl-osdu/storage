@@ -18,8 +18,11 @@ import com.google.common.base.Strings;
 import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
 import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
+import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 
 import java.util.List;
+
+import static java.util.Collections.singletonList;
 
 public class StorageAuditEvents {
     private static final String CREATE_OR_UPDATE_RECORD_ACTION_ID = "ST001";
@@ -55,6 +58,10 @@ public class StorageAuditEvents {
     private static final String READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE = "Read multiple records with optional conversion";
 
     private static final String PURGE_RECORD_VERSIONS_ACTION_ID = "ST015";
+    private static final String CREATE_REPLAY_REQUEST = "ST015";
+
+    private static final String CREATE_REPLAY_REQUEST_MESSAGE = "Replay started";
+
     private final String user;
 
     public StorageAuditEvents(String user) {
@@ -315,6 +322,28 @@ public class StorageAuditEvents {
                 .status(AuditStatus.FAILURE)
                 .actionId(READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
                 .message(READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE)
+                .resources(resources)
+                .user(user)
+                .build();
+    }
+
+    public AuditPayload getCreateReplayRequestFail(List<String> resources) {
+        return AuditPayload.builder()
+                .action(AuditAction.CREATE)
+                .status(AuditStatus.FAILURE)
+                .actionId(CREATE_REPLAY_REQUEST)
+                .message(CREATE_REPLAY_REQUEST_MESSAGE)
+                .resources(resources)
+                .user(user)
+                .build();
+    }
+
+    public AuditPayload getCreateReplayRequestSuccess(List<String> resources) {
+        return AuditPayload.builder()
+                .action(AuditAction.CREATE)
+                .status(AuditStatus.SUCCESS)
+                .actionId(CREATE_REPLAY_REQUEST)
+                .message(CREATE_REPLAY_REQUEST_MESSAGE)
                 .resources(resources)
                 .user(user)
                 .build();

@@ -39,10 +39,20 @@ public class ConfigUtils {
         return Boolean.parseBoolean(propValue);
     }
 
+    public long getLongProperty(String propertyName, String defaultValue) {
+        String propValue = properties.getProperty(propertyName, defaultValue);
+        return Long.parseLong(propValue);
+    }
+
     public boolean getIsSchemaEndpointsEnabled() {
         return !getBooleanProperty("schema.endpoints.disabled", "true");
     }
     public boolean getIsCollaborationEnabled() {
         return getBooleanProperty("collaboration.enabled", "false");
     }
+
+    public boolean getIsTestReplayAllEnabled() { return  getBooleanProperty("test.replayAll.enabled", "false");}
+
+    public long getTimeoutForReplay() { return  getLongProperty("test.replayAll.timeout", "60");}
+
 }

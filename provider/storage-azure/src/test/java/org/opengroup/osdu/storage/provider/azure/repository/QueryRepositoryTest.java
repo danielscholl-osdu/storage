@@ -18,7 +18,11 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.model.RecordId;
+import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.opengroup.osdu.storage.provider.azure.model.RecordMetadataDoc;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -280,6 +284,33 @@ class QueryRepositoryTest {
         recordMetadata.setModifyUser("user1");
         recordMetadata.setModifyTime(123L);
         return recordMetadata;
+    }
+
+    @Test
+    public void getActiveRecordsCount() {
+
+        Long activeRecordCount = 50L;
+        HashMap hashMap = new HashMap();
+        hashMap.put("$1",50L);
+        when(cosmosStore.queryItems(any(),any(),any(),any(),any(),any())).thenReturn(Collections.singletonList(hashMap));
+        Map<String, Long>  countByKind = queryRepository.getActiveRecordsCount();
+        verify(cosmosStore,times(1)).queryItems(eq(dpsHeaders.getPartitionId()), eq(cosmosDBName), eq(storageContainer),any(),any(), eq(HashMap.class));
+        assertEquals(activeRecordCount,countByKind.get("*"));
+    }
+
+    @Test
+    public void getActiveRecordsCountForKinds() {
+        Long activeRecordCountByKind = 50L;
+        List<String> kindList = new ArrayList<>();
+        kindList.add(KIND1);
+        kindList.add(KIND2);
+        HashMap<Object, Object> result = new HashMap<>();
+        result.put("kind", KIND1);
+        result.put("IdCount", 50L);
+        when(cosmosStore.queryItems(any(),any(),any(),any(),any(),any())).thenReturn(Collections.singletonList(result));
+        Map<String, Long>  countByKind = queryRepository.getActiveRecordsCountForKinds(kindList);
+        verify(cosmosStore,times(1)).queryItems(eq(dpsHeaders.getPartitionId()), eq(cosmosDBName), eq(storageContainer),any(),any(), eq(HashMap.class));
+        assertEquals(activeRecordCountByKind, countByKind.get(KIND1));
     }
 
 }

@@ -26,8 +26,8 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.storage.provider.azure.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.azure.model.DocumentCount;
+import org.opengroup.osdu.storage.provider.azure.model.RecordMetadataDoc;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -51,16 +51,21 @@ class RecordMetadataRepositoryTest {
     private final static String KIND = "opendes:source:type:1.0.0";
     private final static String STATUS = "active";
     private final ObjectMapper mapper = new ObjectMapper();
+
     @Rule
     ExpectedException exceptionRule = ExpectedException.none();
     @Mock
     private JaxRsDpsLog logger;
+
     @Mock
     private CosmosStoreBulkOperations cosmosBulkStore;
+
     @Mock
     private DpsHeaders headers;
+
     @Mock
     private Page<RecordMetadataDoc> page;
+
     @Mock
     private CosmosStore cosmosStore;
     @InjectMocks
@@ -167,7 +172,7 @@ class RecordMetadataRepositoryTest {
     }
 
     @Test
-    void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
+    public void shouldReturnErrors_whenPatchFailsWithAppExceptionWithoutCollaborationContext() throws IOException {
         RecordMetadata recordMetadata = createRecord(RECORD_ID1);
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         jsonPatchPerRecord.put(recordMetadata, getJsonPatchFromJsonString(getValidInputJsonForPatch()));
@@ -231,7 +236,7 @@ class RecordMetadataRepositoryTest {
         doThrow(appException).when(cosmosBulkStore).bulkMultiPatchWithCosmosClient(eq("opendes"), eq("osdu-db"), eq("collection"), anyMap(), eq(partitionKeyForDoc), eq(1));
         Optional<CollaborationContext> context = Optional.empty();
         try {
-            recordMetadataRepository.patch(jsonPatchPerRecord, context);
+            recordMetadataRepository.patch(jsonPatchPerRecord, Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
 

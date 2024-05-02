@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.opengroup.osdu.storage.provider.azure;
+package org.opengroup.osdu.storage.request;
 
-import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.springframework.data.annotation.Id;
+
+import java.util.List;
 
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
-public class RecordMetadataDoc {
-    @PartitionKey
-    @Id
-    private String id;
-    private RecordMetadata metadata;
+@AllArgsConstructor
+public class ReplayFilter {
+
+    @Size(min = 1, max = 1, message = "Currently restricted to a single valid kind.")
+    private List<String> kinds;
 }

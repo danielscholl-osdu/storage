@@ -16,7 +16,15 @@ package org.opengroup.osdu.storage.provider.interfaces;
 
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.storage.model.RecordId;
+import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+import java.util.HashMap;
+import java.util.List;
+
+import java.util.Map;
 import java.util.Optional;
 
 public interface IQueryRepository {
@@ -26,4 +34,12 @@ public interface IQueryRepository {
 	DatastoreQueryResult getAllKinds(Integer limit, String cursor);
 
 	DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext);
+
+	RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor);
+
+	RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind);
+
+	HashMap<String, Long> getActiveRecordsCount();
+
+	Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds);
 }
