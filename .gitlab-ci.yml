@@ -34,6 +34,7 @@ variables:
   IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
 
   CORE_BUILD_SUBDIR: storage-core
+  CORE_COVERAGE_THRESHOLD: "80"
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"

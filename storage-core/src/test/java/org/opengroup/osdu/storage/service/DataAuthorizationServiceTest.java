@@ -119,6 +119,16 @@ public class DataAuthorizationServiceTest {
     }
 
     @Test
+    public void should_returnTrue_hasAccess_when_dataManager_False() {
+        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(false);
+        assertTrue(this.sut.hasAccess(this.getRecordMetadata(), OperationType.update));
+
+        verify(this.opaService, times(1)).validateUserAccessToRecords(any(), any());
+        verify(this.entitlementsService, times(1)).isDataManager(any());
+    }
+
+    @Test
     public void should_returnTrue_hasAccess_when_dataManager() {
         ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         when(this.entitlementsService.isDataManager(any())).thenReturn(true);

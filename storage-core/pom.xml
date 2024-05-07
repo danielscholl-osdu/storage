@@ -202,7 +202,20 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
                 <configuration>
-                    <excludes></excludes>
+                    <excludes>
+                        <exclude>org/opengroup/osdu/storage/response/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/policy/cache/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/policy/di/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/logging/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/dto/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/provider/interfaces/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/di/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/validation/ValidationDoc.class</exclude>
+                        <exclude>org/opengroup/osdu/storage/exception/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/request/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/mapper/**</exclude>
+                        <exclude>org/opengroup/osdu/storage/enums/**</exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
