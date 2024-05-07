@@ -30,11 +30,14 @@ import org.opengroup.osdu.core.common.crs.CrsConverterService;
 import org.opengroup.osdu.core.common.http.HttpResponse;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.crs.*;
+import org.opengroup.osdu.core.common.model.crs.GeoJson.GeoJsonFeatureCollection;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.ConversionStatus;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.di.CrsConversionConfig;
 import org.opengroup.osdu.storage.di.SpringConfig;
+import org.opengroup.osdu.storage.util.ConversionJsonUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 
@@ -42,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +77,11 @@ public class CrsConversionServiceTest {
 
     @Mock
     private CrsConversionConfig crsConversionConfig;
+
+    @Mock
+    private DpsConversionService dpsConversionService;
+
+    private ConversionJsonUtils conversionJsonUtils = new ConversionJsonUtils();
 
     private List<JsonObject> originalRecords = new ArrayList<>();
     private List<ConversionStatus.ConversionStatusBuilder> conversionStatuses = new ArrayList<>();
@@ -115,6 +124,10 @@ public class CrsConversionServiceTest {
     private static final String CONVERTED_RECORD_7 = "{\"id\":\"unit-test-6\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"X\":15788.036,\"Y\":9567.4,\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"X\",\"Y\",\"Z\",\"T\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
     private static final String CONVERTED_RECORD_8 = "{\"id\":\"unit-test-20\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"Nested\":{\"X\":15788.036,\"Y\":9567.4},\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"Nested.X\",\"Nested.Y\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
     private static final String CONVERTED_RECORD_9 = "{\"id\":\"unit-test-21\",\"kind\":\"unit:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"msg\":\"testing record 1\",\"Nested\":{\"X\":15788.036,\"Y\":9567.4},\"Z\":0.0},\"meta\":[{\"path\":\"\",\"kind\":\"CRS\",\"propertyNames\":[\"Nested.X\",\"Nested.Y\"],\"name\":\"GCS_WGS_1984\",\"persistableReference\":\"%s\"}]}";
+
+    private static final String GEO_JSON_RECORD = "{\"id\":\"geo-json-point-test\",\"kind\":\"geo-json-point:test:1.0.0\",\"acl\":{\"viewers\":[\"viewers@unittest.com\"],\"owners\":[\"owners@unittest.com\"]},\"legal\":{\"legaltags\":[\"unit-test-legal\"],\"otherRelevantDataCountries\":[\"AA\"]},\"data\":{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"coordinates\":[313405.9477893702,6544797.620047403,6.561679790026246],\"bbox\":null,\"type\":\"AnyCrsPoint\"},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"CrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}}";
+
+    private static final String FILTERED_GEO_RESPONSE = "{\"SpatialLocation\":{\"AsIngestedCoordinates\":{\"features\":[{\"geometry\":{\"type\":\"AnyCrsGeometryCollection\",\"bbox\":null,\"geometries\":[{\"type\":\"Point\",\"bbox\":null,\"coordinates\":[500000.0,7000000.0]},{\"type\":\"LineString\",\"bbox\":null,\"coordinates\":[[501000.0,7001000.0],[502000.0,7002000.0]]}]},\"bbox\":null,\"properties\":{},\"type\":\"AnyCrsFeature\"}],\"bbox\":null,\"properties\":{},\"persistableReferenceCrs\":\"reference\",\"persistableReferenceUnitZ\":\"reference\",\"type\":\"AnyCrsFeatureCollection\"},\"msg\":\"testing record 2\",\"X\":16.00,\"Y\":10.00,\"Z\":0}}";
 
     @BeforeEach
     public void setup() throws Exception{
@@ -404,6 +417,28 @@ public class CrsConversionServiceTest {
         assertEquals(1, crsResult.getConversionStatuses().size());
         String converted = String.format(CONVERTED_RECORD_9, TO_CRS);
         assertTrue(crsResult.getRecords().get(0).toString().equalsIgnoreCase(converted));
+    }
+
+    @Test
+    public void should_returnConvertedRecordsAndSuccessConversionStatus_whenGeoJsonDataIsProvided() throws CrsConverterException {
+        ReflectionTestUtils.setField(sut, "conversionJsonUtils", conversionJsonUtils);
+        this.originalRecords.add(this.jsonParser.parse(GEO_JSON_RECORD).getAsJsonObject());
+        ConversionStatus.ConversionStatusBuilder conversionStatusBuilder = ConversionStatus.builder().id("geo-json-point-test").status(ConvertStatus.SUCCESS.toString());
+        this.conversionStatuses.add(conversionStatusBuilder);
+
+        JsonObject filteredResponse = this.jsonParser.parse(FILTERED_GEO_RESPONSE).getAsJsonObject();
+        when(dpsConversionService.filterDataFields(any(), any())).thenReturn(filteredResponse);
+
+        ConvertGeoJsonResponse convertGeoJsonResponse = mock(ConvertGeoJsonResponse.class);
+        GeoJsonFeatureCollection geoJsonFeatureCollection = new GeoJsonFeatureCollection();
+        when(crsConverterService.convertGeoJson(any())).thenReturn(convertGeoJsonResponse);
+        when(convertGeoJsonResponse.getFeatureCollection()).thenReturn(geoJsonFeatureCollection);
+
+        RecordsAndStatuses crsResult = this.sut.doCrsGeoJsonConversion(this.originalRecords, this.conversionStatuses);
+
+        assertEquals(1, crsResult.getRecords().size());
+        assertEquals(1, crsResult.getConversionStatuses().size());
+        assertEquals("SUCCESS", crsResult.getConversionStatuses().get(0).getStatus());
     }
 }
 
