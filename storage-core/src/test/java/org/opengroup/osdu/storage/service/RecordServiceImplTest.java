@@ -74,6 +74,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_FROM_VERSION;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_LIMIT;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_LIMIT_FOR_FROM_VERSION;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_VERSION_IDS_FOR_LATEST_VERSION;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_VERSION_IDS_FOR_NON_EXISTING_VERSIONS;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_VERSION_IDS_SIZE;
@@ -91,9 +95,10 @@ public class RecordServiceImplTest {
 
     private static final String[] OWNERS = new String[]{"owner1@slb.com", "owner2@slb.com"};
     private static final String[] VIEWERS = new String[]{"viewer1@slb.com", "viewer2@slb.com"};
-    public static final Integer LIMIT = 2;
-    public static final Integer DEFAULT_LIMIT = null;
+    private static final Integer LIMIT = 2;
+    private static final Integer DEFAULT_LIMIT = null;
     private final String DEFAULT_VERSION_IDS = null;
+    private final Long DEFAULT_FROM_VERSION = null;
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
     private final Optional<CollaborationContext> EMPTY_COLLABORATION_CONTEXT = Optional.empty();
 
@@ -292,14 +297,14 @@ public class RecordServiceImplTest {
     }
 
     @Test
-    public void shouldPurgeRecordVersions_byLimit_Successfully() {
+    public void shouldPurgeRecordVersions_byLimit_successfully() {
         List<String> versions = asList("1", "2", "3", "4");
         RecordMetadata recordMetadata = createRecordMetadata(versions);
 
         when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
-        this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+        this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
 
         RecordMetadata updatedRecordMetadata = recordMetadata;
         String versionPathPrefix = KIND + "/" + RECORD_ID + "/";
@@ -315,7 +320,7 @@ public class RecordServiceImplTest {
     }
 
     @Test
-    public void shouldPurgeRecordVersions_byVersionIds_Successfully() {
+    public void shouldPurgeRecordVersions_byVersionIds_successfully() {
         List<String> versions = asList("1", "2", "3", "4");
         RecordMetadata recordMetadata = createRecordMetadata(versions);
 
@@ -323,12 +328,112 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
-        this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+        this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
 
         RecordMetadata updatedRecordMetadata = recordMetadata;
         String versionPathPrefix = KIND + "/" + RECORD_ID + "/";
         List<String> versionPathsToRetain = asList("3", "4").stream().map(version -> versionPathPrefix + version).toList();
         List<String> versionPathsToDelete = asList("1", "2").stream().map(version -> versionPathPrefix + version).toList();
+        updatedRecordMetadata.setGcsVersionPaths(versionPathsToRetain);
+        List<RecordMetadata> recordMetadataList = Arrays.asList(recordMetadata);
+
+        verify(this.recordRepository).createOrUpdate(recordMetadataList, EMPTY_COLLABORATION_CONTEXT);
+        verify(this.cloudStorage).deleteVersions(versionPathsToDelete);
+        verify(this.auditLogger).purgeRecordVersionsSuccess(RECORD_ID, versionPathsToDelete);
+
+    }
+
+    @Test
+    public void shouldPurgeRecordVersions_byFromVersion_successfully() {
+        List<String> versions = asList("1", "2", "3", "4");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+
+        Long fromVersion = 2l;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, DEFAULT_LIMIT, fromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+
+        RecordMetadata updatedRecordMetadata = recordMetadata;
+        String versionPathPrefix = KIND + "/" + RECORD_ID + "/";
+        List<String> versionPathsToRetain = asList("3", "4").stream().map(version -> versionPathPrefix + version).toList();
+        List<String> versionPathsToDelete = asList("1", "2").stream().map(version -> versionPathPrefix + version).toList();
+        updatedRecordMetadata.setGcsVersionPaths(versionPathsToRetain);
+        List<RecordMetadata> recordMetadataList = Arrays.asList(recordMetadata);
+
+        verify(this.recordRepository).createOrUpdate(recordMetadataList, EMPTY_COLLABORATION_CONTEXT);
+        verify(this.cloudStorage).deleteVersions(versionPathsToDelete);
+        verify(this.auditLogger).purgeRecordVersionsSuccess(RECORD_ID, versionPathsToDelete);
+
+    }
+
+    @Test
+    public void shouldPurgeRecordVersions_byFromVersionAsLatestVersion_successfully() {
+        // It should exclude latest version for deletion
+        List<String> versions = asList("1", "2", "3", "4");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+
+        Long fromVersion = 4l;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, DEFAULT_LIMIT, fromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+
+        RecordMetadata updatedRecordMetadata = recordMetadata;
+        String versionPathPrefix = KIND + "/" + RECORD_ID + "/";
+        List<String> versionPathsToRetain = asList("4").stream().map(version -> versionPathPrefix + version).toList();
+        List<String> versionPathsToDelete = asList("1", "2", "3").stream().map(version -> versionPathPrefix + version).toList();
+        updatedRecordMetadata.setGcsVersionPaths(versionPathsToRetain);
+        List<RecordMetadata> recordMetadataList = Arrays.asList(recordMetadata);
+
+        verify(this.recordRepository).createOrUpdate(recordMetadataList, EMPTY_COLLABORATION_CONTEXT);
+        verify(this.cloudStorage).deleteVersions(versionPathsToDelete);
+        verify(this.auditLogger).purgeRecordVersionsSuccess(RECORD_ID, versionPathsToDelete);
+
+    }
+
+    @Test
+    public void shouldPurgeRecordVersions_byLimitAndFromVersion_successfully() {
+        List<String> versions = asList("1", "2", "3", "4", "5");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+
+        Long fromVersion = 3l;
+        Integer limit = 2;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, limit, fromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+
+        RecordMetadata updatedRecordMetadata = recordMetadata;
+        String versionPathPrefix = KIND + "/" + RECORD_ID + "/";
+        List<String> versionPathsToRetain = asList("1","4", "5").stream().map(version -> versionPathPrefix + version).toList();
+        List<String> versionPathsToDelete = asList("2", "3").stream().map(version -> versionPathPrefix + version).toList();
+        updatedRecordMetadata.setGcsVersionPaths(versionPathsToRetain);
+        List<RecordMetadata> recordMetadataList = Arrays.asList(recordMetadata);
+
+        verify(this.recordRepository).createOrUpdate(recordMetadataList, EMPTY_COLLABORATION_CONTEXT);
+        verify(this.cloudStorage).deleteVersions(versionPathsToDelete);
+        verify(this.auditLogger).purgeRecordVersionsSuccess(RECORD_ID, versionPathsToDelete);
+
+    }
+
+    @Test
+    public void shouldPurgeRecordVersions_byLimitAndFromVersionAsLatestVersion_successfully() {
+        // It should exclude latest version for deletion
+        List<String> versions = asList("1", "2", "3", "4", "5");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+
+        Long fromVersion = 5l;
+        Integer limit = 2;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, limit, fromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT);
+
+        RecordMetadata updatedRecordMetadata = recordMetadata;
+        String versionPathPrefix = KIND + "/" + RECORD_ID + "/";
+        List<String> versionPathsToRetain = asList("1","2","5").stream().map(version -> versionPathPrefix + version).toList();
+        List<String> versionPathsToDelete = asList("3", "4").stream().map(version -> versionPathPrefix + version).toList();
         updatedRecordMetadata.setGcsVersionPaths(versionPathsToRetain);
         List<RecordMetadata> recordMetadataList = Arrays.asList(recordMetadata);
 
@@ -343,7 +448,7 @@ public class RecordServiceImplTest {
         when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(null);
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_NOT_FOUND, appException.getError().getCode());
         assertEquals("Record not found", appException.getError().getReason());
@@ -359,7 +464,7 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(false);
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(403, appException.getError().getCode());
         assertEquals("Access denied", appException.getError().getReason());
@@ -380,7 +485,7 @@ public class RecordServiceImplTest {
         doThrow(originalException).when(this.recordRepository).createOrUpdate(any(), eq(EMPTY_COLLABORATION_CONTEXT));
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         verify(this.auditLogger).purgeRecordVersionsFail(any(), any());
         assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, appException.getError().getCode());
@@ -404,7 +509,7 @@ public class RecordServiceImplTest {
         doThrow(originalException).when(this.cloudStorage).deleteVersions(versionPathsToDelete);
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         verify(this.recordRepository, times(2)).createOrUpdate(any(), eq(EMPTY_COLLABORATION_CONTEXT));
         verify(this.auditLogger).purgeRecordVersionsFail(any(), any());
@@ -422,10 +527,10 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
-        assertEquals("Invalid limit", appException.getError().getReason());
+        assertEquals(INVALID_LIMIT, appException.getError().getReason());
         String errorMessage = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", RECORD_ID, recordMetadata.getGcsVersionPaths().size() - 1, LIMIT);
         assertEquals(errorMessage, appException.getError().getMessage());
     }
@@ -440,10 +545,10 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
-        assertEquals("Invalid limit", appException.getError().getReason());
+        assertEquals(INVALID_LIMIT, appException.getError().getReason());
         String errorMessage = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", RECORD_ID, recordMetadata.getGcsVersionPaths().size() - 1, LIMIT);
         assertEquals(errorMessage, appException.getError().getMessage());
     }
@@ -457,7 +562,7 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
         assertEquals("No Record versions to purge", appException.getError().getReason());
@@ -476,7 +581,7 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         RequestValidationException requestValidationException = assertThrows(RequestValidationException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, requestValidationException.getStatus().value());
         String errorMessage = String.format(INVALID_VERSION_IDS_FOR_LATEST_VERSION, Long.valueOf(versions.get(versions.size() - 1)));
@@ -495,7 +600,7 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         RequestValidationException requestValidationException = assertThrows(RequestValidationException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, requestValidationException.getStatus().value());
         String errorMessage = String.format(INVALID_VERSION_IDS_FOR_NON_EXISTING_VERSIONS, nonExistingVersionIds);
@@ -517,7 +622,7 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
 
         RequestValidationException requestValidationException = assertThrows(RequestValidationException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, versionIds, LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, requestValidationException.getStatus().value());
         String errorMessage = String.format(INVALID_VERSION_IDS_SIZE, versionIdCount);
@@ -526,13 +631,13 @@ public class RecordServiceImplTest {
     }
 
     @Test
-    public void shouldThrowBadRequestAppException_whenPurgeRecordVersions_forInvalidVersionIdsAndLimit() {
+    public void shouldThrowBadRequestAppException_whenPurgeRecordVersions_withoutOneValidParameter() {
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, DEFAULT_LIMIT, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, DEFAULT_LIMIT, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
-        assertEquals("Invalid versionIds/limit", appException.getError().getReason());
-        String errorMessage = "Either [versionIds or limit] value is required";
+        assertEquals("Invalid versionIds/limit/from", appException.getError().getReason());
+        String errorMessage = "Either [versionIds or limit or from] value is required";
         assertEquals(errorMessage, appException.getError().getMessage());
     }
 
@@ -546,21 +651,61 @@ public class RecordServiceImplTest {
         when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
         Integer limit = -1;
         AppException appException = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, limit, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, limit, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
-        assertEquals("Invalid limit", appException.getError().getReason());
+        assertEquals(INVALID_LIMIT, appException.getError().getReason());
         String errorMessage = String.format("Invalid limit value '%d'. It should be greater than 0", limit);
         assertEquals(errorMessage, appException.getError().getMessage());
 
         Integer limit1 = 0;
         AppException appException1 = assertThrows(AppException.class,
-                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, limit1, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, limit1, DEFAULT_FROM_VERSION, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, appException1.getError().getCode());
-        assertEquals("Invalid limit", appException1.getError().getReason());
+        assertEquals(INVALID_LIMIT, appException1.getError().getReason());
         String errorMessage1 = String.format("Invalid limit value '%d'. It should be greater than 0", limit1);
         assertEquals(errorMessage1, appException1.getError().getMessage());
+
+    }
+
+    @Test
+    public void shouldThrowBadRequestException_whenPurgeRecordVersions_forInvalidFromVersion() {
+
+        List<String> versions = asList("1", "2", "3", "4");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+        Long nonExistingFromVersion = 5l;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, DEFAULT_LIMIT, nonExistingFromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals(INVALID_FROM_VERSION, appException.getError().getReason());
+        String errorMessage = String.format(INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS, nonExistingFromVersion);
+        assertEquals(errorMessage, appException.getMessage());
+
+    }
+
+    @Test
+    public void shouldThrowBadRequestException_whenPurgeRecordVersions_forInvalidLimitAndValidFromVersion() {
+
+        List<String> versions = asList("1", "2", "3", "4", "5");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+
+        Long fromVersion = 3l;
+        Integer invalidLimit = 4;
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, invalidLimit, fromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals(INVALID_LIMIT, appException.getError().getReason());
+        String errorMessage = String.format(INVALID_LIMIT_FOR_FROM_VERSION, invalidLimit, fromVersion);
+        assertEquals(errorMessage, appException.getError().getMessage());
 
     }
 

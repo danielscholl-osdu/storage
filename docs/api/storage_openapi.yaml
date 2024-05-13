@@ -1134,12 +1134,14 @@ paths:
         - records
       summary: Purge Record Versions
       description: "The API for the given record id, performs the permanent deletion of physical record versions 
-        excluding latest version. `versionIds`, `limit` query parameters used to delete the record versions. \n
-        `versionIds` comma separated value of version ids can be provided on 'versionIds' query parameter. 
+        excluding latest version. `versionIds`, `limit`, `from` query parameters used to delete the record versions. \n
+        `versionIds` comma separated value of version ids can be provided on `versionIds` query parameter. 
         API will delete all versions defined by 'versionIds' query parameter. Maximum 50 record versions can be deleted 
-        per request. If 'limit' query parameter ONLY is used, then it will delete oldest versions defined by 'limit'.
-        `versionIds` explicit version should always take precedence than `limit` query parameter
-        This operation cannot be undone. Required roles: 'users.datalake.admins' who is the OWNER of the record."
+        per request. If `limit` query parameter ONLY is used, then it will delete oldest versions defined by `limit`.
+        If `from` query parameter is used then it will delete all versions before current one (exclusive).
+        `versionIds` explicit version should always take precedence than `limit` & `from` query parameter
+        If both `from` and `limit` are used then API will delete `limit` number of versions starting `from` version
+        This operation cannot be undone. Required roles: `users.datalake.admins` who is the OWNER of the record."
       operationId: purgeRecordVersions
       parameters:
         - name: x-collaboration
@@ -1170,6 +1172,14 @@ paths:
             type: integer
             format: int32
           example: 500
+        - name: from
+          in: query
+          description: Record version id from which all record versions aside from the current one are deleted
+          required: false
+          schema:
+            type: integer
+            format: int64
+          example: 123456789
         - name: data-partition-id
           in: header
           description: Tenant Id

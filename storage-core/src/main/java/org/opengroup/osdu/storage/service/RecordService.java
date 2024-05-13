@@ -23,7 +23,7 @@ public interface RecordService {
 
 	void purgeRecord(String recordId, Optional<CollaborationContext> collaborationContext);
 
-	void purgeRecordVersions(String recordId, String versionIds, Integer limit, String user, Optional<CollaborationContext> collaborationContext);
+	void purgeRecordVersions(String recordId, String versionIds, Integer limit, Long fromVersion, String user, Optional<CollaborationContext> collaborationContext);
 
 	void deleteRecord(String recordId, String user, Optional<CollaborationContext> collaborationContext);
 
