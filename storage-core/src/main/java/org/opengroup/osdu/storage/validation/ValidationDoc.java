@@ -35,5 +35,9 @@ public class ValidationDoc {
     public static final String INVALID_VERSION_IDS_SIZE = "Invalid Version Ids size : '%d'. The number of versionId can only be between 1 and 50";
     public static final String INVALID_VERSION_IDS_FOR_LATEST_VERSION = "Invalid Version Ids. The versionIds contains latest record version '%d'";
     public static final String INVALID_VERSION_IDS_FOR_NON_EXISTING_VERSIONS = "Invalid Version Ids. The versionIds contains non existing version(s) '%s'";
-
+    public static final String INVALID_LIMIT = "Invalid limit.";
+    public static final String INVALID_FROM_VERSION = "Invalid 'from' version.";
+    public static final String INVALID_FROM_VERSION_FOR_LATEST_VERSION = INVALID_FROM_VERSION+" The 'from' should not be latest record version '%d'";
+    public static final String INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS = INVALID_FROM_VERSION+" The record version does not contains specified from version '%d'";
+    public static final String INVALID_LIMIT_FOR_FROM_VERSION = INVALID_LIMIT+" Given limit count %d, exceeds the record versions count specified by the given 'from' version '%d'";
 }

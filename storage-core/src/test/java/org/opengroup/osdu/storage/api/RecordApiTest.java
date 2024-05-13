@@ -63,6 +63,7 @@ public class RecordApiTest {
     private final String RECORD_ID = "osdu:anyID:any";
     private final String COLLABORATION_DIRECTIVES = "id=9e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=TestApp";
     private final Integer LIMIT = 2;
+    private final long FROM_VERSION = 0;
 
     private final String DEFAULT_VERSION_IDS =  null;
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
@@ -227,8 +228,8 @@ public class RecordApiTest {
     @Test
     public void should_returnHttp204_when_purgingRecordVersions_byLimit_successfully() {
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
-        doNothing().when(recordService).purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER, Optional.empty());
-        ResponseEntity response = this.sut.purgeRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID, DEFAULT_VERSION_IDS, LIMIT);
+        doNothing().when(recordService).purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, FROM_VERSION, USER, Optional.empty());
+        ResponseEntity response = this.sut.purgeRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, FROM_VERSION);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
     }
@@ -236,8 +237,8 @@ public class RecordApiTest {
     @Test
     public void should_returnHttp204_when_purgingRecordVersions_byLimit_successfullyWithCollaborationContext() {
         when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(COLLABORATION_CONTEXT);
-        doNothing().when(recordService).purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, USER, COLLABORATION_CONTEXT);
-        ResponseEntity response = this.sut.purgeRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID, DEFAULT_VERSION_IDS, LIMIT);
+        doNothing().when(recordService).purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, FROM_VERSION, USER, COLLABORATION_CONTEXT);
+        ResponseEntity response = this.sut.purgeRecordVersions(COLLABORATION_DIRECTIVES, RECORD_ID, DEFAULT_VERSION_IDS, LIMIT, FROM_VERSION);
 
         assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
     }
