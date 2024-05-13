@@ -38,6 +38,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
+import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.impl.VersionIdsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -49,17 +50,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEATURE_NAME;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_FROM_VERSION;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS;
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_LIMIT_FOR_FROM_VERSION;
 
 @Service
 public class RecordServiceImpl implements RecordService {
 
     public static final String ACCESS_DENIED = "Access denied";
-    public static final String INVALID_VERSION_IDS = "Invalid versionIds";
-    public static final String INVALID_LIMIT = "Invalid limit";
     @Autowired
     private IRecordsMetadataRepository recordRepository;
 
@@ -125,10 +128,10 @@ public class RecordServiceImpl implements RecordService {
     }
 
     @Override
-    public void purgeRecordVersions(String recordId, String versionIds, Integer limit, String user, Optional<CollaborationContext> collaborationContext) {
-        if (Strings.isNullOrEmpty(versionIds) && null == limit) {
-            String message = "Either [versionIds or limit] value is required";
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid versionIds/limit", message);
+    public void purgeRecordVersions(String recordId, String versionIds, Integer limit, Long fromVersion, String user, Optional<CollaborationContext> collaborationContext) {
+        if (Strings.isNullOrEmpty(versionIds) && null == limit && null == fromVersion) {
+            String message = "Either [versionIds or limit or from] value is required";
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid versionIds/limit/from", message);
         }
 
         RecordMetadata recordMetadata = getRecordMetadata(recordId, true, collaborationContext);
@@ -146,11 +149,15 @@ public class RecordServiceImpl implements RecordService {
             VersionIdsValidator.validate(versionIds, recordMetadata.getLatestVersion(), existingRecordVersionPaths);
         }
 
-        if (Strings.isNullOrEmpty(versionIds)) {
+        if (Strings.isNullOrEmpty(versionIds) && null != limit) {
             validateLimit(limit, recordId, existingVersionPathsCount);
         }
 
-        Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair = extractRecordVersionPathsToRetainAndDelete(versionIds, limit, existingRecordVersionPaths);
+        if (null != fromVersion) {
+            validateFromVersion(fromVersion, existingRecordVersionPaths);
+        }
+
+        Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair = extractRecordVersionPathsToRetainAndDelete(versionIds, limit, fromVersion, existingRecordVersionPaths);
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadata.setGcsVersionPaths(recordVersionPathsToRetainDeletePair.getLeft());
         recordMetadata.setModifyTime(System.currentTimeMillis());
@@ -317,13 +324,13 @@ public class RecordServiceImpl implements RecordService {
         });
     }
 
-    private Pair<List<String>, List<String>> extractRecordVersionPathsToRetainAndDelete(String versionIds, Integer limit, List<String> existingRecordVersionPaths) {
+    private Pair<List<String>, List<String>> extractRecordVersionPathsToRetainAndDelete(String versionIds, Integer limit, Long fromVersion, List<String> existingRecordVersionPaths) {
         Pair<List<String>, List<String>> recordVersionPathsToRetainDeletePair;
         if (!Strings.isNullOrEmpty(versionIds)) {
             List<String> versionIdList = Arrays.stream(versionIds.split(",")).toList();
             recordVersionPathsToRetainDeletePair = extractVersionsPathsByVersionIds(existingRecordVersionPaths, versionIdList);
         } else {
-            recordVersionPathsToRetainDeletePair = extractVersionsPathsByLimit(existingRecordVersionPaths, limit);
+            recordVersionPathsToRetainDeletePair = extractVersionsPathsByLimitAndFromVersion(existingRecordVersionPaths, limit, fromVersion);
         }
         return recordVersionPathsToRetainDeletePair;
     }
@@ -337,14 +344,24 @@ public class RecordServiceImpl implements RecordService {
         }
     }
 
-    private static void validateLimit(Integer limit, String recordId, int existingVersionPathsCount) {
-        if(limit <= 0){
+    private void validateLimit(Integer limit, String recordId, int existingVersionPathsCount) {
+        if (limit <= 0) {
             String message = String.format("Invalid limit value '%d'. It should be greater than 0", limit);
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_LIMIT, message);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, ValidationDoc.INVALID_LIMIT, message);
         }
         if (existingVersionPathsCount - 1 < limit) {
             String message = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", recordId, existingVersionPathsCount - 1, limit);
-            throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_LIMIT, message);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, ValidationDoc.INVALID_LIMIT, message);
+        }
+    }
+
+    private void validateFromVersion(Long fromVersion, List<String> existingRecordVersionPaths) {
+
+        boolean fromVersionNotFound = existingRecordVersionPaths.stream()
+                .noneMatch(paths -> paths.contains(String.valueOf(fromVersion)));
+        if (fromVersionNotFound) {
+            String message = String.format(INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS, fromVersion);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_FROM_VERSION, message);
         }
     }
 
@@ -363,16 +380,41 @@ public class RecordServiceImpl implements RecordService {
         return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
     }
 
-    private Pair<List<String>, List<String>> extractVersionsPathsByLimit(List<String> existingRecordVersionPaths, Integer limit) {
+    private Pair<List<String>, List<String>> extractVersionsPathsByLimitAndFromVersion(List<String> existingRecordVersionPaths, Integer limit, Long fromVersion) {
+        int totalVersionPaths = existingRecordVersionPaths.size();
         List<String> recordVersionPathsToRetain = new ArrayList<>();
-        List<String> recordVersionPathsToDelete = new ArrayList<>();
-        for (int i = 0; i < existingRecordVersionPaths.size(); i++) {
-            String recordVersionPath = existingRecordVersionPaths.get(i);
-            if (i < limit)
-                recordVersionPathsToDelete.add(recordVersionPath);
-            else
-                recordVersionPathsToRetain.add(recordVersionPath);
+        List<String> recordVersionPathsToDelete;
+
+        if (null == fromVersion) { //extract logic using 'limit'
+            recordVersionPathsToDelete = existingRecordVersionPaths.subList(0, limit);
+            recordVersionPathsToRetain = existingRecordVersionPaths.subList(limit, totalVersionPaths);
+        } else {
+            int fromVersionIndex = IntStream.range(0, totalVersionPaths).
+                    filter(index -> existingRecordVersionPaths.get(index).endsWith(String.valueOf(fromVersion)))
+                    .findFirst().getAsInt();
+            boolean isFromVersionSameAsLatestVersion = (fromVersionIndex == totalVersionPaths - 1);
+
+            if(null == limit) { //extract logic using 'from' version
+                int toIndex = isFromVersionSameAsLatestVersion ? fromVersionIndex : fromVersionIndex + 1;
+                recordVersionPathsToDelete = existingRecordVersionPaths.subList(0, toIndex);
+                recordVersionPathsToRetain = existingRecordVersionPaths.subList(toIndex, totalVersionPaths);
+            } else { //extract logic using both 'limit' & 'from' version
+
+                if (limit > fromVersionIndex + 1) {
+                    String message = String.format(INVALID_LIMIT_FOR_FROM_VERSION, limit, fromVersion);
+                    throw new AppException(HttpStatus.SC_BAD_REQUEST, ValidationDoc.INVALID_LIMIT, message);
+                }
+
+                int indexFactor = isFromVersionSameAsLatestVersion ? 0 : 1;
+                int startIndex = fromVersionIndex + indexFactor - limit;
+                int endIndexExclusive = fromVersionIndex + indexFactor;
+
+                recordVersionPathsToRetain.addAll(existingRecordVersionPaths);
+                recordVersionPathsToDelete = existingRecordVersionPaths.subList(startIndex, endIndexExclusive);
+                recordVersionPathsToRetain.removeAll(recordVersionPathsToDelete);
+            }
         }
         return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
     }
+
 }
