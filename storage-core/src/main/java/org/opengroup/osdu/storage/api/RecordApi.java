@@ -23,7 +23,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -181,9 +180,10 @@ public class RecordApi {
 														@Pattern(regexp = ValidationDoc.RECORD_ID_REGEX, message = ValidationDoc.INVALID_RECORD_ID) String id,
 											@Parameter(description = "comma separated version Ids", example = "1710393736116773,1710393736116774")
 														@RequestParam(required = false) @ValidVersionIds String versionIds,
-											@Parameter(description = "limit", example = "500") @RequestParam(required = false) Integer limit) {
+											@Parameter(description = "limit", example = "500") @RequestParam(required = false) Integer limit,
+											@Parameter(description = "from record version to delete", example = "123456789") @RequestParam(name= "from", required = false) Long fromVersion) {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
-		this.recordService.purgeRecordVersions(id, versionIds, limit, headers.getUserEmail(), collaborationContext);
+		this.recordService.purgeRecordVersions(id, versionIds, limit, fromVersion, headers.getUserEmail(), collaborationContext);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
