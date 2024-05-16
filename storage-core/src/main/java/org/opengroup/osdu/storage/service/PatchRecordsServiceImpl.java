@@ -17,7 +17,6 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -76,7 +75,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     private BatchService batchService;
 
     @Autowired
-    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    private IEntitlementsExtensionService entitlementsAndCacheService;
 
     @Autowired
     private DpsHeaders headers;
@@ -261,6 +260,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     }
 
     private void validateOwnerAccess(List<String> recordIds, Map<String, RecordMetadata> existingRecords) {
+        boolean isDataManager = this.entitlementsAndCacheService.isDataManager(this.headers);
         for (String recordId : recordIds) {
             RecordMetadata metadata = existingRecords.get(recordId);
 
@@ -269,7 +269,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
 
             // pre acl check, enforce application data restriction
-            if (!this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners())) {
+            if (!isDataManager && !this.entitlementsAndCacheService.hasOwnerAccess(this.headers, metadata.getAcl().getOwners())) {
                 this.logger.warning(String.format("User does not have owner access to record %s", recordId));
                 throw new AppException(HttpStatus.SC_FORBIDDEN, "User Unauthorized", "User is not authorized to update records.");
             }
