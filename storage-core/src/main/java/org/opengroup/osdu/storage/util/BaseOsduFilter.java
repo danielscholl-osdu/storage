@@ -19,7 +19,7 @@ public class BaseOsduFilter {
     @Autowired
     protected DpsHeaders dpsHeaders;
 
-    @Value("#{'${collaborationFilter.excludedPaths:info,swagger,liveness_check,api-docs}'.split(',')}")
+    @Value("#{'${collaborationFilter.excludedPaths:info,swagger,health,liveness_check,api-docs}'.split(',')}")
     private List<String> excludedPaths;
 
     protected static String appErrorToJson(AppError appError) {

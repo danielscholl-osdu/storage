@@ -14,14 +14,13 @@
 
 package org.opengroup.osdu.storage.di;
 
-import static java.time.Clock.systemDefaultZone;
-
-import java.time.Clock;
-
+import com.google.gson.Gson;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.google.gson.Gson;
+import java.time.Clock;
+
+import static java.time.Clock.systemDefaultZone;
 
 @Configuration
 public class BeanConfig {
