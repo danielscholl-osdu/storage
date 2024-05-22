@@ -67,7 +67,7 @@ public class PatchRecordsServiceImplTest {
     @Mock
     PersistenceService persistenceService;
     @Mock
-    EntitlementsAndCacheServiceImpl entitlementsAndCacheService;
+    IEntitlementsExtensionService entitlementsAndCacheService;
     @Mock
     DpsHeaders headers;
     @Mock
