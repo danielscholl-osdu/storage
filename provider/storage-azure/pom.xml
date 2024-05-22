@@ -32,15 +32,14 @@
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <osdu.corelibazure.version>0.26.0</osdu.corelibazure.version>
+        <core-lib-azure-spring6.version>0.26.0</core-lib-azure-spring6.version>
         <osdu.storage-core.version>0.27.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <nimbus-jose-jwt-azure.version>9.30.2</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.25.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>5.9.1</azure-spring-data-cosmos.version>
-        <spring-webmvc.version>6.1.4</spring-webmvc.version>
-        <netty.version>4.1.101.Final</netty.version>
+        <netty.version>4.1.109.Final</netty.version>
         <woodstox-core.version>6.4.0</woodstox-core.version>
         <argLine>
             --add-opens=java.base/java.util=ALL-UNNAMED
@@ -49,7 +48,6 @@
             --add-opens java.base/java.text=ALL-UNNAMED
             --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED
         </argLine>
-        <reactor-netty.version>1.1.14</reactor-netty.version>
         <okhttp.version>4.12.0</okhttp.version>
         <okio.version>3.7.0</okio.version>
     </properties>
@@ -77,19 +75,9 @@
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
                 <artifactId>core-lib-azure-spring6</artifactId>
-                <version>${osdu.corelibazure.version}</version>
+                <version>${core-lib-azure-spring6.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.azure</groupId>
-                        <artifactId>azure-storage-blob</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>azure-core</artifactId>
-                        <groupId>com.azure</groupId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.azure</groupId>
@@ -143,24 +131,9 @@
             <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${spring-webmvc.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-azure-spring6</artifactId>
-            <version>${osdu.corelibazure.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.azure</groupId>
-                    <artifactId>azure-storage-blob</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.azure</groupId>
-                    <artifactId>azure-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>${core-lib-azure-spring6.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -233,11 +206,6 @@
             <groupId>com.microsoft.azure</groupId>
             <artifactId>applicationinsights-runtime-attach</artifactId>
             <version>3.4.18</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty-http</artifactId>
-            <version>${reactor-netty.version}</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
