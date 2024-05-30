@@ -36,21 +36,20 @@
         <maven.compiler.source>17</maven.compiler.source>
         <deployment.environment>dev</deployment.environment>
         <version.number>0.27.0-SNAPSHOT</version.number>
-        <spring-webmvc.version>5.3.26</spring-webmvc.version>
     </properties>
 
 
     <dependencies>
         <!-- Internal packages -->
         <dependency>
-            <groupId>org.opengroup.osdu</groupId>
-            <artifactId>os-core-common-spring6</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>0.26.0-spring6-rc1</version>
+            <version>0.26.0-spring6-rc2</version>
         </dependency>
+         <dependency>
+             <groupId>org.opengroup.osdu</groupId>
+             <artifactId>os-core-common-spring6</artifactId>
+         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>storage-core</artifactId>
