@@ -38,6 +38,13 @@ Must have:
 | `<AMQP_ADMIN_PASSWORD_ENV_VARIABLE_NAME>` | ex `AMQP_ADMIN_PASS_OSDU`                  | Amqp admin password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
 | `STORAGE_SERVICE_ACCOUNT_EMAIL`           | `workload-storage@keycloak.com`            | Storage service account email, used during OQM events processing                                                                                       | no         | -      |
 
+Defined in default application property file but possible to override:
+
+| name                              | value                                        | description                         | sensitive? | source        |
+|-----------------------------------|----------------------------------------------|-------------------------------------|------------|---------------|
+| `MANAGEMENT_ENDPOINTS_WEB_BASE`   | ex `/`                                       | Web base for Actuator               | no         | -             |
+| `MANAGEMENT_SERVER_PORT`          | ex `8081`                                    | Port for Actuator                   | no         | -             |
+
 | name                                       | value                                         | description                                                                           | sensitive? | source                              |
 |--------------------------------------------|-----------------------------------------------|---------------------------------------------------------------------------------------|------------|-------------------------------------|
 | `LOG_PREFIX`                               | `storage`                                     | Logging prefix                                                                        | no         | -                                   |

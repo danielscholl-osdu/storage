@@ -21,6 +21,13 @@ Must have:
 | `SPRING_PROFILES_ACTIVE`        | ex `gcp`                                                          | Spring profile that activate default configuration for Google Cloud environment | false      | -      |
 | `STORAGE_SERVICE_ACCOUNT_EMAIL` | `workload-storage-gc@nice-etching-277309.iam.gserviceaccount.com` | Storage service account email, used during OQM events processing                | no         | -      |
 
+Defined in default application property file but possible to override:
+
+| name                              | value                                        | description                         | sensitive? | source        |
+|-----------------------------------|----------------------------------------------|-------------------------------------|------------|---------------|
+| `MANAGEMENT_ENDPOINTS_WEB_BASE`   | ex `/`                                       | Web base for Actuator               | no         | -             |
+| `MANAGEMENT_SERVER_PORT`          | ex `8081`                                    | Port for Actuator                   | no         | -             |
+
 ### Common properties for all environments
 
 | name                                       | value                                         | description                                                                           | sensitive? | source                                                       |
