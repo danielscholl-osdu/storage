@@ -20,6 +20,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.springframework.stereotype.Component;
 
 import jakarta.inject.Inject;
@@ -35,6 +36,9 @@ public class RecordsUtil {
     private JaxRsDpsLog logger;
 
     private S3RecordClient s3RecordClient;
+
+    @Inject
+    private WorkerThreadPool threadPool;
 
     @Inject
     private DpsHeaders headers;
@@ -54,7 +58,7 @@ public class RecordsUtil {
         try {
             for (Map.Entry<String, String> object : objects.entrySet()) {
                 GetRecordFromVersionTask task = new GetRecordFromVersionTask(s3RecordClient, object.getKey(), object.getValue(), dataPartition);
-                CompletableFuture<GetRecordFromVersionTask> future = CompletableFuture.supplyAsync(task::call);
+                CompletableFuture<GetRecordFromVersionTask> future = CompletableFuture.supplyAsync(task::call, threadPool.getThreadPool());
                 futures.add(future);
             }
 
@@ -101,7 +105,7 @@ public class RecordsUtil {
         try {
             for (RecordMetadata recordMetadata: recordMetadatas) {
                 GetRecordTask task = new GetRecordTask(s3RecordClient, map, recordMetadata, dataPartition);
-                CompletableFuture<GetRecordTask> future = CompletableFuture.supplyAsync(task::call);
+                CompletableFuture<GetRecordTask> future = CompletableFuture.supplyAsync(task::call, threadPool.getThreadPool());
                 futures.add(future);
             }
 

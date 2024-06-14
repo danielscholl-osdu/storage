@@ -25,6 +25,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.s3.RecordsUtil;
 import org.opengroup.osdu.storage.provider.aws.util.s3.S3RecordClient;
 import org.opengroup.osdu.core.common.util.Crc32c;
@@ -34,6 +35,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -68,9 +70,6 @@ class CloudStorageImplTest {
     private RecordsUtil recordsUtil;
 
     @Mock
-    private ExecutorService threadPool;
-
-    @Mock
     private UserAccessService userAccessService;
 
     @Mock
@@ -97,6 +96,7 @@ class CloudStorageImplTest {
     @Mock
     private TransferInfo transfer;
 
+    private final WorkerThreadPool threadPool = new WorkerThreadPool(10);
     private String dataPartition = "dummyPartitionName";
 
     private String mockRecord = "{\"data\":{\"id\":\"test\"}, \"meta\":null, \"modifyUser\":null, \"modifyTime\":0}";
@@ -116,7 +116,8 @@ class CloudStorageImplTest {
         doNothing().when(record).setId(userId);
         doNothing().when(record).addGcsPath(1);
         records.add(record);
-        
+
+        ReflectionTestUtils.setField(repo, "threadPool", threadPool);
         when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);
     }
 
@@ -157,7 +158,7 @@ class CloudStorageImplTest {
         bytes = checksumGenerator.getValueAsBytes();
         String expectedHash = new String(encodeBase64(bytes));
 
-        when(recordsUtil.getRecordsValuesById(Mockito.eq(records)))
+        when(recordsUtil.getRecordsValuesById(records))
                 .thenReturn(mapRecords);
 
         // act
@@ -170,7 +171,7 @@ class CloudStorageImplTest {
     @Test
     void delete(){
         // arrange
-        Mockito.doNothing().when(s3RecordClient).deleteRecord(Mockito.eq(path), Mockito.eq(dataPartition));
+        Mockito.doNothing().when(s3RecordClient).deleteRecord(path, dataPartition);
         when(record.hasVersion()).thenReturn(true);
         
         List<String> list = new ArrayList<String>();
@@ -181,7 +182,7 @@ class CloudStorageImplTest {
         repo.delete(record);
 
         // assert
-        verify(s3RecordClient, Mockito.times(1)).deleteRecord(eq(path), eq(dataPartition));
+        verify(s3RecordClient, Mockito.times(1)).deleteRecord(path, dataPartition);
     }
 
     @Test
