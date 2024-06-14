@@ -24,10 +24,13 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
+import org.springframework.test.util.ReflectionTestUtils;
 
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,9 +52,6 @@ class RecordUtilsTest {
     private S3RecordClient s3RecordClient;
 
     @Mock
-    private ExecutorService threadPool;
-
-    @Mock
     private DpsHeaders headers;
 
     @Mock
@@ -60,11 +60,13 @@ class RecordUtilsTest {
     @Mock
     private RecordMetadata recordMetadata;
 
+    private final WorkerThreadPool threadPool = new WorkerThreadPool(10);
     private String dataPartition = "dummyPartitionName";
 
     @BeforeEach
     void setuUp() {
         openMocks(this);
+        ReflectionTestUtils.setField(recordsUtil, "threadPool", threadPool);
         when(headers.getPartitionIdWithFallbackToAccountId()).thenReturn(dataPartition);
     }
 
