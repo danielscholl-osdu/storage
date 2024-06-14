@@ -25,6 +25,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.core.common.util.Crc32c;
 import org.opengroup.osdu.storage.provider.aws.util.s3.RecordProcessor;
@@ -35,7 +36,6 @@ import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -47,9 +47,6 @@ import java.util.stream.Collectors;
 
 @Repository
 public class CloudStorageImpl implements ICloudStorage {
-
-    @Value("${aws.s3.max-record-threads}")
-    private int maxNumOfRecordThreads;
 
     @Inject
     private S3RecordClient s3RecordClient;
@@ -66,6 +63,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Inject
     private IRecordsMetadataRepository<String> recordsMetadataRepository;
 
+    @Inject
+    private WorkerThreadPool threadPool;
 
     @Inject
     private DpsHeaders headers;
@@ -87,7 +86,7 @@ public class CloudStorageImpl implements ICloudStorage {
                 recordProcessing.getRecordData().setMeta(arrayMeta);
             }
             RecordProcessor recordProcessor = new RecordProcessor(recordProcessing, s3RecordClient, dataPartition);
-            CompletableFuture<RecordProcessor> future = CompletableFuture.supplyAsync(recordProcessor::call);
+            CompletableFuture<RecordProcessor> future = CompletableFuture.supplyAsync(recordProcessor::call, threadPool.getThreadPool());
             futures.add(future);
         }
 
