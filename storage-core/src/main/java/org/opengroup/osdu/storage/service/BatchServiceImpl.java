@@ -18,6 +18,7 @@ import com.google.common.base.Strings;
 import com.google.gson.*;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -35,11 +36,12 @@ import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 
 public abstract class BatchServiceImpl implements BatchService {
@@ -75,8 +77,8 @@ public abstract class BatchServiceImpl implements BatchService {
     @Autowired
     private IOPAService opaService;
 
-    @Value("${opa.enabled}")
-    private boolean isOpaEnabled;
+    @Autowired
+    private IFeatureFlag featureFlag;
 
     @Override
     public MultiRecordInfo getMultipleRecords(MultiRecordIds ids, Optional<CollaborationContext> collaborationContext) {
@@ -268,7 +270,7 @@ public abstract class BatchServiceImpl implements BatchService {
                 recordsMap.put(recordId, recordData);
             }
         } else {
-            if (isOpaEnabled) {
+            if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) {
                 List<ValidationOutputRecord> dataAuthResult = this.opaService.validateUserAccessToRecords(recordMetadataList, OperationType.view);
                 for (ValidationOutputRecord outputRecord : dataAuthResult) {
                     if (outputRecord.getErrors().isEmpty()) {

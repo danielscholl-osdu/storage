@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -28,6 +29,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
@@ -43,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static java.util.Collections.singletonList;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @ExtendWith(MockitoExtension.class)
 public class PatchRecordsServiceImplTest {
@@ -81,6 +84,9 @@ public class PatchRecordsServiceImplTest {
 
     @InjectMocks
     private PatchRecordsServiceImpl sut;
+
+    @Mock
+    private IFeatureFlag featureFlag;
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final List<String> recordIds = new LinkedList<>(Arrays.asList(RECORD_ID1, RECORD_ID2));
@@ -139,7 +145,7 @@ public class PatchRecordsServiceImplTest {
 
     @Test
     public void shouldSuccessfullyPatchRecordMetaData_whenOpaIsEnabled() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"value\"}]"));
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
@@ -165,7 +171,7 @@ public class PatchRecordsServiceImplTest {
 
     @Test
     public void shouldSuccessfullyPatchRecordMetaData_whenOpaIsDisabled() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"add\", \"path\":\"/acl/viewers/-\", \"value\":\"value\"}]"));
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
         when(recordRepository.get(recordIds, COLLABORATION_CONTEXT)).thenReturn(existingRecords);
@@ -197,7 +203,6 @@ public class PatchRecordsServiceImplTest {
         patchedRecord2.getAcl().setViewers(record2ViewersAcl);
         patchedRecord2.setData(Collections.singletonMap("Hello", "world"));
 
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/acl/viewers/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
 
         MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
@@ -225,6 +230,7 @@ public class PatchRecordsServiceImplTest {
 
     @Test
     public void shouldSuccessfullyPatchMetadata_ifSomeRecordsNotFound() throws IOException {
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         /*
         Ensure that when one of the records is not found, the others are still updated.
          */
@@ -246,7 +252,6 @@ public class PatchRecordsServiceImplTest {
 
     @Test
     public void shouldNotPatchData_ifResultHasEmptyLegaltagsForAllRecords() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/legal/legaltags/0\"}, {\"op\":\"add\", \"path\":\"/data\", \"value\":{\"Hello\" : \"world\"}}]"));
 
         MultiRecordInfo multiRecordInfo = getMultiRecordInfo();
@@ -270,7 +275,7 @@ public class PatchRecordsServiceImplTest {
 
     @Test
     public void shouldPatchRecordMetadataPartially_ifResultHasEmptyAclForOneRecord() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/acl/viewers/0\"}]"));
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
         String[] record1ViewersAcl = new String[]{"viewer1@company.com"};
@@ -300,7 +305,7 @@ public class PatchRecordsServiceImplTest {
 
     @Test
     public void shouldNotPatchMetadata_ifResultHasEmptyLegaltagsForAllRecords() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         JsonPatch jsonPatch = JsonPatch.fromJson(mapper.readTree("[{\"op\":\"remove\", \"path\":\"/legal/legaltags/0\"}]"));
         Map<String, RecordMetadata> existingRecords = getExistingRecordsMetadata();
 
@@ -368,7 +373,7 @@ public class PatchRecordsServiceImplTest {
     
     @Test
     public void shouldFailPatchExistingRecordMetaDataThatFailDataAuthorizationCheck_whenOpaIsEnabled() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         List<String> recordIds = singletonList(RECORD_ID1);
         
         RecordMetadata existingRecordMetadata = getRecordMetadata(RECORD_ID1);
@@ -408,7 +413,7 @@ public class PatchRecordsServiceImplTest {
     
     @Test
     public void shouldFailPatchWithNewRecordMetaDataThatFailDataAuthorizationCheck_whenOpaIsEnabled() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         List<String> recordIds = singletonList(RECORD_ID1);
         
         RecordMetadata existingRecordMetadata = getRecordMetadata(RECORD_ID1);
@@ -448,7 +453,7 @@ public class PatchRecordsServiceImplTest {
     
     @Test
     public void shouldSuccessPatchRecordMetaDataThatPassDataAuthorizationCheck_whenOpaIsEnabled() throws IOException {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         List<String> recordIds = singletonList(RECORD_ID1);
         
         RecordMetadata existingRecordMetadata = getRecordMetadata(RECORD_ID1);

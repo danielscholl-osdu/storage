@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.storage.model.RecordQueryPatch;
 import org.opengroup.osdu.storage.validation.impl.BulkQueryPatchValidator;
 
@@ -40,6 +41,9 @@ import static org.opengroup.osdu.storage.validation.ValidationDoc.RECORD_ID_LIST
 public class BulkQueryPatchValidatorTest {
     @Mock
     private ConstraintValidatorContext context;
+
+    @Mock
+    private IFeatureFlag featureFlag;
 
     private BulkQueryPatchValidator sut;
 

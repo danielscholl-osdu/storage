@@ -33,4 +33,6 @@ public class RecordConstants {
     public static final String REGEX_VERSION_IDS = "[0-9]+(,[0-9]+)*";
     public static final int MAX_VERSION_IDS_NUMBER = 50;
 
+    public static final String OPA_FEATURE_NAME = "featureFlag.opa.enabled";
+
 }

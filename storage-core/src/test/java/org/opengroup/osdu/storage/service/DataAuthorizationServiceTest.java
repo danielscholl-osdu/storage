@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -25,6 +26,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @ExtendWith(MockitoExtension.class)
 public class DataAuthorizationServiceTest {
@@ -49,6 +51,9 @@ public class DataAuthorizationServiceTest {
     @InjectMocks
     private DataAuthorizationService sut;
 
+    @Mock
+    private IFeatureFlag featureFlag;
+
     private static final Map<String, String> headerMap = new HashMap<>();
 
     @BeforeEach
@@ -64,7 +69,7 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_callOpaServiceInOwnerAccessValidation_when_opaIsEnabled() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
         verify(this.opaService, times(1)).validateUserAccessToRecords(any(), any());
@@ -73,7 +78,7 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_callOpaServiceInViewerOrOwnerAccessValidation_when_OpaIsEnabled() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
         verify(this.opaService, times(1)).validateUserAccessToRecords(any(), any());
@@ -82,7 +87,7 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_callEntitlementService_when_policyServiceDisabled() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
         verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
@@ -91,7 +96,7 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_callEntitlementServiceInViewerOrOwnerAccessValidation_when_opaIsDisabled() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update);
 
         verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
@@ -100,7 +105,6 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_returnTrue_validateOwnerAccess_when_dataManager() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", false);
         when(this.entitlementsService.isDataManager(any())).thenReturn(true);
         assertTrue(this.sut.validateOwnerAccess(this.getRecordMetadata(), OperationType.update));
 
@@ -110,7 +114,6 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_returnTrue_validateViewerOrOwnerAccess_when_dataManager() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         when(this.entitlementsService.isDataManager(any())).thenReturn(true);
         assertTrue(this.sut.validateViewerOrOwnerAccess(this.getRecordMetadata(), OperationType.update));
 
@@ -120,7 +123,7 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_returnTrue_hasAccess_when_dataManager_False() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.entitlementsService.isDataManager(any())).thenReturn(false);
         assertTrue(this.sut.hasAccess(this.getRecordMetadata(), OperationType.update));
 
@@ -130,7 +133,6 @@ public class DataAuthorizationServiceTest {
 
     @Test
     public void should_returnTrue_hasAccess_when_dataManager() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
         when(this.entitlementsService.isDataManager(any())).thenReturn(true);
         assertTrue(this.sut.hasAccess(this.getRecordMetadata(), OperationType.update));
 
