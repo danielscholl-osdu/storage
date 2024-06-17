@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -30,7 +31,6 @@ import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @Service
 public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
@@ -74,8 +75,8 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
     @Autowired
     private IOPAService opaService;
 
-    @Value("${opa.enabled}")
-    private boolean isOpaEnabled;
+    @Autowired
+    private IFeatureFlag featureFlag;
 
     @Override
     public BulkUpdateRecordsResponse bulkUpdateRecords(RecordBulkUpdateParam recordBulkUpdateParam, String user, Optional<CollaborationContext> collaborationContext) {
@@ -98,7 +99,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         List<String> idsWithoutVersion = new ArrayList<>(idMap.keySet());
         Map<String, RecordMetadata> existingRecords = recordRepository.get(idsWithoutVersion, collaborationContext);
         List<String> notFoundRecordIds = new ArrayList<>();
-        List<String> unauthorizedRecordIds = isOpaEnabled
+        List<String> unauthorizedRecordIds = featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)
                 ? this.validateUserAccessAndCompliancePolicyConstraints(bulkUpdateOps, idMap, existingRecords, user)
                 : this.validateUserAccessAndComplianceConstraints(bulkUpdateOps, idMap, existingRecords);
 

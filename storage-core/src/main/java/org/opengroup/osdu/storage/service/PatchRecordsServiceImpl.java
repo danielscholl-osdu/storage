@@ -17,16 +17,14 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.MultiRecordIds;
-import org.opengroup.osdu.core.common.model.storage.MultiRecordInfo;
 import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
+import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
@@ -38,19 +36,14 @@ import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 
 @Service
@@ -89,8 +82,8 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
     @Autowired
     private IOPAService opaService;
 
-    @Value("#{new Boolean('${opa.enabled}')}")
-    private boolean isOpaEnabled;
+    @Autowired
+    private IFeatureFlag featureFlag;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -141,7 +134,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
         } else {
             Map<String, RecordMetadata> existingRecords = recordRepository.get(recordIds, collaborationContext);
-            if (isOpaEnabled) {
+            if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) {
                 this.validateUserAccessAndCompliancePolicyConstraints(jsonPatch, existingRecords);
             } else {
                 this.validateUserAccessAndComplianceConstraints(jsonPatch, recordIds, existingRecords);

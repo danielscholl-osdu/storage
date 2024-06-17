@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -36,7 +37,6 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.response.BulkUpdateRecordsResponse;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchOperationValidator;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.util.*;
@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @ExtendWith(MockitoExtension.class)
 public class BulkUpdateRecordServiceImplTest {
@@ -102,6 +103,9 @@ public class BulkUpdateRecordServiceImplTest {
     private IOPAService opaService;
     @InjectMocks
     private BulkUpdateRecordServiceImpl service;
+
+    @Mock
+    private IFeatureFlag featureFlag;
 
     @Test
     public void should_bulkUpdateRecords_successfully() {
@@ -213,7 +217,7 @@ public class BulkUpdateRecordServiceImplTest {
         }};
 
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
         when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
                 .thenReturn(emptyList());
@@ -244,7 +248,7 @@ public class BulkUpdateRecordServiceImplTest {
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
 
         Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
 
         List<OpaError> errors = new ArrayList<>();
@@ -271,7 +275,7 @@ public class BulkUpdateRecordServiceImplTest {
         }};
 
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
@@ -303,7 +307,7 @@ public class BulkUpdateRecordServiceImplTest {
         }};
 
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
         when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
                 .thenReturn(new ArrayList<>(singletonList(TEST_ID)));
@@ -343,7 +347,7 @@ public class BulkUpdateRecordServiceImplTest {
         RecordMetadata newRecordMetadata = buildRecordMetadata();
 
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(existingRecordMetadataMap);
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(existingRecordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
@@ -390,7 +394,7 @@ public class BulkUpdateRecordServiceImplTest {
     	newRecordMetadata.setAcl(non_owner_acl);
         
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(existingRecordMetadataMap);
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
         when(recordUtil.updateRecordMetaDataForPatchOperations(existingRecordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
@@ -434,7 +438,7 @@ public class BulkUpdateRecordServiceImplTest {
     	RecordMetadata newRecordMetadata = buildRecordMetadata();
         
         RecordBulkUpdateParam param = buildRecordBulkUpdateParam();
-        ReflectionTestUtils.setField(service, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(existingRecordMetadataMap);
         when(persistenceService.updateMetadata(singletonList(newRecordMetadata), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
         .thenReturn(emptyList());

@@ -59,7 +59,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-gc-spring6</artifactId>
-      <version>0.26.0</version>
+      <version>0.27.0-rc3</version>
     </dependency>
     <!--    Mappers    -->
     <dependency>
@@ -130,6 +130,7 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+
   </dependencies>
 
   <build>
