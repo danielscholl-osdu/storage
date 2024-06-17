@@ -65,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @ExtendWith(MockitoExtension.class)
 public class IngestionServiceImplTest {
@@ -184,6 +185,7 @@ public class IngestionServiceImplTest {
         lenient().when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
         recordBlocks = new RecordBlocks(cloudStorage, crcHashGenerator);
         sut.recordBlocks = recordBlocks;
+
     }
 
     @Test
@@ -277,6 +279,7 @@ public class IngestionServiceImplTest {
     @Test
     public void should_return403_when_updatingARecordThatDoesNotHaveWritePermissionOnOriginalRecord() {
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
         this.acl.setViewers(VALID_ACL);
         this.acl.setOwners(VALID_ACL);
 
@@ -751,7 +754,7 @@ public class IngestionServiceImplTest {
 
     @Test
     public void should_return401_when_updatingARecordThatFailDataAuthorizationCheck_IntegrateOPA() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -788,7 +791,7 @@ public class IngestionServiceImplTest {
     @Test
     @SuppressWarnings("unchecked")
     public void should_updateTwoRecords_when_twoRecordIDsAreAlreadyPresentInDataLake_integrateOPA() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -843,7 +846,7 @@ public class IngestionServiceImplTest {
     
     @Test
     public void should_return403_when_updatingExistingRecordThatFailDataAuthorizationCheck_IntegrateOPA() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -881,7 +884,7 @@ public class IngestionServiceImplTest {
     
     @Test
     public void should_return403_when_updatingWithNewRecordThatFailDataAuthorizationCheck_IntegrateOPA() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -920,7 +923,7 @@ public class IngestionServiceImplTest {
     
     @Test
     public void should_success_when_updatingRecordThatPassDataAuthorizationCheck_IntegrateOPA() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -962,7 +965,7 @@ public class IngestionServiceImplTest {
 
     @Test
     public void createUpdateRecords_shouldNotPerform_gcsArraySizeValidationIfFeatureFlagIsNotSet() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
 
         this.record1.setId(RECORD_ID1);
@@ -1009,7 +1012,7 @@ public class IngestionServiceImplTest {
 
     @Test
     public void createUpdateRecords_shouldNotRemoveRecordsFromProcessing_ifGcsVersionPathsSizeIsLesserThanSoftLimit() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(gcsVersionPathLimitationConfig.getMaxLimit()).thenReturn(2000);
         when(gcsVersionPathLimitationConfig.getFeatureName()).thenReturn("enforce_gcsVersionPathsLimit_enabled");
         when(featureFlag.isFeatureEnabled(gcsVersionPathLimitationConfig.getFeatureName())).thenReturn(true);
@@ -1059,7 +1062,7 @@ public class IngestionServiceImplTest {
 
     @Test
     public void createUpdateRecords_shouldRemoveRecordsFromProcessing_ifGcsSizeIsGreaterThanMaxLimit() {
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(gcsVersionPathLimitationConfig.getMaxLimit()).thenReturn(2000);
         when(gcsVersionPathLimitationConfig.getFeatureName()).thenReturn("enforce_gcsVersionPathsLimit_enabled");
         when(featureFlag.isFeatureEnabled(gcsVersionPathLimitationConfig.getFeatureName())).thenReturn(true);
