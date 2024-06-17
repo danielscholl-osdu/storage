@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.crs.CrsConverterClientFactory;
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.crs.ConvertStatus;
 import org.opengroup.osdu.core.common.model.crs.RecordsAndStatuses;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @ExtendWith(MockitoExtension.class)
 class BatchServiceImplTest {
@@ -75,6 +77,9 @@ class BatchServiceImplTest {
 
     @Mock
     private IOPAService opaService;
+
+    @Mock
+    private IFeatureFlag featureFlag;
 
     @InjectMocks
     BatchServiceImpl sut = mock(BatchServiceImpl.class, Mockito.CALLS_REAL_METHODS);
@@ -177,7 +182,8 @@ class BatchServiceImplTest {
     @Test
     void fetchMultipleRecords_returnsConvertedRecords_whenFrameOfReferenceIsPresentAndRecordsAreFound() {
         ReflectionTestUtils.setField(crsConverterClientFactory, "crsApi", "crs_endpoint");
-        ReflectionTestUtils.setField(sut, "isOpaEnabled", true);
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
+
         Map<String, String> osduHeaders = new HashMap<>();
         osduHeaders.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
 

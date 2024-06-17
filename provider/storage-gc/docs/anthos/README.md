@@ -53,6 +53,7 @@ Must have:
 | `POLICY_ID`                                | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
 | `PARTITION_API`                            | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
 | `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                   |
+| `SYSTEM_PARTITION_ID`                      | ex `system`                                   | System partition ID                                                                   |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.

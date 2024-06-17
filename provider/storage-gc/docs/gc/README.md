@@ -46,6 +46,7 @@ Defined in default application property file but possible to override:
 | `PARTITION_API`                            | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                                            |
 | `GOOGLE_APPLICATION_CREDENTIALS`           | ex `/path/to/directory/service-key.json`      | Service account credentials, you only need this if running locally                    | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
 | `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                                            |
+| `SYSTEM_PARTITION_ID`                      | ex `system`                                   | System partition ID                                                                   |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.

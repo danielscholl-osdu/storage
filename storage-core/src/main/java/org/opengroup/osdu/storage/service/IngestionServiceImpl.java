@@ -18,22 +18,16 @@ import com.google.common.base.Strings;
 import io.jsonwebtoken.lang.Collections;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
-import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.RecordData;
-import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.core.common.model.storage.TransferBatch;
-import org.opengroup.osdu.core.common.model.storage.TransferInfo;
+import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.di.GcsVersionPathLimitationConfig;
@@ -47,17 +41,12 @@ import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.RecordBlocks;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
+
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @Service
 public class IngestionServiceImpl implements IngestionService {
@@ -95,14 +84,12 @@ public class IngestionServiceImpl implements IngestionService {
 	@Autowired
 	private RecordUtil recordUtil;
 
-	@Value("${opa.enabled}")
-	private boolean isOpaEnabled;
+	@Autowired
+	private IFeatureFlag featureFlag;
 
 	@Autowired
 	RecordBlocks recordBlocks;
 
-	@Autowired
-	IFeatureFlag featureFlag;
 
 	@Autowired
 	GcsVersionPathLimitationConfig gcsVersionPathLimitationConfig;
@@ -195,7 +182,7 @@ public class IngestionServiceImpl implements IngestionService {
 		Map<String, RecordMetadata> existingRecords = this.recordRepository.get(ids, collaborationContext);
 
 		this.validateParentsExist(existingRecords, recordParentMap);
-		if(isOpaEnabled) {
+		if(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) {
 		    this.validateUserAccessAndCompliancePolicyConstraints(inputRecords, existingRecords, recordParentMap);
 		} else {
 			this.validateUserAccessAndComplianceConstraints(inputRecords, existingRecords, recordParentMap);

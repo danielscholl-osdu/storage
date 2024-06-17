@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -24,15 +25,14 @@ import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
-import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 @Service
 public class DataAuthorizationService {
@@ -55,8 +55,8 @@ public class DataAuthorizationService {
     @Autowired
     private IOPAService opaService;
 
-    @Value("${opa.enabled}")
-    private boolean isOpaEnabled;
+    @Autowired
+    private IFeatureFlag featureFlag;
 
     @Lazy
     @Autowired
@@ -66,7 +66,7 @@ public class DataAuthorizationService {
         if (this.entitlementsService.isDataManager(this.headers)) {
             return true;
         }
-        if (isOpaEnabled) {
+        if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) {
             return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
@@ -77,7 +77,7 @@ public class DataAuthorizationService {
         if (this.entitlementsService.isDataManager(this.headers)) {
             return true;
         }
-        if (isOpaEnabled) {
+        if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) {
             return doesUserHasAccessToData(Collections.singletonList(recordMetadata), operationType);
         }
 
@@ -89,7 +89,7 @@ public class DataAuthorizationService {
         if (this.entitlementsService.isDataManager(this.headers)) {
             return true;
         }
-        if (isOpaEnabled) {
+        if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) {
             if (!recordMetadata.getStatus().equals(RecordState.active)) {
                 return false;
             }
