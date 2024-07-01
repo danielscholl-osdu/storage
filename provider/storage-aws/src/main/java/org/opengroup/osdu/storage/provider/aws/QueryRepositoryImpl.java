@@ -24,6 +24,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordIdAndKind;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Repository;
 import jakarta.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
+import java.util.function.Function;
 
 @ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb",
         matchIfMissing = true)
@@ -114,7 +116,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
         }
 
         DatastoreQueryResult dqr = new DatastoreQueryResult();
-        List<String> ids = new ArrayList<>();
 
         // Set GSI hash key
         RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
@@ -141,10 +142,11 @@ public class QueryRepositoryImpl implements IQueryRepository {
                     e.getMessage(), e);
         }
         dqr.setCursor(scanPageResults.cursor); // set the cursor for the next page, if applicable
-        scanPageResults.results.forEach(schemaDoc -> ids.add(schemaDoc.getMetadata().getId())); // extract the Kinds from the SchemaDocs
+        Function<RecordMetadataDoc, String> metadataMapper = collaborationContext
+            .map(context -> (Function<RecordMetadataDoc, String>) (recordMetadataDoc -> recordMetadataDoc.getId().replaceFirst(String.format("^%s", context.getId()), "")))
+            .orElse(RecordMetadataDoc::getId);
+        List<String> ids = scanPageResults.results.stream().map(metadataMapper).sorted().toList(); // extract and sort the Ids from the RecordMetadata Query Results
 
-        // Sort the IDs alphabetically and set the results
-        Collections.sort(ids);
         dqr.setResults(ids);
         return dqr;
     }

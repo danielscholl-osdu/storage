@@ -15,7 +15,18 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.PutRequest;
+import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+import org.junit.jupiter.api.Assertions;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
@@ -34,6 +45,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.util.JsonPatchUtil;
@@ -46,14 +58,18 @@ import com.github.fge.jsonpatch.JsonPatch;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
@@ -72,13 +88,24 @@ class RecordsMetadataRepositoryTest {
     private DynamoDBQueryHelperV2 queryHelper;
 
     @Mock
+    private WorkerThreadPool workerThreadPool;
+
+    @Mock
     private DpsHeaders dpsHeaders;
+
+    @Mock
+    private JaxRsDpsLog logger;
+
+    @Captor
+    ArgumentCaptor<Set<String>> idsCaptor;
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(10);
 
     @BeforeEach
     public void setUp() {
         openMocks(this);
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
+        when(queryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), any(), any()))
         .thenReturn(queryHelper);
+        when(workerThreadPool.getThreadPool()).thenReturn(threadPool);
     }
 
     @Test
@@ -127,7 +154,7 @@ class RecordsMetadataRepositoryTest {
             jsonPatchPerRecord.put(recordMetadata, patch);
             Map<String, String> result = repo.patch(jsonPatchPerRecord, Optional.empty());
 
-            verify(queryHelper, Mockito.times(1)).save(any(RecordMetadataDoc.class));
+            verify(queryHelper, Mockito.times(2)).batchSave(any());
             assertTrue(result.isEmpty());
 
         } finally {
@@ -156,9 +183,7 @@ class RecordsMetadataRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
-    @Test
-    void createRecordMetadata() {
-
+    private List<RecordMetadata> generateRecordsMetadata() {
         // Arrange
         RecordMetadata recordMetadata = new RecordMetadata();
         recordMetadata.setId("opendes:id:15706318658560");
@@ -197,13 +222,36 @@ class RecordsMetadataRepositoryTest {
         expectedRmd.setUser(recordMetadata.getUser());
         expectedRmd.setMetadata(recordMetadata);
 
-        Mockito.doNothing().when(queryHelper).save(expectedRmd);
+        return recordsMetadata;
+    }
+
+    @Test
+    void createRecordMetadata() {
+        List<RecordMetadata> recordsMetadata = generateRecordsMetadata();
+
+        when(queryHelper.batchSave(any())).thenReturn(new ArrayList<>());
 
         // Act
         repo.createOrUpdate(recordsMetadata, Optional.empty());
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).save(expectedRmd);
+        Mockito.verify(queryHelper, Mockito.times(2)).batchSave(any());
+    }
+
+    @Test
+    void shouldThrowAppException_whenSavingRecordMetadataFails() {
+        List<RecordMetadata> recordsMetadata = generateRecordsMetadata();
+        DynamoDBMapper.FailedBatch failedBatch = new DynamoDBMapper.FailedBatch();
+        failedBatch.setException(new Exception());
+        failedBatch.setUnprocessedItems(Collections.singletonMap("SomeTable",
+                                                                 Collections.singletonList(new WriteRequest().withPutRequest(new PutRequest()
+                                                                                                                                 .addItemEntry("some-key",
+                                                                                                                                               new AttributeValue().withS("some-value")
+                                                                                                                                 )))));
+        when(queryHelper.batchSave(any())).thenReturn(Collections.singletonList(failedBatch));
+        Optional<CollaborationContext> collaborationContext = Optional.empty();
+
+        assertThrows(AppException.class, () -> repo.createOrUpdate(recordsMetadata, collaborationContext));
     }
 
     @Test
@@ -269,6 +317,9 @@ class RecordsMetadataRepositoryTest {
         String id = "opendes:id:15706318658560";
         List<String> ids = new ArrayList<>();
         ids.add(id);
+        for (int i = 0; i < 105; ++i) {
+            ids.add(String.format("%s:%03d", id, i));
+        }
 
         RecordMetadata expectedRecordMetadata = new RecordMetadata();
         expectedRecordMetadata.setId(id);
@@ -307,8 +358,8 @@ class RecordsMetadataRepositoryTest {
         expectedRmd.setUser(expectedRecordMetadata.getUser());
         expectedRmd.setMetadata(expectedRecordMetadata);
 
-        Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
-                .thenReturn(expectedRmd);
+        Mockito.when(queryHelper.batchLoadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.any()))
+                .thenReturn(Collections.singletonList(expectedRmd));
 
         Groups groups = new Groups();
         List<GroupInfo> groupInfos = new ArrayList<>();
@@ -322,7 +373,15 @@ class RecordsMetadataRepositoryTest {
         Map<String, RecordMetadata> recordsMetadata = repo.get(ids, Optional.empty());
 
         // Assert
-        Assert.assertEquals(recordsMetadata, expectedRecordsMetadata);
+        Assertions.assertEquals(recordsMetadata, expectedRecordsMetadata);
+
+        verify(queryHelper, times(2)).batchLoadByPrimaryKey(eq(RecordMetadataDoc.class), idsCaptor.capture());
+
+        Set<String> allIdsCalled = idsCaptor.getAllValues().stream().flatMap(Set::stream).collect(Collectors.toSet());
+        assertEquals(ids.size(), allIdsCalled.size());
+        for (String expectedId : ids) {
+            assertTrue(allIdsCalled.contains(expectedId));
+        }
     }
 
     @Test

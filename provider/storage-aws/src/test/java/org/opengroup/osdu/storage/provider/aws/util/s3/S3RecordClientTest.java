@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 
 
 import java.util.*;
@@ -66,6 +67,9 @@ class S3RecordClientTest {
     RecordMetadata recordMetadata = new RecordMetadata();
     
     private String dataPartition = "dummyPartitionName";    
+
+    @Mock
+    private WorkerThreadPool workerThreadPool;
 
     @Mock 
     private DpsHeaders headers;
