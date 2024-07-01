@@ -15,6 +15,8 @@
 
 package org.opengroup.osdu.storage.provider.aws.util;
 
+import com.amazonaws.ClientConfiguration;
+import org.opengroup.osdu.core.aws.configurationsetup.ConfigSetup;
 import org.opengroup.osdu.core.common.logging.DefaultLogger;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -38,6 +40,13 @@ public class WorkerThreadPool {
         }
         threadPool = Executors.newFixedThreadPool(numberOfThreads);
         logger.info(String.format("Created the Worker Thread Pool with %d threads", numberOfThreads));
+        clientConfiguration = ConfigSetup.setUpConfig().withMaxConnections(numberOfThreads);
+    }
+
+    private final ClientConfiguration clientConfiguration;
+
+    public ClientConfiguration getClientConfiguration() {
+        return clientConfiguration;
     }
 
     private final ExecutorService threadPool;

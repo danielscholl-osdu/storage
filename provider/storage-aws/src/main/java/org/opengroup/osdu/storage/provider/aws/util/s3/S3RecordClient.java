@@ -34,6 +34,7 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +50,9 @@ public class S3RecordClient {
     @Value("${aws.s3.recordsBucket.ssm.relativePath}")
     private String s3RecordsBucketParameterRelativePath;
 
+    @Inject
+    private WorkerThreadPool workerThreadPool;
+
     private final static String RECORD_DELETE_ERROR_MSG = "Error deleting record";
 
     private final static String RECORD_FIND_ERROR_MSG = "Error finding record";
@@ -56,6 +60,7 @@ public class S3RecordClient {
     private final static String RECORD_GET_ERROR_MSG = "Error getting record";
 
     private S3ClientWithBucket getS3ClientWithBucket(String dataPartition) {
+        s3ClientFactory.setConfig(workerThreadPool.getClientConfiguration());
         return s3ClientFactory.getS3ClientForPartition(dataPartition, s3RecordsBucketParameterRelativePath);
     } 
 
