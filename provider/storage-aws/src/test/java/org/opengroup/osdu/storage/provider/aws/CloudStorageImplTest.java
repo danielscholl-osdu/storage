@@ -133,6 +133,7 @@ class CloudStorageImplTest {
         repo.write(recordProcessing);
 
         verify(record, times(1)).getId();
+        verify(userAccessService, times(1)).validateRecordAcl(recordProcessing);
     }
 
     @Test

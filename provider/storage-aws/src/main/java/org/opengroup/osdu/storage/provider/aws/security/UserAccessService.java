@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.aws.security;
 
+import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
+
 import java.util.HashSet;
 import java.util.List;
 
@@ -22,6 +24,7 @@ import jakarta.inject.Inject;
 
 import org.apache.http.HttpStatus;
 
+import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -30,6 +33,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,7 +46,10 @@ public class UserAccessService {
     private IEntitlementsExtensionService entitlementsExtensions;
     @Inject
     IServiceAccountJwtClient serviceAccountClient;
-    
+
+    @Autowired
+    private IFeatureFlag featureFlag;
+
     private static final String SERVICE_PRINCIPAL_ID = "";
 
     /**
@@ -78,6 +85,9 @@ public class UserAccessService {
     }
 
     public void validateRecordAcl (RecordProcessing... records){
+        // If OPA is enabled, then this check is redundant as OPA validates the record.
+        if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) return;
+
         //Records can be written by a user using ANY existing valid ACL
         List<String> groupNames = this.getPartitionGroupsforServicePrincipal(dpsHeaders);
 
