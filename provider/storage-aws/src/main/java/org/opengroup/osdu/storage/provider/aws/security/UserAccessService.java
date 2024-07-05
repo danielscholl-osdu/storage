@@ -14,17 +14,15 @@
 
 package org.opengroup.osdu.storage.provider.aws.security;
 
-import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
-
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.inject.Inject;
 
 
 import org.apache.http.HttpStatus;
 
-import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -33,7 +31,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,10 +44,18 @@ public class UserAccessService {
     @Inject
     IServiceAccountJwtClient serviceAccountClient;
 
-    @Autowired
-    private IFeatureFlag featureFlag;
-
     private static final String SERVICE_PRINCIPAL_ID = "";
+
+    private static class InvalidACLException extends Exception {
+        private final String acl;
+        public InvalidACLException(String acl) {
+            this.acl = acl;
+        }
+
+        public String getAcl() {
+            return acl;
+        }
+    }
 
     /**
      * Unideal way to check if user has access to record because a list is being compared
@@ -84,35 +89,52 @@ public class UserAccessService {
         return allowedGroups.stream().anyMatch(memberGroupsSet::contains);
     }
 
-    public void validateRecordAcl (RecordProcessing... records){
-        // If OPA is enabled, then this check is redundant as OPA validates the record.
-        if (featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)) return;
-
+    private void validateRecordAclsForServicePrincipal(RecordProcessing... records) throws InvalidACLException {
         //Records can be written by a user using ANY existing valid ACL
-        List<String> groupNames = this.getPartitionGroupsforServicePrincipal(dpsHeaders);
+        Set<String> groupNames = this.getPartitionGroupsforServicePrincipal(dpsHeaders);
 
         for (RecordProcessing recordProcessing : records) {
             for (String acl : Acl.flattenAcl(recordProcessing.getRecordMetadata().getAcl())) {
                 String groupName = acl.split("@")[0].toLowerCase();
                 if (!groupNames.contains(groupName)) {
-                    throw new AppException(
-                            HttpStatus.SC_FORBIDDEN,
-                            "Invalid ACL",
-                            String.format("ACL has invalid Group %s", acl));
+                    throw new InvalidACLException(acl);
                 }
             }
         }
     }
 
-    private List<String> getPartitionGroupsforServicePrincipal(DpsHeaders headers)
-    {
+    public void validateRecordAcl (RecordProcessing... records){
+        try {
+            validateRecordAclsForServicePrincipal(records);
+        } catch (InvalidACLException e) {
+            // We are invaliding the groups of the service principal and rechecking in case the
+            // group that a user specified in the record ACL was recently created. Not being
+            // able to use a newly created group is considered blocking.
+            this.entitlementsExtensions.invalidateGroups(getServicePrincipalHeaders(dpsHeaders));
+            try {
+                validateRecordAclsForServicePrincipal(records);
+            } catch (InvalidACLException aclException) {
+                throw new AppException(
+                    HttpStatus.SC_FORBIDDEN,
+                    "Invalid ACL",
+                    String.format("ACL has invalid Group %s", aclException.getAcl()));
+            }
+        }
+    }
+
+    private DpsHeaders getServicePrincipalHeaders(DpsHeaders headers) {
         DpsHeaders newHeaders = DpsHeaders.createFromMap(headers.getHeaders());
         newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
         //Refactor this, use either from SSM or use Istio service account and stop using hard code.
 
         newHeaders.put(DpsHeaders.USER_ID, SERVICE_PRINCIPAL_ID);
-        Groups groups = this.entitlementsExtensions.getGroups(newHeaders);
-        return groups.getGroupNames();
+        return newHeaders;
+    }
+
+    private Set<String> getPartitionGroupsforServicePrincipal(DpsHeaders headers)
+    {
+        Groups groups = this.entitlementsExtensions.getGroups(getServicePrincipalHeaders(headers));
+        return new HashSet<>(groups.getGroupNames());
     }
 
 }
