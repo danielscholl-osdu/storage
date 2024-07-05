@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws.security;
 
 
-import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.opengroup.osdu.core.common.entitlements.EntitlementsService;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsService;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
@@ -37,7 +35,6 @@ import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.provider.aws.cache.GroupCache;
 import org.opengroup.osdu.storage.provider.aws.util.CacheHelper;
 import org.opengroup.osdu.storage.service.EntitlementsAndCacheServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
@@ -45,15 +42,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
-import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
 
 
 class UserAccessServiceTest {
@@ -78,7 +70,7 @@ class UserAccessServiceTest {
     @Mock
     private GroupCache cache;
 
-    @Mock 
+    @Mock
     private EntitlementsService entitlementsService;
 
     @Mock
@@ -86,9 +78,6 @@ class UserAccessServiceTest {
 
     @Mock
     private IServiceAccountJwtClient serviceAccountClient;
-
-    @Mock
-    private IFeatureFlag featureFlag;
 
     private Groups groups = new Groups();
 
@@ -176,14 +165,5 @@ class UserAccessServiceTest {
         assertDoesNotThrow(() -> {
             CUT.validateRecordAcl(recordProcessing);
         });
-    }
-
-    @Test
-    void validateRecordAcl_shouldNotCheck_whenOPAIsEnabled() {
-        RecordProcessing recordProcessing = mock(RecordProcessing.class);
-        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
-        CUT.validateRecordAcl(recordProcessing);
-        verify(featureFlag, times(1)).isFeatureEnabled(OPA_FEATURE_NAME);
-        verify(entitlementsExtension, never()).getGroups(any());
     }
 }

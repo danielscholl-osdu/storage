@@ -176,6 +176,16 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
         return groups;
     }
 
+    @Override
+    public void invalidateGroups(DpsHeaders headers) {
+        String cacheKey = this.getGroupCacheKey(headers);
+        try {
+            this.cache.delete(cacheKey);
+        } catch (RedisException ex) {
+            this.logger.error(String.format("Error deleting key %s from redis: %s", cacheKey, ex.getMessage()), ex);
+        }
+    }
+
     private String deserializeErrorMessage(String response) {
         try {
             JsonNode rootNode = objectMapper.readTree(response);
