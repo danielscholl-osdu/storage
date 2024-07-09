@@ -19,8 +19,8 @@ data:
   opaEnabled: false
   opaEndpoint: "http://opa"
   # deployments
-  requestsCpu: "7m"
-  requestsMemory: "450Mi"
+  requestsCpu: "150m"
+  requestsMemory: "768Mi"
   limitsCpu: "1"
   limitsMemory: "3G"
   image: ""
