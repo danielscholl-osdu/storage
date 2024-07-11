@@ -32,14 +32,13 @@
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <core-lib-azure-spring6.version>0.26.0</core-lib-azure-spring6.version>
+        <core-lib-azure-spring6.version>0.27.0-rc3</core-lib-azure-spring6.version>
         <osdu.storage-core.version>0.27.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <nimbus-jose-jwt-azure.version>9.30.2</nimbus-jose-jwt-azure.version>
         <azure-storage-blob.version>12.25.2</azure-storage-blob.version>
         <azure-spring-data-cosmos.version>5.9.1</azure-spring-data-cosmos.version>
-        <netty.version>4.1.109.Final</netty.version>
         <woodstox-core.version>6.4.0</woodstox-core.version>
         <argLine>
             --add-opens=java.base/java.util=ALL-UNNAMED
@@ -54,15 +53,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- netty-bom dependency to be declared before spring-boot-dependencies,
-           to pull all netty-transitive dependencies with same version -->
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-bom</artifactId>
-                <version>${netty.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -96,7 +86,7 @@
         <dependency>
             <groupId>com.azure.spring</groupId>
             <artifactId>spring-cloud-azure-starter-active-directory</artifactId>
-            <version>5.10.0</version>
+            <version>5.13.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>

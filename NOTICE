@@ -71,8 +71,8 @@ The following software have components provided under the terms of this license:
 - Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy Java agent (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent)
 - ClassMate (from http://github.com/cowtowncoder/java-classmate)
-- Cloud Key Management Service (KMS) API v1-rev20240613-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
-- Cloud Storage JSON API v1-rev20240621-2.0.0 (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
+- Cloud Key Management Service (KMS) API (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-cloudkms)
+- Cloud Storage JSON API (from https://repo1.maven.org/maven2/com/google/apis/google-api-services-storage)
 - Collections (from https://repo1.maven.org/maven2/commons-collections/commons-collections)
 - Commons Digester (from http://commons.apache.org/digester/)
 - Converter: Jackson (from https://github.com/square/retrofit, https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-jackson)
@@ -271,6 +271,7 @@ The following software have components provided under the terms of this license:
 - io.grpc:grpc-stub (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-util (from https://github.com/grpc/grpc-java)
 - io.grpc:grpc-xds (from https://github.com/grpc/grpc-java)
+- ion-java (from https://github.com/amzn/ion-java/, https://github.com/amznlabs/ion-java/)
 - jackson-coreutils (from https://github.com/java-json-tools/jackson-coreutils)
 - jackson-databind (from http://github.com/FasterXML/jackson, http://wiki.fasterxml.com/JacksonHome, https://github.com/FasterXML/jackson)
 - java-cloudant (from https://cloudant.com)
@@ -281,7 +282,7 @@ The following software have components provided under the terms of this license:
 - jersey-core-common (from https://repo1.maven.org/maven2/org/glassfish/jersey/core/jersey-common)
 - jersey-repackaged-guava (from https://repo1.maven.org/maven2/org/glassfish/jersey/bundles/repackaged/jersey-guava)
 - jose4j (from https://bitbucket.org/b_c/jose4j/)
-- json-patch (from https://github.com/java-json-tools/json-patch)
+- json-patch (from https://github.com/fge/json-patch, https://github.com/java-json-tools/json-patch)
 - json-path (from http://code.google.com/p/json-path/, https://github.com/jayway/JsonPath)
 - lettuce (from http://github.com/mp911de/lettuce/wiki, https://github.com/lettuce-io/lettuce-core/wiki)
 - micrometer-commons (from https://github.com/micrometer-metrics/micrometer)
@@ -305,7 +306,6 @@ The following software have components provided under the terms of this license:
 - proto-google-iam-v1 (from https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-iam-v1, https://github.com/googleapis/sdk-platform-java)
 - resilience4j (from https://github.com/resilience4j/resilience4j, https://resilience4j.readme.io, ttps://resilience4j.readme.io)
 - snappy-java (from https://github.com/xerial/snappy-java)
-- software.amazon.ion:ion-java (from https://github.com/amzn/ion-java/)
 - spring-security-oauth2-client (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-oauth2-core (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
 - spring-security-oauth2-jose (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
@@ -580,6 +580,7 @@ The following software have components provided under the terms of this license:
 - JGraphT - Core (from https://repo1.maven.org/maven2/org/jgrapht/jgrapht-core)
 - Java Native Access (from https://github.com/java-native-access/jna, https://github.com/twall/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
+- Javassist (from http://www.javassist.org/, https://www.javassist.org/)
 - Logback Classic Module (from http://logback.qos.ch, https://repo1.maven.org/maven2/ch/qos/logback/logback-classic)
 - Logback Contrib :: JSON :: Classic (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-classic)
 - Logback Contrib :: JSON :: Core (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-core)
@@ -605,7 +606,7 @@ The following software have components provided under the terms of this license:
 
 - btf (from https://github.com/java-json-tools/btf)
 - jackson-coreutils (from https://github.com/java-json-tools/jackson-coreutils)
-- json-patch (from https://github.com/java-json-tools/json-patch)
+- json-patch (from https://github.com/fge/json-patch, https://github.com/java-json-tools/json-patch)
 - msg-simple (from https://github.com/java-json-tools/msg-simple)
 
 ========================================================================
@@ -676,13 +677,6 @@ The following software have components provided under the terms of this license:
 - msal4j-persistence-extension (from https://github.com/AzureAD/microsoft-authentication-extensions-for-java, https://github.com/AzureAD/microsoft-authentication-library-for-java)
 
 ========================================================================
-MPL-1.1
-========================================================================
-The following software have components provided under the terms of this license:
-
-- Javassist (from http://www.javassist.org/, https://www.javassist.org/)
-
-========================================================================
 MPL-2.0
 ========================================================================
 The following software have components provided under the terms of this license:
@@ -750,5 +744,5 @@ The following software have components provided under the terms of this license:
 
 - btf (from https://github.com/java-json-tools/btf)
 - jackson-coreutils (from https://github.com/java-json-tools/jackson-coreutils)
-- json-patch (from https://github.com/java-json-tools/json-patch)
+- json-patch (from https://github.com/fge/json-patch, https://github.com/java-json-tools/json-patch)
 - msg-simple (from https://github.com/java-json-tools/msg-simple)
