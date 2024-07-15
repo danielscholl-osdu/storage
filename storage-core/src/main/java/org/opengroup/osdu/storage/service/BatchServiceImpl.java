@@ -28,13 +28,13 @@ import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.conversion.DpsConversionService;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
@@ -91,7 +91,7 @@ public abstract class BatchServiceImpl implements BatchService {
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds, collaborationContext);
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
 
             if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
                 recordsNotFound.add(recordId);
@@ -136,7 +136,7 @@ public abstract class BatchServiceImpl implements BatchService {
                     jsonRecord = PersistenceHelper.filterRecordDataFields(jsonRecord, validAttributes);
                 }
 
-                RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
+                RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
                 JsonObject recordObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
 
                 Gson gson = new Gson();
@@ -180,7 +180,7 @@ public abstract class BatchServiceImpl implements BatchService {
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds, collaborationContext);
 
         for (String recordId : recordIds) {
-            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
             if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
                 recordsNotFound.add(recordId);
                 continue;
@@ -214,7 +214,7 @@ public abstract class BatchServiceImpl implements BatchService {
                 recordsNotFoundInCloudStorage.add(recordId);
             } else {
                 JsonElement jsonRecord = jsonParser.parse(recordData);
-                RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
+                RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
                 JsonObject recordJsonObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(
                         jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
                 jsonObjectRecords.add(recordJsonObject);
@@ -259,7 +259,7 @@ public abstract class BatchServiceImpl implements BatchService {
         Map<String, String> recordsMap = new HashMap<>();
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         for (Map.Entry<String, String> record : recordsPreAclMap.entrySet()) {
-            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationUtil.getIdWithNamespace(record.getKey(), collaborationContext));
+            RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(record.getKey(), collaborationContext));
             recordMetadataList.add(recordMetadata);
         }
 
