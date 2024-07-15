@@ -31,7 +31,7 @@ import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb",
         matchIfMissing = true)
 @Repository
-public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {  
+public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
 
     @Inject
     private DpsHeaders headers;
@@ -81,7 +81,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         RecordMetadataDoc doc = new RecordMetadataDoc();
 
         // Set the core fields (what is expected in every implementation)
-        doc.setId(CollaborationUtil.getIdWithNamespace(metadata.getId(), collaborationContext));
+        doc.setId(CollaborationContextUtil.composeIdWithNamespace(metadata.getId(), collaborationContext));
         doc.setMetadata(metadata);
         // Add extra indexed fields for querying in DynamoDB
         doc.setKind(metadata.getKind());
@@ -90,7 +90,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         doc.setUser(metadata.getUser());
         // Store the record to the database
         metadataDocs.add(doc);
-        saveLegalTagAssociation(CollaborationUtil.getIdWithNamespace(metadata.getId(), collaborationContext),
+        saveLegalTagAssociation(CollaborationContextUtil.composeIdWithNamespace(metadata.getId(), collaborationContext),
                                 metadata.getLegal().getLegaltags(), legalDocs);
     }
 
@@ -159,7 +159,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "Could not save record metadata", firstFailedException);
         }
     }
-    
+
     @Override
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         if (recordsMetadata != null) {
@@ -177,9 +177,9 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         RecordMetadata rmd = get(id,collaborationContext);
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class,
-                CollaborationUtil.getIdWithNamespace(id, collaborationContext));
+                CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext));
         for (String legalTag : rmd.getLegal().getLegaltags()) {
-            deleteLegalTagAssociation(CollaborationUtil.getIdWithNamespace(id, collaborationContext), legalTag);
+            deleteLegalTagAssociation(CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext), legalTag);
         }
     }
 
@@ -187,7 +187,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         RecordMetadataDoc doc = recordMetadataQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class,
-                CollaborationUtil.getIdWithNamespace(id, collaborationContext));
+                CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext));
         if (doc == null) {
             return null;
         } else {
@@ -197,11 +197,11 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     @Override
     public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
-        
+
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-        
+
         Map<String, RecordMetadata> output = new HashMap<>();
-        Set<String> filteredIds = ids.stream().map(id -> CollaborationUtil.getIdWithNamespace(id, collaborationContext)).collect(Collectors.toSet());
+        Set<String> filteredIds = ids.stream().map(id -> CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext)).collect(Collectors.toSet());
         Lists.partition(filteredIds.stream().toList(), MAX_DYNAMODB_READ_BATCH_SIZE)
              .stream()
              .map(recordIds -> recordMetadataQueryHelper.batchLoadByPrimaryKey(RecordMetadataDoc.class, new HashSet<>(recordIds)))
@@ -222,7 +222,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             String legalTagName, int limit, String cursor) {
 
         DynamoDBQueryHelperV2 legalTagQueryHelper = getLegalTagQueryHelper();
-        
+
         LegalTagAssociationDoc legalTagAssociationDoc = new LegalTagAssociationDoc();
         legalTagAssociationDoc.setLegalTag(legalTagName);
         QueryPageResult<LegalTagAssociationDoc> result = null;

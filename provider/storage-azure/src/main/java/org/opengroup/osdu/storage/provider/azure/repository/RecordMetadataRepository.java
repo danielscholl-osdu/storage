@@ -34,11 +34,11 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.azure.model.RecordMetadataDoc;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
 import org.opengroup.osdu.storage.provider.azure.model.DocumentCount;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -108,7 +108,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
             modifyUser = recordMetadata.getModifyUser();
             modifyTime = recordMetadata.getModifyTime();
             cosmosPatchOperations = getCosmosPatchOperations(modifyUser, modifyTime, jsonPatchPerRecordEntry.getValue());
-            String docId = CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext);
+            String docId = CollaborationContextUtil.composeIdWithNamespace(recordMetadata.getId(), collaborationContext);
             cosmosPatchOperationsPerDoc.put(docId, cosmosPatchOperations);
             partitionKeyForDoc.put(docId, recordMetadata.getId());
         }
@@ -121,7 +121,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
                 for (String cosmosError : originalExceptionErrors) {
                     String[] idAndError = cosmosError.split("\\|");
                     //assuming azure library throws an error in the format of "recordId|<message with responseCode>|<exception>"
-                    recordIdToError.put(CollaborationUtil.getIdWithoutNamespace(idAndError[0], collaborationContext), idAndError[1]);
+                    recordIdToError.put(CollaborationContextUtil.getIdWithoutNamespace(idAndError[0], collaborationContext), idAndError[1]);
                 }
             } else {
                 throw e;
@@ -155,7 +155,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     private void createOrUpdateSerial(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         for (RecordMetadata recordMetadata : recordsMetadata) {
             RecordMetadataDoc doc = new RecordMetadataDoc();
-            doc.setId(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
+            doc.setId(CollaborationContextUtil.composeIdWithNamespace(recordMetadata.getId(), collaborationContext));
             doc.setMetadata(recordMetadata);
             this.save(doc);
         }
@@ -171,7 +171,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         List<String> partitionKeys = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {
             RecordMetadataDoc doc = new RecordMetadataDoc();
-            doc.setId(CollaborationUtil.getIdWithNamespace(recordMetadata.getId(), collaborationContext));
+            doc.setId(CollaborationContextUtil.composeIdWithNamespace(recordMetadata.getId(), collaborationContext));
             doc.setMetadata(recordMetadata);
             docs.add(doc);
             partitionKeys.add(recordMetadata.getId());
@@ -182,7 +182,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
-        RecordMetadataDoc item = this.getOne(CollaborationUtil.getIdWithNamespace(id, collaborationContext));
+        RecordMetadataDoc item = this.getOne(CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext));
         return (item == null) ? null : item.getMetadata();
     }
 
@@ -272,7 +272,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         if (!collaborationContext.isPresent()) {
             queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' AND c.id = c.metadata.id", kind, status);
         } else {
-            queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' and STARTSWITH(c.id, '%s')", kind, status, CollaborationUtil.getNamespace(collaborationContext));
+            queryText = String.format("SELECT c.metadata.id FROM c WHERE c.metadata.kind = '%s' AND c.metadata.status = '%s' and STARTSWITH(c.id, '%s')", kind, status, CollaborationContextUtil.getNamespace(collaborationContext));
         }
         return new SqlQuerySpec(queryText);
     }
@@ -291,7 +291,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public void delete(String id, Optional<CollaborationContext> collaborationContext) {
-        this.deleteById(CollaborationUtil.getIdWithNamespace(id, collaborationContext), headers.getPartitionId(), cosmosDBName, recordMetadataCollection, CollaborationUtil.getIdWithNamespace(id, collaborationContext));
+        this.deleteById(CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext), headers.getPartitionId(), cosmosDBName, recordMetadataCollection, CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext));
     }
 
     /**
@@ -304,7 +304,7 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT * FROM c WHERE c.id IN (");
         for (String id : ids) {
-            sb.append("\"" + CollaborationUtil.getIdWithNamespace(id, collaborationContext) + "\",");
+            sb.append("\"" + CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext) + "\",");
         }
 
         // remove trailing comma, add closing parenthesis

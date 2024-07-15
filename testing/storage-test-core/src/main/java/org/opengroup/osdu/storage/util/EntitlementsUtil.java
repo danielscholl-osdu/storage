@@ -22,7 +22,7 @@ import com.google.gson.JsonObject;
 import java.util.Map;
 
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.springframework.http.HttpMethod;
+import org.opengroup.osdu.core.common.http.HttpRequest;
 
 public class EntitlementsUtil {
 
@@ -35,7 +35,7 @@ public class EntitlementsUtil {
     CloseableHttpResponse response = TestUtils.send(
         getEntitlementsUrl(),
         GROUPS_ENDPOINT,
-        HttpMethod.POST.name(),
+        HttpRequest.POST,
         headers,
         body,
         ""
@@ -49,7 +49,7 @@ public class EntitlementsUtil {
     CloseableHttpResponse response = TestUtils.send(
         getEntitlementsUrl(),
         GROUPS_ENDPOINT,
-        HttpMethod.DELETE.name(),
+        HttpRequest.DELETE,
         headers,
         "",
         groupEmail
