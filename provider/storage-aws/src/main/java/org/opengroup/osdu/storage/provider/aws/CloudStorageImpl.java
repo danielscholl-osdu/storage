@@ -24,6 +24,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.provider.aws.security.UserAccessService;
 import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
@@ -35,7 +36,6 @@ import org.opengroup.osdu.storage.provider.aws.util.s3.S3RecordClient;
 import org.apache.http.HttpStatus;
 
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.springframework.stereotype.Repository;
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 
@@ -235,14 +235,14 @@ public class CloudStorageImpl implements ICloudStorage {
 
             if (!id.equalsIgnoreCase(idWithVersion)) {
                 long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
-                long currentVersion = currentRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext)).getLatestVersion();
+                long currentVersion = currentRecords.get(CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext)).getLatestVersion();
                 if (previousVersion != currentVersion) {
                     lockedRecords.add(idWithVersion);
                     continue;
                 }
             }
             validMetadata.add(recordMetadata);
-            originalAcls.put(recordMetadata.getId(), currentRecords.get(CollaborationUtil.getIdWithNamespace(id, collaborationContext)).getAcl());
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext)).getAcl());
         }
         return originalAcls;
     }

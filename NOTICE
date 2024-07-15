@@ -120,6 +120,9 @@ The following software have components provided under the terms of this license:
 - JBoss Marshalling River (from https://repo1.maven.org/maven2/org/jboss/marshalling/jboss-marshalling-river)
 - JCIP Annotations under Apache License (from http://stephenc.github.com/jcip-annotations)
 - JHeaps (from http://www.jheaps.org)
+- JJWT :: API (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt-api)
+- JJWT :: Extensions :: Jackson (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt-jackson)
+- JJWT :: Impl (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt-impl)
 - JJWT :: Legacy Transitive Dependency Jar (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt)
 - JMES Path Query library (from https://aws.amazon.com/sdkforjava)
 - JSON Small and Fast Parser (from https://repo1.maven.org/maven2/net/minidev/json-smart, https://urielch.github.io/)
@@ -615,7 +618,6 @@ MIT
 The following software have components provided under the terms of this license:
 
 - Animal Sniffer Annotations (from https://repo1.maven.org/maven2/org/codehaus/mojo/animal-sniffer-annotations)
-- Apache HttpClient Cache (from http://hc.apache.org/httpcomponents-client, http://hc.apache.org/httpcomponents-client-ga)
 - Azure Java Client Authentication Library for AutoRest (from https://github.com/Azure/autorest-clientruntime-for-java)
 - Azure Java Client Runtime for ARM (from https://github.com/Azure/autorest-clientruntime-for-java)
 - Azure Java Client Runtime for AutoRest (from https://github.com/Azure/autorest-clientruntime-for-java)
@@ -743,6 +745,5 @@ unknown
 The following software have components provided under the terms of this license:
 
 - btf (from https://github.com/java-json-tools/btf)
-- jackson-coreutils (from https://github.com/java-json-tools/jackson-coreutils)
 - json-patch (from https://github.com/fge/json-patch, https://github.com/java-json-tools/json-patch)
 - msg-simple (from https://github.com/java-json-tools/msg-simple)

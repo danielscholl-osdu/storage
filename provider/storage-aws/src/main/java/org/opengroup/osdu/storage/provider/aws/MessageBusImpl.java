@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
@@ -36,6 +37,7 @@ import jakarta.inject.Inject;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -43,6 +45,7 @@ import java.util.Optional;
 public class MessageBusImpl implements IMessageBus {
 
     private String amazonSNSTopic;
+    private String amazonSNSTopicV2;
     private AmazonSNS snsClient;
     @Value("${AWS.REGION}")
     private String currentRegion;
@@ -50,35 +53,61 @@ public class MessageBusImpl implements IMessageBus {
     @Value("${OSDU_TOPIC}")
     private String osduStorageTopic;
 
+    @Value("${OSDU_TOPIC_V2}")
+    private String osduStorageTopicV2;
+
     @Inject
     private JaxRsDpsLog logger;
 
-    @PostConstruct
-    public void init() throws K8sParameterNotFoundException {
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
-        snsClient = new AmazonSNSConfig(currentRegion).AmazonSNS();
-    }
-
-    @Override
-    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+    private <T> void doPublishMessage(boolean v2Message, Optional<CollaborationContext> collaborationContext, DpsHeaders headers, T... messages) {
         final int BATCH_SIZE = 50;
-        PublishRequestBuilder<PubSubInfo> publishRequestBuilder = new PublishRequestBuilder<>();
+        PublishRequestBuilder<T> publishRequestBuilder = new PublishRequestBuilder<>();
         publishRequestBuilder.setGeneralParametersFromHeaders(headers);
         logger.info("Storage publishes message " + headers.getCorrelationId());
-        for (int i = 0; i < messages.length; i += BATCH_SIZE) {
+        for (int i =0; i < messages.length; i+= BATCH_SIZE){
 
-            PubSubInfo[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
+            T[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
 
-            PublishRequest publishRequest = publishRequestBuilder.generatePublishRequest(osduStorageTopic, amazonSNSTopic, Arrays.asList(batch));
+            Map<String, MessageAttributeValue> additionalAttrs = new HashMap<>();
+            String messageSNSTopic;
+            String messageOsduTopic;
+
+            if (v2Message) {
+                if (collaborationContext.isPresent()) {
+                    additionalAttrs.put(DpsHeaders.COLLABORATION, getAttrValForContext(collaborationContext.get()));
+                }
+                messageOsduTopic = osduStorageTopicV2; //records-changed-v2
+                messageSNSTopic = amazonSNSTopicV2;
+            } else {
+                messageOsduTopic = osduStorageTopic;
+                messageSNSTopic = amazonSNSTopic;
+            }
+            PublishRequest publishRequest = publishRequestBuilder.generatePublishRequest(messageOsduTopic, messageSNSTopic, Arrays.asList(batch), additionalAttrs);
 
             snsClient.publish(publishRequest);
         }
     }
 
+    private static MessageAttributeValue getAttrValForContext(CollaborationContext collaborationContext) {
+        return new MessageAttributeValue().withDataType("String").withStringValue("id=" + collaborationContext.getId() + ",application=" + collaborationContext.getApplication());
+    }
+
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
+        amazonSNSTopicV2 = provider.getParameterAsString("storage-v2-sns-topic-arn");
+        snsClient = new AmazonSNSConfig(currentRegion).AmazonSNS();
+    }
+
+    @Override
+    public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
+        doPublishMessage(false,Optional.empty(), headers, messages);
+    }
+
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-        // To be implemented by aws provider
+        doPublishMessage(true, collaborationContext, headers, messages);
     }
 
     @Override

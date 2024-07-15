@@ -30,13 +30,13 @@ import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordChangedV2Delete;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.opengroup.osdu.storage.validation.impl.VersionIdsValidator;
@@ -295,7 +295,7 @@ public class RecordServiceImpl implements RecordService {
         Map<String, RecordMetadata> result = this.recordRepository.get(recordIds, collaborationContext);
 
         recordIds.stream()
-                .filter(recordId -> result.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext)) == null)
+                .filter(recordId -> result.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext)) == null)
                 .forEach(recordId -> {
                     String msg = String.format("Record with id '%s' not found", recordId);
                     notDeletedRecords.add(new ImmutablePair<>(recordId, msg));

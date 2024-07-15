@@ -25,13 +25,13 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.response.PatchRecordsResponse;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.api.PatchInputValidator;
@@ -141,7 +141,7 @@ public class PatchRecordsServiceImpl implements PatchRecordsService {
             }
             Map<RecordMetadata, JsonPatch> patchPerRecord = new HashMap<>();
             for (String recordId : recordIds) {
-                RecordMetadata metadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(recordId, collaborationContext));
+                RecordMetadata metadata = existingRecords.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
                 try {
                     if (metadata == null) {
                         /*
