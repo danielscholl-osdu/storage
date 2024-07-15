@@ -36,6 +36,7 @@ import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
@@ -53,8 +54,8 @@ import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CrcHashGenerator;
 import org.opengroup.osdu.storage.util.RecordBlocks;
+import org.opengroup.osdu.storage.util.RecordTestUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -133,12 +134,15 @@ public class IngestionServiceImplTest {
     private static final String USER = "testuser@gmail.com";
     private static final String NEW_USER = "newuser@gmail.com";
     private static final String TENANT = "tenant1";
+    private static final UUID COLLABORATION_ID =UUID.randomUUID();
     private static final String[] VALID_ACL = new String[] { "data.email1@tenant1.gmail.com", "data.test@tenant1.gmail.com" };
     private static final String[] INVALID_ACL = new String[] { "data.email1@test.test.com", "data.test@test.test.com" };
     private static final String[] NON_OWNER_ACL = new String[] { "data.not_owner@test.test.com" };
 
     private Record record1;
     private Record record2;
+    private Record record1inCollaboration;
+    private Record record2inCollaboration;
 
     private List<Record> records;
     private Acl acl;
@@ -174,12 +178,16 @@ public class IngestionServiceImplTest {
         this.record2.setId(RECORD_ID2);
         this.record2.setLegal(legal);
 
+        this.record1.setAcl(this.acl);
+        this.record2.setAcl(this.acl);
+
+        this.record1inCollaboration = RecordTestUtil.ofOtherAndCollaboration(record1, COLLABORATION_ID);
+        this.record2inCollaboration = RecordTestUtil.ofOtherAndCollaboration(record2, COLLABORATION_ID);
+
+
         this.records = new ArrayList<>();
         this.records.add(this.record1);
         this.records.add(this.record2);
-
-        this.record1.setAcl(this.acl);
-        this.record2.setAcl(this.acl);
 
         lenient().when(this.tenant.getName()).thenReturn(TENANT);
         lenient().when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
@@ -251,7 +259,7 @@ public class IngestionServiceImplTest {
         assertEquals(2, transferInfo.getRecordCount());
 
         ArgumentCaptor<List> ids = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository).get(ids.capture(), any());
+        verify(this.recordRepository).get(ids.capture(), eq(Optional.empty()));
 
         List<String> capturedIds = ids.getValue();
         assertEquals(2, capturedIds.size());
@@ -259,7 +267,47 @@ public class IngestionServiceImplTest {
         assertTrue(capturedIds.get(1).startsWith("tenant1:"));
 
         ArgumentCaptor<TransferBatch> transferCaptor = ArgumentCaptor.forClass(TransferBatch.class);
-        verify(this.persistenceService).persistRecordBatch(transferCaptor.capture(), any());
+        verify(this.persistenceService).persistRecordBatch(transferCaptor.capture(), eq(Optional.empty()));
+        verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
+
+        TransferBatch capturedTransfer = transferCaptor.getValue();
+        assertEquals(transferInfo, capturedTransfer.getTransferInfo());
+        assertEquals(2, capturedTransfer.getRecords().size());
+
+        // TODO ASSERT VALUES ON RECORD
+        for (RecordProcessing processing : capturedTransfer.getRecords()) {
+            if (processing.getRecordMetadata().getKind().equals(KIND_1)) {
+                assertEquals(OperationType.create, processing.getOperationType());
+            } else {
+                assertEquals(OperationType.create, processing.getOperationType());
+            }
+        }
+    }
+
+    @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void should_createTwoRecordsInCollaboration_when_twoRecordsWithoutIdArePersisted() {
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+        this.record1.setId(null);
+        this.record2.setId(null);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        when(this.cloudStorage.hasAccess(new RecordMetadata[] {})).thenReturn(true);
+        final CollaborationContext collaborationContext = new CollaborationContext(COLLABORATION_ID, "app1", Collections.emptyMap());
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, this.records, USER, Optional.of(collaborationContext));
+        assertEquals(Integer.valueOf(2), transferInfo.getRecordCount());
+
+        ArgumentCaptor<List> ids = ArgumentCaptor.forClass(List.class);
+        verify(this.recordRepository).get(ids.capture(), eq(Optional.of(collaborationContext)));
+
+        List<String> capturedIds = ids.getValue();
+        assertEquals(2, capturedIds.size());
+        assertTrue(capturedIds.get(0).startsWith("tenant1:"));
+        assertTrue(capturedIds.get(1).startsWith("tenant1:"));
+
+        ArgumentCaptor<TransferBatch> transferCaptor = ArgumentCaptor.forClass(TransferBatch.class);
+        verify(this.persistenceService).persistRecordBatch(transferCaptor.capture(), eq(Optional.of(collaborationContext)));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch capturedTransfer = transferCaptor.getValue();
@@ -329,7 +377,7 @@ public class IngestionServiceImplTest {
         recordMetadataList.add(existingRecordMetadata1);
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(false);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
@@ -340,7 +388,7 @@ public class IngestionServiceImplTest {
 
     }
 
-    @Test
+     @Test
     @SuppressWarnings("unchecked")
     public void should_updateTwoRecords_when_twoRecordIDsAreAlreadyPresentInDataLake() {
         when(this.authService.isValidAcl(any(), any())).thenReturn(true);
@@ -370,7 +418,7 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(output.values().toArray(new RecordMetadata[output.size()]))).thenReturn(true);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
         when(this.cloudStorage.read(existingRecordMetadata1, 3L, false)).thenReturn(new Gson().toJson(this.record1));
         when(this.cloudStorage.read(existingRecordMetadata2, 5L, false)).thenReturn(new Gson().toJson(this.record2));
 
@@ -381,7 +429,60 @@ public class IngestionServiceImplTest {
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), eq(Optional.empty()));
+        verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
+
+        TransferBatch input = transfer.getValue();
+
+        for (RecordProcessing rp : input.getRecords()) {
+            assertEquals(OperationType.update, rp.getOperationType());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void should_updateTwoRecordsInCollaboration_when_twoRecordIDsAreAlreadyPresentInDataLake() {
+        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
+
+        this.record1.setId(RECORD_ID1);
+        this.record2.setId(RECORD_ID2);
+        this.acl.setViewers(VALID_ACL);
+        this.acl.setOwners(VALID_ACL);
+
+        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
+        existingRecordMetadata1.setUser(NEW_USER);
+        existingRecordMetadata1.setKind(KIND_1);
+        existingRecordMetadata1.setStatus(RecordState.active);
+        existingRecordMetadata1.setAcl(this.acl);
+        existingRecordMetadata1.setGcsVersionPaths(Lists.newArrayList("path/1", "path/2", "path/3"));
+
+        RecordMetadata existingRecordMetadata2 = new RecordMetadata();
+        existingRecordMetadata2.setUser(NEW_USER);
+        existingRecordMetadata2.setKind(KIND_2);
+        existingRecordMetadata2.setStatus(RecordState.active);
+        existingRecordMetadata2.setAcl(acl);
+        existingRecordMetadata2.setGcsVersionPaths(Lists.newArrayList("path/4", "path/5"));
+
+        Map<String, RecordMetadata> output = new HashMap<>();
+        output.put(record1inCollaboration.getId(), existingRecordMetadata1);
+        output.put(record2inCollaboration.getId(), existingRecordMetadata2);
+
+        final CollaborationContext collaborationContext = new CollaborationContext(COLLABORATION_ID, "app1", Collections.emptyMap());
+
+        when(this.cloudStorage.hasAccess(output.values().toArray(new RecordMetadata[output.size()]))).thenReturn(true);
+
+        when(this.recordRepository.get(any(List.class), eq(Optional.of(collaborationContext)))).thenReturn(output);
+        when(this.cloudStorage.read(existingRecordMetadata1, 3L, false)).thenReturn(new Gson().toJson(this.record1));
+        when(this.cloudStorage.read(existingRecordMetadata2, 5L, false)).thenReturn(new Gson().toJson(this.record2));
+
+        TransferInfo transferInfo = this.sut.createUpdateRecords(false, records, USER, Optional.of(collaborationContext));
+        assertEquals(USER, transferInfo.getUser());
+        assertEquals(Integer.valueOf(2), transferInfo.getRecordCount());
+        assertNotNull(transferInfo.getVersion());
+
+        ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
+
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), eq(Optional.of(collaborationContext)));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();
@@ -413,7 +514,7 @@ public class IngestionServiceImplTest {
 
         when(this.cloudStorage.hasAccess(existingRecordMetadata1)).thenReturn(true);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         when(this.authService.hasOwnerAccess(any(), any())).thenReturn(true);
         when(this.cloudStorage.read(existingRecordMetadata1, 3L, false)).thenReturn(new Gson().toJson(this.record1));
@@ -425,7 +526,7 @@ public class IngestionServiceImplTest {
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), eq(Optional.empty()));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();
@@ -463,7 +564,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, updatedRecordMetadata);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
         when(this.cloudStorage.hasAccess(updatedRecordMetadata)).thenReturn(true);
 
         Record recordInStorage = new Record();
@@ -476,7 +577,7 @@ public class IngestionServiceImplTest {
         assertEquals(USER, transferInfo.getUser());
         assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(0)).persistRecordBatch(any(), any());
+        verify(this.persistenceService, times(0)).persistRecordBatch(any(), eq(Optional.empty()));
     }
 
 
@@ -503,7 +604,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, updatedRecordMetadata);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
         when(this.cloudStorage.hasAccess(updatedRecordMetadata)).thenReturn(true);
 
         Record recordInStorage = new Record();
@@ -519,7 +620,7 @@ public class IngestionServiceImplTest {
         assertEquals(USER, transferInfo.getUser());
         assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(0)).persistRecordBatch(any(), any());
+        verify(this.persistenceService, times(0)).persistRecordBatch(any(), eq(Optional.empty()));
     }
 
     @Test
@@ -569,7 +670,7 @@ public class IngestionServiceImplTest {
         assertEquals(USER, transferInfo.getUser());
         assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(1)).persistRecordBatch(any(), any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(any(), eq(Optional.empty()));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
     }
 
@@ -622,7 +723,7 @@ public class IngestionServiceImplTest {
         assertEquals(USER, transferInfo.getUser());
         assertEquals(1, transferInfo.getRecordCount());
         assertNotNull(transferInfo.getVersion());
-        verify(this.persistenceService, times(1)).persistRecordBatch(any(), any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(any(), eq(Optional.empty()));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
     }
 
@@ -681,7 +782,7 @@ public class IngestionServiceImplTest {
 
         ArgumentCaptor<TransferBatch> captor = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService).persistRecordBatch(captor.capture(), any());
+        verify(this.persistenceService).persistRecordBatch(captor.capture(), eq(Optional.empty()));
 
         TransferBatch batch = captor.getValue();
         assertEquals(1, batch.getTransferInfo().getRecordCount());
@@ -711,7 +812,7 @@ public class IngestionServiceImplTest {
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
@@ -743,7 +844,7 @@ public class IngestionServiceImplTest {
         List<RecordMetadata> recordMetadataList = new ArrayList<>();
         recordMetadataList.add(existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         AppException exception = assertThrows(AppException.class, ()->{
             this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
@@ -771,7 +872,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         List<OpaError> errors = new ArrayList<>();
         errors.add(OpaError.builder().message("User is not authorized to create or update records.").reason("User Unauthorized").code("401").build());
@@ -816,7 +917,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
         output.put(RECORD_ID2, existingRecordMetadata2);
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(RECORD_ID1).errors(Collections.EMPTY_LIST).build();
         ValidationOutputRecord validationOutputRecord2 = ValidationOutputRecord.builder().id(RECORD_ID2).errors(Collections.EMPTY_LIST).build();
@@ -834,7 +935,7 @@ public class IngestionServiceImplTest {
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), eq(Optional.empty()));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();
@@ -864,7 +965,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         List<OpaError> errors = new ArrayList<>();
         errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
@@ -902,7 +1003,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         List<OpaError> errors = new ArrayList<>();
         errors.add(OpaError.builder().message("The user is not authorized to perform this action").reason("Access denied").code("403").build());
@@ -942,7 +1043,7 @@ public class IngestionServiceImplTest {
         Map<String, RecordMetadata> output = new HashMap<>();
         output.put(RECORD_ID1, existingRecordMetadata1);
 
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
+        when(this.recordRepository.get(any(List.class), eq(Optional.empty()))).thenReturn(output);
 
         when(this.cloudStorage.read(existingRecordMetadata1, 3L, false)).thenReturn(new Gson().toJson(this.record1));
 
@@ -953,7 +1054,7 @@ public class IngestionServiceImplTest {
 
         ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
 
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
+        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), eq(Optional.empty()));
         verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
 
         TransferBatch input = transfer.getValue();

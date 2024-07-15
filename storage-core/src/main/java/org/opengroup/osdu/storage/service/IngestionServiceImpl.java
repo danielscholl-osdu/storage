@@ -31,13 +31,13 @@ import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.storage.di.GcsVersionPathLimitationConfig;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.storage.util.CollaborationUtil;
 import org.opengroup.osdu.storage.util.RecordBlocks;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -196,7 +196,7 @@ public class IngestionServiceImpl implements IngestionService {
 		inputRecords.forEach(record -> {
 			RecordData recordData = new RecordData(record);
 			Map<String, String> hash = recordBlocks.hashForRecordData(recordData);
-			if (!existingRecords.containsKey(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext))) {
+			if (!existingRecords.containsKey(CollaborationContextUtil.composeIdWithNamespace(record.getId(), collaborationContext))) {
 				RecordMetadata recordMetadata = new RecordMetadata(record);
 				recordMetadata.setUser(transfer.getUser());
 				recordMetadata.setStatus(RecordState.active);
@@ -207,7 +207,7 @@ public class IngestionServiceImpl implements IngestionService {
 			} else {
 				recordData.setModifyUser(transfer.getUser());
 				recordData.setModifyTime(currentTimestamp);
-				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationUtil.getIdWithNamespace(record.getId(), collaborationContext));
+				RecordMetadata existingRecordMetadata = existingRecords.get(CollaborationContextUtil.composeIdWithNamespace(record.getId(), collaborationContext));
 				RecordMetadata updatedRecordMetadata = new RecordMetadata(record);
 				if (!existingRecordMetadata.getKind().equalsIgnoreCase(updatedRecordMetadata.getKind())) {
 					updatedRecordMetadata.setPreviousVersionKind(existingRecordMetadata.getKind());

@@ -9,6 +9,7 @@ import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,7 +41,7 @@ public class RecordBlocks {
         for (RecordProcessing x : recordsToProcess) {
             if (x.getOperationType().equals(OperationType.update)) {
                 String recordBlocksUpdate = "";
-                String id = CollaborationUtil.getIdWithNamespace(x.getRecordMetadata().getId(), collaborationContext);
+                String id = CollaborationContextUtil.composeIdWithNamespace(x.getRecordMetadata().getId(), collaborationContext);
                 RecordMetadata previousRecordMetadata = existingRecords.get(id);
                 Map<String, Integer> previousMetadataCompare = populateHashes(previousRecordMetadata);
                 Map<String, Integer> currentMetadataCompare = populateHashes(x.getRecordMetadata());
