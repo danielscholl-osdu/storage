@@ -78,14 +78,6 @@ The following software have components provided under the terms of this license:
 - Converter: Jackson (from https://github.com/square/retrofit, https://repo1.maven.org/maven2/com/squareup/retrofit2/converter-jackson)
 - Core functionality for the Reactor Netty library (from https://github.com/reactor/reactor-netty)
 - FindBugs-jsr305 (from http://findbugs.sourceforge.net/)
-- Flapdoodle Embedded MongoDB (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo, http://github.com/flapdoodle-oss/embedmongo.flapdoodle.de)
-- Flapdoodle Embedded MongoDB Package Resolver (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo.packageresolver)
-- Flapdoodle Embedded MongoDB Spring Integration (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.mongo.spring)
-- Flapdoodle Embedded Process Util (from http://github.com/flapdoodle-oss/de.flapdoodle.embed.process)
-- Flapdoodle Graph Stuff (from http://github.com/flapdoodle-oss/de.flapdoodle.graph)
-- Flapdoodle Java8 Stuff (from http://github.com/flapdoodle-oss/de.flapdoodle.java8)
-- Flapdoodle OS Detection Library (from http://github.com/flapdoodle-oss/de.flapdoodle.os, http://github.com/flapdoodle-oss/de.flapdoodle.os-api)
-- Flapdoodle Reverse (from http://github.com/flapdoodle-oss/de.flapdoodle.reverse)
 - GAX (Google Api eXtensions) for Java (Core) (from https://github.com/googleapis, https://github.com/googleapis/gax-java, https://repo1.maven.org/maven2/com/google/api/gax)
 - GAX (Google Api eXtensions) for Java (HTTP JSON) (from <https://repo1.maven.org/maven2/com/google/api/gax-httpjson>, https://repo1.maven.org/maven2/com/google/api/gax-httpjson)
 - GAX (Google Api eXtensions) for Java (gRPC) (from <https://repo1.maven.org/maven2/com/google/api/gax-grpc>, https://repo1.maven.org/maven2/com/google/api/gax-grpc)
@@ -119,7 +111,6 @@ The following software have components provided under the terms of this license:
 - JBoss Marshalling API (from https://repo1.maven.org/maven2/org/jboss/marshalling/jboss-marshalling)
 - JBoss Marshalling River (from https://repo1.maven.org/maven2/org/jboss/marshalling/jboss-marshalling-river)
 - JCIP Annotations under Apache License (from http://stephenc.github.com/jcip-annotations)
-- JHeaps (from http://www.jheaps.org)
 - JJWT :: API (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt-api)
 - JJWT :: Extensions :: Jackson (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt-jackson)
 - JJWT :: Impl (from https://repo1.maven.org/maven2/io/jsonwebtoken/jjwt-impl)
@@ -483,7 +474,6 @@ EPL-1.0
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- JGraphT - Core (from https://repo1.maven.org/maven2/org/jgrapht/jgrapht-core)
 - JUnit Vintage Engine (from http://junit.org/junit5/, https://junit.org/junit5/)
 - Logback Contrib :: JSON :: Classic (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-classic)
 - Logback Contrib :: JSON :: Core (from https://repo1.maven.org/maven2/ch/qos/logback/contrib/logback-json-core)
@@ -501,7 +491,6 @@ The following software have components provided under the terms of this license:
 - Angus Activation Registries (from https://repo1.maven.org/maven2/org/eclipse/angus/angus-activation)
 - AspectJ Weaver (from http://www.aspectj.org, https://www.eclipse.org/aspectj/)
 - HK2 API module (from https://repo1.maven.org/maven2/org/glassfish/hk2/hk2-api)
-- JGraphT - Core (from https://repo1.maven.org/maven2/org/jgrapht/jgrapht-core)
 - JUnit Jupiter (Aggregator) (from https://junit.org/junit5/)
 - JUnit Jupiter API (from http://junit.org/junit5/, https://junit.org/junit5/)
 - JUnit Jupiter Engine (from http://junit.org/junit5/, https://junit.org/junit5/)
@@ -580,7 +569,6 @@ LGPL-2.1-only
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- JGraphT - Core (from https://repo1.maven.org/maven2/org/jgrapht/jgrapht-core)
 - Java Native Access (from https://github.com/java-native-access/jna, https://github.com/twall/jna)
 - Java Native Access Platform (from https://github.com/java-native-access/jna)
 - Javassist (from http://www.javassist.org/, https://www.javassist.org/)
@@ -623,7 +611,6 @@ The following software have components provided under the terms of this license:
 - Azure Java Client Runtime for AutoRest (from https://github.com/Azure/autorest-clientruntime-for-java)
 - Checker Qual (from https://checkerframework.org)
 - Extensions on Apache Proton-J library (from https://github.com/Azure/qpid-proton-j-extensions)
-- JGraphT - Core (from https://repo1.maven.org/maven2/org/jgrapht/jgrapht-core)
 - JUL to SLF4J bridge (from http://www.slf4j.org)
 - Jackson-core (from http://wiki.fasterxml.com/JacksonHome, https://github.com/FasterXML/jackson-core)
 - Java Client Runtime for AutoRest (from https://github.com/Azure/autorest-clientruntime-for-java)
