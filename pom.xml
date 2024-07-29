@@ -20,7 +20,7 @@
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>os-storage</artifactId>
     <packaging>pom</packaging>
-    <version>0.27.0-SNAPSHOT</version>
+    <version>0.28.0-SNAPSHOT</version>
     <description>Root Storage Service project</description>
 
     <properties>
