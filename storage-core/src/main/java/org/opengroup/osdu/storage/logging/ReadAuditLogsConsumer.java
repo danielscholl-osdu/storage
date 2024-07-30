@@ -78,7 +78,7 @@ public class ReadAuditLogsConsumer implements Consumer<AuditPayload> {
             PartitionInfo partitionInfo = partitionService.getPartition(dpsHeaders.getPartitionId());
             if (partitionInfo.getProperties().containsKey(READ_AUDIT_LOGS_SWITCH_NAME)) {
                 Optional<Boolean> isReadAuditLogsOn = getReadAuditLogsSwitchValue(partitionInfo);
-                isReadAuditLogsOn.ifPresent(switchState -> logger.info(String.format("PartitionInfo of %s has %s flag as %b",
+                isReadAuditLogsOn.ifPresent(switchState -> logger.debug(String.format("PartitionInfo of %s has %s flag as %b",
                         dpsHeaders.getPartitionId(), READ_AUDIT_LOGS_SWITCH_NAME, switchState)));
                 return isReadAuditLogsOn.orElse(READ_AUDIT_LOGS_SWITCH_DEFAULT_STATE);
             }
