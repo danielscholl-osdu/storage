@@ -16,7 +16,6 @@ data:
   partitionHost: "http://partition"
   crsConverterHost: "http://crs-conversion"
   legalHost: "http://legal"
-  opaEnabled: false
   opaEndpoint: "http://opa"
   # deployments
   requestsCpu: "150m"
