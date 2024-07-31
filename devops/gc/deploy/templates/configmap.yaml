@@ -18,7 +18,6 @@ data:
   {{- else }}
   SPRING_PROFILES_ACTIVE: "gcp"
   {{- end }}
-  OPA_ENABLED: {{ .Values.data.opaEnabled | quote }}
   OPA_ENDPOINT: {{ .Values.data.opaEndpoint | quote }}
   {{- if .Values.data.redisStorageHost }}
   REDIS_GROUP_HOST: {{ .Values.data.redisStorageHost | quote }}

@@ -45,7 +45,6 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **data.partitionHost** | Partition service host address | string | `http://partition` | yes
 **data.crsConverterHost** | CRS Converter service host address | string | `http://crs-conversion` | yes
 **data.legalHost** | Legal service host address | string | `http://legal` | yes
-**data.opaEnabled** | whether OPA is enabled | boolean | false | yes
 **data.opaEndpoint** | OPA host address | string | `http://opa` | yes
 **data.redisStorageHost** | The host for redis instance. If empty (by default), helm installs an internal redis instance | string | - | yes
 **data.redisStoragePort** | The port for redis instance | digit | 6379 | yes
