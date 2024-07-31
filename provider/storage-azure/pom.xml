@@ -124,6 +124,12 @@
             <groupId>org.opengroup.osdu</groupId>
             <artifactId>core-lib-azure-spring6</artifactId>
             <version>${core-lib-azure-spring6.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opengroup.osdu</groupId>
+                    <artifactId>os-core-common-spring6</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -132,7 +138,7 @@
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
-            <artifactId>os-core-common-spring6</artifactId>
+            <artifactId>os-core-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>

@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.AppError;
@@ -48,6 +49,7 @@ import java.util.UUID;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 @RestController
 @RequestMapping("replay")
+@Tag(name = "replay", description = "Replay API")
 @RequestScope
 @Validated
 public class ReplayApi {
