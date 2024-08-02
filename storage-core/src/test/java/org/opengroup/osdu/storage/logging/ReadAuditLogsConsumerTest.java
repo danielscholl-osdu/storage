@@ -101,7 +101,7 @@ public class ReadAuditLogsConsumerTest {
 
         verify(partitionService).getPartition("dp");
         verify(dpsHeaders, Mockito.times(3)).getPartitionId();
-        verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
+        verify(logger).debug("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
         verifyNoMoreInteractions(logger);
     }
 
@@ -147,7 +147,7 @@ public class ReadAuditLogsConsumerTest {
 
         verify(partitionService).getPartition("dp");
         verify(dpsHeaders, Mockito.times(4)).getPartitionId();
-        verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
+        verify(logger).debug("PartitionInfo of dp has is-read-audit-logs-enabled flag as false");
         verifyNoMoreInteractions(logger);
     }
 
@@ -171,7 +171,7 @@ public class ReadAuditLogsConsumerTest {
 
         verify(partitionService).getPartition("dp");
         verify(dpsHeaders, Mockito.times(4)).getPartitionId();
-        verify(logger).info("PartitionInfo of dp has is-read-audit-logs-enabled flag as true");
+        verify(logger).debug("PartitionInfo of dp has is-read-audit-logs-enabled flag as true");
         verify(logger, Mockito.times(2)).audit(auditPayload);
         verifyNoMoreInteractions(logger);
     }
