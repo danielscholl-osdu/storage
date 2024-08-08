@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
-import com.lambdaworks.redis.RedisException;
+import io.lettuce.core.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.legal.ILegalFactory;
