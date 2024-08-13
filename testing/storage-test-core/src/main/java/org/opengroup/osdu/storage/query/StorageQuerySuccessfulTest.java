@@ -92,6 +92,24 @@ public abstract class StorageQuerySuccessfulTest extends TestBase {
 		assertEquals(HttpStatus.SC_OK, recordResponsePost.getCode());
 	}
 
+	@Test
+	public void should_queryToFetchMultipleRecords_when_recordIsGiven_and_trailingSlash() throws Exception {
+		CloseableHttpResponse recordResponse = createTestRecord(KIND_ONE, KIND_ID_ONE, LEGAL_TAG_NAME);
+		CreatedRecordInStorage recordResult = TestUtils.getResult(recordResponse, HttpStatus.SC_CREATED,
+				CreatedRecordInStorage.class);
+		JsonArray recordIDS = new JsonArray();
+		recordIDS.add(recordResult.recordIds[0]);
+		JsonArray attribute = new JsonArray();
+		attribute.add("");
+		JsonObject createSearchRecordPayload = new JsonObject();
+		createSearchRecordPayload.add("records", recordIDS);
+		createSearchRecordPayload.add("attributes", attribute);
+		String path = "query/records/";
+		CloseableHttpResponse recordResponsePost = TestUtils.send(path, HttpMethod.POST, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+				createSearchRecordPayload.toString(), "");
+		assertEquals(HttpStatus.SC_OK, recordResponsePost.getCode());
+	}
+
 	protected CloseableHttpResponse createTestRecord(String kind, String id, String legalName) throws Exception {
 		String jsonInputRecord = RecordUtil.createDefaultJsonRecord(id, kind, legalName);
 		return TestUtils.send(RECORD, HttpMethod.PUT, HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputRecord, "");

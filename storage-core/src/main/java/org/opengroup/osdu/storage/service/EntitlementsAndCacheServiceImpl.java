@@ -17,7 +17,7 @@ package org.opengroup.osdu.storage.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lambdaworks.redis.RedisException;
+import io.lettuce.core.RedisException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.cache.ICache;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsFactory;
