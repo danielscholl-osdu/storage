@@ -32,7 +32,7 @@
         <java.version>17</java.version>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <core-lib-azure-spring6.version>0.27.0-rc7</core-lib-azure-spring6.version>
+        <core-lib-azure.version>1.0.0</core-lib-azure.version>
         <osdu.storage-core.version>0.28.0-SNAPSHOT</osdu.storage-core.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
@@ -64,8 +64,8 @@
             <!-- Inherit managed dependencies from core-lib-azure -->
             <dependency>
                 <groupId>org.opengroup.osdu</groupId>
-                <artifactId>core-lib-azure-spring6</artifactId>
-                <version>${core-lib-azure-spring6.version}</version>
+                <artifactId>core-lib-azure</artifactId>
+                <version>${core-lib-azure.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -122,14 +122,8 @@
         </dependency>
         <dependency>
             <groupId>org.opengroup.osdu</groupId>
-            <artifactId>core-lib-azure-spring6</artifactId>
-            <version>${core-lib-azure-spring6.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.opengroup.osdu</groupId>
-                    <artifactId>os-core-common-spring6</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>core-lib-azure</artifactId>
+            <version>${core-lib-azure.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
