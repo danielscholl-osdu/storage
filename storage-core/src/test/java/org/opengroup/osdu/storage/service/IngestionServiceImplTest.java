@@ -45,7 +45,6 @@ import org.opengroup.osdu.core.common.model.storage.*;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.partition.PartitionException;
 import org.opengroup.osdu.core.common.provider.interfaces.ITenantFactory;
-import org.opengroup.osdu.storage.di.GcsVersionPathLimitationConfig;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
@@ -117,9 +116,6 @@ public class IngestionServiceImplTest {
 
     @Mock
     private IFeatureFlag featureFlag;
-
-    @Mock
-    GcsVersionPathLimitationConfig gcsVersionPathLimitationConfig;
 
     @Spy
     CrcHashGenerator crcHashGenerator;
@@ -1111,99 +1107,4 @@ public class IngestionServiceImplTest {
         }
     }
 
-    @Test
-    public void createUpdateRecords_shouldNotRemoveRecordsFromProcessing_ifGcsVersionPathsSizeIsLesserThanSoftLimit() {
-        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
-        when(gcsVersionPathLimitationConfig.getMaxLimit()).thenReturn(2000);
-        when(gcsVersionPathLimitationConfig.getFeatureName()).thenReturn("enforce_gcsVersionPathsLimit_enabled");
-        when(featureFlag.isFeatureEnabled(gcsVersionPathLimitationConfig.getFeatureName())).thenReturn(true);
-        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
-
-        this.record1.setId(RECORD_ID1);
-        this.record1.setAcl(new Acl(VALID_ACL, VALID_ACL));
-
-        List<Record> processingRecords = new ArrayList<Record>();
-        processingRecords.add(this.record1);
-
-        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
-        existingRecordMetadata1.setUser(NEW_USER);
-        existingRecordMetadata1.setKind(KIND_1);
-        existingRecordMetadata1.setStatus(RecordState.active);
-        existingRecordMetadata1.setAcl(new Acl(VALID_ACL, VALID_ACL));
-
-        List<String> versionsArray = IntStream.rangeClosed(1, 1999).mapToObj((item) -> {
-            return "path/" + item;
-        }).toList();
-
-        existingRecordMetadata1.setGcsVersionPaths(versionsArray);
-
-        Map<String, RecordMetadata> output = new HashMap<>();
-        output.put(RECORD_ID1, existingRecordMetadata1);
-
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
-
-        when(this.cloudStorage.read(existingRecordMetadata1, 1999L, false)).thenReturn(new Gson().toJson(this.record1));
-
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
-        assertEquals(USER, transferInfo.getUser());
-        assertEquals(Integer.valueOf(1), transferInfo.getRecordCount());
-        assertNotNull(transferInfo.getVersion());
-
-        ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
-
-        verify(this.persistenceService, times(1)).persistRecordBatch(transfer.capture(), any());
-        verify(this.auditLogger).createOrUpdateRecordsSuccess(any());
-
-        TransferBatch input = transfer.getValue();
-
-        for (RecordProcessing rp : input.getRecords()) {
-            assertEquals(OperationType.update, rp.getOperationType());
-        }
-    }
-
-    @Test
-    public void createUpdateRecords_shouldRemoveRecordsFromProcessing_ifGcsSizeIsGreaterThanMaxLimit() {
-        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
-        when(gcsVersionPathLimitationConfig.getMaxLimit()).thenReturn(2000);
-        when(gcsVersionPathLimitationConfig.getFeatureName()).thenReturn("enforce_gcsVersionPathsLimit_enabled");
-        when(featureFlag.isFeatureEnabled(gcsVersionPathLimitationConfig.getFeatureName())).thenReturn(true);
-        when(this.authService.isValidAcl(any(), any())).thenReturn(true);
-
-        this.record1.setId(RECORD_ID1);
-        this.record1.setAcl(new Acl(VALID_ACL, VALID_ACL));
-
-        List<Record> processingRecords = new ArrayList<Record>();
-        processingRecords.add(this.record1);
-
-        RecordMetadata existingRecordMetadata1 = new RecordMetadata();
-        existingRecordMetadata1.setUser(NEW_USER);
-        existingRecordMetadata1.setKind(KIND_1);
-        existingRecordMetadata1.setStatus(RecordState.active);
-        existingRecordMetadata1.setAcl(new Acl(VALID_ACL, VALID_ACL));
-
-        List<String> versionsArray = IntStream.rangeClosed(0, 2000).mapToObj((item) -> {
-            return "path/" + item;
-        }).toList();
-
-        existingRecordMetadata1.setGcsVersionPaths(versionsArray);
-
-        Map<String, RecordMetadata> output = new HashMap<>();
-        output.put(RECORD_ID1, existingRecordMetadata1);
-
-        when(this.recordRepository.get(any(List.class), any())).thenReturn(output);
-
-        when(this.cloudStorage.read(existingRecordMetadata1, 2000L, false)).thenReturn(new Gson().toJson(this.record1));
-
-        TransferInfo transferInfo = this.sut.createUpdateRecords(false, processingRecords, USER, Optional.empty());
-        assertEquals(USER, transferInfo.getUser());
-
-        assertEquals(Integer.valueOf(1), transferInfo.getRecordCount());
-        assertNotNull(transferInfo.getVersion());
-        assertEquals(1, transferInfo.getSkippedRecords().size());
-
-        ArgumentCaptor<TransferBatch> transfer = ArgumentCaptor.forClass(TransferBatch.class);
-
-        verify(this.persistenceService, never()).persistRecordBatch(transfer.capture(), any());
-        verify(this.auditLogger, never()).createOrUpdateRecordsSuccess(any());
-    }
 }
