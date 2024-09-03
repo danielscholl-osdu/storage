@@ -6,10 +6,11 @@ global:
   domain: ""
   onPremEnabled: false
   limitsEnabled: true
+  logLevel: "ERROR"
 
 data:
   # configmaps
-  logLevel: "ERROR"
+  logLevel: ""
   defaultDataCountry: "US"
   storageServiceAccountEmail: "storage@service.local"
   entitlementsHost: "http://entitlements"
