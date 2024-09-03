@@ -31,14 +31,15 @@ First you need to set variables in **values.yaml** file using any code editor. S
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
 **global.domain** | your domain for the external endpoint, ex `example.com` | string | - | yes
-**global.onPremEnabled** | whether on-prem is enabled | boolean | false | yes
-**global.limitsEnabled** | whether CPU and memory limits are enabled | boolean | true | yes
+**global.onPremEnabled** | whether on-prem is enabled | boolean | `false` | yes
+**global.limitsEnabled** | whether CPU and memory limits are enabled | boolean | `true` | yes
+**global.logLevel** | severity of logging level | string | `ERROR` | yes
 
 ### Configmap variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**data.logLevel** | logging level | string | `ERROR` | yes
+**data.logLevel** | logging severity level for this service only  | string | - | yes, only if differs from the `global.logLevel`
 **data.defaultDataCountry** | Data storage region | string | `US` | yes
 **data.storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | `storage@service.local` | yes
 **data.entitlementsHost** | Entitlements service host address | string | `http://entitlements` | yes
@@ -47,7 +48,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **data.legalHost** | Legal service host address | string | `http://legal` | yes
 **data.opaEndpoint** | OPA host address | string | `http://opa` | yes
 **data.redisStorageHost** | The host for redis instance. If empty (by default), helm installs an internal redis instance | string | - | yes
-**data.redisStoragePort** | The port for redis instance | digit | 6379 | yes
+**data.redisStoragePort** | The port for redis instance | digit | `6379` | yes
 
 ### Deployment variables
 
@@ -72,16 +73,16 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **conf.postgresSecretName** | secret for postgres | string | `storage-postgres-secret` | yes
 **conf.rabbitmqSecretName** | secret for rabbitmq | string | `rabbitmq-secret` | yes
 **conf.storageRedisSecretName** | secret for redis that contains redis password with REDIS_PASSWORD key | string | `storage-redis-secret` | yes
-**conf.replicas** | Number of replicas | integer | 3 | yes
+**conf.replicas** | Number of replicas | integer | `3` | yes
 
 ### Istio variables
 
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
-**istio.proxyCPU** | CPU request for Envoy sidecars | string | 10m | yes
-**istio.proxyCPULimit** | CPU limit for Envoy sidecars | string | 200m | yes
-**istio.proxyMemory** | memory request for Envoy sidecars | string | 100Mi | yes
-**istio.proxyMemoryLimit** | memory limit for Envoy sidecars | string | 256Mi | yes
+**istio.proxyCPU** | CPU request for Envoy sidecars | string | `10m` | yes
+**istio.proxyCPULimit** | CPU limit for Envoy sidecars | string | `200m` | yes
+**istio.proxyMemory** | memory request for Envoy sidecars | string | `100Mi` | yes
+**istio.proxyMemoryLimit** | memory limit for Envoy sidecars | string | `256Mi` | yes
 
 ## Install the Helm chart
 

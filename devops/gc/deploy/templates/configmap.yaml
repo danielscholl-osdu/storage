@@ -10,7 +10,7 @@ data:
   DEFAULT_DATA_COUNTRY: {{ .Values.data.defaultDataCountry | quote }}
   ENTITLEMENTS_HOST: {{ .Values.data.entitlementsHost | quote }}
   LEGAL_HOST: {{ .Values.data.legalHost | quote }}
-  LOG_LEVEL: {{ .Values.data.logLevel | quote }}
+  LOG_LEVEL: {{ .Values.data.logLevel | default .Values.global.logLevel | quote }}
   PARTITION_HOST: {{ .Values.data.partitionHost | quote }}
   STORAGE_SERVICE_ACCOUNT_EMAIL: {{ .Values.data.storageServiceAccountEmail | quote }}
   {{- if .Values.global.onPremEnabled }}
