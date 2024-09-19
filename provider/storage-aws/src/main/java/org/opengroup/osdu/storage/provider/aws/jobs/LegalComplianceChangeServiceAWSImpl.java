@@ -14,6 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.aws.jobs;
 
+import jakarta.inject.Inject;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.*;
@@ -21,6 +26,8 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
@@ -31,9 +38,11 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +58,18 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
 
     private final static String INCOMPLIANT_STRING = "incompliant";
     private final static String COMPLIANT_STRING = "compliant";
+
+    @Autowired
+    private CollaborationContextFactory collaborationContextFactory;
+
+    @Value("${aws.dynamodb.legalTagTable.ssm.relativePath}")
+    String legalTagTableParameterRelativePath;
+
+    @Inject
+    private WorkerThreadPool workerThreadPool;
+
+    @Inject
+    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
     @Autowired
     private IRecordsMetadataRepository<String> recordsMetadataRepository;
@@ -70,53 +91,66 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                                                                   DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
 
-        // optimize to not have while loop inside a for each
-        // We should only get one legal tag change from the queue, the model should
-        // reflect that
+        Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(headers.getCollaboration());
+        DynamoDBQueryHelperV2 legalTagQueryHelper = dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath, workerThreadPool.getClientConfiguration());
+
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
-
-            ComplianceChangeInfo complianceChangeInfo = this.getComplianceChangeInfo(lt);
-            if (complianceChangeInfo == null) {
-                continue;
-            }
-
-            AbstractMap.SimpleEntry<String, List<RecordMetadata>> results;
-            String cursor = null;
-            do {
-                results = this.recordsMetadataRepository
-                        .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
-                cursor = results.getKey();
-                List<RecordMetadata> recordsMetadata = results.getValue();
-                PubSubInfo[] pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, recordsMetadata, output);
-
-                // TODO handle collaboration context
-                this.recordsMetadataRepository.createOrUpdate(recordsMetadata, Optional.empty());
-
-                StringBuilder recordsId = new StringBuilder();
-                for (RecordMetadata recordMetadata : recordsMetadata) {
-                    recordsId.append(", ").append(recordMetadata.getId());
-                }
-                this.auditLogger.updateRecordsComplianceStateSuccess(
-                        singletonList("[" + recordsId.toString() + "]"));
-
-                this.storageMessageBus.publishMessage(headers, pubsubInfos);
-            } while (cursor != null);
+            updateComplianceGivenLegalTag(lt, headers, output, collaborationContext, legalTagQueryHelper);
         }
 
         return output;
     }
 
-    private PubSubInfo[] updateComplianceStatus(ComplianceChangeInfo complianceChangeInfo,
-                                                List<RecordMetadata> recordMetadata, Map<String, LegalCompliance> output) {
-        PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadata.size()];
+    private void updateComplianceGivenLegalTag(LegalTagChanged lt, DpsHeaders headers, Map<String, LegalCompliance> output, Optional<CollaborationContext> context,
+                                               DynamoDBQueryHelperV2 legalTagQueryHelper) {
+        ComplianceChangeInfo complianceChangeInfo = this.getComplianceChangeInfo(lt);
+        if (complianceChangeInfo == null) {
+            return;
+        }
 
-        int i = 0;
+        AbstractMap.SimpleEntry<String, List<RecordMetadata>> results;
+        ArrayList<String> recordLegalTagsToDelete = new ArrayList<>(500);
+        ArrayList<RecordMetadata> modifiedRecords = new ArrayList<>(500);
+        String cursor = null;
+        do {
+            results = this.recordsMetadataRepository
+                .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
+            cursor = results.getKey();
+            List<RecordMetadata> recordsMetadata = results.getValue();
+            ArrayList<PubSubInfo> pubsubInfos = this.updateComplianceStatus(complianceChangeInfo, lt.getChangedTagName(), recordsMetadata, output, recordLegalTagsToDelete, modifiedRecords);
+
+            this.recordsMetadataRepository.createOrUpdate(modifiedRecords, context);
+
+            StringBuilder recordsId = new StringBuilder();
+            for (RecordMetadata recordMetadata : modifiedRecords) {
+                recordsId.append(", ").append(recordMetadata.getId());
+            }
+            this.auditLogger.updateRecordsComplianceStateSuccess(
+                singletonList("[" + recordsId.toString() + "]"));
+
+            // TODO Replace this with Batch Delete when AWS Core library supports it
+            recordLegalTagsToDelete.forEach(recordId -> legalTagQueryHelper.deleteByPrimaryKey(LegalTagAssociationDoc.class, String.format("%s:%s", recordId, lt.getChangedTagName())));
+            this.storageMessageBus.publishMessage(headers, pubsubInfos.toArray(new PubSubInfo[0]));
+            recordLegalTagsToDelete.clear();
+            modifiedRecords.clear();
+        } while (cursor != null);
+    }
+
+    private ArrayList<PubSubInfo> updateComplianceStatus(ComplianceChangeInfo complianceChangeInfo,
+                                                         String legalTagName, List<RecordMetadata> recordMetadata, Map<String, LegalCompliance> output, List<String> notCurrentRecords,
+                                                         List<RecordMetadata> modifiedRecords) {
+        ArrayList<PubSubInfo> pubsubInfo = new ArrayList<>(recordMetadata.size());
+
         for (RecordMetadata rm : recordMetadata) {
-            rm.getLegal().setStatus(complianceChangeInfo.getNewState());
-            rm.setStatus(complianceChangeInfo.getNewRecordState());
-            pubsubInfo[i] = new PubSubInfo(rm.getId(), rm.getKind(), complianceChangeInfo.getPubSubEvent());
-            output.put(rm.getId(), complianceChangeInfo.getNewState());
-            i++;
+            if (rm.getLegal().getLegaltags().contains(legalTagName)) {
+                rm.getLegal().setStatus(complianceChangeInfo.getNewState());
+                rm.setStatus(complianceChangeInfo.getNewRecordState());
+                pubsubInfo.add(new PubSubInfo(rm.getId(), rm.getKind(), complianceChangeInfo.getPubSubEvent()));
+                output.put(rm.getId(), complianceChangeInfo.getNewState());
+                modifiedRecords.add(rm);
+            } else {
+                notCurrentRecords.add(rm.getId());
+            }
         }
 
         return pubsubInfo;
