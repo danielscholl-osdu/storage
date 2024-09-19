@@ -21,6 +21,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
@@ -32,10 +35,17 @@ import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.*;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 class LegalComplianceChangeServiceAWSImplTest {
@@ -44,6 +54,21 @@ class LegalComplianceChangeServiceAWSImplTest {
     // Created inline instead of with autowired because mocks were overwritten
     // due to lazy loading
     private LegalComplianceChangeServiceAWSImpl service;
+
+    @Mock
+    private CollaborationContextFactory collaborationContextFactory;
+
+    @Value("${aws.dynamodb.legalTagTable.ssm.relativePath}")
+    String legalTagTableParameterRelativePath;
+
+    @Mock
+    private WorkerThreadPool workerThreadPool;
+
+    @Mock
+    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+
+    @Mock
+    private DynamoDBQueryHelperV2 legalTagAssociationHelper;
 
     @Mock
     private IRecordsMetadataRepository<String> recordsMetadataRepository;
@@ -73,6 +98,9 @@ class LegalComplianceChangeServiceAWSImplTest {
         String compliantTagName = "compliant-test-tag";
         String compliantRecordId = "compliant-record";
 
+        when(collaborationContextFactory.create(anyString())).thenReturn(Optional.empty());
+        when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), eq(null), any())).thenReturn(legalTagAssociationHelper);
+
         // create parameters
         LegalTagChangedCollection legalTagsChanged = new LegalTagChangedCollection();
         List<LegalTagChanged> legalTagChangedList = new ArrayList<>();
@@ -94,7 +122,7 @@ class LegalComplianceChangeServiceAWSImplTest {
         recordMetadata.setId(incompliantRecordId);
         Legal incompliantLegal = new Legal();
         Set<String> incompliantLegalTags = new HashSet<>();
-        incompliantLegalTags.add("incompliant-tag");
+        incompliantLegalTags.add(incompliantTagName);
         incompliantLegal.setLegaltags(incompliantLegalTags);
         recordMetadata.setLegal(incompliantLegal);
         List<RecordMetadata> incompliantRecordMetaDatas = new ArrayList<>();
@@ -107,7 +135,7 @@ class LegalComplianceChangeServiceAWSImplTest {
         compliantRecordMetadata.setId(compliantRecordId);
         Legal compliantLegal = new Legal();
         Set<String> compliantLegalTags = new HashSet<>();
-        compliantLegalTags.add("compliant-tag");
+        compliantLegalTags.add(compliantTagName);
         compliantLegal.setLegaltags(compliantLegalTags);
         compliantRecordMetadata.setLegal(compliantLegal);
         List<RecordMetadata> compliantRecordMetaDatas = new ArrayList<>();
@@ -134,11 +162,13 @@ class LegalComplianceChangeServiceAWSImplTest {
         expectedOutput.put(incompliantRecordId, LegalCompliance.incompliant);
         expectedOutput.put(compliantRecordId, LegalCompliance.compliant);
 
+        ArgumentCaptor<List<RecordMetadata>> recordMetadataCaptor = ArgumentCaptor.forClass(List.class);
+
         // mock methods called
-        Mockito.when(recordsMetadataRepository.queryByLegalTagName(Mockito.eq(incompliantTagName), Mockito.eq(500), Mockito.any()))
+        when(recordsMetadataRepository.queryByLegalTagName(eq(incompliantTagName), eq(500), eq(null)))
                 .thenReturn(incompliantResult);
 
-        Mockito.when(recordsMetadataRepository.queryByLegalTagName(Mockito.eq(compliantTagName), Mockito.eq(500), Mockito.any()))
+        when(recordsMetadataRepository.queryByLegalTagName(eq(compliantTagName), eq(500), eq(null)))
                 .thenReturn(compliantResult);
 
         ArgumentCaptor<PubSubInfo[]> pubSubArg = ArgumentCaptor.forClass(PubSubInfo[].class);
@@ -148,7 +178,7 @@ class LegalComplianceChangeServiceAWSImplTest {
 
         // assert
         // that create is called on the record returned for compliant
-        Mockito.verify(recordsMetadataRepository, Mockito.times(1)).createOrUpdate(compliantRecordMetaDatas, Optional.empty());
+        Mockito.verify(recordsMetadataRepository, Mockito.times(2)).createOrUpdate(recordMetadataCaptor.capture(), eq(Optional.empty()));
 
         // that storageMessageBus publishMessage is called with the right pubsubinfos
         Mockito.verify(storageMessageBus, Mockito.times(2))
