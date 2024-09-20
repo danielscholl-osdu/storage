@@ -18,6 +18,7 @@
 package org.opengroup.osdu.storage.provider.gcp.web.repository;
 
 import com.github.fge.jsonpatch.JsonPatch;
+import java.util.Map.Entry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -65,19 +66,13 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     public static final String STATUS = "status";
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
-        if (recordsMetadata != null) {
-            Transaction txn = context.beginTransaction(getDestination());
-            try {
-                for (RecordMetadata recordMetadata : recordsMetadata) {
-                    context.upsert(recordMetadata, getDestination());
-                }
-                txn.commitIfActive();
-            } finally {
-                txn.rollbackIfActive();
-            }
-        }
-        return recordsMetadata;
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata,
+        Optional<CollaborationContext> collaborationContext) {
+      if (recordsMetadata != null) {
+        RecordMetadata[] metadata = recordsMetadata.toArray(RecordMetadata[]::new);
+        context.upsert(getDestination(), metadata);
+      }
+      return recordsMetadata;
     }
 
     @Override
@@ -132,18 +127,14 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
       Map<RecordMetadata, JsonPatch> jsonPatchPerRecord,
       Optional<CollaborationContext> collaborationContext) {
     if (Objects.nonNull(jsonPatchPerRecord)) {
-      Transaction txn = context.beginTransaction(getDestination());
-      try {
-        for (RecordMetadata recordMetadata : jsonPatchPerRecord.keySet()) {
-          JsonPatch jsonPatch = jsonPatchPerRecord.get(recordMetadata);
-          RecordMetadata newRecordMetadata =
-              JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordMetadata);
-          context.upsert(newRecordMetadata, getDestination());
-        }
-        txn.commitIfActive();
-      } finally {
-        txn.rollbackIfActive();
+      RecordMetadata[] newRecordMetadata = new RecordMetadata[jsonPatchPerRecord.size()];
+      int count = 0;
+      for (Entry<RecordMetadata, JsonPatch> entry : jsonPatchPerRecord.entrySet()) {
+        JsonPatch jsonPatch = entry.getValue();
+        newRecordMetadata[count] = JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, entry.getKey());
+        count++;
       }
+      context.upsert(getDestination(), newRecordMetadata);
     }
     return new HashMap<>();
   }

@@ -470,9 +470,18 @@ You will need to have the following environment variables defined.
 
 **Entitlements configuration for integration accounts**
 
-| INTEGRATION_TESTER                                                                                                                                                                                             | NO_DATA_ACCESS_TESTER                                         | DATA_ROOT_TESTER                                                                        | 
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| users<br/>service.entitlements.user<br/>service.storage.admin<br/>service.storage.creator<br/>service.storage.viewer<br/>service.legal.admin<br/>service.legal.editor<br/>data.test1<br/>data.integration.test | users<br/>service.entitlements.user<br/>service.storage.admin | users<br/>users.data.root<br/>service.entitlements.user<br/>service.storage.viewer<br/> |
+| INTEGRATION_TESTER        | NO_DATA_ACCESS_TESTER     | DATA_ROOT_TESTER          | 
+|---------------------------|---------------------------|---------------------------|
+| users                     | users                     | users                     |
+| service.entitlements.user | service.storage.admin     | users.data.root           |                                                                                       |
+| service.storage.admin     | service.entitlements.user | service.entitlements.user |
+| service.storage.creator   |                           | service.storage.viewer    |
+| service.storage.viewer    |                           |                           |
+| service.legal.admin       |                           |                           |
+| service.legal.editor      |                           |                           |
+| data.test1                |                           |                           |
+| data.integration.test     |                           |                           |
+
 
 Execute following command to build code and run all the integration tests:
 
