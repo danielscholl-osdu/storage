@@ -53,7 +53,7 @@ public class OsmSchemaRepository implements ISchemaRepository {
                 txn.rollbackIfActive();
                 throw new IllegalArgumentException("A schema for the specified kind has already been registered.");
             } else {
-                context.create(schema, getDestination());
+                context.create(getDestination(), schema);
                 txn.commitIfActive();
             }
         } finally {
