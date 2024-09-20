@@ -13,3 +13,7 @@ gc-baremetal-test:
 gc-dev2-test:
   variables:
     DATA_ROOT_TESTER: $GC_DEV2_DATA_ROOT_CLIENT_ID
+
+gc-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "true"
