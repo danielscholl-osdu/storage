@@ -59,7 +59,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>core-lib-gc</artifactId>
-      <version>0.27.0-rc7</version>
+      <version>0.27.0-rc8</version>
     </dependency>
     <!--    Mappers    -->
     <dependency>
