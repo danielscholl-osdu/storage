@@ -18,6 +18,7 @@ package org.opengroup.osdu.storage.provider.aws;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.PutRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
@@ -66,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -80,6 +82,9 @@ class RecordsMetadataRepositoryTest {
     // Created inline instead of with autowired because mocks were overwritten
     // due to lazy loading
     private RecordsMetadataRepositoryImpl repo;
+
+    @Mock
+    private PaginatedQueryList<Object> paginatedQueryList;
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
@@ -97,8 +102,16 @@ class RecordsMetadataRepositoryTest {
     private JaxRsDpsLog logger;
 
     @Captor
+    ArgumentCaptor<List<Object>> batchSaveCaptor;
+
+    @Captor
     ArgumentCaptor<Set<String>> idsCaptor;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(10);
+
+    private static final String RECORD_ID = "opendes:id:15706318658560";
+    private static final String PRIMARY_LEGAL_TAG_NAME = "opendes-storage-1570631865856";
+    private static final String NEW_LEGAL_TAG_NAME = "new-tag-name";
+    private static final String OLD_LEGAL_TAG_NAME = "old-tag-name";
 
     @BeforeEach
     public void setUp() {
@@ -128,20 +141,29 @@ class RecordsMetadataRepositoryTest {
 
     @Test
     void testPatch() throws JsonMappingException, JsonProcessingException, IOException {
+        String recordId = "recordId";
+        when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
+        when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
+        List<Object> ltas = new ArrayList<>();
+        ltas.add(LegalTagAssociationDoc.createLegalTagDoc(PRIMARY_LEGAL_TAG_NAME, recordId));
+        ltas.add(LegalTagAssociationDoc.createLegalTagDoc(OLD_LEGAL_TAG_NAME, recordId));
+        when(paginatedQueryList.stream()).thenReturn(ltas.stream());
+
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         JsonPatch patch = JsonPatch.fromJson(new ObjectMapper().readTree("[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"newKind\" }]"));
 
         RecordMetadata recordMetadata = new RecordMetadata();
-        recordMetadata.setId("recordId");
+        recordMetadata.setId(recordId);
         recordMetadata.setKind("recordKind");
         Legal legal = new Legal();
-        legal.setLegaltags(new HashSet<>(Arrays.asList("legalTag1", "legalTag2")));
+        legal.setLegaltags(new HashSet<>(Arrays.asList(PRIMARY_LEGAL_TAG_NAME, NEW_LEGAL_TAG_NAME)));
         recordMetadata.setLegal(legal);
         recordMetadata.setStatus(RecordState.active);
         recordMetadata.setUser("recordUser");
         
         RecordMetadata newRecordMetadata = new RecordMetadata();
-        newRecordMetadata.setId("newRecordId");
+        String newRecordId = "newRecordId";
+        newRecordMetadata.setId(newRecordId);
         newRecordMetadata.setKind("newRecordKind");
         newRecordMetadata.setLegal(legal);
         newRecordMetadata.setStatus(RecordState.active);
@@ -154,7 +176,28 @@ class RecordsMetadataRepositoryTest {
             jsonPatchPerRecord.put(recordMetadata, patch);
             Map<String, String> result = repo.patch(jsonPatchPerRecord, Optional.empty());
 
-            verify(queryHelper, Mockito.times(2)).batchSave(any());
+            verify(queryHelper, Mockito.times(2)).batchSave(batchSaveCaptor.capture());
+            for (List<Object> savedObjects : batchSaveCaptor.getAllValues()) {
+                assertEquals(1, savedObjects.size());
+                Object obj = savedObjects.get(0);
+                if (obj instanceof LegalTagAssociationDoc lta) {
+                    assertEquals(NEW_LEGAL_TAG_NAME, lta.getLegalTag());
+                    assertEquals(LegalTagAssociationDoc.getLegalRecordId(newRecordId, NEW_LEGAL_TAG_NAME), lta.getRecordIdLegalTag());
+                } else if (obj instanceof RecordMetadataDoc rmd) {
+                    assertEquals(newRecordId, rmd.getId());
+                } else {
+                    fail();
+                }
+            }
+            verify(queryHelper, Mockito.times(1)).batchDelete(batchSaveCaptor.capture());
+            List<Object> ltasDeleted = batchSaveCaptor.getValue();
+            assertEquals(1, ltasDeleted.size());
+            if (ltasDeleted.get(0) instanceof LegalTagAssociationDoc ltaDeleted) {
+                assertEquals(OLD_LEGAL_TAG_NAME, ltaDeleted.getLegalTag());
+                assertEquals(LegalTagAssociationDoc.getLegalRecordId(newRecordId, OLD_LEGAL_TAG_NAME), ltaDeleted.getRecordIdLegalTag());
+            } else {
+                fail();
+            }
             assertTrue(result.isEmpty());
 
         } finally {
@@ -186,7 +229,7 @@ class RecordsMetadataRepositoryTest {
     private List<RecordMetadata> generateRecordsMetadata() {
         // Arrange
         RecordMetadata recordMetadata = new RecordMetadata();
-        recordMetadata.setId("opendes:id:15706318658560");
+        recordMetadata.setId(RECORD_ID);
         recordMetadata.setKind("opendes:source:type:1.0.0");
 
         Acl recordAcl = new Acl();
@@ -197,7 +240,9 @@ class RecordsMetadataRepositoryTest {
         recordMetadata.setAcl(recordAcl);
 
         Legal recordLegal = new Legal();
-        Set<String> legalTags = new HashSet<>(Collections.singletonList("opendes-storage-1570631865856"));
+        Set<String> legalTags = new HashSet<>();
+        legalTags.add(NEW_LEGAL_TAG_NAME);
+        legalTags.add(PRIMARY_LEGAL_TAG_NAME);
         recordLegal.setLegaltags(legalTags);
         LegalCompliance status = LegalCompliance.compliant;
         recordLegal.setStatus(status);
@@ -230,12 +275,39 @@ class RecordsMetadataRepositoryTest {
         List<RecordMetadata> recordsMetadata = generateRecordsMetadata();
 
         when(queryHelper.batchSave(any())).thenReturn(new ArrayList<>());
+        List<Object> ltas = new ArrayList<>();
+        ltas.add(LegalTagAssociationDoc.createLegalTagDoc(PRIMARY_LEGAL_TAG_NAME, RECORD_ID));
+        ltas.add(LegalTagAssociationDoc.createLegalTagDoc(OLD_LEGAL_TAG_NAME, RECORD_ID));
+        when(paginatedQueryList.stream()).thenReturn(ltas.stream());
+        when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
+        when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
 
         // Act
         repo.createOrUpdate(recordsMetadata, Optional.empty());
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(2)).batchSave(any());
+        verify(queryHelper, Mockito.times(2)).batchSave(batchSaveCaptor.capture());
+        for (List<Object> savedObjects : batchSaveCaptor.getAllValues()) {
+            assertEquals(1, savedObjects.size());
+            Object obj = savedObjects.get(0);
+            if (obj instanceof LegalTagAssociationDoc lta) {
+                assertEquals(NEW_LEGAL_TAG_NAME, lta.getLegalTag());
+                assertEquals(LegalTagAssociationDoc.getLegalRecordId(RECORD_ID, NEW_LEGAL_TAG_NAME), lta.getRecordIdLegalTag());
+            } else if (obj instanceof RecordMetadataDoc rmd) {
+                assertEquals(RECORD_ID, rmd.getId());
+            } else {
+                fail();
+            }
+        }
+        verify(queryHelper, Mockito.times(1)).batchDelete(batchSaveCaptor.capture());
+        List<Object> ltasDeleted = batchSaveCaptor.getValue();
+        assertEquals(1, ltasDeleted.size());
+        if (ltasDeleted.get(0) instanceof LegalTagAssociationDoc ltaDeleted) {
+            assertEquals(OLD_LEGAL_TAG_NAME, ltaDeleted.getLegalTag());
+            assertEquals(LegalTagAssociationDoc.getLegalRecordId(RECORD_ID, OLD_LEGAL_TAG_NAME), ltaDeleted.getRecordIdLegalTag());
+        } else {
+            fail();
+        }
     }
 
     @Test
@@ -249,6 +321,8 @@ class RecordsMetadataRepositoryTest {
                                                                                                                                                new AttributeValue().withS("some-value")
                                                                                                                                  )))));
         when(queryHelper.batchSave(any())).thenReturn(Collections.singletonList(failedBatch));
+        when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
+        when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
         Optional<CollaborationContext> collaborationContext = Optional.empty();
 
         assertThrows(AppException.class, () -> repo.createOrUpdate(recordsMetadata, collaborationContext));
