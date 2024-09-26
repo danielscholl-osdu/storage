@@ -21,23 +21,23 @@ import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import java.util.concurrent.Callable;
 
 public class RecordProcessor implements Callable<RecordProcessor> {
-    private RecordProcessing recordProcessing;
-    private S3RecordClient s3Client;
-    public CallableResult result;
-    public AmazonServiceException exception;
-    public String recordId;
-    private String dataPartition;
+    private final RecordProcessing recordProcessing;
+    private final S3RecordClient s3Client;
+    private CallableResult result;
+    private AmazonServiceException exception;
+    private final String recordId;
+    private final String dataPartition;
 
     public RecordProcessor(RecordProcessing recordProcessing, S3RecordClient s3Client, String dataPartition){
         this.recordProcessing = recordProcessing;
         this.s3Client = s3Client;
         this.dataPartition = dataPartition;
+        recordId = recordProcessing.getRecordMetadata().getId();
     }
 
     @Override
     public RecordProcessor call() {
         try {
-            recordId = recordProcessing.getRecordMetadata().getId();
             s3Client.saveRecord(recordProcessing, dataPartition);
             result = CallableResult.PASS;
         }
@@ -46,5 +46,17 @@ public class RecordProcessor implements Callable<RecordProcessor> {
             result = CallableResult.FAIL;
         }
         return this;
+    }
+
+    public String getRecordId() {
+        return recordId;
+    }
+
+    public CallableResult getResult() {
+        return result;
+    }
+
+    public AmazonServiceException getException() {
+        return exception;
     }
 }
