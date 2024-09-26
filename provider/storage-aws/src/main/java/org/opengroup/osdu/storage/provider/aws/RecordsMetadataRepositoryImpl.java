@@ -76,7 +76,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath, workerThreadPool.getClientConfiguration());
     }
 
-    private void addMetadataAndLegal(RecordMetadata metadata, Optional<CollaborationContext> collaborationContext, List<RecordMetadataDoc> metadataDocs, List<LegalTagAssociationDoc> legalDocs) {
+    private void addMetadataAndLegal(RecordMetadata metadata, Optional<CollaborationContext> collaborationContext, List<RecordMetadataDoc> metadataDocs,
+                                     List<LegalTagAssociationDoc> createLegalDocs, List<LegalTagAssociationDoc> deleteLegalDocs) {
         // user should be part of the acl of the record being saved
         RecordMetadataDoc doc = new RecordMetadataDoc();
 
@@ -91,7 +92,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         // Store the record to the database
         metadataDocs.add(doc);
         saveLegalTagAssociation(CollaborationContextUtil.composeIdWithNamespace(metadata.getId(), collaborationContext),
-                                metadata.getLegal().getLegaltags(), legalDocs);
+                                metadata.getLegal().getLegaltags(), createLegalDocs, deleteLegalDocs);
     }
 
     @Override
@@ -99,15 +100,16 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         if (Objects.nonNull(jsonPatchPerRecord)) {
             List<RecordMetadataDoc> metadataDocs = new ArrayList<>();
             List<LegalTagAssociationDoc> legalDocs = new ArrayList<>();
+            List<LegalTagAssociationDoc> deleteLegalDocs = new ArrayList<>();
             for (Entry<RecordMetadata, JsonPatch> recordEntry : jsonPatchPerRecord.entrySet()) {
                 JsonPatch jsonPatch = recordEntry.getValue();
                 RecordMetadata newRecordMetadata =
                         JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordEntry.getKey());
 
-                addMetadataAndLegal(newRecordMetadata, collaborationContext, metadataDocs, legalDocs);
+                addMetadataAndLegal(newRecordMetadata, collaborationContext, metadataDocs, legalDocs, deleteLegalDocs);
             }
 
-            writeDynamoDBRecordsParallel(metadataDocs, legalDocs);
+            writeDynamoDBRecordsParallel(metadataDocs, legalDocs, deleteLegalDocs);
         }
 
         return new HashMap<>();
@@ -125,11 +127,16 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                     ).toList();
     }
 
-    private void writeDynamoDBRecordsParallel(List<RecordMetadataDoc> metadataDocs, List<LegalTagAssociationDoc> legalDocs) {
+    private void writeDynamoDBRecordsParallel(List<RecordMetadataDoc> metadataDocs, List<LegalTagAssociationDoc> createLegalDocs, List<LegalTagAssociationDoc> deleteLegalDocs) {
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         DynamoDBQueryHelperV2 legalTagHelper = getLegalTagQueryHelper();
         List<CompletableFuture<List<DynamoDBMapper.FailedBatch>>> batchWriteProcesses = Lists.newArrayList(createBatchedFutures(metadataDocs, recordMetadataQueryHelper));
-        batchWriteProcesses.addAll(createBatchedFutures(legalDocs, legalTagHelper));
+        batchWriteProcesses.addAll(createBatchedFutures(createLegalDocs, legalTagHelper));
+        batchWriteProcesses.addAll(Lists.partition(deleteLegalDocs, MAX_DYNAMODB_WRITE_BATCH_SIZE)
+                    .stream()
+                    .map(objectBatch -> CompletableFuture.supplyAsync(
+                        () -> legalTagHelper.batchDelete(objectBatch), workerThreadPool.getThreadPool())
+                    ).toList());
 
         CompletableFuture[] cfs = batchWriteProcesses.toArray(new CompletableFuture[0]);
         CompletableFuture<List<DynamoDBMapper.FailedBatch>> jointFutures = CompletableFuture.allOf(cfs)
@@ -164,10 +171,11 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         if (recordsMetadata != null) {
             List<RecordMetadataDoc> metadataDocs = new ArrayList<>();
-            List<LegalTagAssociationDoc> legalDocs = new ArrayList<>();
-            recordsMetadata.forEach(recordMetadata -> addMetadataAndLegal(recordMetadata, collaborationContext, metadataDocs, legalDocs));
+            List<LegalTagAssociationDoc> createLegalDocs = new ArrayList<>();
+            List<LegalTagAssociationDoc> deleteLegalDocs = new ArrayList<>();
+            recordsMetadata.forEach(recordMetadata -> addMetadataAndLegal(recordMetadata, collaborationContext, metadataDocs, createLegalDocs, deleteLegalDocs));
 
-            writeDynamoDBRecordsParallel(metadataDocs, legalDocs);
+            writeDynamoDBRecordsParallel(metadataDocs, createLegalDocs, deleteLegalDocs);
         }
         return recordsMetadata;
     }
@@ -175,6 +183,10 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     @Override
     public void delete(String id, Optional<CollaborationContext> collaborationContext) {
         RecordMetadata rmd = get(id,collaborationContext);
+        if (rmd == null) {
+            return;
+        }
+
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class,
                 CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext));
@@ -244,14 +256,14 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         return new AbstractMap.SimpleEntry<>(result.cursor, associatedRecords);
     }
 
-    private void saveLegalTagAssociation(String recordId, Set<String> legalTags, List<LegalTagAssociationDoc> legalTagDocs){
-        for(String legalTag : legalTags){
-            LegalTagAssociationDoc doc = new LegalTagAssociationDoc();
-            doc.setLegalTag(legalTag);
-            doc.setRecordId(recordId);
-            doc.setRecordIdLegalTag(String.format("%s:%s", recordId, legalTag));
-            legalTagDocs.add(doc);
-        }
+    private void saveLegalTagAssociation(String recordId, Set<String> legalTags, List<LegalTagAssociationDoc> createLegalTags, List<LegalTagAssociationDoc> deleteLegalTags){
+        DynamoDBQueryHelperV2 legalTagHelper = getLegalTagQueryHelper();
+        LegalTagAssociationDoc queryDoc = new LegalTagAssociationDoc();
+        queryDoc.setRecordId(recordId);
+        List<LegalTagAssociationDoc> currentDocs = legalTagHelper.queryByGSI(LegalTagAssociationDoc.class, queryDoc);
+        Set<String> existingLegalTags = currentDocs.stream().map(LegalTagAssociationDoc::getLegalTag).collect(Collectors.toSet());
+        deleteLegalTags.addAll(existingLegalTags.stream().filter(lt -> !legalTags.contains(lt)).map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).toList());
+        createLegalTags.addAll(legalTags.stream().filter(lt -> !existingLegalTags.contains(lt)).map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).toList());
     }
 
     private void deleteLegalTagAssociation(String recordId, String legalTag){

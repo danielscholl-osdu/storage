@@ -14,13 +14,19 @@
 
 package org.opengroup.osdu.storage.provider.aws.jobs;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedList;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
@@ -36,12 +42,15 @@ import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
 import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,6 +72,9 @@ class LegalComplianceChangeServiceAWSImplTest {
 
     @Mock
     private WorkerThreadPool workerThreadPool;
+
+    @Captor
+    private ArgumentCaptor<List<LegalTagAssociationDoc>> ltaCaptor;
 
     @Mock
     private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
@@ -116,20 +128,6 @@ class LegalComplianceChangeServiceAWSImplTest {
 
         DpsHeaders headers = new DpsHeaders();
 
-        // incompliant record(s)
-        String cursor = null;
-        RecordMetadata recordMetadata = new RecordMetadata();
-        recordMetadata.setId(incompliantRecordId);
-        Legal incompliantLegal = new Legal();
-        Set<String> incompliantLegalTags = new HashSet<>();
-        incompliantLegalTags.add(incompliantTagName);
-        incompliantLegal.setLegaltags(incompliantLegalTags);
-        recordMetadata.setLegal(incompliantLegal);
-        List<RecordMetadata> incompliantRecordMetaDatas = new ArrayList<>();
-        incompliantRecordMetaDatas.add(recordMetadata);
-        AbstractMap.SimpleEntry<String, List<RecordMetadata>> incompliantResult =
-                new AbstractMap.SimpleEntry<String, List<RecordMetadata>>(cursor, incompliantRecordMetaDatas);
-
         // compliant record(s)
         RecordMetadata compliantRecordMetadata = new RecordMetadata();
         compliantRecordMetadata.setId(compliantRecordId);
@@ -138,8 +136,25 @@ class LegalComplianceChangeServiceAWSImplTest {
         compliantLegalTags.add(compliantTagName);
         compliantLegal.setLegaltags(compliantLegalTags);
         compliantRecordMetadata.setLegal(compliantLegal);
+
+        // incompliant record(s)
+        String cursor = null;
+        RecordMetadata incompliantRecordMetadata = new RecordMetadata();
+        incompliantRecordMetadata.setId(incompliantRecordId);
+        Legal incompliantLegal = new Legal();
+        Set<String> incompliantLegalTags = new HashSet<>();
+        incompliantLegalTags.add(incompliantTagName);
+        incompliantLegal.setLegaltags(incompliantLegalTags);
+        incompliantRecordMetadata.setLegal(incompliantLegal);
+        List<RecordMetadata> incompliantRecordMetaDatas = new ArrayList<>();
+        incompliantRecordMetaDatas.add(incompliantRecordMetadata);
+        incompliantRecordMetaDatas.add(compliantRecordMetadata);
+        AbstractMap.SimpleEntry<String, List<RecordMetadata>> incompliantResult =
+                new AbstractMap.SimpleEntry<String, List<RecordMetadata>>(cursor, incompliantRecordMetaDatas);
+
         List<RecordMetadata> compliantRecordMetaDatas = new ArrayList<>();
         compliantRecordMetaDatas.add(compliantRecordMetadata);
+        compliantRecordMetaDatas.add(incompliantRecordMetadata);
         AbstractMap.SimpleEntry<String, List<RecordMetadata>> compliantResult =
                 new AbstractMap.SimpleEntry<String, List<RecordMetadata>>(cursor, compliantRecordMetaDatas);
 
@@ -165,10 +180,10 @@ class LegalComplianceChangeServiceAWSImplTest {
         ArgumentCaptor<List<RecordMetadata>> recordMetadataCaptor = ArgumentCaptor.forClass(List.class);
 
         // mock methods called
-        when(recordsMetadataRepository.queryByLegalTagName(eq(incompliantTagName), eq(500), eq(null)))
+        when(recordsMetadataRepository.queryByLegalTagName(incompliantTagName, 500, null))
                 .thenReturn(incompliantResult);
 
-        when(recordsMetadataRepository.queryByLegalTagName(eq(compliantTagName), eq(500), eq(null)))
+        when(recordsMetadataRepository.queryByLegalTagName(compliantTagName, 500, null))
                 .thenReturn(compliantResult);
 
         ArgumentCaptor<PubSubInfo[]> pubSubArg = ArgumentCaptor.forClass(PubSubInfo[].class);
@@ -177,6 +192,17 @@ class LegalComplianceChangeServiceAWSImplTest {
         Map<String, LegalCompliance> output = service.updateComplianceOnRecords(legalTagsChanged, headers);
 
         // assert
+        Mockito.verify(legalTagAssociationHelper, Mockito.times(2)).batchDelete(ltaCaptor.capture());
+        Set<String> ids = new HashSet<>();
+        for (List<LegalTagAssociationDoc> ltas : ltaCaptor.getAllValues()) {
+            Assertions.assertEquals(1, ltas.size());
+            LegalTagAssociationDoc lta = ltas.get(0);
+            ids.add(lta.getRecordIdLegalTag());
+        }
+        Assertions.assertEquals(2, ids.size());
+        Assertions.assertTrue(ids.contains(LegalTagAssociationDoc.getLegalRecordId(compliantRecordId, incompliantTagName)));
+        Assertions.assertTrue(ids.contains(LegalTagAssociationDoc.getLegalRecordId(incompliantRecordId, compliantTagName)));
+
         // that create is called on the record returned for compliant
         Mockito.verify(recordsMetadataRepository, Mockito.times(2)).createOrUpdate(recordMetadataCaptor.capture(), eq(Optional.empty()));
 

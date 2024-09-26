@@ -33,4 +33,16 @@ public class LegalTagAssociationDoc {
 
     @DynamoDBIndexHashKey(attributeName = "legalTag", globalSecondaryIndexName = "legalTag-index")
     private String legalTag;
+
+    public static String getLegalRecordId(String recordId, String legalTag) {
+        return String.format("%s:%s", recordId, legalTag);
+    }
+
+    public static LegalTagAssociationDoc createLegalTagDoc(String legalTag, String recordId) {
+        LegalTagAssociationDoc doc = new LegalTagAssociationDoc();
+        doc.setLegalTag(legalTag);
+        doc.setRecordId(recordId);
+        doc.setRecordIdLegalTag(getLegalRecordId(recordId, legalTag));
+        return doc;
+    }
 }

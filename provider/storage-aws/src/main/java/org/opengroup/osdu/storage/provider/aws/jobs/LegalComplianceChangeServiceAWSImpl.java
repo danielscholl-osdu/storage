@@ -128,8 +128,8 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
             this.auditLogger.updateRecordsComplianceStateSuccess(
                 singletonList("[" + recordsId.toString() + "]"));
 
-            // TODO Replace this with Batch Delete when AWS Core library supports it
-            recordLegalTagsToDelete.forEach(recordId -> legalTagQueryHelper.deleteByPrimaryKey(LegalTagAssociationDoc.class, String.format("%s:%s", recordId, lt.getChangedTagName())));
+            List<LegalTagAssociationDoc> legalTagRecordAssociation = recordLegalTagsToDelete.stream().map(recordId -> LegalTagAssociationDoc.createLegalTagDoc(lt.getChangedTagName(), recordId)).toList();
+            legalTagQueryHelper.batchDelete(legalTagRecordAssociation);
             this.storageMessageBus.publishMessage(headers, pubsubInfos.toArray(new PubSubInfo[0]));
             recordLegalTagsToDelete.clear();
             modifiedRecords.clear();
