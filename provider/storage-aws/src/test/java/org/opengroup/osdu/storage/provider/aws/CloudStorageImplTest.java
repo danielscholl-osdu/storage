@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import com.amazonaws.AmazonServiceException;
 import com.google.gson.Gson;
 import org.opengroup.osdu.core.aws.s3.S3ClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -141,7 +142,8 @@ class CloudStorageImplTest {
         when(recordProcessing.getRecordData()).thenReturn(recordData);
         doNothing().when(userAccessService).validateRecordAcl(any());
         
-        when(recordProcessing.getRecordMetadata()).thenThrow(new RuntimeException("test exception"));
+        when(recordProcessing.getRecordMetadata()).thenReturn(record);
+        doThrow(RuntimeException.class).when(s3RecordClient).saveRecord(recordProcessing, dataPartition);
 
         assertThrows(AppException.class, () -> repo.write(recordProcessing));
     }
