@@ -25,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import org.junit.jupiter.api.Assertions;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -74,6 +75,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 class RecordsMetadataRepositoryTest {
@@ -85,6 +87,9 @@ class RecordsMetadataRepositoryTest {
 
     @Mock
     private PaginatedQueryList<Object> paginatedQueryList;
+
+    @Mock
+    private PaginatedQueryList<LegalTagAssociationDoc> legalTagPaginatedQueryList;
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
@@ -103,6 +108,9 @@ class RecordsMetadataRepositoryTest {
 
     @Captor
     ArgumentCaptor<List<Object>> batchSaveCaptor;
+
+    @Captor
+    ArgumentCaptor<Object> deleteObjectCaptor;
 
     @Captor
     ArgumentCaptor<Set<String>> idsCaptor;
@@ -466,6 +474,8 @@ class RecordsMetadataRepositoryTest {
         RecordMetadata recordMetadata = new RecordMetadata();
         recordMetadata.setId("opendes:id:15706318658560");
         recordMetadata.setKind("opendes:source:type:1.0.0");
+        String legalTag1 = "opendes-storage-1570631865856";
+        String legalTag2 = "other-legal-tag";
 
         Acl recordAcl = new Acl();
         String[] owners = {"data.tenant@byoc.local"};
@@ -474,7 +484,7 @@ class RecordsMetadataRepositoryTest {
         recordAcl.setViewers(viewers);
         recordMetadata.setAcl(recordAcl);
         Legal recordLegal = new Legal();
-        Set<String> legalTags = new HashSet<>(Collections.singletonList("opendes-storage-1570631865856"));
+        Set<String> legalTags = new HashSet<>(Collections.singletonList(legalTag1));
         recordLegal.setLegaltags(legalTags);
         LegalCompliance status = LegalCompliance.compliant;
         recordLegal.setStatus(status);
@@ -491,15 +501,37 @@ class RecordsMetadataRepositoryTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        Mockito.doNothing().when(queryHelper).deleteByPrimaryKey(RecordMetadataDoc.class, id);
-        Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
-                .thenReturn(expectedRmd);
+        List<LegalTagAssociationDoc> ltaDocs = new ArrayList<>();
+        ltaDocs.add(LegalTagAssociationDoc.createLegalTagDoc(legalTag1, id));
+        ltaDocs.add(LegalTagAssociationDoc.createLegalTagDoc(legalTag2, id));
+        when(queryHelper.queryByGSI(eq(LegalTagAssociationDoc.class), any(LegalTagAssociationDoc.class)))
+                        .thenReturn(mock(PaginatedQueryList.class, withSettings().defaultAnswer(new ForwardsInvocations(ltaDocs))));
 
         // Act
         repo.delete(id, Optional.empty());
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).deleteByPrimaryKey(RecordMetadataDoc.class, id);
+        Mockito.verify(queryHelper, Mockito.times(1)).deleteByObject(deleteObjectCaptor.capture());
+
+        if (deleteObjectCaptor.getValue() instanceof RecordMetadataDoc actualRmd) {
+            assertEquals(id, actualRmd.getId());
+        } else {
+            fail();
+        }
+
+        Mockito.verify(queryHelper, Mockito.times(1)).batchDelete(batchSaveCaptor.capture());
+        Set<String> actualLtaIds = new HashSet<>();
+        for (Object ltaObj : batchSaveCaptor.getValue()) {
+            if (ltaObj instanceof LegalTagAssociationDoc lta) {
+                actualLtaIds.add(lta.getRecordIdLegalTag());
+            } else {
+                fail();
+            }
+        }
+
+        assertEquals(2, actualLtaIds.size());
+        assertTrue(actualLtaIds.contains(LegalTagAssociationDoc.getLegalRecordId(id, legalTag1)));
+        assertTrue(actualLtaIds.contains(LegalTagAssociationDoc.getLegalRecordId(id, legalTag2)));
     }
 
 }
