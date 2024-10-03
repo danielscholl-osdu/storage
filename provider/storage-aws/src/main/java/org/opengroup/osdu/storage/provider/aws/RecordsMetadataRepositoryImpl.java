@@ -182,17 +182,16 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     @Override
     public void delete(String id, Optional<CollaborationContext> collaborationContext) {
-        RecordMetadata rmd = get(id,collaborationContext);
-        if (rmd == null) {
-            return;
-        }
-
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-        recordMetadataQueryHelper.deleteByPrimaryKey(RecordMetadataDoc.class,
-                CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext));
-        for (String legalTag : rmd.getLegal().getLegaltags()) {
-            deleteLegalTagAssociation(CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext), legalTag);
-        }
+        RecordMetadataDoc rmdItem = new RecordMetadataDoc();
+        String recordId = CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext);
+        rmdItem.setId(recordId);
+        recordMetadataQueryHelper.deleteByObject(rmdItem);
+        DynamoDBQueryHelperV2 ltaQueryHelper = getLegalTagQueryHelper();
+        LegalTagAssociationDoc queryObject = new LegalTagAssociationDoc();
+        queryObject.setRecordId(recordId);
+        List<LegalTagAssociationDoc> legalTagAssociationDocs = ltaQueryHelper.queryByGSI(LegalTagAssociationDoc.class, queryObject);
+        writeDynamoDBRecordsParallel(Collections.emptyList(), Collections.emptyList(), legalTagAssociationDocs);
     }
 
     @Override
@@ -264,14 +263,5 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         Set<String> existingLegalTags = currentDocs.stream().map(LegalTagAssociationDoc::getLegalTag).collect(Collectors.toSet());
         deleteLegalTags.addAll(existingLegalTags.stream().filter(lt -> !legalTags.contains(lt)).map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).toList());
         createLegalTags.addAll(legalTags.stream().filter(lt -> !existingLegalTags.contains(lt)).map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).toList());
-    }
-
-    private void deleteLegalTagAssociation(String recordId, String legalTag){
-
-        DynamoDBQueryHelperV2 legalTagQueryHelper = getLegalTagQueryHelper();
-
-        LegalTagAssociationDoc doc = new LegalTagAssociationDoc();
-        doc.setRecordIdLegalTag(String.format("%s:%s", recordId, legalTag));
-        legalTagQueryHelper.deleteByObject(doc);
     }
 }
