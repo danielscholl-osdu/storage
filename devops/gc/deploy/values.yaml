@@ -7,6 +7,8 @@ global:
   onPremEnabled: false
   limitsEnabled: true
   logLevel: "ERROR"
+  tier: ""
+  autoscaling: true
 
 data:
   # configmaps
@@ -45,3 +47,20 @@ istio:
   proxyCPULimit: "200m"
   proxyMemory: "50Mi"
   proxyMemoryLimit: "256Mi"
+
+hpa:
+  minReplicas: 10
+  maxReplicas: 20
+  targetType: "AverageValue"
+  targetValue: 40   # rps*0.85*2
+  behaviorScaleUpStabilizationWindowSeconds: 10
+  behaviorScaleUpPoliciesValue: 50
+  behaviorScaleUpPoliciesPeriodSeconds: 15
+  behaviorScaleDownStabilizationWindowSeconds: 60
+  behaviorScaleDownPoliciesValue: 25
+  behaviorScaleDownPoliciesPeriodSeconds: 60
+
+local_ratelimit:
+  max_tokens: 25   # rps
+  tokens_per_fill: 25
+  fill_interval: "1s"
