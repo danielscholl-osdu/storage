@@ -53,6 +53,7 @@ import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.CrcHashGenerator;
 import org.opengroup.osdu.storage.util.RecordBlocks;
+import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.util.RecordTestUtil;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 
@@ -238,6 +239,27 @@ public class IngestionServiceImplTest {
         assertEquals(
                 "The record 'gasguys:record:123' does not follow the naming convention: The record id must be in the format of <tenantId>:<kindSubType>:<uniqueId>. Example: tenant1:kind:<uuid>",
                 exception.getError().getMessage());
+    }
+
+    @Test
+    public void should_throwAppException400_when_recordIdSizeGreaterThanLimit() {
+
+        String INVALID_RECORD_ID = "tenant1:record:longidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongid" +
+                "longidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongid" +
+                "longidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongid" +
+                "longidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongid" +
+                "longidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongidlongid" +
+                "longidlongidlongidlongidlongidlongidlongidlongid";
+
+        this.record1.setId(INVALID_RECORD_ID);
+
+        AppException exception = assertThrows(AppException.class, ()->{
+            this.sut.createUpdateRecords(false, this.records, USER, Optional.empty());
+        });
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+        assertEquals("Invalid record id", exception.getError().getReason());
+        assertEquals("The record '" + INVALID_RECORD_ID + "' does not follow the record id size convention: The record id must be no longer than " +
+                RecordConstants.RECORD_ID_MAX_SIZE_IN_BYTES + " bytes", exception.getError().getMessage());
     }
 
     @Test

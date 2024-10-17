@@ -38,6 +38,7 @@ import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.RecordBlocks;
+import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -155,6 +156,13 @@ public class IngestionServiceImpl implements IngestionService {
 					String msg = String.format(
 							"The record '%s' does not follow the naming convention: The record id must be in the format of <tenantId>:<kindSubType>:<uniqueId>. Example: %s:%s:<uuid>",
 							id, tenantName, kindSubType);
+					throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", msg);
+				}
+
+				if (id.getBytes().length > RecordConstants.RECORD_ID_MAX_SIZE_IN_BYTES) {
+					String msg = String.format(
+							"The record '%s' does not follow the record id size convention: The record id must be no longer than %s bytes",
+							id, RecordConstants.RECORD_ID_MAX_SIZE_IN_BYTES);
 					throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid record id", msg);
 				}
 
