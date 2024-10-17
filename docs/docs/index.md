@@ -28,7 +28,7 @@ From the Storage Service perspective, the metadata to be ingested is called __re
 }
 ```
 
-* __id__: _(optional)_ Unique identifier in the Data Ecosystem. When not provided, the service will create and assign an id to the record. Must follow the naming convention: ``{Data-Partition-Id}:{object-type}:{uuid}``.
+* __id__: _(optional)_ Unique identifier in the Data Ecosystem. When not provided, the service will create and assign an id to the record. Must follow the naming convention: ``{Data-Partition-Id}:{object-type}:{uuid}`` and be no longer than 512 bytes.
 * __kind__: _(mandatory)_ Kind of data being ingested. Must follow the naming convention: ``{Schema-Authority}:{dataset-name}:{record-type}:{version}``.
 * __acl__: _(mandatory)_ Group of users who have access to the record. 
     * __acl.viewers__: List of valid groups which will have view/read privileges over the record. We follow the naming convention such that data groups begin with ``data.``.
