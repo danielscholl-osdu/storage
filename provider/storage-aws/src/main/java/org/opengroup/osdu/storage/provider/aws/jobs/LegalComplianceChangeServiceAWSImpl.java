@@ -14,43 +14,43 @@
 
 package org.opengroup.osdu.storage.provider.aws.jobs;
 
-import jakarta.inject.Inject;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
-import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.legal.jobs.*;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
-import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
-import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
-import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
-import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
-import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
-import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
-import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
-import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import static java.util.Collections.singletonList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceChangeInfo;
+import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
+import org.opengroup.osdu.core.common.model.legal.jobs.ILegalComplianceChangeService;
+import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
+import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
+import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.logging.StorageAuditLogger;
+import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
+import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import jakarta.inject.Inject;
 import lombok.NoArgsConstructor;
-
-import static java.util.Collections.singletonList;
 
 @NoArgsConstructor
 @Service
@@ -128,7 +128,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
             this.auditLogger.updateRecordsComplianceStateSuccess(
                 singletonList("[" + recordsId.toString() + "]"));
 
-            List<LegalTagAssociationDoc> legalTagRecordAssociation = recordLegalTagsToDelete.stream().map(recordId -> LegalTagAssociationDoc.createLegalTagDoc(lt.getChangedTagName(), recordId)).toList();
+            List<LegalTagAssociationDoc> legalTagRecordAssociation = recordLegalTagsToDelete.stream().map(recordId -> LegalTagAssociationDoc.createLegalTagDoc(lt.getChangedTagName(), recordId)).collect(Collectors.toList());
             legalTagQueryHelper.batchDelete(legalTagRecordAssociation);
             this.storageMessageBus.publishMessage(headers, pubsubInfos.toArray(new PubSubInfo[0]));
             recordLegalTagsToDelete.clear();
