@@ -38,6 +38,7 @@ variables:
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
+    ref: "acceptance-tests"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "build/maven.yml"
