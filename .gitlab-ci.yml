@@ -38,7 +38,6 @@ variables:
 include:
   - project: "osdu/platform/ci-cd-pipelines"
     file: "standard-setup.yml"
-    ref: "acceptance-tests"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "build/maven.yml"
@@ -247,6 +246,51 @@ azure_test:
 
 aws-test-java:
   image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.0
+
+core-acceptance-test:
+  stage: acceptance
+  extends: core-test
+  needs: ["core-test"]
+  variables:
+    OPA_INTEGRATION_ENABLED: "true"
+    CORE_TESTING_DIR: "storage-acceptance-test"
+    CORE_TEST_PROJECT: "storage-acceptance-test"
+    CORE_TEST_SUBDIR: "storage-acceptance-test"
+  script:
+    - >
+      $MAVEN_BUILD . test-results.log
+      verify -DdisableXmlReport=true
+      --quiet
+      --file $CORE_TESTING_DIR/pom.xml
+      --update-snapshots
+
+aws-acceptance-test:
+  stage: acceptance
+  script:
+    - echo "This job is expected to fail"
+    - exit 1
+  allow_failure: true
+
+azure-acceptance-test:
+  stage: acceptance
+  script:
+    - echo "This job is expected to fail"
+    - exit 1
+  allow_failure: true
+
+gc-acceptance-test:
+  stage: acceptance
+  script:
+    - echo "This job is expected to fail"
+    - exit 1
+  allow_failure: true
+
+ibm-acceptance-test:
+  stage: acceptance
+  script:
+    - echo "This job is expected to fail"
+    - exit 1
+  allow_failure: true
 
 fossa-analyze:
   image: $CI_REGISTRY/divido/fossa-with-cache:v0.9-jdk17
