@@ -14,3 +14,11 @@ core-deploy:
 core-test:
   variables:
     OPA_INTEGRATION_ENABLED: "false"
+
+acceptance-core:
+  stage: acceptance
+  extends: .core-test
+  variables:
+    OPA_INTEGRATION_ENABLED: "true"
+    CORE_TEST_PROJECT: "storage-acceptance-test"
+    CORE_TEST_SUBDIR: "storage-acceptance-test"
