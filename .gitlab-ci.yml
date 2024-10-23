@@ -265,11 +265,25 @@ core-acceptance-test:
       --update-snapshots
 
 aws-acceptance-test:
+  extends:
+    - .maven
+    - .aws
+    - .aws_common_variables
+    - .aws_variables
   stage: acceptance
+  image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.1
+  needs: [{ job: 'aws-update-tf', optional: true }]
+  before_script:
+    - !reference [.maven, before_script]
+    - !reference [.aws, before_script]
+    - !reference [.aws_variables, before_script]
   script:
     - echo "This job is expected to fail"
     - exit 1
   allow_failure: true
+  only:
+    variables:
+      - $AWS == '1'
 
 azure-acceptance-test:
   stage: acceptance
@@ -277,6 +291,9 @@ azure-acceptance-test:
     - echo "This job is expected to fail"
     - exit 1
   allow_failure: true
+  only:
+    variables:
+      - $AZURE == '1'
 
 gc-acceptance-test:
   stage: acceptance
@@ -284,6 +301,9 @@ gc-acceptance-test:
     - echo "This job is expected to fail"
     - exit 1
   allow_failure: true
+  only:
+    variables:
+      - $GC == '1'
 
 ibm-acceptance-test:
   stage: acceptance
@@ -291,6 +311,9 @@ ibm-acceptance-test:
     - echo "This job is expected to fail"
     - exit 1
   allow_failure: true
+  only:
+    variables:
+      - $IBM == '1'
 
 fossa-analyze:
   image: $CI_REGISTRY/divido/fossa-with-cache:v0.9-jdk17
