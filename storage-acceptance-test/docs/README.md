@@ -5,7 +5,7 @@ You will need to have the following environment variables defined.
 | name                      | value                                          | description                                                                                                                      | sensitive? | source                                                       |
 |---------------------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|------------|--------------------------------------------------------------|
 | `GROUP_ID`                | ex`opendes-gc.projects.com`                    | OSDU R2 to run tests under                                                                                                       | no         | -                                                            |
-| `LEGAL_URL`               | ex`http://localhsot:8080/api/legal/v1/`        | Legal API endpoint                                                                                                               | no         | -                                                            |
+| `LEGAL_URL`               | ex`http://localhost:8080/api/legal/v1/`        | Legal API endpoint                                                                                                               | no         | -                                                            |
 | `STORAGE_URL`             | ex`http://localhost:8080/api/storage/v2/`      | Endpoint of storage service                                                                                                      | no         | -                                                            |
 | `TENANT_NAME`             | ex `opendes`                                   | OSDU tenant used for testing                                                                                                     | no         | --                                                           |
 | `ENTITLEMENTS_URL`        | ex`http://localhost:8080/api/entitlements/v2/` | Endpoint of entitlements service                                                                                                 | no         | -                                                            |
@@ -36,7 +36,7 @@ Feature testing is controlled with the following environment variables:
 | name                      | value             | description                                                               |
 |---------------------------|-------------------|---------------------------------------------------------------------------|
 | `TEST_REPLAY_ENABLED`     | `true` OR `false` | Controls Replay API tests.                                                |
-| `COLABORATION_ENABLED`    | `true` OR `false` | Controls collaboration feature tests.                                     |
+| `COLLABORATION_ENABLED`   | `true` OR `false` | Controls collaboration feature tests.                                     |
 | `OPA_INTEGRATION_ENABLED` | `true` OR `false` | Used to adjust assertions if integration with OPA\Policy enabled\disabled |
 
 
@@ -62,7 +62,7 @@ Execute following command to build code and run all the integration tests:
  # Note: this assumes that the environment variables for integration tests as outlined
  #       above are already exported in your environment.
  # build + install integration test core
- $ (cd testing/storage-test-core/ && mvn clean test)
+ $ (cd storage-acceptance-test && mvn clean test)
  ```
 
 ## License
