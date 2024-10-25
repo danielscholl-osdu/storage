@@ -34,6 +34,7 @@ variables:
   IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
 
   CORE_BUILD_SUBDIR: storage-core
+  ACCEPTANCE_TEST_DIR: "storage-acceptance-test"
   CORE_COVERAGE_THRESHOLD: "80"
 include:
   - project: "osdu/platform/ci-cd-pipelines"
@@ -253,15 +254,12 @@ core-acceptance-test:
   needs: ["core-test"]
   variables:
     OPA_INTEGRATION_ENABLED: "true"
-    CORE_TESTING_DIR: "storage-acceptance-test"
-    CORE_TEST_PROJECT: "storage-acceptance-test"
-    CORE_TEST_SUBDIR: "storage-acceptance-test"
   script:
     - >
       $MAVEN_BUILD . test-results.log
       verify -DdisableXmlReport=true
       --quiet
-      --file $CORE_TESTING_DIR/pom.xml
+      --file $ACCEPTANCE_TEST_DIR/pom.xml
       --update-snapshots
 
 aws-acceptance-test:
@@ -277,9 +275,25 @@ aws-acceptance-test:
     - !reference [.maven, before_script]
     - !reference [.aws, before_script]
     - !reference [.aws_variables, before_script]
+  variables:
+    OPA_INTEGRATION_ENABLED: "true"
   script:
-    - echo "This job is expected to fail"
-    - exit 1
+    - export GROUP_ID=$DOMAIN
+    - export COGNITO_AUTH_TOKEN_URI=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/oauth/token-uri" --query Parameter.Value --output text --region $AWS_REGION)
+    - export COGNITO_ALLOWED_SCOPES=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/oauth/allowed-scopes" --query Parameter.Value --output text --region $AWS_REGION)
+    - export AWS_CLIENT_CREDENTIALS_CLIENT_ID=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/client/client-credentials/id" --query Parameter.Value --output text --region $AWS_REGION)
+    - export AWS_CLIENT_CREDENTIALS_CLIENT_SECRET=$(aws secretsmanager get-secret-value --secret-id /osdu/cognito/${COGNITO_NAME}/client-credentials-secret --query SecretString --output json --region $AWS_REGION | sed -e 's/\\\"/\"/g' -e 's/^.//g' -e 's/.$//g' | jq -r '.client_credentials_client_secret')
+    - export AWS_SERVICE_PRINCIPAL_AUTHORIZATION=$(echo -n "${AWS_CLIENT_CREDENTIALS_CLIENT_ID}:${AWS_CLIENT_CREDENTIALS_CLIENT_SECRET}" | base64)
+    - export INTEGRATION_TESTER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
+
+    - export DATA_ROOT_TOKEN=$(curl --location ${COGNITO_AUTH_TOKEN_URI} --header "Content-Type:application/x-www-form-urlencoded" --header "Authorization:Basic ${AWS_SERVICE_PRINCIPAL_AUTHORIZATION}" --data-urlencode "grant_type=client_credentials" --data-urlencode ${COGNITO_ALLOWED_SCOPES}  --http1.1 | jq -r '.access_token')
+    - export NO_DATA_ACCESS_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER_NO_ACCESS},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
+    - >
+      $MAVEN_BUILD . test-results.log
+      verify -DdisableXmlReport=true
+      --quiet
+      --file $ACCEPTANCE_TEST_DIR/pom.xml
+      --update-snapshots
   allow_failure: true
   only:
     variables:
