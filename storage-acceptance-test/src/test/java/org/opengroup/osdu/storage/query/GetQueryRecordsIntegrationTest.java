@@ -14,25 +14,33 @@
 
 package org.opengroup.osdu.storage.query;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opengroup.osdu.storage.util.*;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.opengroup.osdu.storage.util.DummyRecordsHelper;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.LegalTagUtils;
+import org.opengroup.osdu.storage.util.RecordUtil;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestBase;
+import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class GetQueryRecordsIntegrationTest extends TestBase {
 
@@ -71,7 +79,7 @@ public final class GetQueryRecordsIntegrationTest extends TestBase {
 		String jsonInput = RecordUtil.createDefaultJsonRecords(5, RECORD_ID, KIND, LEGAL_TAG);
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {
@@ -101,7 +109,7 @@ public final class GetQueryRecordsIntegrationTest extends TestBase {
 
 		// first call
 		CloseableHttpResponse response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2&kind=" + KIND);
-		if (response.getCode() != 200) {
+		if (response.getCode() != HttpStatus.SC_OK) {
 			fail(formResponseCheckingMessage(response));
 		}
 		DummyRecordsHelper.QueryResultMock responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
@@ -116,7 +124,7 @@ public final class GetQueryRecordsIntegrationTest extends TestBase {
 		// second call
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?limit=2&cursor=" + cursor + "&kind=" + KIND);
-		if (response.getCode() != 200) {
+		if (response.getCode() != HttpStatus.SC_OK) {
 			fail(formResponseCheckingMessage(response));
 		}
 		responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);
@@ -131,7 +139,7 @@ public final class GetQueryRecordsIntegrationTest extends TestBase {
 		// third call
 		response = TestUtils.send("query/records", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"?limit=2&cursor=" + cursor + "&kind=" + KIND);
-		if (response.getCode() != 200) {
+		if (response.getCode() != HttpStatus.SC_OK) {
 			fail(formResponseCheckingMessage(response));
 		}
 		responseObject = RECORDS_HELPER.getQueryResultMockFromResponse(response);

@@ -14,12 +14,12 @@
 
 package org.opengroup.osdu.storage.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LegalTagUtils {
 	public static String createRandomName() {

@@ -28,7 +28,6 @@ public class ConfigUtils {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         try (InputStream input = loader.getResourceAsStream(propertiesFileName)) {
             properties = new Properties();
-
             // load a properties file
             properties.load(input);
         }
@@ -36,12 +35,16 @@ public class ConfigUtils {
 
     public boolean getBooleanProperty(String propertyName, String defaultValue) {
         String propValue = properties.getProperty(propertyName, defaultValue);
-        return Boolean.parseBoolean(propValue);
+        String envValue = getEnvValue(propertyName);
+        return (envValue == null || envValue.isEmpty()) ? Boolean.parseBoolean(propValue)
+            : Boolean.parseBoolean(envValue);
     }
 
     public long getLongProperty(String propertyName, String defaultValue) {
         String propValue = properties.getProperty(propertyName, defaultValue);
-        return Long.parseLong(propValue);
+        String envValue = getEnvValue(propertyName);
+        return (envValue == null || envValue.isEmpty()) ? Long.parseLong(propValue)
+            : Long.parseLong(envValue);
     }
 
     public boolean getIsSchemaEndpointsEnabled() {
@@ -56,5 +59,9 @@ public class ConfigUtils {
     public boolean getIsTestReplayAllEnabled() { return  getBooleanProperty("test.replayAll.enabled", "false");}
 
     public long getTimeoutForReplay() { return  getLongProperty("test.replayAll.timeout", "60");}
+
+    private static String getEnvValue(String propertyName) {
+        return System.getenv(propertyName.toUpperCase().replaceAll("\\.", "_"));
+    }
 
 }

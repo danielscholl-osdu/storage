@@ -2,33 +2,33 @@
 
 You will need to have the following environment variables defined.
 
-| name                      | value                                          | description                                                                                                                      | sensitive? | source                                                       |
-|---------------------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|------------|--------------------------------------------------------------|
-| `GROUP_ID`                | ex`opendes-gc.projects.com`                    | OSDU R2 to run tests under                                                                                                       | no         | -                                                            |
-| `LEGAL_URL`               | ex`http://localhost:8080/api/legal/v1/`        | Legal API endpoint                                                                                                               | no         | -                                                            |
-| `STORAGE_URL`             | ex`http://localhost:8080/api/storage/v2/`      | Endpoint of storage service                                                                                                      | no         | -                                                            |
-| `TENANT_NAME`             | ex `opendes`                                   | OSDU tenant used for testing                                                                                                     | no         | --                                                           |
-| `ENTITLEMENTS_URL`        | ex`http://localhost:8080/api/entitlements/v2/` | Endpoint of entitlements service                                                                                                 | no         | -                                                            |
+| name                  | value                                          | description                                    | sensitive? | source |
+|-----------------------|------------------------------------------------|------------------------------------------------|------------|--------|
+| `ENTITLEMENTS_DOMAIN` | ex`opendes-gc.projects.com`                    | OSDU R2 entitlements domain to run tests under | no         | -      |
+| `LEGAL_URL`           | ex`http://localhost:8080/api/legal/v1/`        | Legal API endpoint                             | no         | -      |
+| `STORAGE_URL`         | ex`http://localhost:8080/api/storage/v2/`      | Endpoint of storage service                    | no         | -      |
+| `TENANT_NAME`         | ex `opendes`                                   | OSDU tenant used for testing                   | no         | --     |
+| `ENTITLEMENTS_URL`    | ex`http://localhost:8080/api/entitlements/v2/` | Endpoint of entitlements service               | no         | -      |
 
 Authentication can be provided as OIDC config:
 
-| name                                           | value                                   | description                         | sensitive?                                        | source |
-|------------------------------------------------|-----------------------------------------|-------------------------------------|---------------------------------------------------|--------|
-| `DATA_ROOT_OPENID_PROVIDER_CLIENT_ID`          | `********`                              | DATA_ROOT_TESTER Client Id          | yes                                               | -      |
-| `DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET`      | `********`                              | DATA_ROOT_TESTER Client secret      | yes                                               | -      |
-| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID`     | `********`                              | NO_DATA_ACCESS_TESTER Client Id     | yes                                               | -      |
-| `TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET` | `********`                              | NO_DATA_ACCESS_TESTER Client secret | Client secret for `$NO_ACCESS_INTEGRATION_TESTER` | -      |
-| `TEST_OPENID_PROVIDER_CLIENT_ID`               | `********`                              | INTEGRATION_TESTER Client Id        | yes                                               | -      |
-| `TEST_OPENID_PROVIDER_CLIENT_SECRET`           | `********`                              | INTEGRATION_TESTER Client secret    | Client secret for `$INTEGRATION_TESTER`           | -      |
-| `TEST_OPENID_PROVIDER_URL`                     | `https://keycloak.com/auth/realms/osdu` | OpenID provider url                 | yes                                               | --     |
+| name                                            | value                                   | description                   | sensitive? | source |
+|-------------------------------------------------|-----------------------------------------|-------------------------------|------------|--------|
+| `ROOT_USER_OPENID_PROVIDER_CLIENT_ID`           | `********`                              | ROOT_USER Client Id           | yes        | -      |
+| `ROOT_USER_OPENID_PROVIDER_CLIENT_SECRET`       | `********`                              | ROOT_USER Client secret       | yes        | -      |
+| `NO_ACCESS_USER_OPENID_PROVIDER_CLIENT_ID`      | `********`                              | NO_ACCESS_USER Client Id      | yes        | -      |
+| `NO_ACCESS_USER_OPENID_PROVIDER_CLIENT_SECRET`  | `********`                              | NO_ACCESS_USER Client secret  | yes        | -      |
+| `PRIVILEGED_USER_OPENID_PROVIDER_CLIENT_ID`     | `********`                              | PRIVILEGED_USER Client Id     | yes        | -      |
+| `PRIVILEGED_USER_OPENID_PROVIDER_CLIENT_SECRET` | `********`                              | PRIVILEGED_USER Client secret | yes        | -      |
+| `TEST_OPENID_PROVIDER_URL`                      | `https://keycloak.com/auth/realms/osdu` | OpenID provider url           | yes        | -      |
 
 Or tokens can be used directly from env variables:
 
-| name                       | value      | description                 | sensitive? | source |
-|----------------------------|------------|-----------------------------|------------|--------|
-| `INTEGRATION_TESTER_TOKEN` | `********` | INTEGRATION_TESTER Token    | yes        | -      |
-| `NO_DATA_ACCESS_TOKEN`     | `********` | NO_DATA_ACCESS_TESTER Token | yes        | -      |
-| `DATA_ROOT_TOKEN`          | `********` | DATA_ROOT_TESTER Token      | yes        | -      |
+| name                    | value      | description           | sensitive? | source |
+|-------------------------|------------|-----------------------|------------|--------|
+| `PRIVILEGED_USER_TOKEN` | `********` | PRIVILEGED_USER Token | yes        | -      |
+| `NO_ACCESS_USER_TOKEN`  | `********` | NO_ACCESS_USER Token  | yes        | -      |
+| `ROOT_USER_TOKEN`       | `********` | ROOT_USER Token       | yes        | -      |
 
 
 Feature testing is controlled with the following environment variables:
@@ -43,7 +43,7 @@ Feature testing is controlled with the following environment variables:
 
 **Entitlements configuration for integration accounts**
 
-| INTEGRATION_TESTER         | NO_DATA_ACCESS_TESTER     | DATA_ROOT_TESTER          |
+| PRIVILEGED_USER            | NO_ACCESS_USER            | ROOT_USER                 |
 |----------------------------|---------------------------|---------------------------|
 | users                      | users                     | users                     |
 | service.entitlements.user  | service.entitlements.user | users.data.root           |

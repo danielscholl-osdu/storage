@@ -49,7 +49,7 @@ public abstract class TestUtils {
     protected static String dataRootToken = null;
     private static Gson gson = new Gson();
 
-    protected static String groupId = System.getProperty("GROUP_ID", System.getenv("GROUP_ID"));
+    protected static String groupId = System.getProperty("ENTITLEMENTS_DOMAIN", System.getenv("ENTITLEMENTS_DOMAIN"));
 
     public static final String getGroupId() {
         return groupId;

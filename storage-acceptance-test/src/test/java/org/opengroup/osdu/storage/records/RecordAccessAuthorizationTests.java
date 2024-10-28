@@ -33,11 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 
 public final class RecordAccessAuthorizationTests extends TestBase {
@@ -143,7 +143,7 @@ public final class RecordAccessAuthorizationTests extends TestBase {
 
         assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
         JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
-        assertEquals(403, json.get("code").getAsInt());
+        assertEquals(HttpStatus.SC_FORBIDDEN, json.get("code").getAsInt());
         assertEquals("Access denied", json.get("reason").getAsString());
     }
 
@@ -207,7 +207,7 @@ public final class RecordAccessAuthorizationTests extends TestBase {
 		} catch (ParseException e) {
 			throw new RuntimeException(e);
 		}
-		assertEquals(403, json.get("code").getAsInt());
+		assertEquals(HttpStatus.SC_FORBIDDEN, json.get("code").getAsInt());
 		assertEquals("Access denied", json.get("reason").getAsString());
 		assertEquals("The user is not authorized to perform this action", json.get("message").getAsString());
 	}

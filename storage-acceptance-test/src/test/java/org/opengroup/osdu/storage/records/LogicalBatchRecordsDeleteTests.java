@@ -32,10 +32,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class LogicalBatchRecordsDeleteTests extends TestBase {
 
@@ -157,6 +157,9 @@ public final class LogicalBatchRecordsDeleteTests extends TestBase {
     }
 
     private String getValueFromDeleteResponseJsonArray(JsonArray jsonBody, String propertyName) {
+        if(jsonBody.isEmpty()){
+            throw new RuntimeException("Not able to fetch property: %s from response body. Response body is empty.".formatted(propertyName));
+        }
         return jsonBody.get(0).getAsJsonObject().get(propertyName).getAsString();
     }
 }

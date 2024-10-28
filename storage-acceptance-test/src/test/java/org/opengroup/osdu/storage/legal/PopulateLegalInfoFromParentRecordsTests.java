@@ -14,28 +14,37 @@
 
 package org.opengroup.osdu.storage.legal;
 
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_CREATED;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opengroup.osdu.storage.util.LegalTagUtils.createRandomName;
+
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.jsonwebtoken.lang.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper.CreateRecordResponse;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper.RecordResultMock;
-import org.opengroup.osdu.storage.util.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.apache.http.HttpStatus.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.opengroup.osdu.storage.util.LegalTagUtils.createRandomName;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.LegalTagUtils;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestBase;
+import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class PopulateLegalInfoFromParentRecordsTests extends TestBase {
 

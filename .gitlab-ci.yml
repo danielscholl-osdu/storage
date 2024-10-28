@@ -254,6 +254,13 @@ core-acceptance-test:
   needs: ["core-test"]
   variables:
     OPA_INTEGRATION_ENABLED: "true"
+    ROOT_USER_OPENID_PROVIDER_CLIENT_ID: $DATA_ROOT_OPENID_PROVIDER_CLIENT_ID
+    ROOT_USER_OPENID_PROVIDER_CLIENT_SECRET: $DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET
+    NO_ACCESS_USER_OPENID_PROVIDER_CLIENT_ID: $TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID
+    NO_ACCESS_USER_OPENID_PROVIDER_CLIENT_SECRET: $TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET
+    PRIVILEGED_USER_OPENID_PROVIDER_CLIENT_ID: $TEST_OPENID_PROVIDER_CLIENT_ID
+    PRIVILEGED_USER_OPENID_PROVIDER_CLIENT_SECRET: $TEST_OPENID_PROVIDER_CLIENT_SECRET
+    ENTITLEMENTS_DOMAIN: $GROUP_ID
   script:
     - >
       $MAVEN_BUILD . test-results.log
@@ -284,10 +291,10 @@ aws-acceptance-test:
     - export AWS_CLIENT_CREDENTIALS_CLIENT_ID=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/client/client-credentials/id" --query Parameter.Value --output text --region $AWS_REGION)
     - export AWS_CLIENT_CREDENTIALS_CLIENT_SECRET=$(aws secretsmanager get-secret-value --secret-id /osdu/cognito/${COGNITO_NAME}/client-credentials-secret --query SecretString --output json --region $AWS_REGION | sed -e 's/\\\"/\"/g' -e 's/^.//g' -e 's/.$//g' | jq -r '.client_credentials_client_secret')
     - export AWS_SERVICE_PRINCIPAL_AUTHORIZATION=$(echo -n "${AWS_CLIENT_CREDENTIALS_CLIENT_ID}:${AWS_CLIENT_CREDENTIALS_CLIENT_SECRET}" | base64)
-    - export INTEGRATION_TESTER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
+    - export PRIVILEGED_USER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
 
-    - export DATA_ROOT_TOKEN=$(curl --location ${COGNITO_AUTH_TOKEN_URI} --header "Content-Type:application/x-www-form-urlencoded" --header "Authorization:Basic ${AWS_SERVICE_PRINCIPAL_AUTHORIZATION}" --data-urlencode "grant_type=client_credentials" --data-urlencode ${COGNITO_ALLOWED_SCOPES}  --http1.1 | jq -r '.access_token')
-    - export NO_DATA_ACCESS_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER_NO_ACCESS},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
+    - export ROOT_USER_TOKEN=$(curl --location ${COGNITO_AUTH_TOKEN_URI} --header "Content-Type:application/x-www-form-urlencoded" --header "Authorization:Basic ${AWS_SERVICE_PRINCIPAL_AUTHORIZATION}" --data-urlencode "grant_type=client_credentials" --data-urlencode ${COGNITO_ALLOWED_SCOPES}  --http1.1 | jq -r '.access_token')
+    - export NO_ACCESS_USER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER_NO_ACCESS},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
     - >
       $MAVEN_BUILD . test-results.log
       verify -DdisableXmlReport=true

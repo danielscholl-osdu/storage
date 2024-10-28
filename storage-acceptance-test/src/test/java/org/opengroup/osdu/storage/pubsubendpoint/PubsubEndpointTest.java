@@ -32,11 +32,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class PubsubEndpointTest extends TestBase {
 	private static final long NOW = System.currentTimeMillis();
@@ -103,8 +103,7 @@ public final class PubsubEndpointTest extends TestBase {
 		List<String> legalTagNames = new ArrayList<>();
 		legalTagNames.add(LEGAL_TAG_1);
 		legalTagNames.add(LEGAL_TAG_2);
-		// Wait while the Storage service processes the legal tag deleted event
-		Thread.sleep(1000);
+
 		CloseableHttpResponse responseRecordQuery =
 				TestUtils.send(
 						"records/" + RECORD_ID,

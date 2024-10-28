@@ -41,11 +41,11 @@ import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.ReplayUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class ReplayEndpointsTests extends TestBase {
     private static String LEGAL_TAG_NAME = LegalTagUtils.createRandomName();
@@ -92,9 +92,9 @@ public final class ReplayEndpointsTests extends TestBase {
 
         String requestBody = ReplayUtils.createJsonEmpty();
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         assertEquals("Operation field is required. The valid operations are: 'replay', 'reindex'.", actualErrorMessage);
     }
 
@@ -104,7 +104,7 @@ public final class ReplayEndpointsTests extends TestBase {
         String requestBody = ReplayUtils.createJsonWithKind("reindex", new ArrayList<>());
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         assertEquals("Currently restricted to a single valid kind.", actualErrorMessage);
     }
 
@@ -118,7 +118,7 @@ public final class ReplayEndpointsTests extends TestBase {
         String requestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         assertEquals("Currently restricted to a single valid kind.", actualErrorMessage);
     }
 
@@ -130,7 +130,7 @@ public final class ReplayEndpointsTests extends TestBase {
         String requestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         assertEquals("The requested kind does not exist.", actualErrorMessage);
     }
 
@@ -140,7 +140,7 @@ public final class ReplayEndpointsTests extends TestBase {
         String requestBody = ReplayUtils.createJsonWithOperationName("invalidOperation");
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         assertEquals("Not a valid operation. The valid operations are: [reindex, replay]", actualErrorMessage);
     }
 
@@ -224,7 +224,7 @@ public final class ReplayEndpointsTests extends TestBase {
 
         String requestBody = ReplayUtils.createJsonEmpty();
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        assertEquals(400, response.getCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
     }
 
     protected List<String> create_N_TestRecordForGivenKind(int n, String kind) throws Exception {
@@ -245,7 +245,7 @@ public final class ReplayEndpointsTests extends TestBase {
         CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "");
 
         String responseJson = EntityUtils.toString(response.getEntity());
-        assertEquals(201, response.getCode());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
         Gson gson = new Gson();
         DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(
                 responseJson,
@@ -293,7 +293,7 @@ public final class ReplayEndpointsTests extends TestBase {
 
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
 
-        if (response.getCode() == 500)
+        if (response.getCode() == HttpStatus.SC_INTERNAL_SERVER_ERROR)
             System.out.println("Error in replay call  " + ReplayUtils.getFieldFromResponse(response, "message"));
 
         assertEquals(202, response.getCode());
@@ -351,7 +351,7 @@ public final class ReplayEndpointsTests extends TestBase {
     }
 
     @Test
-    public void should_return_400_when_givenInvalidReplayID() throws Exception {
+    public void should_return_404_when_givenInvalidReplayID() throws Exception {
 
         CloseableHttpResponse response = TestUtils.send("replay/status/", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "1234");
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");

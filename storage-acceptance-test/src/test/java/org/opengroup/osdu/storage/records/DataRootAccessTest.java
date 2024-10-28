@@ -38,11 +38,11 @@ import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.EntitlementsUtil;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class DataRootAccessTest extends TestBase {
 

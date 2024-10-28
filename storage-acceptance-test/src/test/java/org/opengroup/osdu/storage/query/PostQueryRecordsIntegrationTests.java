@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 
 public final class PostQueryRecordsIntegrationTests extends TestBase {
@@ -76,8 +76,8 @@ public final class PostQueryRecordsIntegrationTests extends TestBase {
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
 		CloseableHttpResponse modifyRecordsResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getCode());
-		assertEquals(201, modifyRecordsResponse.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, modifyRecordsResponse.getCode());
 	}
 
 	public static void classTearDown(String token) throws Exception {

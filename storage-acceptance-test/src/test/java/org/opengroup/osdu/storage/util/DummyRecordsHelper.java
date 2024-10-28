@@ -14,17 +14,15 @@
 
 package org.opengroup.osdu.storage.util;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.gson.Gson;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-
-import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DummyRecordsHelper {
 

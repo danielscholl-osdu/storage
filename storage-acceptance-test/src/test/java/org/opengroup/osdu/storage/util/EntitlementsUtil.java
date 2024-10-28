@@ -18,9 +18,7 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.gson.JsonObject;
-
 import java.util.Map;
-
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.opengroup.osdu.core.common.http.HttpRequest;
 
