@@ -17,8 +17,6 @@ package org.opengroup.osdu.storage.util;
 public class TenantUtils {
 
 	public static String getTenantName() {
-		// use "opendes" for local
-		//return "opendes";
 		return System.getProperty("TENANT_NAME", System.getenv("TENANT_NAME"));
 	}
 

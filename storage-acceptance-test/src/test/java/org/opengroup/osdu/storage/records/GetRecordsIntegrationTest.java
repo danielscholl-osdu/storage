@@ -32,11 +32,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class GetRecordsIntegrationTest extends TestBase {
 	private static final String RECORD_ID = TenantUtils.getTenantName() + ":getrecord:" + System.currentTimeMillis();
@@ -83,7 +83,7 @@ public final class GetRecordsIntegrationTest extends TestBase {
 		String jsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_A);
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		assertTrue(response.getEntity().getContentType().contains("application/json"));
 	}
 
@@ -118,7 +118,7 @@ public final class GetRecordsIntegrationTest extends TestBase {
 	public void should_getRecord_withoutDuplicates_when_duplicateAclAndLegaltagsAreProvided() throws Exception {
 		String jsonInputWithDuplicates = RecordUtil.createRecordWithDuplicateAclAndLegaltags(ANOTHER_RECORD_ID, KIND, LEGAL_TAG_NAME_A);
 		CloseableHttpResponse putResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInputWithDuplicates, "");
-		assertEquals(201, putResponse.getCode());
+		assertEquals(HttpStatus.SC_CREATED, putResponse.getCode());
 		assertTrue(putResponse.getEntity().getContentType().contains("application/json"));
 
 		CloseableHttpResponse response = TestUtils.send("records/" + ANOTHER_RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
@@ -179,7 +179,7 @@ public final class GetRecordsIntegrationTest extends TestBase {
     public void should_legaltagChange_when_updateRecordWithLegaltag() throws Exception {
 		String newJsonInput = RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG_NAME_B);
         CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), newJsonInput, "?skipdupes=false");
-        assertEquals(201, response.getCode());
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
         response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(HttpStatus.SC_OK, response.getCode());

@@ -18,15 +18,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.util.List;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.storage.model.ReplayStatusResponseHelper;
-
-import java.io.IOException;
-import java.util.List;
 public class ReplayUtils {
 
     public static String createJsonEmpty() {

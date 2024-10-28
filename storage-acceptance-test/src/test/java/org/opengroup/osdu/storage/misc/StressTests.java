@@ -14,22 +14,28 @@
 
 package org.opengroup.osdu.storage.misc;
 
-import com.google.gson.Gson;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.opengroup.osdu.storage.records.RecordsApiAcceptanceTests;
-import org.opengroup.osdu.storage.util.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.storage.records.RecordsApiAcceptanceTests;
+import org.opengroup.osdu.storage.util.DummyRecordsHelper;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.LegalTagUtils;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestBase;
+import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class StressTests extends TestBase {
 
@@ -110,7 +116,7 @@ public final class StressTests extends TestBase {
 
 		String responseJson = EntityUtils.toString(response.getEntity());
 		System.out.println(responseJson);
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		assertTrue(response.getEntity().getContentType().toString().contains("application/json"));
 		Gson gson = new Gson();
 		DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(responseJson,
@@ -122,20 +128,20 @@ public final class StressTests extends TestBase {
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "?skipdupes=false");
 		totalMillis = System.currentTimeMillis() - startMillis;
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		System.out.println(String.format("Took %s milliseconds to Update %s 1KB records", totalMillis, ids.size()));
 
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), json, "?skipdupes=false");
 		totalMillis = System.currentTimeMillis() - startMillis;
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		System.out.println(String.format("Took %s milliseconds to Update %s 1KB records when when skipdupes is true",
 				totalMillis, ids.size()));
 
 		startMillis = System.currentTimeMillis();
 		response = TestUtils.send("records/" + ids.get(0), "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		totalMillis = System.currentTimeMillis() - startMillis;
-		assertEquals(200, response.getCode());
+		assertEquals(HttpStatus.SC_OK, response.getCode());
 		System.out.println(String.format("Took %s milliseconds to GET 1 1KB record", totalMillis));
 
 		ids.parallelStream().forEach((id) -> {

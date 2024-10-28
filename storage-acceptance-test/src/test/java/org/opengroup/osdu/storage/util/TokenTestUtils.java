@@ -21,9 +21,9 @@ import com.google.common.base.Strings;
 
 public class TokenTestUtils extends TestUtils {
 
-  public static final String INTEGRATION_TESTER_TOKEN = "INTEGRATION_TESTER_TOKEN";
-  public static final String NO_DATA_ACCESS_TOKEN = "NO_DATA_ACCESS_TOKEN";
-  public static final String DATA_ROOT_TOKEN = "DATA_ROOT_TOKEN";
+  public static final String INTEGRATION_TESTER_TOKEN = "PRIVILEGED_USER_TOKEN";
+  public static final String NO_DATA_ACCESS_TOKEN = "NO_ACCESS_USER_TOKEN";
+  public static final String DATA_ROOT_TOKEN = "ROOT_USER_TOKEN";
   private OpenIDTokenProvider openIDTokenProvider;
 
   public TokenTestUtils() {

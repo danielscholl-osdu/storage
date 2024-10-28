@@ -14,10 +14,9 @@
 
 package org.opengroup.osdu.storage.model;
 
-import lombok.Data;
-
 import java.util.Arrays;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class CreatedRecordInStorage {

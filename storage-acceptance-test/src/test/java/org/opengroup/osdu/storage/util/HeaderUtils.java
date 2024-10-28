@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.api.client.util.Strings;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;

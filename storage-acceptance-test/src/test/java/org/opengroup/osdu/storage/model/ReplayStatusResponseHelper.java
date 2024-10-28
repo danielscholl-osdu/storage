@@ -14,15 +14,12 @@
 
 package org.opengroup.osdu.storage.model;
 
+import java.util.Date;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.opengroup.osdu.storage.model.ReplayFilter;
-
-
-import java.util.Date;
-import java.util.List;
 
 @Data
 @NoArgsConstructor

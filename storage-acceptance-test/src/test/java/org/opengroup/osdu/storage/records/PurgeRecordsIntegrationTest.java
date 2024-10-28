@@ -30,11 +30,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class PurgeRecordsIntegrationTest extends TestBase {
 
@@ -81,28 +81,28 @@ public final class PurgeRecordsIntegrationTest extends TestBase {
 		String jsonInput4 = RecordUtil.createDefaultJsonRecord(RECORD_ID4, KIND, LEGAL_TAG);
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput, "");
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		for(int i=0; i < 4; i++) {
 			// Create 4 record versions - for limit scenario
 			CloseableHttpResponse response1 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput1, "");
-			assertEquals(201, response1.getCode());
+			assertEquals(HttpStatus.SC_CREATED, response1.getCode());
 			assertTrue(response1.getEntity().getContentType().contains("application/json"));
 
 			// Create 4 record versions - for versionIds scenario
 			CloseableHttpResponse response2 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput2, "");
-			assertEquals(201, response2.getCode());
+			assertEquals(HttpStatus.SC_CREATED, response2.getCode());
 			assertTrue(response2.getEntity().getContentType().contains("application/json"));
 
 			// Create 4 record versions - for fromVersion scenario
 			CloseableHttpResponse response3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput3, "");
-			assertEquals(201, response3.getCode());
+			assertEquals(HttpStatus.SC_CREATED, response3.getCode());
 			assertTrue(response3.getEntity().getContentType().contains("application/json"));
 
 			// Create 4 record versions - for bad requests scenario
 			CloseableHttpResponse response4 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), token), jsonInput4, "");
-			assertEquals(201, response4.getCode());
+			assertEquals(HttpStatus.SC_CREATED, response4.getCode());
 			assertTrue(response4.getEntity().getContentType().contains("application/json"));
 
 		}
@@ -193,7 +193,7 @@ public final class PurgeRecordsIntegrationTest extends TestBase {
 		String errorMessage = String.format("Invalid Version Ids. The versionIds contains non existing version(s) '%s'", invalidVersionIds);
 
 		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
-		assertEquals(400, jsonObject.get("code").getAsInt());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, jsonObject.get("code").getAsInt());
 		assertEquals(errorMessage, jsonObject.get("message").getAsString());
 	}
 
@@ -208,7 +208,7 @@ public final class PurgeRecordsIntegrationTest extends TestBase {
 		String errorMessage = String.format("The record '%s' version count (excluding latest version) is : %d , which is less than limit value : %d ", RECORD_ID4, totalVersions - 1, limitValue);
 
 		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
-		assertEquals(400, jsonObject.get("code").getAsInt());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, jsonObject.get("code").getAsInt());
 		assertEquals("Invalid limit.", jsonObject.get("reason").getAsString());
 		assertEquals(errorMessage, jsonObject.get("message").getAsString());
 	}
@@ -223,7 +223,7 @@ public final class PurgeRecordsIntegrationTest extends TestBase {
 		String errorMessage = String.format("Invalid 'from' version. The record version does not contains specified from version '%d'", fromVersion);
 
 		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
-		assertEquals(400, jsonObject.get("code").getAsInt());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, jsonObject.get("code").getAsInt());
 		assertEquals("Invalid 'from' version.", jsonObject.get("reason").getAsString());
 		assertEquals(errorMessage, jsonObject.get("message").getAsString());
 	}
@@ -244,7 +244,7 @@ public final class PurgeRecordsIntegrationTest extends TestBase {
 		String errorMessage = String.format("Invalid limit. Given limit count %d, exceeds the record versions count specified by the given 'from' version '%d'", limitValue, fromVersion);
 
 		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
-		assertEquals(400, jsonObject.get("code").getAsInt());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, jsonObject.get("code").getAsInt());
 		assertEquals("Invalid limit.", jsonObject.get("reason").getAsString());
 		assertEquals(errorMessage, jsonObject.get("message").getAsString());
 	}

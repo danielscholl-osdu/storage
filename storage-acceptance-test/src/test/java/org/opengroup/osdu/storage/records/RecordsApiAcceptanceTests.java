@@ -41,10 +41,10 @@ import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class RecordsApiAcceptanceTests extends TestBase {
 
@@ -108,7 +108,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		String json = EntityUtils.toString(response.getEntity());
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		Gson gson = new Gson();
@@ -121,7 +121,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(RECORD_NEW_ID, result.recordIds[0]);
 
 		response = TestUtils.send("records/" + RECORD_NEW_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 		assertEquals("Flor?", recordResult.data.get("name"));
 		assertEquals(null, recordResult.data.get("ancestry"));
 	}
@@ -130,13 +130,13 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 	public void should_updateRecordsWithSameData_when_skipDupesIsFalse() throws Exception {
 
 		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 
 		String jsonInput = createJsonBody(RECORD_ID, "tianNew");
 
 		// make update with different name
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=true");
-		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201,
+		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, HttpStatus.SC_CREATED,
 				DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
@@ -146,13 +146,13 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(RECORD_ID, result.recordIds[0]);
 
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult2 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult2 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 		assertNotEquals(recordResult.version, recordResult2.version);
 		assertEquals("tianNew", recordResult2.data.get("name"));
 
 		// use skip dupes to skip update
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=true");
-		result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		result = TestUtils.getResult(response, HttpStatus.SC_CREATED, DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
 		assertNull(result.recordIds);
@@ -165,13 +165,13 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(RECORD_ID, result.skippedRecordIds[0]);
 
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult3 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult3 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 		assertEquals(recordResult2.version, recordResult3.version);
 		assertEquals("tianNew", recordResult3.data.get("name"));
 
 		// set skip dupes to false to make the update with same data
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
-		result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		result = TestUtils.getResult(response, HttpStatus.SC_CREATED, DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
 		assertEquals(1, result.recordIds.length);
@@ -184,7 +184,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(RECORD_ID, result.recordIds[0]);
 
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		recordResult3 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		recordResult3 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 		assertNotEquals(recordResult2.version, recordResult3.version);
 		assertEquals("tianNew", recordResult3.data.get("name"));
 	}
@@ -194,32 +194,32 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 			throws Exception {
 
 		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse originalRecordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse originalRecordResult = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 
 		String jsonInput = createJsonBody(RECORD_ID, "tianNew2");
 
 		// add an extra version
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-		TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		TestUtils.getResult(response, HttpStatus.SC_CREATED, DummyRecordsHelper.CreateRecordResponse.class);
 
 		// get a specific older version and validate it is the same
 		response = TestUtils.send("records/" + RECORD_ID + "/" + originalRecordResult.version, "GET",
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResultVersion = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResultVersion = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 		assertEquals(originalRecordResult.id, recordResultVersion.id);
 		assertEquals(originalRecordResult.version, recordResultVersion.version);
 		assertEquals(originalRecordResult.data.get("name"), recordResultVersion.data.get("name"));
 
 		// get the latest version by using id and validate it has the latest data
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse newRecordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse newRecordResult = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 		assertEquals(originalRecordResult.id, newRecordResult.id);
 		assertNotEquals(originalRecordResult.version, newRecordResult.version);
 		assertEquals("tianNew2", newRecordResult.data.get("name"));
 
 		// older version and new version should be found
 		response = TestUtils.send("records/versions/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetVersionsResponse versionsResponse = TestUtils.getResult(response, 200, GetVersionsResponse.class);
+		GetVersionsResponse versionsResponse = TestUtils.getResult(response, HttpStatus.SC_OK, GetVersionsResponse.class);
 		assertEquals(RECORD_ID, versionsResponse.recordId);
 		List<Long> versions = Arrays.asList(versionsResponse.versions);
 		assertTrue(versions.contains(originalRecordResult.version));
@@ -234,7 +234,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		// add an extra version
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-		TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		TestUtils.getResult(response, HttpStatus.SC_CREATED, DummyRecordsHelper.CreateRecordResponse.class);
 
 		response = TestUtils.send("records/" + idToDelete, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
 		assertEquals(HttpStatus.SC_NO_CONTENT, response.getCode());
@@ -250,7 +250,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		String body = createJsonBody(null, "Foo");
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		String responseString = TestUtils.getResult(response, 201, String.class);
+		String responseString = TestUtils.getResult(response, HttpStatus.SC_CREATED, String.class);
 		JsonObject responseJson = new JsonParser().parse(responseString).getAsJsonObject();
 
 		assertEquals(1, responseJson.get("recordCount").getAsInt());
@@ -267,11 +267,11 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		// injesting record
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		TestUtils.getResult(response, 201, String.class);
+		TestUtils.getResult(response, HttpStatus.SC_CREATED, String.class);
 
 		// getting record
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		String responseString = TestUtils.getResult(response, 200, String.class);
+		String responseString = TestUtils.getResult(response, HttpStatus.SC_OK, String.class);
 
 		JsonObject responseJson = JsonParser.parseString(responseString).getAsJsonObject();
 
@@ -291,9 +291,9 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo", KIND_WITH_OTHER_TENANT);
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "");
-		TestUtils.getResult(response, 201, String.class);
+		TestUtils.getResult(response, HttpStatus.SC_CREATED, String.class);
 		response = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		String responseString = TestUtils.getResult(response, 200, String.class);
+		String responseString = TestUtils.getResult(response, HttpStatus.SC_OK, String.class);
 		JsonObject responseJson = JsonParser.parseString(responseString).getAsJsonObject();
 		assertEquals(RECORD_ID, responseJson.get("id").getAsString());
 		assertEquals(KIND_WITH_OTHER_TENANT, responseJson.get("kind").getAsString());
@@ -308,7 +308,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:wholerecord-" + System.currentTimeMillis();
 		String body = createJsonBody(RECORD_ID, "Foo");
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body, "?skipdupes=true");
-		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, HttpStatus.SC_CREATED, DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
 		assertEquals(
@@ -332,7 +332,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
 		String json = EntityUtils.toString(response.getEntity());
-		assertEquals(201, response.getCode());
+		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 		assertTrue(response.getEntity().getContentType().contains("application/json"));
 
 		Gson gson = new Gson();
@@ -348,14 +348,14 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		// If encoded percent is true, the request should go through and should be able to get a successful response.
 		if (configUtils != null && configUtils.getBooleanProperty("enableEncodedSpecialCharactersInURL", "false")) {
-			GetRecordResponse recordResult = TestUtils.getResult(response, 200, GetRecordResponse.class);
+			GetRecordResponse recordResult = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 			assertEquals("TestSpecialCharacters", recordResult.data.get("name"));
 		} else {
 			// Service does not allow URLs with suspicious characters, Which is the default setting.
 			// Different CSPs are responding with different status code for this error when a special character like %25 is present in the URL.
 			// Hence the Assert Statement is marked not to be 200.
 			// More details - https://community.opengroup.org/osdu/platform/system/storage/-/issues/61
-			assertNotEquals(200, response.getCode());
+			assertNotEquals(HttpStatus.SC_OK, response.getCode());
 		}
 
 	}
@@ -366,7 +366,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		String jsonInput = createJsonBody(RECORD_ID_3, "tianNew");
 
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
-		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, 201,
+		DummyRecordsHelper.CreateRecordResponse result = TestUtils.getResult(response, HttpStatus.SC_CREATED,
 				DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result);
 		assertEquals(1, result.recordCount);
@@ -377,7 +377,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 		String firstVersionNumber = StringUtils.substringAfterLast(result.recordIdVersions[0],":");
 
 		response = TestUtils.send("records/" + RECORD_ID_3, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult1 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult1 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 
 		//No modify user and time in 1st version of record
 		assertNull(recordResult1.modifyTime);
@@ -385,7 +385,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		// make update-1
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
-		DummyRecordsHelper.CreateRecordResponse result2 = TestUtils.getResult(response, 201,
+		DummyRecordsHelper.CreateRecordResponse result2 = TestUtils.getResult(response, HttpStatus.SC_CREATED,
 				DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result2);
 		assertEquals(1, result2.recordCount);
@@ -397,7 +397,7 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		// make update-2
 		response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "?skipdupes=false");
-		DummyRecordsHelper.CreateRecordResponse result3 = TestUtils.getResult(response, 201, DummyRecordsHelper.CreateRecordResponse.class);
+		DummyRecordsHelper.CreateRecordResponse result3 = TestUtils.getResult(response, HttpStatus.SC_CREATED, DummyRecordsHelper.CreateRecordResponse.class);
 		assertNotNull(result3);
 		assertEquals(1, result3.recordCount);
 		assertEquals(1, result3.recordIds.length);
@@ -407,17 +407,17 @@ public final class RecordsApiAcceptanceTests extends TestBase {
 
 		String thirdLastVersionNumber = StringUtils.substringAfterLast(result3.recordIdVersions[0],":");
 		response = TestUtils.send("records/" + RECORD_ID_3+"/"+firstVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult2 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult2 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 
 		//No modify user and time in 1st version of record
 		assertNull(recordResult2.modifyTime);
 		assertNull(recordResult2.modifyUser);
 
 		response = TestUtils.send("records/" + RECORD_ID_3+"/"+secondVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult3 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult3 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 
 		response = TestUtils.send("records/" + RECORD_ID_3+"/"+thirdLastVersionNumber, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-		GetRecordResponse recordResult4 = TestUtils.getResult(response, 200, GetRecordResponse.class);
+		GetRecordResponse recordResult4 = TestUtils.getResult(response, HttpStatus.SC_OK, GetRecordResponse.class);
 
 		//modify time is different for each version of record
 		assertNotEquals(recordResult4.modifyTime, recordResult3.modifyTime);

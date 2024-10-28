@@ -13,24 +13,31 @@
 // limitations under the License.
 
 package org.opengroup.osdu.storage.query;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.opengroup.osdu.storage.util.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.storage.util.DummyRecordsHelper;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.LegalTagUtils;
+import org.opengroup.osdu.storage.util.RecordUtil;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestBase;
+import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 
 public final class PostFetchRecordsIntegrationTests extends TestBase {
@@ -85,7 +92,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -120,7 +127,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -177,7 +184,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -214,7 +221,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithMultiplePairOfCoordinates(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -250,7 +257,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordNoMetaBlock(2, recordId, KIND, LEGAL_TAG);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -287,7 +294,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordMissingValue(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -325,7 +332,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -356,7 +363,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -386,7 +393,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordsWithDateFormat(1, recordId, KIND, LEGAL_TAG, "yyyy-MM-dd", "creationDate", "2019-08-03", DATETIME_PERSISTABLE_REFERENCE);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -418,7 +425,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
 
         String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit",  UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 12);
@@ -455,7 +462,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 12);
@@ -490,7 +497,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfProperties(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 13);
@@ -524,7 +531,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndInvalidValues(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 13);
@@ -559,7 +566,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInhomogeneousNestedArrayOfPropertiesAndIndexOutOfBoundary(1, recordId, KIND, LEGAL_TAG, UNIT_PERSISTABLE_REFERENCE, "Unit", UNIT_OF_MEASURE_ID);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 13);
@@ -594,7 +601,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -627,7 +634,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiPoint", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -660,7 +667,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPolygon", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -693,7 +700,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiPolygon", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -726,7 +733,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsLineString", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -759,7 +766,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsMultiLineString", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -792,7 +799,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsGeometryCollection", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -825,7 +832,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithInvalidAsIngestedCoordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
@@ -858,7 +865,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithWGS84Coordinates(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE_CRS, PERSISTABLE_REFERENCE_UNIT_Z, "AnyCrsPoint", "SpatialLocation");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
-        assertEquals(201, createResponse.getCode());
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);

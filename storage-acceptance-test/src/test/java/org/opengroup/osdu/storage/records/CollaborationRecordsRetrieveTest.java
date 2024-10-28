@@ -34,10 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.DummyRecordsHelper;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
-import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.TenantUtils;
 import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class CollaborationRecordsRetrieveTest extends TestBase {
 
@@ -137,13 +137,13 @@ public final class CollaborationRecordsRetrieveTest extends TestBase {
         if (!isCollaborationEnabled) return;
         //I will get only v1 for record1 with no context
         CloseableHttpResponse response = TestUtils.send("records/versions/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        RecordsApiAcceptanceTests.GetVersionsResponse versionsResponse = TestUtils.getResult(response, 200, RecordsApiAcceptanceTests.GetVersionsResponse.class);
+        RecordsApiAcceptanceTests.GetVersionsResponse versionsResponse = TestUtils.getResult(response, HttpStatus.SC_OK, RecordsApiAcceptanceTests.GetVersionsResponse.class);
         assertEquals(1, versionsResponse.versions.length);
         assertEquals(RECORD1_V1, versionsResponse.versions[0]);
 
         //I will get v2 and v3 for record1 with context guid1
         response = TestUtils.send("records/versions/" + RECORD_ID_1, "GET", getHeadersWithxCollaboration(COLLABORATION1_ID, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
-        versionsResponse = TestUtils.getResult(response, 200, RecordsApiAcceptanceTests.GetVersionsResponse.class);
+        versionsResponse = TestUtils.getResult(response, HttpStatus.SC_OK, RecordsApiAcceptanceTests.GetVersionsResponse.class);
         assertEquals(2, versionsResponse.versions.length);
         List<Long> versions = Arrays.asList(versionsResponse.versions);
         assertTrue(versions.contains(RECORD1_V2));
