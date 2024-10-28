@@ -14,9 +14,22 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
-import com.google.common.collect.Lists;
+import java.io.UnsupportedEncodingException;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
@@ -27,40 +40,42 @@ import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
-import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
-import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
+import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.github.fge.jsonpatch.JsonPatch;
-import org.opengroup.osdu.storage.util.JsonPatchUtil;
-import jakarta.inject.Inject;
-import java.io.UnsupportedEncodingException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
+import com.google.common.collect.Lists;
 
-@ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb",
-        matchIfMissing = true)
+import jakarta.inject.Inject;
+
+@ConditionalOnProperty(prefix = "repository", name = "implementation", havingValue = "dynamodb", matchIfMissing = true)
 @Repository
 public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository<String> {
 
-    @Inject
-    private DpsHeaders headers;
+    private final DpsHeaders headers;
+    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    private final WorkerThreadPool workerThreadPool;
+    private final JaxRsDpsLog logger;
 
     @Inject
-    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    public RecordsMetadataRepositoryImpl(DpsHeaders headers, DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
+                                         WorkerThreadPool workerThreadPool, JaxRsDpsLog logger) {
+        this.headers = headers;
+        this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
+        this.workerThreadPool = workerThreadPool; 
+        this.logger = logger;
+    }
 
-    @Inject
-    private WorkerThreadPool workerThreadPool;
-    @Inject
-    private JaxRsDpsLog logger;
+    private static final String UNKNOWN_ERROR = "Unknown error";
 
     @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
     String recordMetadataTableParameterRelativePath;
@@ -69,15 +84,18 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     String legalTagTableParameterRelativePath;
 
     private DynamoDBQueryHelperV2 getRecordMetadataQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath, workerThreadPool.getClientConfiguration());
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath,
+                workerThreadPool.getClientConfiguration());
     }
 
     private DynamoDBQueryHelperV2 getLegalTagQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath, workerThreadPool.getClientConfiguration());
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath,
+                workerThreadPool.getClientConfiguration());
     }
 
-    private void addMetadataAndLegal(RecordMetadata metadata, Optional<CollaborationContext> collaborationContext, List<RecordMetadataDoc> metadataDocs,
-                                     List<LegalTagAssociationDoc> createLegalDocs, List<LegalTagAssociationDoc> deleteLegalDocs) {
+    private void addMetadataAndLegal(RecordMetadata metadata, Optional<CollaborationContext> collaborationContext,
+            List<RecordMetadataDoc> metadataDocs,
+            List<LegalTagAssociationDoc> createLegalDocs, List<LegalTagAssociationDoc> deleteLegalDocs) {
         // user should be part of the acl of the record being saved
         RecordMetadataDoc doc = new RecordMetadataDoc();
 
@@ -92,19 +110,20 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         // Store the record to the database
         metadataDocs.add(doc);
         saveLegalTagAssociation(CollaborationContextUtil.composeIdWithNamespace(metadata.getId(), collaborationContext),
-                                metadata.getLegal().getLegaltags(), createLegalDocs, deleteLegalDocs);
+                metadata.getLegal().getLegaltags(), createLegalDocs, deleteLegalDocs);
     }
 
     @Override
-    public Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext) {
+    public Map<String, String> patch(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord,
+            Optional<CollaborationContext> collaborationContext) {
         if (Objects.nonNull(jsonPatchPerRecord)) {
             List<RecordMetadataDoc> metadataDocs = new ArrayList<>();
             List<LegalTagAssociationDoc> legalDocs = new ArrayList<>();
             List<LegalTagAssociationDoc> deleteLegalDocs = new ArrayList<>();
             for (Entry<RecordMetadata, JsonPatch> recordEntry : jsonPatchPerRecord.entrySet()) {
                 JsonPatch jsonPatch = recordEntry.getValue();
-                RecordMetadata newRecordMetadata =
-                        JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class, recordEntry.getKey());
+                RecordMetadata newRecordMetadata = JsonPatchUtil.applyPatch(jsonPatch, RecordMetadata.class,
+                        recordEntry.getKey());
 
                 addMetadataAndLegal(newRecordMetadata, collaborationContext, metadataDocs, legalDocs, deleteLegalDocs);
             }
@@ -119,36 +138,40 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
     static final int MAX_DYNAMODB_WRITE_BATCH_SIZE = 25;
 
-    private <T> List<CompletableFuture<List<DynamoDBMapper.FailedBatch>>> createBatchedFutures(List<T> objects, DynamoDBQueryHelperV2 dynamomDbHelper) {
+    private <T> List<CompletableFuture<List<DynamoDBMapper.FailedBatch>>> createBatchedFutures(List<T> objects,
+            DynamoDBQueryHelperV2 dynamomDbHelper) {
         return Lists.partition(objects, MAX_DYNAMODB_WRITE_BATCH_SIZE)
-                    .stream()
-                    .map(objectBatch -> CompletableFuture.supplyAsync(
-                        () -> dynamomDbHelper.batchSave(objectBatch), workerThreadPool.getThreadPool())
-                    ).toList();
+                .stream()
+                .map(objectBatch -> CompletableFuture.supplyAsync(
+                        () -> dynamomDbHelper.batchSave(objectBatch), workerThreadPool.getThreadPool()))
+                .toList();
     }
 
-    private void writeDynamoDBRecordsParallel(List<RecordMetadataDoc> metadataDocs, List<LegalTagAssociationDoc> createLegalDocs, List<LegalTagAssociationDoc> deleteLegalDocs) {
+    private void writeDynamoDBRecordsParallel(List<RecordMetadataDoc> metadataDocs,
+            List<LegalTagAssociationDoc> createLegalDocs, List<LegalTagAssociationDoc> deleteLegalDocs) {
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         DynamoDBQueryHelperV2 legalTagHelper = getLegalTagQueryHelper();
-        List<CompletableFuture<List<DynamoDBMapper.FailedBatch>>> batchWriteProcesses = Lists.newArrayList(createBatchedFutures(metadataDocs, recordMetadataQueryHelper));
+        List<CompletableFuture<List<DynamoDBMapper.FailedBatch>>> batchWriteProcesses = Lists
+                .newArrayList(createBatchedFutures(metadataDocs, recordMetadataQueryHelper));
+
         batchWriteProcesses.addAll(createBatchedFutures(createLegalDocs, legalTagHelper));
         batchWriteProcesses.addAll(Lists.partition(deleteLegalDocs, MAX_DYNAMODB_WRITE_BATCH_SIZE)
-                    .stream()
-                    .map(objectBatch -> CompletableFuture.supplyAsync(
+                .stream()
+                .map(objectBatch -> CompletableFuture.supplyAsync(
                         () -> legalTagHelper.batchDelete(objectBatch), workerThreadPool.getThreadPool())
-                    ).toList());
-
+                ).collect(Collectors.toList()));
         CompletableFuture[] cfs = batchWriteProcesses.toArray(new CompletableFuture[0]);
         CompletableFuture<List<DynamoDBMapper.FailedBatch>> jointFutures = CompletableFuture.allOf(cfs)
-                                                                                            .thenApply(ignored -> batchWriteProcesses.stream()
-                                                                                                                                     .map(CompletableFuture::join)
-                                                                                                                                     .flatMap(List::stream)
-                                                                                                                                     .toList());
+                .thenApply(ignored -> batchWriteProcesses.stream()
+                        .map(CompletableFuture::join)
+                        .flatMap(List::stream)
+                        .toList());
         List<DynamoDBMapper.FailedBatch> failed = null;
         try {
             failed = jointFutures.get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "Could not collect thread futures.", e);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR,
+                    "Could not collect thread futures.", e);
         }
         Exception firstFailedException = null;
         for (DynamoDBMapper.FailedBatch failedDoc : failed) {
@@ -158,22 +181,26 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             }
             for (Entry<String, List<WriteRequest>> failedEntry : failedDoc.getUnprocessedItems().entrySet()) {
                 for (WriteRequest failedWriteRequest : failedEntry.getValue()) {
-                    logger.error(String.format("Failed to save DynamoDB Object %s to Table %s", failedWriteRequest.getPutRequest(), failedEntry.getKey()));
+                    logger.error(String.format("Failed to save DynamoDB Object %s to Table %s",
+                            failedWriteRequest.getPutRequest(), failedEntry.getKey()));
                 }
             }
         }
         if (firstFailedException != null) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Unknown error", "Could not save record metadata", firstFailedException);
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR,
+                    "Could not save record metadata", firstFailedException);
         }
     }
 
     @Override
-    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
+    public List<RecordMetadata> createOrUpdate(List<RecordMetadata> recordsMetadata,
+            Optional<CollaborationContext> collaborationContext) {
         if (recordsMetadata != null) {
             List<RecordMetadataDoc> metadataDocs = new ArrayList<>();
             List<LegalTagAssociationDoc> createLegalDocs = new ArrayList<>();
             List<LegalTagAssociationDoc> deleteLegalDocs = new ArrayList<>();
-            recordsMetadata.forEach(recordMetadata -> addMetadataAndLegal(recordMetadata, collaborationContext, metadataDocs, createLegalDocs, deleteLegalDocs));
+            recordsMetadata.forEach(recordMetadata -> addMetadataAndLegal(recordMetadata, collaborationContext,
+                    metadataDocs, createLegalDocs, deleteLegalDocs));
 
             writeDynamoDBRecordsParallel(metadataDocs, createLegalDocs, deleteLegalDocs);
         }
@@ -190,7 +217,8 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         DynamoDBQueryHelperV2 ltaQueryHelper = getLegalTagQueryHelper();
         LegalTagAssociationDoc queryObject = new LegalTagAssociationDoc();
         queryObject.setRecordId(recordId);
-        List<LegalTagAssociationDoc> legalTagAssociationDocs = ltaQueryHelper.queryByGSI(LegalTagAssociationDoc.class, queryObject);
+        List<LegalTagAssociationDoc> legalTagAssociationDocs = ltaQueryHelper.queryByGSI(LegalTagAssociationDoc.class,
+                queryObject);
         writeDynamoDBRecordsParallel(Collections.emptyList(), Collections.emptyList(), legalTagAssociationDocs);
     }
 
@@ -212,22 +240,26 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
 
         Map<String, RecordMetadata> output = new HashMap<>();
-        Set<String> filteredIds = ids.stream().map(id -> CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext)).collect(Collectors.toSet());
+        Set<String> filteredIds = ids.stream()
+                .map(id -> CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext))
+                .collect(Collectors.toSet());
         Lists.partition(filteredIds.stream().toList(), MAX_DYNAMODB_READ_BATCH_SIZE)
-             .stream()
-             .map(recordIds -> recordMetadataQueryHelper.batchLoadByPrimaryKey(RecordMetadataDoc.class, new HashSet<>(recordIds)))
-             .flatMap(List::stream)
-             .filter(Objects::nonNull)
-             .forEach(rmd -> output.put(rmd.getId(), rmd.getMetadata()));
+                .stream()
+                .map(recordIds -> recordMetadataQueryHelper.batchLoadByPrimaryKey(RecordMetadataDoc.class,
+                        new HashSet<>(recordIds)))
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .forEach(rmd -> output.put(rmd.getId(), rmd.getMetadata()));
         return output;
     }
 
     @Override
-    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit) {
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegal(String legalTagName,
+            LegalCompliance status, int limit) {
         return null;
     }
 
-    //replace with the new method queryByLegal
+    // replace with the new method queryByLegal
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor) {
@@ -241,27 +273,33 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             result = legalTagQueryHelper.queryPage(LegalTagAssociationDoc.class,
                     legalTagAssociationDoc, 500, cursor);
         } catch (UnsupportedEncodingException e) {
-            throw new AppException(org.apache.http.HttpStatus.SC_BAD_REQUEST, "Problem querying for legal tag", e.getMessage());
+            throw new AppException(org.apache.http.HttpStatus.SC_BAD_REQUEST, "Problem querying for legal tag",
+                    e.getMessage());
         }
 
         List<String> associatedRecordIds = new ArrayList<>();
-        result.results.forEach(doc -> associatedRecordIds.add(doc.getRecordId())); // extract the Kinds from the SchemaDocs
+        result.results.forEach(doc -> associatedRecordIds.add(doc.getRecordId())); // extract the Kinds from the
+                                                                                   // SchemaDocs
 
         List<RecordMetadata> associatedRecords = new ArrayList<>();
-        for(String recordId : associatedRecordIds){
+        for (String recordId : associatedRecordIds) {
             associatedRecords.add(get(recordId, Optional.empty()));
         }
 
         return new AbstractMap.SimpleEntry<>(result.cursor, associatedRecords);
     }
 
-    private void saveLegalTagAssociation(String recordId, Set<String> legalTags, List<LegalTagAssociationDoc> createLegalTags, List<LegalTagAssociationDoc> deleteLegalTags){
+    private void saveLegalTagAssociation(String recordId, Set<String> legalTags,
+            List<LegalTagAssociationDoc> createLegalTags, List<LegalTagAssociationDoc> deleteLegalTags) {
         DynamoDBQueryHelperV2 legalTagHelper = getLegalTagQueryHelper();
         LegalTagAssociationDoc queryDoc = new LegalTagAssociationDoc();
         queryDoc.setRecordId(recordId);
         List<LegalTagAssociationDoc> currentDocs = legalTagHelper.queryByGSI(LegalTagAssociationDoc.class, queryDoc);
-        Set<String> existingLegalTags = currentDocs.stream().map(LegalTagAssociationDoc::getLegalTag).collect(Collectors.toSet());
-        deleteLegalTags.addAll(existingLegalTags.stream().filter(lt -> !legalTags.contains(lt)).map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).toList());
-        createLegalTags.addAll(legalTags.stream().filter(lt -> !existingLegalTags.contains(lt)).map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).toList());
+        Set<String> existingLegalTags = currentDocs.stream().map(LegalTagAssociationDoc::getLegalTag)
+                .collect(Collectors.toSet());
+        deleteLegalTags.addAll(existingLegalTags.stream().filter(lt -> !legalTags.contains(lt))
+                .map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).collect(Collectors.toList()));
+        createLegalTags.addAll(legalTags.stream().filter(lt -> !existingLegalTags.contains(lt))
+                .map(lt -> LegalTagAssociationDoc.createLegalTagDoc(lt, recordId)).collect(Collectors.toList()));
     }
 }
