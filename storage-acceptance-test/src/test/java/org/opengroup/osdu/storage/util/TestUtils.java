@@ -170,7 +170,7 @@ public abstract class TestUtils {
     @SuppressWarnings("unchecked")
     public static <T> T getResult(CloseableHttpResponse response, int exepectedStatus, Class<T> classOfT) {
         assertEquals(exepectedStatus, response.getCode());
-        if (exepectedStatus == 204) {
+        if (exepectedStatus == HttpStatus.SC_NO_CONTENT) {
             return null;
         }
 

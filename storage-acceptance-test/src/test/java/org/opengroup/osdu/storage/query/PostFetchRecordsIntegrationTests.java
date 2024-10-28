@@ -119,7 +119,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
     @Test
@@ -156,7 +156,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
     @Test
@@ -209,9 +209,9 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(3, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
         CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse2.getCode());
 
     }
 
@@ -245,9 +245,9 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(5, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
         CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse2.getCode());
 
     }
 
@@ -284,9 +284,9 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         List<DummyRecordsHelper.RecordStatusMock> conversionStatuses = responseObject.conversionStatuses;
         assertEquals("CRS Conversion: Meta Block is missing or empty in this record, no conversion applied.", conversionStatuses.get(0).errors.get(0));
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
         CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse2.getCode());
     }
 
     @Test
@@ -321,9 +321,9 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("CRS conversion: Unknown coordinate pair 'z'.", conversionStatuses.get(0).errors.get(1));
         assertEquals("CRS conversion: property 'Y' is missing in datablock, no conversion applied to this property and its corresponding pairing property.", conversionStatuses.get(0).errors.get(0));
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
         CloseableHttpResponse deleteResponse2 = TestUtils.send("records/" + recordId + 1, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse2.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse2.getCode());
     }
 
     @Test
@@ -355,7 +355,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
     //@Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
@@ -385,7 +385,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
     @Test
@@ -415,7 +415,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -453,7 +453,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("SUCCESS", conversionStatuses.get(0).status);
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
   //  @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -488,7 +488,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("Unit conversion: illegal value for property markers[1].measuredDepth", conversionStatuses.get(0).errors.get(0));
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 12, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -522,7 +522,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("SUCCESS", conversionStatuses.get(0).status);
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -557,7 +557,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("Unit conversion: illegal value for property markers[1].measuredDepth", conversionStatuses.get(0).errors.get(0));
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -592,7 +592,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals("Unit conversion: property markers[2].measuredDepth missing", conversionStatuses.get(0).errors.get(0));
 
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 13, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -625,7 +625,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -658,7 +658,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -691,7 +691,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -724,7 +724,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -757,7 +757,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -790,7 +790,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -823,7 +823,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -856,7 +856,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
    // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
@@ -889,6 +889,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.records[0].data.size());
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(204, deleteResponse1.getCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 }
