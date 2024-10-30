@@ -44,6 +44,10 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 
 public abstract class TestUtils {
+
+    public static final String STORAGE_TEST_GROUP_ENT_V_2 = "data.storage-integration-test-acl.ent-v2";
+    public static final String STORAGE_TEST_GROUP_ENT_V_2_DESCRIPTION = "EntV2 Storage test group.";
+
     protected static String token = null;
     protected static String noDataAccesstoken = null;
     protected static String dataRootToken = null;
@@ -64,7 +68,7 @@ public abstract class TestUtils {
     }
 
     public static final String getEntV2OnlyAcl() {
-        return String.format("data.storage-integration-test-acl.ent-v2@%s", getAclSuffix());
+        return String.format(STORAGE_TEST_GROUP_ENT_V_2 + "@%s", getAclSuffix());
     }
 
     public static final String getIntegrationTesterAcl() {

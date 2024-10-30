@@ -18,12 +18,17 @@
 package org.opengroup.osdu.storage.records;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opengroup.osdu.storage.util.TestUtils.STORAGE_TEST_GROUP_ENT_V_2;
+import static org.opengroup.osdu.storage.util.TestUtils.STORAGE_TEST_GROUP_ENT_V_2_DESCRIPTION;
 
+import java.util.Map;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.storage.util.EntitlementsUtil;
 import org.opengroup.osdu.storage.util.HeaderUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
 import org.opengroup.osdu.storage.util.RecordUtil;
@@ -39,10 +44,19 @@ public final class RecordWithEntV2OnlyAclTest extends TestBase {
     private static final String KIND = TenantUtils.getTenantName() + ":test:inttest:1.1." + NOW;
     private static final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:" + NOW;
 
+
     @BeforeEach
     public void setup() throws Exception {
         this.testUtils = new TokenTestUtils();
         LegalTagUtils.create(LEGAL_TAG, testUtils.getToken());
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        CloseableHttpResponse createGroupResponse = EntitlementsUtil.createEntitlementsGroup(
+            headers,
+            STORAGE_TEST_GROUP_ENT_V_2,
+            STORAGE_TEST_GROUP_ENT_V_2_DESCRIPTION
+        );
+        int responseCode = createGroupResponse.getCode();
+        assertTrue(responseCode == HttpStatus.SC_CREATED || responseCode == HttpStatus.SC_CONFLICT);
     }
 
     @AfterEach
@@ -53,7 +67,7 @@ public final class RecordWithEntV2OnlyAclTest extends TestBase {
     }
 
     @Test
-    public void should_allow_recordWithAclThatExistsIOnlyInEntV2() throws Exception{
+    public void should_allow_recordWithAclThatExistsOnlyInEntV2() throws Exception{
         //create record
         CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
                 RecordUtil.createJsonRecordWithEntV2OnlyAcl(RECORD_ID, KIND, LEGAL_TAG, RECORD_ID), "");
