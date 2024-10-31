@@ -56,6 +56,6 @@ public class TestIngestRecordNotFound extends IngestRecordNotFoundTest {
 		CloseableHttpResponse response = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), record, "");
         // it's a much simpler implementation to just check if the user is in the group that is being saved and if not to skip
         // per previous integration test requirements
-        TestUtils.getResult(response, HttpStatus.SC_FORBIDDEN, String.class);
+        TestUtils.getResult(response, HttpStatus.SC_BAD_REQUEST, String.class);
 	}
 }
