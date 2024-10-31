@@ -37,6 +37,7 @@ build/
 
 ### Integration tests ###
 .gradle
+**/allure-results/
 
 ### Environment Configuration ###
 *.env
