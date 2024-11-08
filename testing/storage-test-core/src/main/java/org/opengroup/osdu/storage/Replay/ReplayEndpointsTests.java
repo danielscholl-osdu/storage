@@ -60,58 +60,73 @@ public abstract class ReplayEndpointsTests extends TestBase {
     @Test
     public void should_return_400_when_givenNoOperationNameIsNotInRequest() throws Exception {
 
-        String requestBody = ReplayUtils.createJsonEmpty();
-        CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        assertEquals(400, response.getCode());
-        String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
-        assertEquals("Operation field is required. The valid operations are: 'replay', 'reindex'.", actualErrorMessage);
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
+
+            String requestBody = ReplayUtils.createJsonEmpty();
+            CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+            assertEquals(400, response.getCode());
+            String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
+            assertEquals(400, response.getCode());
+            assertEquals("Operation field is required. The valid operations are: 'replay', 'reindex'.", actualErrorMessage);
+        }
     }
 
     @Test
     public void should_return_400_when_givenKindIsEmpty() throws Exception {
 
-        String requestBody = ReplayUtils.createJsonWithKind("reindex", new ArrayList<>());
-        CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
-        assertEquals("Currently restricted to a single valid kind.", actualErrorMessage);
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
+
+            String requestBody = ReplayUtils.createJsonWithKind("reindex", new ArrayList<>());
+            CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+            String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
+            assertEquals(400, response.getCode());
+            assertEquals("Currently restricted to a single valid kind.", actualErrorMessage);
+        }
     }
 
     @Test
     public void should_return_400_when_givenKindSizeIsGreaterDenOne() throws Exception {
 
-        List<String> kindList = new ArrayList<>();
-        kindList.add(getKind());
-        kindList.add(getKind());
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
 
-        String requestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
-        CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
-        assertEquals("Currently restricted to a single valid kind.", actualErrorMessage);
+            List<String> kindList = new ArrayList<>();
+            kindList.add(getKind());
+            kindList.add(getKind());
+
+            String requestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
+            CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+            String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
+            assertEquals(400, response.getCode());
+            assertEquals("Currently restricted to a single valid kind.", actualErrorMessage);
+        }
     }
 
     @Test
     public void Should_return_400_when_givenInvalidKind() throws Exception {
 
-        List<String> kindList = new ArrayList<>();
-        kindList.add(INVALID_KIND);
-        String requestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
-        CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
-        assertEquals("The requested kind does not exist.", actualErrorMessage);
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
+
+            List<String> kindList = new ArrayList<>();
+            kindList.add(INVALID_KIND);
+            String requestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
+            CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+            String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
+            assertEquals(400, response.getCode());
+            assertEquals("The requested kind does not exist.", actualErrorMessage);
+        }
     }
 
     @Test
     public void Should_return_400_when_givenInvalidOperationName() throws Exception {
 
-        String requestBody = ReplayUtils.createJsonWithOperationName("invalidOperation");
-        CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals(400, response.getCode());
-        assertEquals("Not a valid operation. The valid operations are: [reindex, replay]", actualErrorMessage);
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
+
+            String requestBody = ReplayUtils.createJsonWithOperationName("invalidOperation");
+            CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+            String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
+            assertEquals(400, response.getCode());
+            assertEquals("Not a valid operation. The valid operations are: [reindex, replay]", actualErrorMessage);
+        }
     }
 
     @Test
@@ -191,9 +206,12 @@ public abstract class ReplayEndpointsTests extends TestBase {
     @Test
     public void should_return_400_when_givenEmptyJSONIsSent() throws Exception {
 
-        String requestBody = ReplayUtils.createJsonEmpty();
-        CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
-        assertEquals(400, response.getCode());
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
+
+            String requestBody = ReplayUtils.createJsonEmpty();
+            CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+            assertEquals(400, response.getCode());
+        }
     }
 
     protected List<String> create_N_TestRecordForGivenKind(int n, String kind) throws Exception {
@@ -322,10 +340,13 @@ public abstract class ReplayEndpointsTests extends TestBase {
     @Test
     public void should_return_400_when_givenInvalidReplayID() throws Exception {
 
-        CloseableHttpResponse response = TestUtils.send("replay/status/", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "1234");
-        String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
-        assertEquals("The replay ID 1234 is invalid.", actualErrorMessage);
-        assertEquals(404, response.getCode());
+        if (configUtils != null && configUtils.getIsFeatureReplayEnabled()) {
+
+            CloseableHttpResponse response = TestUtils.send("replay/status/", "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "1234");
+            String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
+            assertEquals("The replay ID 1234 is invalid.", actualErrorMessage);
+            assertEquals(404, response.getCode());
+        }
     }
 
     public static String getKind() throws InterruptedException {
