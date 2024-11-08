@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 public class UserAccessService {
 
 
+    public static final String RECORD_WRITING_ERROR_REASON = "Error on writing record";
     @Inject
     private DpsHeaders dpsHeaders;
     @Inject
@@ -115,9 +116,9 @@ public class UserAccessService {
                 validateRecordAclsForServicePrincipal(records);
             } catch (InvalidACLException aclException) {
                 throw new AppException(
-                    HttpStatus.SC_FORBIDDEN,
-                    "Invalid ACL",
-                    String.format("ACL has invalid Group %s", aclException.getAcl()));
+                    HttpStatus.SC_BAD_REQUEST,
+                    RECORD_WRITING_ERROR_REASON,
+                    String.format("Could not find group \"%s\".", aclException.getAcl()));
             }
         }
     }
