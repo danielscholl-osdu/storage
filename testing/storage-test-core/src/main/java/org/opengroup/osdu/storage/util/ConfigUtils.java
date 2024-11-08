@@ -53,6 +53,8 @@ public class ConfigUtils {
 
     public boolean getIsTestReplayAllEnabled() { return  getBooleanProperty("test.replayAll.enabled", "false");}
 
+    public boolean getIsFeatureReplayEnabled() { return  getBooleanProperty("feature.replay.enabled", "true");}
+
     public long getTimeoutForReplay() { return  getLongProperty("test.replayAll.timeout", "60");}
 
 }
