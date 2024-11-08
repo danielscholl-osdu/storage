@@ -15,68 +15,74 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.PutRequest;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
-import org.junit.jupiter.api.Assertions;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.entitlements.Acl;
-import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.legal.Legal;
-import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
-import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
-import org.opengroup.osdu.core.common.model.entitlements.Groups;
-import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
-import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
-import org.junit.Assert;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.opengroup.osdu.core.common.model.storage.*;
-import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
-import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
-import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
-import org.opengroup.osdu.storage.util.JsonPatchUtil;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonpatch.JsonPatch;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.mockito.MockitoAnnotations.openMocks;
+import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.entitlements.Acl;
+import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
+import org.opengroup.osdu.core.common.model.entitlements.Groups;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.legal.Legal;
+import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
+import org.opengroup.osdu.storage.util.JsonPatchUtil;
+
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.PutRequest;
+import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
 
 class RecordsMetadataRepositoryTest {
 
@@ -125,7 +131,7 @@ class RecordsMetadataRepositoryTest {
     public void setUp() {
         openMocks(this);
         when(queryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), any(), any()))
-        .thenReturn(queryHelper);
+                .thenReturn(queryHelper);
         when(workerThreadPool.getThreadPool()).thenReturn(threadPool);
     }
 
@@ -158,7 +164,8 @@ class RecordsMetadataRepositoryTest {
         when(paginatedQueryList.stream()).thenReturn(ltas.stream());
 
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
-        JsonPatch patch = JsonPatch.fromJson(new ObjectMapper().readTree("[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"newKind\" }]"));
+        JsonPatch patch = JsonPatch.fromJson(
+                new ObjectMapper().readTree("[{ \"op\": \"replace\", \"path\": \"/kind\", \"value\": \"newKind\" }]"));
 
         RecordMetadata recordMetadata = new RecordMetadata();
         recordMetadata.setId(recordId);
@@ -168,7 +175,7 @@ class RecordsMetadataRepositoryTest {
         recordMetadata.setLegal(legal);
         recordMetadata.setStatus(RecordState.active);
         recordMetadata.setUser("recordUser");
-        
+
         RecordMetadata newRecordMetadata = new RecordMetadata();
         String newRecordId = "newRecordId";
         newRecordMetadata.setId(newRecordId);
@@ -176,10 +183,11 @@ class RecordsMetadataRepositoryTest {
         newRecordMetadata.setLegal(legal);
         newRecordMetadata.setStatus(RecordState.active);
         newRecordMetadata.setUser("newRecordUser");
-        
+
         MockedStatic<JsonPatchUtil> mocked = Mockito.mockStatic(JsonPatchUtil.class);
         try {
-            mocked.when(() -> JsonPatchUtil.applyPatch(patch, RecordMetadata.class, recordMetadata)).thenReturn(newRecordMetadata);
+            mocked.when(() -> JsonPatchUtil.applyPatch(patch, RecordMetadata.class, recordMetadata))
+                    .thenReturn(newRecordMetadata);
 
             jsonPatchPerRecord.put(recordMetadata, patch);
             Map<String, String> result = repo.patch(jsonPatchPerRecord, Optional.empty());
@@ -190,7 +198,8 @@ class RecordsMetadataRepositoryTest {
                 Object obj = savedObjects.get(0);
                 if (obj instanceof LegalTagAssociationDoc lta) {
                     assertEquals(NEW_LEGAL_TAG_NAME, lta.getLegalTag());
-                    assertEquals(LegalTagAssociationDoc.getLegalRecordId(newRecordId, NEW_LEGAL_TAG_NAME), lta.getRecordIdLegalTag());
+                    assertEquals(LegalTagAssociationDoc.getLegalRecordId(newRecordId, NEW_LEGAL_TAG_NAME),
+                            lta.getRecordIdLegalTag());
                 } else if (obj instanceof RecordMetadataDoc rmd) {
                     assertEquals(newRecordId, rmd.getId());
                 } else {
@@ -202,14 +211,15 @@ class RecordsMetadataRepositoryTest {
             assertEquals(1, ltasDeleted.size());
             if (ltasDeleted.get(0) instanceof LegalTagAssociationDoc ltaDeleted) {
                 assertEquals(OLD_LEGAL_TAG_NAME, ltaDeleted.getLegalTag());
-                assertEquals(LegalTagAssociationDoc.getLegalRecordId(newRecordId, OLD_LEGAL_TAG_NAME), ltaDeleted.getRecordIdLegalTag());
+                assertEquals(LegalTagAssociationDoc.getLegalRecordId(newRecordId, OLD_LEGAL_TAG_NAME),
+                        ltaDeleted.getRecordIdLegalTag());
             } else {
                 fail();
             }
             assertTrue(result.isEmpty());
 
         } finally {
-            mocked.close(); 
+            mocked.close();
         }
     }
 
@@ -218,7 +228,7 @@ class RecordsMetadataRepositoryTest {
         String legalTagName = "legalTagName";
         int limit = 500;
         String cursor = "cursor";
-        when(queryHelper.queryPage(any(),any(), eq(limit), eq(cursor))).thenThrow(UnsupportedEncodingException.class);
+        when(queryHelper.queryPage(any(), any(), eq(limit), eq(cursor))).thenThrow(UnsupportedEncodingException.class);
         assertThrows(AppException.class, () -> repo.queryByLegalTagName(legalTagName, limit, cursor));
     }
 
@@ -241,8 +251,8 @@ class RecordsMetadataRepositoryTest {
         recordMetadata.setKind("opendes:source:type:1.0.0");
 
         Acl recordAcl = new Acl();
-        String[] owners = {"data.tenant@byoc.local"};
-        String[] viewers = {"data.tenant@byoc.local"};
+        String[] owners = { "data.tenant@byoc.local" };
+        String[] viewers = { "data.tenant@byoc.local" };
         recordAcl.setOwners(owners);
         recordAcl.setViewers(viewers);
         recordMetadata.setAcl(recordAcl);
@@ -300,7 +310,8 @@ class RecordsMetadataRepositoryTest {
             Object obj = savedObjects.get(0);
             if (obj instanceof LegalTagAssociationDoc lta) {
                 assertEquals(NEW_LEGAL_TAG_NAME, lta.getLegalTag());
-                assertEquals(LegalTagAssociationDoc.getLegalRecordId(RECORD_ID, NEW_LEGAL_TAG_NAME), lta.getRecordIdLegalTag());
+                assertEquals(LegalTagAssociationDoc.getLegalRecordId(RECORD_ID, NEW_LEGAL_TAG_NAME),
+                        lta.getRecordIdLegalTag());
             } else if (obj instanceof RecordMetadataDoc rmd) {
                 assertEquals(RECORD_ID, rmd.getId());
             } else {
@@ -312,7 +323,8 @@ class RecordsMetadataRepositoryTest {
         assertEquals(1, ltasDeleted.size());
         if (ltasDeleted.get(0) instanceof LegalTagAssociationDoc ltaDeleted) {
             assertEquals(OLD_LEGAL_TAG_NAME, ltaDeleted.getLegalTag());
-            assertEquals(LegalTagAssociationDoc.getLegalRecordId(RECORD_ID, OLD_LEGAL_TAG_NAME), ltaDeleted.getRecordIdLegalTag());
+            assertEquals(LegalTagAssociationDoc.getLegalRecordId(RECORD_ID, OLD_LEGAL_TAG_NAME),
+                    ltaDeleted.getRecordIdLegalTag());
         } else {
             fail();
         }
@@ -324,10 +336,9 @@ class RecordsMetadataRepositoryTest {
         DynamoDBMapper.FailedBatch failedBatch = new DynamoDBMapper.FailedBatch();
         failedBatch.setException(new Exception());
         failedBatch.setUnprocessedItems(Collections.singletonMap("SomeTable",
-                                                                 Collections.singletonList(new WriteRequest().withPutRequest(new PutRequest()
-                                                                                                                                 .addItemEntry("some-key",
-                                                                                                                                               new AttributeValue().withS("some-value")
-                                                                                                                                 )))));
+                Collections.singletonList(new WriteRequest().withPutRequest(new PutRequest()
+                        .addItemEntry("some-key",
+                                new AttributeValue().withS("some-value"))))));
         when(queryHelper.batchSave(any())).thenReturn(Collections.singletonList(failedBatch));
         when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
         when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
@@ -346,8 +357,8 @@ class RecordsMetadataRepositoryTest {
         expectedRecordMetadata.setKind("opendes:source:type:1.0.0");
 
         Acl recordAcl = new Acl();
-        String[] owners = {"data.tenant@byoc.local"};
-        String[] viewers = {"data.tenant@byoc.local"};
+        String[] owners = { "data.tenant@byoc.local" };
+        String[] viewers = { "data.tenant@byoc.local" };
         recordAcl.setOwners(owners);
         recordAcl.setViewers(viewers);
         expectedRecordMetadata.setAcl(recordAcl);
@@ -408,8 +419,8 @@ class RecordsMetadataRepositoryTest {
         expectedRecordMetadata.setKind("opendes:source:type:1.0.0");
 
         Acl recordAcl = new Acl();
-        String[] owners = {"data.tenant@byoc.local"};
-        String[] viewers = {"data.tenant@byoc.local"};
+        String[] owners = { "data.tenant@byoc.local" };
+        String[] viewers = { "data.tenant@byoc.local" };
         recordAcl.setOwners(owners);
         recordAcl.setViewers(viewers);
         expectedRecordMetadata.setAcl(recordAcl);
@@ -478,8 +489,8 @@ class RecordsMetadataRepositoryTest {
         String legalTag2 = "other-legal-tag";
 
         Acl recordAcl = new Acl();
-        String[] owners = {"data.tenant@byoc.local"};
-        String[] viewers = {"data.tenant@byoc.local"};
+        String[] owners = { "data.tenant@byoc.local" };
+        String[] viewers = { "data.tenant@byoc.local" };
         recordAcl.setOwners(owners);
         recordAcl.setViewers(viewers);
         recordMetadata.setAcl(recordAcl);
@@ -505,7 +516,8 @@ class RecordsMetadataRepositoryTest {
         ltaDocs.add(LegalTagAssociationDoc.createLegalTagDoc(legalTag1, id));
         ltaDocs.add(LegalTagAssociationDoc.createLegalTagDoc(legalTag2, id));
         when(queryHelper.queryByGSI(eq(LegalTagAssociationDoc.class), any(LegalTagAssociationDoc.class)))
-                        .thenReturn(mock(PaginatedQueryList.class, withSettings().defaultAnswer(new ForwardsInvocations(ltaDocs))));
+                .thenReturn(
+                        mock(PaginatedQueryList.class, withSettings().defaultAnswer(new ForwardsInvocations(ltaDocs))));
 
         // Act
         repo.delete(id, Optional.empty());
