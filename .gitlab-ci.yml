@@ -8,12 +8,6 @@ variables:
   AWS_DEPLOY_TARGET: TF
   AWS_EKS_DEPLOYMENT_NAME: os-storage
 
-  MONGODB_AWS_SERVICE: storage
-  MONGODB_AWS_BUILD_SUBDIR: provider/storage-aws/build-aws
-  MONGODB_AWS_TEST_SUBDIR: testing/storage-test-aws
-  MONGODB_AWS_EKS_DEPLOYMENT_NAME: os-storage
-  MONGODB_AWS_DEPLOY_TARGET: TF
-
   GCP_BUILD_SUBDIR: provider/storage-gcp
   GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
   GCP_APPLICATION_NAME: os-storage
@@ -48,12 +42,6 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-maven.yml"
-
-  # - project: "osdu/platform/ci-cd-pipelines"
-  #   file: "cloud-providers/aws-mongodb-global.yml"
-
-  # - project: "osdu/platform/ci-cd-pipelines"
-  #   file: "cloud-providers/aws-mongodb-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/ibm.yml"
@@ -201,9 +189,6 @@ eslint-sast:
     - export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH
     - popd
 
-
-
-
 download_plugins:
   image: maven:3.8.3-openjdk-17-slim
   stage: build
@@ -216,14 +201,11 @@ download_plugins:
     OQM_VERSION: "0.26.0"
     APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1445/packages/maven"
     APD_VERSION: "0.26.0-rc2"
-
-
   artifacts:
     paths:
       - ./tmp/*.jar
     when: always
     expire_in: 1 days
-
   script:
     - mvn dependency:copy -DrepoUrl=$OSM_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:os-osm-postgres:$OSM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp"
     - mvn dependency:copy -DrepoUrl=$OBM_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:os-obm-minio:$OBM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp"
@@ -244,97 +226,6 @@ azure_containerize:
 
 azure_test:
   image: community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-azure/azure-maven17:v0.0.1
-
-aws-test-java:
-  image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.0
-
-core-acceptance-test:
-  stage: acceptance
-  extends: core-test
-  needs: ["core-test"]
-  variables:
-    OPA_INTEGRATION_ENABLED: "true"
-    ROOT_USER_OPENID_PROVIDER_CLIENT_ID: $DATA_ROOT_OPENID_PROVIDER_CLIENT_ID
-    ROOT_USER_OPENID_PROVIDER_CLIENT_SECRET: $DATA_ROOT_OPENID_PROVIDER_CLIENT_SECRET
-    NO_ACCESS_USER_OPENID_PROVIDER_CLIENT_ID: $TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_ID
-    NO_ACCESS_USER_OPENID_PROVIDER_CLIENT_SECRET: $TEST_NO_ACCESS_OPENID_PROVIDER_CLIENT_SECRET
-    PRIVILEGED_USER_OPENID_PROVIDER_CLIENT_ID: $TEST_OPENID_PROVIDER_CLIENT_ID
-    PRIVILEGED_USER_OPENID_PROVIDER_CLIENT_SECRET: $TEST_OPENID_PROVIDER_CLIENT_SECRET
-    ENTITLEMENTS_DOMAIN: $GROUP_ID
-  script:
-    - >
-      $MAVEN_BUILD . test-results.log
-      verify -DdisableXmlReport=true
-      --quiet
-      --file $ACCEPTANCE_TEST_DIR/pom.xml
-      --update-snapshots
-
-aws-acceptance-test:
-  extends:
-    - .maven
-    - .aws
-    - .aws_common_variables
-    - .aws_variables
-  stage: acceptance
-  image: $CI_REGISTRY/osdu/platform/deployment-and-operations/base-containers-aws/aws-maven/aws-maven:v2.1
-  needs: [{ job: 'aws-update-tf', optional: true }]
-  before_script:
-    - !reference [.maven, before_script]
-    - !reference [.aws, before_script]
-    - !reference [.aws_variables, before_script]
-  variables:
-    OPA_INTEGRATION_ENABLED: "true"
-  script:
-    - export GROUP_ID=$DOMAIN
-    - export COGNITO_AUTH_TOKEN_URI=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/oauth/token-uri" --query Parameter.Value --output text --region $AWS_REGION)
-    - export COGNITO_ALLOWED_SCOPES=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/oauth/allowed-scopes" --query Parameter.Value --output text --region $AWS_REGION)
-    - export AWS_CLIENT_CREDENTIALS_CLIENT_ID=$(aws ssm get-parameter --name "/osdu/cognito/${COGNITO_NAME}/client/client-credentials/id" --query Parameter.Value --output text --region $AWS_REGION)
-    - export AWS_CLIENT_CREDENTIALS_CLIENT_SECRET=$(aws secretsmanager get-secret-value --secret-id /osdu/cognito/${COGNITO_NAME}/client-credentials-secret --query SecretString --output json --region $AWS_REGION | sed -e 's/\\\"/\"/g' -e 's/^.//g' -e 's/.$//g' | jq -r '.client_credentials_client_secret')
-    - export AWS_SERVICE_PRINCIPAL_AUTHORIZATION=$(echo -n "${AWS_CLIENT_CREDENTIALS_CLIENT_ID}:${AWS_CLIENT_CREDENTIALS_CLIENT_SECRET}" | base64)
-    - export PRIVILEGED_USER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
-
-    - export ROOT_USER_TOKEN=$(curl --location ${COGNITO_AUTH_TOKEN_URI} --header "Content-Type:application/x-www-form-urlencoded" --header "Authorization:Basic ${AWS_SERVICE_PRINCIPAL_AUTHORIZATION}" --data-urlencode "grant_type=client_credentials" --data-urlencode ${COGNITO_ALLOWED_SCOPES}  --http1.1 | jq -r '.access_token')
-    - export NO_ACCESS_USER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters USERNAME=${AWS_COGNITO_AUTH_PARAMS_USER_NO_ACCESS},PASSWORD=${AWS_COGNITO_AUTH_PARAMS_PASSWORD} --query AuthenticationResult.AccessToken --output text)
-    - >
-      $MAVEN_BUILD . test-results.log
-      verify -DdisableXmlReport=true
-      --quiet
-      --file $ACCEPTANCE_TEST_DIR/pom.xml
-      --update-snapshots
-  allow_failure: true
-  only:
-    variables:
-      - $AWS == '1'
-
-azure-acceptance-test:
-  stage: acceptance
-  script:
-    - echo "This job is expected to fail"
-    - exit 1
-  allow_failure: true
-  only:
-    variables:
-      - $AZURE == '1'
-
-gc-acceptance-test:
-  stage: acceptance
-  script:
-    - echo "This job is expected to fail"
-    - exit 1
-  allow_failure: true
-  only:
-    variables:
-      - $GC == '1'
-
-ibm-acceptance-test:
-  stage: acceptance
-  script:
-    - echo "This job is expected to fail"
-    - exit 1
-  allow_failure: true
-  only:
-    variables:
-      - $IBM == '1'
 
 fossa-analyze:
   image: $CI_REGISTRY/divido/fossa-with-cache:v0.9-jdk17
