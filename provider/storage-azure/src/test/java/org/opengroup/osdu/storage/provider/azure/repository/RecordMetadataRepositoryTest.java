@@ -345,7 +345,36 @@ class RecordMetadataRepositoryTest {
         int limit = 200;
         String cursor = "cursor";
 
-        String expectedQueryWithTrailingSpace = "SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '" + legalTagName + "') ";
+        String expectedQueryWithTrailingSpace = "SELECT * FROM c WHERE ARRAY_CONTAINS_ANY(c.metadata.legal.legaltags, '" + legalTagName + "') ";
+
+        doReturn(page).when(cosmosStore).queryItemsPage(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(Class.class), eq(limit), any(), any(CosmosQueryRequestOptions.class));
+
+        CosmosStorePageRequest pageable = Mockito.mock(CosmosStorePageRequest.class);
+        doReturn(pageable).when(page).getPageable();
+        doReturn("continuation").when(pageable).getRequestContinuation();
+
+        recordMetadataRepository.queryByLegalTagName(legalTagName, limit, cursor);
+
+        ArgumentCaptor<SqlQuerySpec> queryCaptor = ArgumentCaptor.forClass(SqlQuerySpec.class);
+        verify(cosmosStore).queryItemsPage(eq("opendes"),
+                eq("osdu-db"),
+                eq("collection"),
+                queryCaptor.capture(),
+                any(Class.class),
+                eq(limit),
+                any(),
+                any(CosmosQueryRequestOptions.class));
+        SqlQuerySpec capturedQuery = queryCaptor.getValue();
+        assertEquals(expectedQueryWithTrailingSpace, capturedQuery.getQueryText());
+    }
+
+    @Test
+    void shouldReturnCorrectRecords_when_queryByLegalTagNames() {
+        String[] legalTagName = {"legal_tag_name1", "legal_tag_name2"};
+        int limit = 200;
+        String cursor = "cursor";
+
+        String expectedQueryWithTrailingSpace = "SELECT * FROM c WHERE ARRAY_CONTAINS_ANY(c.metadata.legal.legaltags, '" + legalTagName[0] + "', '" + legalTagName[1] + "') ";
 
         doReturn(page).when(cosmosStore).queryItemsPage(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(Class.class), eq(limit), any(), any(CosmosQueryRequestOptions.class));
 

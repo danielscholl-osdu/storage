@@ -119,6 +119,11 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
         return queryByLegal(legalTagName, null, limit);
     }
 
+    @Override
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String legalTagName[], int limit, String cursor) {
+        throw new UnsupportedOperationException("Method not implemented.");
+    }
+
   @Override
   public Map<String, String> patch(
       Map<RecordMetadata, JsonPatch> jsonPatchPerRecord,

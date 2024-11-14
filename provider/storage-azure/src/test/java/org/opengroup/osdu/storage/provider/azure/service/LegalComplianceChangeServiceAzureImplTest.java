@@ -55,7 +55,7 @@ class LegalComplianceChangeServiceAzureImplTest {
 
         when(results.getValue()).thenReturn(Arrays.asList(recordMetadata1, recordMetadata2));
 
-        when(recordsRepo.queryByLegalTagName(any(), any(int.class), any())).thenReturn(results);
+        when(recordsRepo.queryByLegalTagName(any(String[].class), any(int.class), any())).thenReturn(results);
 
         LegalTagChangedCollection legalTagChangedCollection = new LegalTagChangedCollection();
         LegalTagChanged legalTagChanged = new LegalTagChanged();
@@ -82,7 +82,7 @@ class LegalComplianceChangeServiceAzureImplTest {
 
         when(results.getValue()).thenReturn(Arrays.asList(recordMetadata1, recordMetadata2));
 
-        when(recordsRepo.queryByLegalTagName(any(), any(int.class), any())).thenReturn(results);
+        when(recordsRepo.queryByLegalTagName(any(String[].class), any(int.class), any())).thenReturn(results);
 
         LegalTagChangedCollection legalTagChangedCollection = new LegalTagChangedCollection();
         LegalTagChanged legalTagChanged = new LegalTagChanged();
@@ -109,7 +109,7 @@ class LegalComplianceChangeServiceAzureImplTest {
 
         when(results.getValue()).thenReturn(Arrays.asList(recordMetadata1, recordMetadata2));
 
-        when(recordsRepo.queryByLegalTagName(any(), any(int.class), any())).thenReturn(results);
+        when(recordsRepo.queryByLegalTagName(any(String[].class), any(int.class), any())).thenReturn(results);
 
         LegalTagChangedCollection legalTagChangedCollection = new LegalTagChangedCollection();
         LegalTagChanged legalTagChanged = new LegalTagChanged();
@@ -136,7 +136,7 @@ class LegalComplianceChangeServiceAzureImplTest {
         RecordMetadata recordMetadata2 = setUpRecordMetadata("id2");
 
         when(results.getValue()).thenReturn(Arrays.asList(recordMetadata1, recordMetadata2));
-        when(recordsRepo.queryByLegalTagName(any(), any(int.class), any())).thenReturn(results);
+        when(recordsRepo.queryByLegalTagName(any(String[].class), any(int.class), any())).thenReturn(results);
 
         LegalTagChangedCollection legalTagChangedCollection = new LegalTagChangedCollection();
         LegalTagChanged legalTagChanged = new LegalTagChanged();

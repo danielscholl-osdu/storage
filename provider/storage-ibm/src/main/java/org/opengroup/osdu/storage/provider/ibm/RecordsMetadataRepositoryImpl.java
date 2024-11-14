@@ -174,6 +174,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
 
 	@Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
+            String legalTagName[], int limit, String cursor) {
+        throw new UnsupportedOperationException("Method not implemented.");
+    }
+
+	@Override
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
             String legalTagName, int limit, String cursor) {
 
 		String initialId = QueryRepositoryImpl.validateCursor(cursor, db);
