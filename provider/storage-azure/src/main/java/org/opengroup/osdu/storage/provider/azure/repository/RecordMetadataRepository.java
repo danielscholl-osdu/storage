@@ -48,10 +48,12 @@ import org.springframework.util.Assert;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.opengroup.osdu.storage.util.RecordConstants.METADATA_PREFIX_PATH;
@@ -193,13 +195,22 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, String cursor) {
+        String[] legalTagNames = {legalTagName};
+        return queryByLegalTagName(legalTagNames, limit, cursor);
+    }
+
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(String[] legalTagNames, int limit, String cursor) {
         List<RecordMetadata> outputRecords = new ArrayList<>();
         String continuation = null;
 
         Iterable<RecordMetadataDoc> docs;
 
         try {
-            String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS(c.metadata.legal.legaltags, '%s')", legalTagName);
+            String legalTagNamesString = StreamSupport.stream(Arrays.spliterator(legalTagNames), false)
+                .map(tag -> String.format("'%s'", tag))
+                .collect(Collectors.joining(", "));
+
+            String queryText = String.format("SELECT * FROM c WHERE ARRAY_CONTAINS_ANY(c.metadata.legal.legaltags, %s)", legalTagNamesString);
             SqlQuerySpec query = new SqlQuerySpec(queryText);
             final Page<RecordMetadataDoc> docPage = this.find(CosmosStorePageRequest.of(0, limit, cursor), query);
             docs = docPage.getContent();

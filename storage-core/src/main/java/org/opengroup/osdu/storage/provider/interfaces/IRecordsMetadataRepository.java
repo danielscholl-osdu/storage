@@ -45,5 +45,7 @@ public interface IRecordsMetadataRepository<K extends Serializable> {
     //TODO remove after all providers replace it with the new method queryByLegal
     AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String legalTagName, int limit, K cursor);
 
+    AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String[] legalTagName, int limit, K cursor);
+
     AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit);
 }
