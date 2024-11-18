@@ -49,8 +49,8 @@ Feature testing is controlled with the following environment variables:
 | service.entitlements.user  | service.entitlements.user | users.data.root           |
 | service.entitlements.admin | service.storage.admin     | service.entitlements.user |
 | service.storage.admin      |                           | service.storage.viewer    |
-| service.storage.creator    |                           |                           |
-| service.storage.viewer     |                           |                           |
+| service.storage.creator    |                           | service.storage.admin     |
+| service.storage.viewer     |                           | service.legal.viewer      |
 | service.legal.admin        |                           |                           |
 | service.legal.editor       |                           |                           |
 | data.test1                 |                           |                           |
