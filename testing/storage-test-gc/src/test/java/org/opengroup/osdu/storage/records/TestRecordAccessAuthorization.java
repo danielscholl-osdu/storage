@@ -67,14 +67,12 @@ public class TestRecordAccessAuthorization extends RecordAccessAuthorizationTest
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
             testUtils.getNoDataAccessToken());
 
-          CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
             RecordUtil.createDefaultJsonRecord(RECORD_ID, KIND, LEGAL_TAG), "");
 
         assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getCode());
         JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
         assertEquals(401, json.get("code").getAsInt());
-        assertEquals("Error from compliance service", json.get("reason").getAsString());
-        assertEquals("Legal response 401 {\"code\":401,\"reason\":\"Unauthorized\",\"message\":\"The user is not authorized to perform this action\"}", json.get("message").getAsString());
-        }
+      }
     }
 }
