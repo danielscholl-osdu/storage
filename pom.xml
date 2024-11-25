@@ -30,7 +30,7 @@
         <docker.image.prefix>opendes</docker.image.prefix>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <os-core-common.version>2.0.0</os-core-common.version>
-        <netty.version>4.1.51.Final</netty.version>
+        <netty.version>4.1.115.Final</netty.version>
         <snakeyaml.version>2.0</snakeyaml.version>
         <commons-codec.version>1.14</commons-codec.version>
         <nimbusds.version>7.9</nimbusds.version>
@@ -38,8 +38,8 @@
         <json-smart.version>2.5.0</json-smart.version>
         <jackson.version>2.16.1</jackson.version>
         <spring-framework-version>6.1.13</spring-framework-version>
-        <spring-boot.version>3.3.4</spring-boot.version>
-        <spring-security.version>6.3.1</spring-security.version>
+        <spring-boot.version>3.3.5</spring-boot.version>
+        <spring-security.version>6.3.4</spring-security.version>
     </properties>
 
     <licenses>
