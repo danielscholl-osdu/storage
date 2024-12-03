@@ -60,8 +60,6 @@ public class ConfigUtils {
 
     public long getTimeoutForReplay() { return  getLongProperty("test.replayAll.timeout", "60");}
 
-    public boolean getIsFeatureReplayEnabled() { return  getBooleanProperty("feature.replay.enabled", "true");}
-
     private static String getEnvValue(String propertyName) {
         return System.getenv(propertyName.toUpperCase().replaceAll("\\.", "_"));
     }
