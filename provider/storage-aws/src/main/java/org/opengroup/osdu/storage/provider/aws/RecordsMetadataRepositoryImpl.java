@@ -258,6 +258,12 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
             LegalCompliance status, int limit) {
         return null;
     }
+    
+    @Override
+    public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
+            String legalTagName[], int limit, String cursor) {
+        throw new UnsupportedOperationException("Method not implemented.");
+    }
 
     // replace with the new method queryByLegal
     @Override

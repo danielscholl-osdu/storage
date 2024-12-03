@@ -34,4 +34,9 @@ public class GcpAppServiceConfig {
     private Integer redisStorageExpiration = 60 * 60;
     private Boolean redisStorageWithSsl = false;
 
+    private String redisGroupHost;
+    private Integer redisGroupPort;
+    private String redisGroupPassword;
+    private Integer redisGroupExpiration = 30;
+    private Boolean redisGroupWithSsl = false;
 }
