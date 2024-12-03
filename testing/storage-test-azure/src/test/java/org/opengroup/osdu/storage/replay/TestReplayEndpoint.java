@@ -21,6 +21,8 @@ import org.opengroup.osdu.storage.Replay.ReplayEndpointsTests;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
 import org.opengroup.osdu.storage.util.ConfigUtils;
 
+import static org.junit.Assume.assumeTrue;
+
 public class TestReplayEndpoint extends ReplayEndpointsTests {
 
     private static final AzureTestUtils azureTestUtils = new AzureTestUtils();
