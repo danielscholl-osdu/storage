@@ -46,26 +46,10 @@ public abstract class DataRootAccessTest extends TestBase {
     LegalTagUtils.create(LEGAL_TAG, token);
     Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), token);
     GROUP_EMAIL = createDataGroup(headers);
-    String createRecordBody = RecordUtil.createJsonRecordWithCustomAcl(RECORD_ID, KIND, LEGAL_TAG,
-        GROUP_EMAIL);
-    CloseableHttpResponse response = TestUtils.send(
-        "records",
-        "PUT",
-        headers,
-        createRecordBody,
-        ""
-    );
-    assertEquals(HttpStatus.SC_CREATED, response.getCode());
   }
 
   public static void classTearDown(String token) throws Exception {
     Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), token);
-    TestUtils.send(
-        "records/" + RECORD_ID, "DELETE",
-        HeaderUtils.getHeaders(TenantUtils.getTenantName(), token),
-        "",
-        ""
-    );
     deleteDataGroup(headers, GROUP_EMAIL);
     LegalTagUtils.delete(LEGAL_TAG, token);
   }
@@ -78,10 +62,26 @@ public abstract class DataRootAccessTest extends TestBase {
     JsonObject body = new JsonObject();
     body.add("records", records);
 
+    String dataRootUserToken = testUtils.getDataRootUserToken();
+
     Map<String, String> headersWithUsersDataRootAccess = HeaderUtils.getHeaders(
         TenantUtils.getTenantName(),
-        testUtils.getDataRootUserToken());
+        dataRootUserToken);
 
+    // Data root user doesn't belong to a newly created group,
+    // but should be able to create the record with that group
+    String createRecordBody = RecordUtil.createJsonRecordWithCustomAcl(RECORD_ID, KIND, LEGAL_TAG,
+        GROUP_EMAIL);
+    CloseableHttpResponse response = TestUtils.send(
+        "records",
+        "PUT",
+        headersWithUsersDataRootAccess,
+        createRecordBody,
+        ""
+    );
+    assertEquals(HttpStatus.SC_CREATED, response.getCode());
+
+    // And read it
     CloseableHttpResponse queryResponse = TestUtils.send(
         "query/records",
         "POST",
@@ -96,6 +96,15 @@ public abstract class DataRootAccessTest extends TestBase {
     assertEquals(HttpStatus.SC_OK, queryResponse.getCode());
     assertEquals(1, responseObject.records.length);
     assertEquals(RECORD_ID, Stream.of(responseObject.records).findFirst().get().id);
+
+    // And then delete it
+    CloseableHttpResponse deleteResponse = TestUtils.send(
+        "records/" + RECORD_ID, "DELETE",
+        HeaderUtils.getHeaders(TenantUtils.getTenantName(), dataRootUserToken),
+        "",
+        ""
+    );
+    assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
   }
 
   protected static String createDataGroup(Map<String, String> headersWithValidAccessToken)

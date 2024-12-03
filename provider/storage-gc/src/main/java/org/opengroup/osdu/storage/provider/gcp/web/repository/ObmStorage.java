@@ -383,6 +383,10 @@ public class ObmStorage implements ICloudStorage {
     }
 
     private void validateMetadata(RecordMetadata metadata) {
+        if (entitlementsService.isDataManager(headers)) {
+            return;
+        }
+
         List<String> aclGroups = new ArrayList<>();
 
         Collections.addAll(aclGroups, metadata.getAcl().getViewers());

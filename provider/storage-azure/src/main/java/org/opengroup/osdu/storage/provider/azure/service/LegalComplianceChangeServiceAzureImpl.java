@@ -46,6 +46,8 @@ import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEA
 public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceChangeService {
     private static final String LEGAL_STATUS_INVALID = "Invalid";
     private static final Logger LOGGER = LoggerFactory.getLogger(LegalComplianceChangeServiceAzureImpl.class);
+    private static final ComplianceChangeInfo UPDATE_CHANGE = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.update, RecordState.active);
+    private static final ComplianceChangeInfo DELETE_CHANGE = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
     @Autowired
     private IRecordsMetadataRepository recordsRepo;
     @Autowired
@@ -63,16 +65,27 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                                                                   DpsHeaders headers) throws ComplianceUpdateStoppedException {
         Map<String, LegalCompliance> output = new HashMap<>();
         Optional<CollaborationContext> collaborationContext = Optional.empty();
+
+        LinkedHashMap <ComplianceChangeInfo, ArrayList<String>> complianceChangeInfoMap = new LinkedHashMap<ComplianceChangeInfo, ArrayList<String>>();
+        complianceChangeInfoMap.put(UPDATE_CHANGE, new ArrayList<String>());
+        complianceChangeInfoMap.put(DELETE_CHANGE, new ArrayList<String>());
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
             ComplianceChangeInfo complianceChangeInfo = this.getComplianceChangeInfo(lt);
-            if (complianceChangeInfo == null) {
-                continue;
+            if (complianceChangeInfo != null) {
+                complianceChangeInfoMap.get(complianceChangeInfo).add(lt.getChangedTagName());
             }
+        }
+
+        for (ComplianceChangeInfo complianceChangeInfo : complianceChangeInfoMap.keySet()) {
             String cursor = null;
             do {
+                String[] legalTags = complianceChangeInfoMap.get(complianceChangeInfo).toArray(new String[0]);
+                if (legalTags.length == 0) {
+                    continue;
+                }
                 //TODO replace with the new method queryByLegal
                 AbstractMap.SimpleEntry<String, List<RecordMetadata>> results = recordsRepo
-                        .queryByLegalTagName(lt.getChangedTagName(), 500, cursor);
+                        .queryByLegalTagName(legalTags, 500, cursor);
                 cursor = results.getKey();
                 List<String> recordIds = new ArrayList<>();
                 if (results.getValue() != null && !results.getValue().isEmpty()) {
@@ -82,7 +95,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     try {
                         this.recordsRepo.createOrUpdate(recordsMetadata, Optional.empty());
                     } catch (Exception e) {
-                        logOnFailedUpdateRecords(lt, e);
+                        logOnFailedUpdateRecords(legalTags, complianceChangeInfo.getPubSubEvent(), e);
                         throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error updating records upon legaltag changed.",
                                 "The server could not process your request at the moment.", e);
                     }
@@ -95,7 +108,7 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
                     if (!collaborationContext.isPresent()) {
                         this.pubSubclient.publishMessage(headers, pubsubInfos);
                     }
-                    logOnSucceedUpdateRecords(lt, recordIds);
+                    logOnSucceedUpdateRecords(legalTags, complianceChangeInfo.getPubSubEvent(), recordIds);
                 }
             } while (cursor != null);
         }
@@ -146,10 +159,10 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
         ComplianceChangeInfo output = null;
 
         if (lt.getChangedTagStatus().equalsIgnoreCase("compliant")) {
-            output = new ComplianceChangeInfo(LegalCompliance.compliant, OperationType.update, RecordState.active);
+            output = UPDATE_CHANGE;
         } else if (lt.getChangedTagStatus().equalsIgnoreCase("incompliant")) {
             this.legalTagCache.delete(lt.getChangedTagName());
-            output = new ComplianceChangeInfo(LegalCompliance.incompliant, OperationType.delete, RecordState.deleted);
+            output = DELETE_CHANGE;
         } else {
             LOGGER.warn(String.format("Unknown LegalTag compliance status received %s %s",
                     lt.getChangedTagStatus(), lt.getChangedTagName()));
@@ -157,19 +170,20 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
         return output;
     }
 
-    private void logOnSucceedUpdateRecords(LegalTagChanged lt, List<String> recordIds) {
-        if (LEGAL_STATUS_INVALID.equalsIgnoreCase(lt.getChangedTagStatus())) {
-            LOGGER.info("{} Records deleted successfully {} for legal tag {}", recordIds.size(), Arrays.toString(recordIds.toArray()), lt.getChangedTagName());
+    private void logOnSucceedUpdateRecords(String[] legalTags, OperationType opType, List<String> recordIds) {
+
+        if (opType == OperationType.delete) {
+            LOGGER.info("{} Records deleted successfully {} for legal tag(s) {}", recordIds.size(), Arrays.toString(recordIds.toArray()), String.join(", ", legalTags));
         } else {
-            LOGGER.info("{} Records updated successfully {} for legal tag {}", recordIds.size(), Arrays.toString(recordIds.toArray()), lt.getChangedTagName());
+            LOGGER.info("{} Records updated successfully {} for legal tag(s) {}", recordIds.size(), Arrays.toString(recordIds.toArray()), String.join(", ", legalTags));
         }
     }
 
-    private void logOnFailedUpdateRecords(LegalTagChanged lt, Exception e) {
-        if (LEGAL_STATUS_INVALID.equalsIgnoreCase(lt.getChangedTagStatus())) {
-            LOGGER.error("Failed to delete records cause of error {} for legaltag {}", e.getMessage(), lt.getChangedTagName());
+    private void logOnFailedUpdateRecords(String[] legalTags, OperationType opType, Exception e) {
+        if (opType == OperationType.delete) {
+            LOGGER.error("Failed to delete records cause of error {} for legal tag(s) {}", e.getMessage(), String.join(", ", legalTags));
         } else {
-            LOGGER.error("Failed to update records cause of error {} for legaltag {}", e.getMessage(), lt.getChangedTagName());
+            LOGGER.error("Failed to update records cause of error {} for legal tag(s) {}", e.getMessage(), String.join(", ", legalTags));
         }
     }
 

@@ -25,7 +25,6 @@ import org.opengroup.osdu.core.common.cache.VmCache;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.partition.PartitionInfo;
-
 import org.opengroup.osdu.storage.provider.gcp.web.config.GcpAppServiceConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,11 +35,7 @@ public class CacheConfig {
 
     private final RedisCacheBuilder<String, String> legalRedisCacheBuilder;
     private final RedisCacheBuilder<String, Schema> schemaRedisCacheBuilder;
-
-    @Bean
-    public ICache<String, Groups> groupCache() {
-        return new GroupCache();
-    }
+    private final RedisCacheBuilder<String, Groups> groupsRedisCacheBuilder;
 
     @Bean("LegalTagCache")
     public ICache<String, String> legalTagCache(GcpAppServiceConfig gcpAppServiceConfig) {
@@ -66,6 +61,19 @@ public class CacheConfig {
             gcpAppServiceConfig.getRedisStorageWithSsl(),
             String.class,
             Schema.class
+        );
+    }
+
+    @Bean
+    public RedisCache<String, Groups> groupsCache(GcpAppServiceConfig gcpAppServiceConfig){
+        return groupsRedisCacheBuilder.buildRedisCache(
+            gcpAppServiceConfig.getRedisGroupHost(),
+            gcpAppServiceConfig.getRedisGroupPort(),
+            gcpAppServiceConfig.getRedisGroupPassword(),
+            gcpAppServiceConfig.getRedisGroupExpiration(),
+            gcpAppServiceConfig.getRedisGroupWithSsl(),
+            String.class,
+            Groups.class
         );
     }
 
