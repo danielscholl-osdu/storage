@@ -40,6 +40,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
     public void setup() throws Exception {
         this.testUtils = new AzureTestUtils();
         this.configUtils = new ConfigUtils("test.properties");
+        assumeTrue(configUtils.isTestReplayEnabled());
     }
 
     @After
