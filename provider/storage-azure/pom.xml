@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   Copyright © Microsoft Corporation
 
@@ -14,296 +13,186 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>os-storage</artifactId>
-        <groupId>org.opengroup.osdu</groupId>
-        <version>0.28.0-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>storage-azure</artifactId>
-    <description>Storage service on Azure</description>
-    <packaging>jar</packaging>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>storage-azure</artifactId>
+  <description>Storage service on Azure</description>
+  <packaging>jar</packaging>
 
-    <properties>
-        <java.version>17</java.version>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-        <core-lib-azure.version>1.0.2</core-lib-azure.version>
-        <osdu.storage-core.version>0.28.0-SNAPSHOT</osdu.storage-core.version>
-        <junit.version>4.12</junit.version>
-        <mockito.version>1.10.19</mockito.version>
-        <nimbus-jose-jwt-azure.version>9.30.2</nimbus-jose-jwt-azure.version>
-        <azure-storage-blob.version>12.25.2</azure-storage-blob.version>
-        <azure-spring-data-cosmos.version>5.9.1</azure-spring-data-cosmos.version>
-        <woodstox-core.version>6.4.0</woodstox-core.version>
-        <argLine>
-            --add-opens=java.base/java.util=ALL-UNNAMED
-            --add-opens java.base/java.lang=ALL-UNNAMED
-            --add-opens java.base/java.lang.reflect=ALL-UNNAMED
-            --add-opens java.base/java.text=ALL-UNNAMED
-            --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED
-        </argLine>
-        <okhttp.version>4.12.0</okhttp.version>
-        <okio.version>3.7.0</okio.version>
-    </properties>
+  <parent>
+    <artifactId>os-storage</artifactId>
+    <groupId>org.opengroup.osdu</groupId>
+    <version>0.28.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+  <properties>
+    <!-- Azure Dependencies -->
+    <core-lib-azure.version>2.0.2</core-lib-azure.version>
+    <azure-storage-blob.version>12.29.0</azure-storage-blob.version>
+    <nimbus-jose-jwt.version>9.47</nimbus-jose-jwt.version>
+    <!-- Plugin Versions -->
+    <surefire-plugin.version>3.2.2</surefire-plugin.version>
+    <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
+    <!-- JVM Arguments -->
+    <argLine>
+        --add-opens=java.base/java.util=ALL-UNNAMED
+        --add-opens java.base/java.lang=ALL-UNNAMED
+        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+        --add-opens java.base/java.text=ALL-UNNAMED
+        --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED
+    </argLine>
+  </properties>
 
-            <!-- Inherit managed dependencies from core-lib-azure -->
-            <dependency>
-                <groupId>org.opengroup.osdu</groupId>
-                <artifactId>core-lib-azure</artifactId>
-                <version>${core-lib-azure.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.azure</groupId>
-                <artifactId>azure-spring-data-cosmos</artifactId>
-                <version>${azure-spring-data-cosmos.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+  <dependencyManagement>
+      <dependencies>
+        <!-- Core Azure Library -->
+        <dependency>
+          <groupId>org.opengroup.osdu</groupId>
+          <artifactId>core-lib-azure</artifactId>
+          <version>${core-lib-azure.version}</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>${nimbus-jose-jwt-azure.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.azure.spring</groupId>
-            <artifactId>spring-cloud-azure-starter-active-directory</artifactId>
-            <version>5.13.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-to-slf4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-jose</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opengroup.osdu</groupId>
-            <artifactId>core-lib-azure</artifactId>
-            <version>${core-lib-azure.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opengroup.osdu</groupId>
-            <artifactId>os-core-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opengroup.osdu</groupId>
-            <artifactId>storage-core</artifactId>
-            <version>${osdu.storage-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.powermock</groupId>
-                    <artifactId>powermock-api-mockito</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mockito</groupId>
-                    <artifactId>mockito-all</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure-eventgrid</artifactId>
-            <version>1.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.22</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>2.23.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.6.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-storage-blob</artifactId>
-            <version>${azure-storage-blob.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>applicationinsights-runtime-attach</artifactId>
-            <version>3.5.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>${okhttp.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okio</groupId>
-            <artifactId>okio</artifactId>
-            <version>${okio.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
-        </dependency>
+      <!-- Override parent POM's version where they have this in BOM to fix CVE-2023-52428 -->
+      <!-- This overrides version 7.9 from parent POM -->
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${nimbus-jose-jwt.version}</version>
+        <type>jar</type>
+        <scope>compile</scope>
+      </dependency>
     </dependencies>
+  </dependencyManagement>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.2.3</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>spring-boot</classifier>
-                            <mainClass>org.opengroup.osdu.storage.provider.azure.StorageAzureApplication</mainClass>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.microsoft.azure</groupId>
-                <artifactId>azure-webapp-maven-plugin</artifactId>
-                <version>1.7.0</version>
-                <configuration>
-                    <schemaVersion>V2</schemaVersion>
-                    <authentication>
-                        <serverId>azure-auth</serverId>
-                    </authentication>
-                    <subscriptionId>${azure.appservice.subscription}</subscriptionId>
-                    <resourceGroup>${azure.appservice.resourcegroup}</resourceGroup>
-                    <appServicePlanName>${azure.appservice.plan}</appServicePlanName>
-                    <appName>${azure.appservice.appname}</appName>
-                    <appSettings>
-                        <property>
-                            <name>JAVA_OPTS</name>
-                            <value>-Dserver.port=80</value>
-                        </property>
-                    </appSettings>
-                    <deployment>
-                        <resources>
-                            <resource>
-                                <directory>${project.basedir}/target</directory>
-                                <includes>
-                                    <include>*spring-boot.jar</include>
-                                </includes>
-                            </resource>
-                        </resources>
-                    </deployment>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-                <configuration>
-                    <argLine>@{argLine} --add-opens java.base/java.lang=ALL_UNNAMED</argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
-                <configuration>
-                    <excludes>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/di/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/*Doc.class</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/StorageApplication.class</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/SomeBasicInterfaceImpl.class</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/model/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/exception/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/security/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/cache/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/config/ThreadScopeBeanFactoryPostProcessor</exclude>
-                        <exclude>org/opengroup/osdu/storage/provider/azure/config/ThreadDpsHeaders</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+  <dependencies>
+    <!-- OSDU Dependencies -->
+    <dependency>
+      <groupId>org.opengroup.osdu</groupId>
+      <artifactId>storage-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opengroup.osdu</groupId>
+      <artifactId>core-lib-azure</artifactId>
+      <version>${core-lib-azure.version}</version>
+    </dependency>
+
+    <!-- Spring Dependencies -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-classic</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-to-slf4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    </dependency>
+
+    <!-- Azure Dependencies -->
+    <dependency>
+      <groupId>com.azure.spring</groupId>
+      <artifactId>spring-cloud-azure-starter-active-directory</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-blob</artifactId>
+    </dependency>
+
+    <!-- Test Dependencies -->
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Spring Boot Maven Plugin -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>3.2.3</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+            <configuration>
+              <classifier>spring-boot</classifier>
+              <mainClass>org.opengroup.osdu.storage.provider.azure.StorageAzureApplication</mainClass>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Surefire Plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire-plugin.version}</version>
+        <configuration>
+          <argLine>@{argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+        </configuration>
+      </plugin>
+
+      <!-- JaCoCo Plugin -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco-plugin.version}</version>
+        <configuration>
+          <excludes>
+            <exclude>org/opengroup/osdu/storage/provider/azure/di/**</exclude>
+            <exclude>org/opengroup/osdu/storage/provider/azure/*Doc.class</exclude>
+            <exclude>org/opengroup/osdu/storage/provider/azure/StorageApplication.class</exclude>
+            <exclude>org/opengroup/osdu/storage/provider/azure/model/**</exclude>
+            <exclude>org/opengroup/osdu/storage/provider/azure/exception/**</exclude>
+            <exclude>org/opengroup/osdu/storage/provider/azure/security/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
