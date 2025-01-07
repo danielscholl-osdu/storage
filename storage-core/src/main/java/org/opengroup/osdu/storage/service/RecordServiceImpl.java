@@ -98,7 +98,7 @@ public class RecordServiceImpl implements RecordService {
         if (!hasOwnerAccess) {
             this.auditLogger.purgeRecordFail(singletonList(recordId));
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED,
-                    "The user is not authorized to purge the record");
+                    "The user is not authorized to perform this action");
         }
 
         try {
@@ -340,7 +340,7 @@ public class RecordServiceImpl implements RecordService {
         if (!hasOwnerAccess) {
             auditLogger.purgeRecordVersionsFail(recordMetadata.getId(), singletonList(recordMetadata.getId()));
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED,
-                    "The user is not authorized to purge the record versions");
+                    "The user is not authorized to perform this action");
         }
     }
 
