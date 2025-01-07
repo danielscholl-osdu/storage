@@ -41,16 +41,6 @@ spec:
         envFrom:
         - configMapRef:
             name: {{ printf "%s-config" .Values.conf.appName | quote }}
-        {{- if .Values.global.onPremEnabled }}
-        - secretRef:
-            name: {{ .Values.conf.keycloakSecretName | quote }}
-        - secretRef:
-            name: {{ .Values.conf.minioSecretName | quote }}
-        - secretRef:
-            name: {{ .Values.conf.postgresSecretName | quote }}
-        - secretRef:
-            name: {{ .Values.conf.rabbitmqSecretName | quote }}
-        {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
