@@ -4,7 +4,6 @@
 
 global:
   domain: ""
-  onPremEnabled: false
   limitsEnabled: true
   logLevel: "ERROR"
   tier: ""
@@ -35,10 +34,6 @@ data:
 
 conf:
   appName: "storage"
-  keycloakSecretName: "storage-keycloak-secret"
-  minioSecretName: "storage-minio-secret"
-  postgresSecretName: "storage-postgres-secret"
-  rabbitmqSecretName: "rabbitmq-secret"
   replicas: 3
   storageRedisSecretName: "storage-redis-secret"
 
