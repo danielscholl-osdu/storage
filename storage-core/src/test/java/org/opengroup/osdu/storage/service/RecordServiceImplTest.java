@@ -211,7 +211,7 @@ public class RecordServiceImplTest {
         } catch (AppException e) {
             assertEquals(403, e.getError().getCode());
             assertEquals("Access denied", e.getError().getReason());
-            assertEquals("The user is not authorized to purge the record", e.getError().getMessage());
+            assertEquals("The user is not authorized to perform this action", e.getError().getMessage());
         }
     }
 
@@ -468,7 +468,7 @@ public class RecordServiceImplTest {
 
         assertEquals(403, appException.getError().getCode());
         assertEquals("Access denied", appException.getError().getReason());
-        assertEquals("The user is not authorized to purge the record versions", appException.getError().getMessage());
+        assertEquals("The user is not authorized to perform this action", appException.getError().getMessage());
 
     }
 
