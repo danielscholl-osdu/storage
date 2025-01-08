@@ -98,7 +98,13 @@ public abstract class BatchServiceImpl implements BatchService {
                 continue;
             }
 
-            validRecords.put(recordId, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
+            Long latestVersion = recordMetadata.getLatestVersion();
+            if (latestVersion == null) {
+                recordsNotFound.add(recordId);
+                continue;
+            }
+
+            validRecords.put(recordId, recordMetadata.getVersionPath(latestVersion));
         }
 
         List<String> validRecordObjects = new ArrayList<>(validRecords.values());
