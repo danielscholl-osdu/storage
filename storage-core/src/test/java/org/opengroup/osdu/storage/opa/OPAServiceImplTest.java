@@ -2,6 +2,7 @@ package org.opengroup.osdu.storage.opa;
 
 import com.google.common.collect.Sets;
 import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.http.HttpClient;
+import org.opengroup.osdu.core.common.http.HttpRequest;
 import org.opengroup.osdu.core.common.http.HttpResponse;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -16,21 +18,22 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
-import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.opa.model.OpaError;
 import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.OPAServiceConfig;
 import org.opengroup.osdu.storage.opa.service.OPAServiceImpl;
+import org.springframework.http.HttpMethod;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,13 +64,19 @@ public class OPAServiceImplTest {
     private static final String KIND_2 = "tenant1:test:crazy:2.0.2";
     private static final String NEW_USER = "newuser@gmail.com";
     private static final String TENANT = "tenant1";
+    private static final String URL = "null/v1/data/osdu/partition/tenant1/dataauthz/records";
     private static final String[] ACL = new String[] { "data.email1@tenant1.gmail.com", "data.test@tenant1.gmail.com" };
+    private static Map<String, String> opaQueryParams;
 
-    private Record record1;
-    private Record record2;
-
-    private List<Record> records;
     private Acl acl;
+
+    @BeforeAll
+    public static void setupTestClass() {
+        opaQueryParams = new HashMap<>();
+        opaQueryParams.put(DpsHeaders.CORRELATION_ID, "cor-id");
+        opaQueryParams.put(DpsHeaders.DATA_PARTITION_ID, TENANT);
+        opaQueryParams.put(DpsHeaders.USER_ID, "user-id");
+    }
 
     @BeforeEach
     public void setup() {
@@ -78,24 +87,14 @@ public class OPAServiceImplTest {
         legal.setLegaltags(Sets.newHashSet("legaltag1", "legaltag2"));
         legal.setOtherRelevantDataCountries(Sets.newHashSet("FRA"));
 
-        this.record1 = new Record();
-        this.record1.setKind(KIND_1);
-        this.record1.setId(RECORD_ID1);
-        this.record1.setLegal(legal);
-
-        this.record2 = new Record();
-        this.record2.setKind(KIND_2);
-        this.record2.setId(RECORD_ID2);
-        this.record2.setLegal(legal);
-
         this.acl.setViewers(ACL);
         this.acl.setOwners(ACL);
-        this.record1.setAcl(this.acl);
-        this.record2.setAcl(this.acl);
 
         when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT);
+        when(this.headers.getPartitionId()).thenReturn(TENANT);
+        when(this.headers.getCorrelationId()).thenReturn("cor-id");
+        when(this.headers.getUserId()).thenReturn("user-id");
         when(this.headers.getAuthorization()).thenReturn("Bearer testtoken");
-        when(httpClient.send(any())).thenReturn(httpResponse);
     }
 
     @Test
@@ -115,6 +114,13 @@ public class OPAServiceImplTest {
         List<RecordMetadata> recordsMetadata = new ArrayList<>();
         recordsMetadata.add(existingRecordMetadata1);
         recordsMetadata.add(existingRecordMetadata2);
+
+        HttpRequest httpRequest = HttpRequest.builder()
+                .url(URL)
+                .httpMethod(HttpMethod.POST.name())
+                .queryParams(opaQueryParams)
+                .body(getExpectedRequestBody("update")).build();
+        when(httpClient.send(httpRequest)).thenReturn(httpResponse);
 
         when(httpResponse.isSuccessCode()).thenReturn(false);
         when(httpResponse.getResponseCode()).thenReturn(400);
@@ -148,6 +154,13 @@ public class OPAServiceImplTest {
         recordsMetadata.add(existingRecordMetadata1);
         recordsMetadata.add(existingRecordMetadata2);
 
+        HttpRequest httpRequest = HttpRequest.builder()
+                .url(URL)
+                .httpMethod(HttpMethod.POST.name())
+                .queryParams(opaQueryParams)
+                .body(getExpectedRequestBody("update")).build();
+        when(httpClient.send(httpRequest)).thenReturn(httpResponse);
+
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getBody()).thenReturn("{}");
 
@@ -178,6 +191,13 @@ public class OPAServiceImplTest {
         List<RecordMetadata> recordsMetadata = new ArrayList<>();
         recordsMetadata.add(existingRecordMetadata1);
         recordsMetadata.add(existingRecordMetadata2);
+
+        HttpRequest httpRequest = HttpRequest.builder()
+                .url(URL)
+                .httpMethod(HttpMethod.POST.name())
+                .queryParams(opaQueryParams)
+                .body(getExpectedRequestBody("update")).build();
+        when(httpClient.send(httpRequest)).thenReturn(httpResponse);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [{\"message\":\"Invalid legal tag(s) found on record\"},{\"message\":\"You must be an owner to update a record\"}],\"id\": \"tenant1:crazy:record2\"}]}");
@@ -213,6 +233,13 @@ public class OPAServiceImplTest {
         recordsMetadata.add(recordMetadata1);
         recordsMetadata.add(recordMetadata2);
 
+        HttpRequest httpRequest = HttpRequest.builder()
+                .url(URL)
+                .httpMethod(HttpMethod.POST.name())
+                .queryParams(opaQueryParams)
+                .body(getExpectedRequestBody("view")).build();
+        when(httpClient.send(httpRequest)).thenReturn(httpResponse);
+
         when(httpResponse.isSuccessCode()).thenReturn(true);
         when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"id\": \"tenant1:crazy:record2\",\"errors\":[{\"reason\":\"test\",\"message\":\"You must be a viewer or an owner to access a record\",\"code\":\"401\",\"id\": \"tenant1:crazy:record2\"}]}]}");
 
@@ -226,6 +253,16 @@ public class OPAServiceImplTest {
 
         List<ValidationOutputRecord> response = this.sut.validateUserAccessToRecords(recordsMetadata, OperationType.view);
         assertEquals(expectedValidationOutputRecords, response);
+    }
+
+    private String getExpectedRequestBody(String operation) {
+        return "{\"input\":{\"operation\":\"" + operation + "\",\"token\":\"testtoken\",\"xuserid\":\"user-id\"," +
+                "\"datapartitionid\":\"tenant1\",\"records\":[{\"kind\":\"tenant1:test:kind:1.0.0\"," +
+                "\"acls\":{\"viewers\":[\"data.email1@tenant1.gmail.com\",\"data.test@tenant1.gmail.com\"]," +
+                "\"owners\":[\"data.email1@tenant1.gmail.com\",\"data.test@tenant1.gmail.com\"]}}," +
+                "{\"kind\":\"tenant1:test:crazy:2.0.2\",\"acls\":{\"viewers\":[\"data.email1@tenant1.gmail.com\"," +
+                "\"data.test@tenant1.gmail.com\"],\"owners\":[\"data.email1@tenant1.gmail.com\"," +
+                "\"data.test@tenant1.gmail.com\"]}}]}}";
     }
 
 }
