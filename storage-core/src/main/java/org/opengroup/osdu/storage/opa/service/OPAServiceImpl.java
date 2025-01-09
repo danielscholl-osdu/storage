@@ -38,7 +38,9 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OPAServiceImpl implements IOPAService {
@@ -96,9 +98,14 @@ public class OPAServiceImpl implements IOPAService {
         String evaluateUrl = String.format("%s/v1/data/osdu/partition/%s/dataauthz/records", opaServiceConfig.getOpaEndpoint(), headers.getPartitionIdWithFallbackToAccountId());
 
         logger.debug("opa url: " + evaluateUrl);
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put(DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
+        queryParams.put(DpsHeaders.DATA_PARTITION_ID, headers.getPartitionId());
+        queryParams.put(DpsHeaders.USER_ID, headers.getUserId());
         HttpRequest httpRequest = HttpRequest.builder()
                 .url(evaluateUrl)
                 .httpMethod("POST")
+                .queryParams(queryParams)
                 .body(requestBody).build();
 
         HttpResponse httpResponse = httpClient.send(httpRequest);
