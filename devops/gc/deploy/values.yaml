@@ -4,7 +4,6 @@
 
 global:
   domain: ""
-  onPremEnabled: false
   limitsEnabled: true
   logLevel: "ERROR"
   tier: ""
@@ -35,10 +34,6 @@ data:
 
 conf:
   appName: "storage"
-  keycloakSecretName: "storage-keycloak-secret"
-  minioSecretName: "storage-minio-secret"
-  postgresSecretName: "storage-postgres-secret"
-  rabbitmqSecretName: "rabbitmq-secret"
   replicas: 3
   storageRedisSecretName: "storage-redis-secret"
 
@@ -49,10 +44,10 @@ istio:
   proxyMemoryLimit: "256Mi"
 
 hpa:
-  minReplicas: 10
+  minReplicas: 6
   maxReplicas: 20
   targetType: "AverageValue"
-  targetValue: 40   # rps*0.85*2
+  targetValue: 45
   behaviorScaleUpStabilizationWindowSeconds: 10
   behaviorScaleUpPoliciesValue: 50
   behaviorScaleUpPoliciesPeriodSeconds: 15
@@ -61,6 +56,6 @@ hpa:
   behaviorScaleDownPoliciesPeriodSeconds: 60
 
 local_ratelimit:
-  max_tokens: 25   # rps
-  tokens_per_fill: 25
+  max_tokens: 30
+  tokens_per_fill: 30
   fill_interval: "1s"

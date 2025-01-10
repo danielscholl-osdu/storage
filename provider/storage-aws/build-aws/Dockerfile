@@ -13,16 +13,18 @@
 # limitations under the License.
 
 # https://docs.spring.io/spring-boot/docs/current/reference/html/deployment.html
-FROM public.ecr.aws/amazoncorretto/amazoncorretto:17
+FROM registry.repo.osdu.aws/amazoncorretto:17-alpine
 
-RUN yum update -y && yum install -y shadow-utils
-
-RUN groupadd -g 10001 -r appgroup \
-  && useradd -M -g 10001 -r -u 10001 appuser
+RUN apk update && \
+    apk add --no-cache \
+    bash \
+    curl \
+    shadow \
+    && \
+    /usr/sbin/groupadd -g 10001 -r appgroup && \
+    /usr/sbin/useradd -M -g 10001 -r -u 10001 appuser
 
 ARG JAR_FILE=provider/storage-aws/target/*spring-boot.jar
-
-
 
 WORKDIR /
 COPY ${JAR_FILE} app.jar
