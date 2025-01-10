@@ -51,6 +51,8 @@ public class ConfigUtils {
         return getBooleanProperty("collaboration.enabled", "false");
     }
 
+    public boolean isTestReplayEnabled(){ return  getBooleanProperty("test.replay.enabled", "false");}
+
     public boolean getIsTestReplayAllEnabled() { return  getBooleanProperty("test.replayAll.enabled", "false");}
 
     public long getTimeoutForReplay() { return  getLongProperty("test.replayAll.timeout", "60");}
