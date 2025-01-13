@@ -78,10 +78,6 @@ phases:
       - echo "Building integration testing assemblies and gathering artifacts..."
       - ./testing/storage-test-aws/build-aws/prepare-dist.sh
 
-      - sed -i "s|__CONTAINER__|$ECR_IMAGE|"  devops/aws/chart/values.yaml
-      - echo "--Copying Helm Charts to ${OUTPUT_DIR:-dist}--"
-      - rsync -r devops/aws/* "${OUTPUT_DIR:-dist}"
-
       - echo "Build and push docker image..."
       - docker buildx create --driver docker-container --use
       - docker buildx inspect --bootstrap
