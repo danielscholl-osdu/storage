@@ -29,7 +29,7 @@
 
   <properties>
     <!-- Azure Dependencies -->
-    <core-lib-azure.version>2.0.2</core-lib-azure.version>
+    <core-lib-azure.version>2.0.3</core-lib-azure.version>
     <azure-storage-blob.version>12.29.0</azure-storage-blob.version>
     <nimbus-jose-jwt.version>9.47</nimbus-jose-jwt.version>
     <!-- Plugin Versions -->
