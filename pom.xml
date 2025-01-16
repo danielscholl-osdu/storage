@@ -14,231 +14,241 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>os-storage</artifactId>
-    <packaging>pom</packaging>
     <version>0.28.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <description>Root Storage Service project</description>
 
-    <properties>
-        <java.version>17</java.version>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-        <docker.image.prefix>opendes</docker.image.prefix>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <os-core-common.version>3.3.1</os-core-common.version>
-        <netty.version>4.1.115.Final</netty.version>
-        <snakeyaml.version>2.0</snakeyaml.version>
-        <commons-codec.version>1.14</commons-codec.version>
-        <nimbusds.version>7.9</nimbusds.version>
-        <woodstox-core.version>6.5.1</woodstox-core.version>
-        <json-smart.version>2.5.0</json-smart.version>
-        <jackson.version>2.16.1</jackson.version>
-        <spring-framework-version>6.1.16</spring-framework-version>
-        <spring-boot.version>3.3.7</spring-boot.version>
-        <spring-security.version>6.3.4</spring-security.version>
-    </properties>
-
     <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
+      <license>
+        <name>Apache License, Version 2.0</name>
+        <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+      </license>
     </licenses>
 
+    <modules>
+      <module>storage-core</module>
+      <module>storage-core-plus</module>
+      <module>provider/storage-aws</module>
+      <module>provider/storage-azure</module>
+      <module>provider/storage-gc</module>
+      <module>provider/storage-ibm</module>
+    </modules>
+
+    <properties>
+      <java.version>17</java.version>
+      <maven.compiler.target>17</maven.compiler.target>
+      <maven.compiler.source>17</maven.compiler.source>
+      <docker.image.prefix>opendes</docker.image.prefix>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+      <!-- OSDU Versions-->
+      <os-core-common.version>3.3.1</os-core-common.version>
+
+      <!-- Spring Versions-->
+      <spring-boot.version>3.3.7</spring-boot.version>
+      <spring-security.version>6.3.6</spring-security.version>
+      <spring-framework-version>6.1.16</spring-framework-version>
+
+      <!-- Project Versions-->
+      <json-smart.version>2.5.1</json-smart.version>
+      <openapi.version>2.3.0</openapi.version>
+      <lombok.version>1.18.28</lombok.version>
+      <netty.version>4.1.115.Final</netty.version>
+      <commons-codec.version>1.14</commons-codec.version>
+
+      <!-- Plugin Versions -->
+      <spring-boot-maven-plugin.version>3.2.2</spring-boot-maven-plugin.version>
+      <git-commit-id-plugin.version>8.0.2</git-commit-id-plugin.version>
+    </properties>
+
     <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-framework-bom</artifactId>
-                <version>${spring-framework-version}</version>
-                <type>pom</type>
-            </dependency>
+      <!-- BOMs listed in order of dependency hierarchy:
+        spring-boot-dependencies first as it's the parent BOM providing default dependency management,
+        spring-security-bom second as it may need to override Spring Framework versions for security purposes,
+        spring-framework-bom third as it provides core dependencies that can be safely overridden by the security BOM
+        os-core-common last as it provides the default dependencies for the project.dependency>
+      -->
 
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+      <!-- BOM Section Start-->
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-dependencies</artifactId>
+          <version>${spring-boot.version}</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.springframework.security</groupId>
+          <artifactId>spring-security-bom</artifactId>
+          <version>${spring-security.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-framework-bom</artifactId>
+          <version>${spring-framework-version}</version>
+          <type>pom</type>
+        </dependency>
+        <!-- Core CommonBOM Override Section Start -->
+        <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-bom</artifactId>
+          <version>${jackson.version}</version>
+          <type>pom</type>
+        </dependency>
+        <!-- Core CommonBOM Override Section End -->
+        <dependency>
+          <groupId>org.opengroup.osdu</groupId>
+          <artifactId>os-core-common</artifactId>
+          <version>${os-core-common.version}</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-bom</artifactId>
+            <version>${netty.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+        <!-- BOM Section End-->
 
-            <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-bom</artifactId>
-                <version>${spring-security.version}</version>
-                <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.opengroup.osdu</groupId>
-                <artifactId>os-core-common</artifactId>
-                <version>${os-core-common.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
-                <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-bom</artifactId>
-                <version>${netty.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.nimbusds</groupId>
-                <artifactId>nimbus-jose-jwt</artifactId>
-                <version>${nimbusds.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>${commons-codec.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.yaml</groupId>
-                <artifactId>snakeyaml</artifactId>
-                <version>${snakeyaml.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.woodstox</groupId>
-                <artifactId>woodstox-core</artifactId>
-                <version>${woodstox-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.minidev</groupId>
-                <artifactId>json-smart</artifactId>
-                <version>${json-smart.version}</version>
-            </dependency>
-        </dependencies>
+        <!-- Any dependencies here will be used by all projects. -->
+        <dependency>
+          <groupId>org.opengroup.osdu</groupId>
+          <artifactId>os-core-common</artifactId>
+          <version>${os-core-common.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>net.minidev</groupId>
+          <artifactId>json-smart</artifactId>
+          <version>${json-smart.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.yaml</groupId>
+          <artifactId>snakeyaml</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+          <version>${commons-codec.version}</version>
+        </dependency>
+      </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.28</version>
-        </dependency>
-
-
-        <!--Swagger-->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-
-
-        <dependency>
+      <dependency>
+        <groupId>org.springframework.plugin</groupId>
+        <artifactId>spring-plugin-core</artifactId>
+        <version>2.0.0.RELEASE</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.plugin</groupId>
+        <artifactId>spring-plugin-metadata</artifactId>
+        <version>2.0.0.RELEASE</version>
+        <exclusions>
+          <exclusion>
             <groupId>org.springframework.plugin</groupId>
             <artifactId>spring-plugin-core</artifactId>
-            <version>2.0.0.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.plugin</groupId>
-            <artifactId>spring-plugin-metadata</artifactId>
-            <version>2.0.0.RELEASE</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.plugin</groupId>
-                    <artifactId>spring-plugin-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${openapi.version}</version>
+      </dependency>
+
+      <!-- Lombok is compile-time only due to 'provided' scope - it generates code during compilation
+         but is not included in the final artifact -->
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
 
-    <modules>
-        <module>storage-core</module>
-        <module>storage-core-plus</module>
-        <module>provider/storage-aws</module>
-        <module>provider/storage-azure</module>
-        <module>provider/storage-gc</module>
-        <module>provider/storage-ibm</module>
-    </modules>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot-maven-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>build-info</id>
+              <goals>
+                <goal>build-info</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+            <groupId>io.github.git-commit-id</groupId>
+            <artifactId>git-commit-id-maven-plugin</artifactId>
+            <version>${git-commit-id-plugin.version}</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>revision</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <verbose>true</verbose>
+              <dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
+              <generateGitPropertiesFile>true</generateGitPropertiesFile>
+              <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties
+              </generateGitPropertiesFilename>
+            </configuration>
+        </plugin>
+      </plugins>
+    </build>
+
+    <profiles>
+      <profile>
+        <id>Default</id>
+        <activation>
+          <property>
+            <name>!repo.releases.id</name>
+          </property>
+        </activation>
+        <properties>
+          <repo.releases.id>community-maven-repo</repo.releases.id>
+          <publish.snapshots.id>community-maven-via-job-token</publish.snapshots.id>
+          <publish.releases.id>community-maven-via-job-token</publish.releases.id>
+          <repo.releases.url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</repo.releases.url>
+          <publish.snapshots.url>https://community.opengroup.org/api/v4/projects/44/packages/maven
+          </publish.snapshots.url>
+          <publish.releases.url>https://community.opengroup.org/api/v4/projects/44/packages/maven
+          </publish.releases.url>
+        </properties>
+      </profile>
+    </profiles>
 
     <repositories>
-        <repository>
-            <id>${repo.releases.id}</id>
-            <url>${repo.releases.url}</url>
-        </repository>
+      <repository>
+        <id>${repo.releases.id}</id>
+        <url>${repo.releases.url}</url>
+      </repository>
     </repositories>
 
     <distributionManagement>
-        <repository>
-            <id>${publish.releases.id}</id>
-            <url>${publish.releases.url}</url>
-        </repository>
-        <snapshotRepository>
-            <id>${publish.snapshots.id}</id>
-            <url>${publish.snapshots.url}</url>
-        </snapshotRepository>
+      <repository>
+        <id>${publish.releases.id}</id>
+        <url>${publish.releases.url}</url>
+      </repository>
+      <snapshotRepository>
+        <id>${publish.snapshots.id}</id>
+        <url>${publish.snapshots.url}</url>
+      </snapshotRepository>
     </distributionManagement>
-
-    <profiles>
-        <profile>
-            <id>Default</id>
-            <activation>
-                <property>
-                    <name>!repo.releases.id</name>
-                </property>
-            </activation>
-            <properties>
-                <repo.releases.id>community-maven-repo</repo.releases.id>
-                <publish.snapshots.id>community-maven-via-job-token</publish.snapshots.id>
-                <publish.releases.id>community-maven-via-job-token</publish.releases.id>
-                <repo.releases.url>https://community.opengroup.org/api/v4/groups/17/-/packages/maven</repo.releases.url>
-                <publish.snapshots.url>https://community.opengroup.org/api/v4/projects/44/packages/maven
-                </publish.snapshots.url>
-                <publish.releases.url>https://community.opengroup.org/api/v4/projects/44/packages/maven
-                </publish.releases.url>
-            </properties>
-        </profile>
-    </profiles>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.0.0</version>
-
-                <executions>
-                    <execution>
-                        <id>build-info</id>
-                        <goals>
-                            <goal>build-info</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>io.github.git-commit-id</groupId>
-                <artifactId>git-commit-id-maven-plugin</artifactId>
-                <version>8.0.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <verbose>true</verbose>
-                    <dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
-                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties
-                    </generateGitPropertiesFilename>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
