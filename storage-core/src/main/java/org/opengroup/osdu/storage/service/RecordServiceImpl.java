@@ -181,6 +181,25 @@ public class RecordServiceImpl implements RecordService {
         }
 
         this.auditLogger.purgeRecordVersionsSuccess(recordId, recordVersionPathsToRetainDeletePair.getRight());
+        for (String versionPath : recordVersionPathsToRetainDeletePair.getRight()) {
+
+            String[] versionPathParts = versionPath.split("/");
+            if (versionPathParts.length == 3) {
+
+                String version = versionPathParts[2];
+
+                if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+                    this.pubSubClient.publishMessage(collaborationContext, this.headers, getRecordChangedV2Delete(recordId, recordMetadata, DeletionType.hard, Long.parseLong(version)));
+                }
+                if (!collaborationContext.isPresent()) {
+                    this.pubSubClient.publishMessage(this.headers, new PubSubDeleteInfo(recordId + "/" + version, recordMetadata.getKind(), DeletionType.hard));
+                }
+            } 
+            else 
+            {
+                this.auditLogger.purgeRecordVersionsFail(recordId, List.of(versionPath));
+            }
+        }
     }
 
     @Override
@@ -245,9 +264,13 @@ public class RecordServiceImpl implements RecordService {
     }
 
     private RecordChangedV2Delete getRecordChangedV2Delete(String recordId, RecordMetadata recordMetadata, DeletionType deletionType) {
+        return getRecordChangedV2Delete(recordId, recordMetadata, deletionType, recordMetadata.getLatestVersion());
+    }
+
+    private RecordChangedV2Delete getRecordChangedV2Delete(String recordId, RecordMetadata recordMetadata, DeletionType deletionType, Long version) {
         return RecordChangedV2Delete.builder()
                 .id(recordId)
-                .version(recordMetadata.getLatestVersion())
+                .version(version)
                 .modifiedBy(recordMetadata.getModifyUser())
                 .kind(recordMetadata.getKind())
                 .op(OperationType.delete)
