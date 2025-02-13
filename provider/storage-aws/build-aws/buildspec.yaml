@@ -71,8 +71,8 @@ phases:
       - if [ "$GIT_SECRETS_SCAN_RESULT" = "FAILED" ]; then echo "Secrets detected!" && exit 1; fi
 
       - echo "Building primary service assemblies..."
-      - mvn -ntp -B test install -pl .,storage-core,provider/storage-aws -Ddeployment.environment=prod
-      - mvn sonar:sonar -pl .,provider/storage-aws -Dsonar.login=${SONAR_USERNAME} -Dsonar.password=${SONAR_PASSWORD} -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.host.url=${SONAR_URL}
+      - mvn -ntp -B test install -pl .,storage-core,provider/storage-aws -P core,aws -Ddeployment.environment=prod
+      - mvn sonar:sonar -pl .,provider/storage-aws -P aws -Dsonar.login=${SONAR_USERNAME} -Dsonar.password=${SONAR_PASSWORD} -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.host.url=${SONAR_URL}
       - echo "Building integration testing assemblies and gathering artifacts..."
       - ./testing/storage-test-aws/build-aws/prepare-dist.sh
 

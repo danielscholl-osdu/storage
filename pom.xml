@@ -30,15 +30,6 @@
       </license>
     </licenses>
 
-    <modules>
-      <module>storage-core</module>
-      <module>storage-core-plus</module>
-      <module>provider/storage-aws</module>
-      <module>provider/storage-azure</module>
-      <module>provider/storage-gc</module>
-      <module>provider/storage-ibm</module>
-    </modules>
-
     <properties>
       <java.version>17</java.version>
       <maven.compiler.target>17</maven.compiler.target>
@@ -231,6 +222,40 @@
           <publish.releases.url>https://community.opengroup.org/api/v4/projects/44/packages/maven
           </publish.releases.url>
         </properties>
+      </profile>
+      <profile>
+        <id>core</id>
+        <activation>
+          <activeByDefault>true</activeByDefault>
+        </activation>
+        <modules>
+          <module>storage-core</module>
+          <module>storage-core-plus</module>
+        </modules>
+      </profile>
+      <profile>
+        <id>aws</id>
+        <modules>
+          <module>provider/storage-aws</module>
+        </modules>
+      </profile>
+      <profile>
+        <id>azure</id>
+        <modules>
+          <module>provider/storage-azure</module>
+        </modules>
+      </profile>
+      <profile>
+        <id>ibm</id>
+        <modules>
+          <module>provider/storage-ibm</module>
+        </modules>
+      </profile>
+      <profile>
+        <id>gc</id>
+        <modules>
+          <module>provider/storage-gc</module>
+        </modules>
       </profile>
     </profiles>
 
