@@ -8,6 +8,13 @@ ENV PROVIDER_NAME $PROVIDER_NAME
 ARG PORT
 ENV PORT $PORT
 
+ENV LOADER_PATH="gc/"
+
+COPY tmp-gc/gc-oqm-pubsub-*.jar gc/oqm-pubsub.jar
+COPY tmp-gc/gc-obm-gs-*.jar gc/obm-gs.jar
+COPY tmp-gc/gc-osm-datastore-*.jar gc/osm-datastore.jar
+COPY tmp-gc/gc-apd-acc-*.jar gc/apd-acc.jar
+
 # Copy the jar to the production image from the builder stage.
 COPY provider/storage-${PROVIDER_NAME}/target/storage-${PROVIDER_NAME}-*-spring-boot.jar storage-${PROVIDER_NAME}.jar
 
@@ -18,4 +25,10 @@ RUN groupadd -g 10001 -r nonroot \
 USER 10001:10001
 
 # Run the web service on container startup.
-CMD java -Djava.security.egd=file:/dev/./urandom -Dserver.port=${PORT} -Dlog4j.formatMsgNoLookups=true -jar /app/storage-${PROVIDER_NAME}.jar
+CMD java --add-opens java.base/java.lang=ALL-UNNAMED \
+         --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
+         -Djava.security.egd=file:/dev/./urandom \
+         -Dserver.port=${PORT} \
+         -Dlog4j.formatMsgNoLookups=true \
+         -Dloader.main=org.opengroup.osdu.storage.provider.gcp.StorageApplicationGCP \
+         -jar /app/storage-${PROVIDER_NAME}.jar
