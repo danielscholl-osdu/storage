@@ -228,7 +228,6 @@ download_plugins:
   only:
     variables:
       - $PROTECTED == '1'
-      - $CIMPL == '1'
 
 gemnasium-maven-dependency_scanning:
   variables:
