@@ -50,7 +50,7 @@ include:
     file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/core-global.yml"
+    file: "cloud-providers/cimpl-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa-maven.yml"
@@ -228,6 +228,7 @@ download_plugins:
   only:
     variables:
       - $PROTECTED == '1'
+      - $CIMPL == '1'
 
 gemnasium-maven-dependency_scanning:
   variables:
