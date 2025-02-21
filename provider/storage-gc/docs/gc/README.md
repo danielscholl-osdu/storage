@@ -4,12 +4,14 @@
 
 * [Environment variables](#Environment-variables)
 * [Common properties for all environments](#Common-properties-for-all-environments)
-* [For Mappers to activate drivers](#For-Mappers-to-activate-drivers)
 * [Datastore configuration](#Datastore-configuration)
-* [Pubsub configuration](#Pubsub-configuration)
+* [Pub/Sub configuration](#Pubsub-configuration)
 * [Google Cloud service configuration](#ObjectStoreConfig)
-* [Google loud service account configuration](#Google-cloud-service-account-configuration)
+* [Google_Cloud service account configuration](#Google-cloud-service-account-configuration)
+* [Run args](#run-args)
+* [Running E2E Tests](#running-e2e-tests)
 * [License](#License)
+* 
 ## Environment variables
 
 Define the following environment variables.
@@ -50,7 +52,6 @@ Defined in default application property file but possible to override:
 | `PARTITION_API`                            | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                                            |
 | `GOOGLE_APPLICATION_CREDENTIALS`           | ex `/path/to/directory/service-key.json`      | Service account credentials, you only need this if running locally                    | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
 | `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                                            |
-| `SYSTEM_PARTITION_ID`                      | ex `system`                                   | System partition ID                                                                   |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
@@ -58,21 +59,7 @@ Usage of spring profiles is preferred.
 | name                     | value                     | description                                                                                                               | sensitive? | source |
 |--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------|------------|--------|
 | `PARTITION_AUTH_ENABLED` | ex `true` or `false`      | Disable or enable auth token provisioning for requests to Partition service                                               | no         | -      |
-| `OQMDRIVER`              | `rabbitmq` or `pubsub`    | Oqm driver mode that defines which message broker will be used                                                            | no         | -      |
-| `OSMDRIVER`              | `datastore` or `postgres` | Osm driver mode that defines which KV storage will be used                                                                | no         | -      |
-| `OBMDRIVER`              | `gcs` or `minio`          | Obm driver mode that defines which object storage will be used                                                            | no         | -      |
 | `SERVICE_TOKEN_PROVIDER` | `GCP` or `OPENID`         | Service account token provider, `GCP` means use Google service account `OPEIND` means use OpenId provider like `Keycloak` | no         | -      |
-
-### For Mappers to activate drivers
-
-| name      | value     | description                                             |
-|-----------|-----------|---------------------------------------------------------|
-| OSMDRIVER | datastore | to activate **OSM** driver for **Google Datastore**     |
-| OSMDRIVER | postgres  | to activate **OSM** driver for **PostgreSQL**           |
-| OBMDRIVER | gcs       | to activate **OBM** driver for **Google Cloud Storage** |
-| OBMDRIVER | minio     | to activate **OBM** driver for **MinIO**                |
-| OQMDRIVER | pubsub    | to activate **OQM** driver for **Google PubSub**        |
-| OQMDRIVER | rabbitmq  | to activate **OQM** driver for **Rabbit MQ**            |
 
 ## Datastore configuration
 
@@ -100,9 +87,9 @@ indexes:
 ```
 
 
-## PubSub configuration
+## Pub/Sub configuration
 
-At PubSub should be created set of topics and subscriptions.
+At Pub/Sub should be created set of topics and subscriptions.
 
 | topic name                         | subscription name               | description                                                                                                                                                                                                                                                            | sensitive? | env var to override                                                     |
 |------------------------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-------------------------------------------------------------------------|
@@ -153,6 +140,21 @@ TBD
 | Required roles |
 |----------------|
 | -              |
+
+### Run args
+
+In order to run Legal with Java 17 additional run args must be provided:
+
+```bash
+--add-opens java.base/java.lang=ALL-UNNAMED --add-opens  java.base/java.lang.reflect=ALL-UNNAMED
+```
+
+```bash
+CMD java --add-opens java.base/java.lang=ALL-UNNAMED \
+         --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
+         -Dloader.main=org.opengroup.osdu.storage.provider.gcp.StorageApplicationGCP \
+         -jar /app/secret-${PROVIDER_NAME}.jar
+```
 
 ### Running E2E Tests
 
