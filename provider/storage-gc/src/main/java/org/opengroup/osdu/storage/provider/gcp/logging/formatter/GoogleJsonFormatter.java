@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright 2020-2025 Google LLC
+ *  Copyright 2020-2025 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,19 +15,16 @@
  *  limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp.messaging.config;
+package org.opengroup.osdu.storage.provider.gcp.logging.formatter;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import ch.qos.logback.contrib.jackson.JacksonJsonFormatter;
+import java.io.IOException;
+import java.util.Map;
 
-@Configuration
-@ConfigurationProperties
-@Data
-public class MessagingConfigurationProperties {
-
-    private String legalTagsChangedTopicName;
-    private String legalTagsChangedSubscriptionName;
-    private String storageServiceAccountEmail;
-
+public class GoogleJsonFormatter extends JacksonJsonFormatter {
+  @Override
+  public String toJsonString(Map map) throws IOException {
+    map.put("severity", map.remove("level"));
+    return super.toJsonString(map);
+  }
 }
