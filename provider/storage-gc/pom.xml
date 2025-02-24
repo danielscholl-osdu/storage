@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>os-storage</artifactId>
-    <version>0.28.0-SNAPSHOT</version>
+    <version>0.29.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -59,7 +59,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>storage-core-plus</artifactId>
-      <version>0.28.0-SNAPSHOT</version>
+      <version>0.29.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
