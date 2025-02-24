@@ -1,0 +1,16 @@
+variables:
+  CORE_SERVICE: storage-core-plus
+  CORE_BUILD_PATH: "storage-core-plus/cloudbuild/Dockerfile"
+  CORE_HELM_PACKAGE_NAME: core-plus-storage-deploy
+  CORE_HELM_TIMEOUT: "--timeout 15m"
+  OPA_INTEGRATION_ENABLED: "true"
+  CORE_TEST_PROJECT: "storage-test-core,storage-test-baremetal"
+  CORE_TEST_SUBDIR: "testing/storage-test-baremetal"
+
+core-deploy:
+  variables:
+    CORE_SERVICE: "storage"
+
+core-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "false"

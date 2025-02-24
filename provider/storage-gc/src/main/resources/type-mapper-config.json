@@ -1,0 +1,39 @@
+{
+  "instrumentations": [
+    {
+      "entityType": "org.opengroup.osdu.core.common.model.storage.RecordMetadata",
+      "fieldNameCustomMapping": {
+        "user": "createUser",
+        "gcsVersionPaths": "bucket"
+      },
+      "fieldTypeCustomMapping": {
+        "createTime": "shaded.osm.com.google.cloud.Timestamp",
+        "modifyTime": "shaded.osm.com.google.cloud.Timestamp"
+      },
+      "identityTranslator": {
+        "getIdMethod": "getId",
+        "setIdMethod": "setId",
+        "keyClass": "java.lang.String"
+      },
+      "keyFields": ["id"]
+    },
+
+    {
+      "entityType": "org.opengroup.osdu.core.common.model.storage.Schema",
+      "fieldNameCustomMapping": {
+        "ext": "extension",
+        "gcsVersionPaths": "bucket"
+      },
+      "fieldTypeCustomMapping": {
+        "schema": "shaded.osm.com.google.cloud.datastore.Blob",
+        "ext": "shaded.osm.com.google.cloud.datastore.Blob"
+      },
+      "identityTranslator": {
+        "getIdMethod": "getKind",
+        "setIdMethod": "setKind",
+        "keyClass": "java.lang.String"
+      },
+      "keyFields": ["kind"]
+    }
+  ]
+}
