@@ -17,9 +17,12 @@ package org.opengroup.osdu.storage.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import jakarta.validation.ValidationException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -28,12 +31,19 @@ import org.opengroup.osdu.core.common.exception.NotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.context.request.WebRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class GlobalExceptionMapperTest {
@@ -125,5 +135,31 @@ public class GlobalExceptionMapperTest {
 		ResponseEntity response = this.sut.handleIOException(ioException);
 
 		assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, response.getStatusCodeValue());
+	}
+
+
+	@Test
+	public void should_returnSortedErrorMessages_when_MethodArgumentNotValidExceptionCaptured() {
+		//given
+		HttpHeaders headers = null;
+		HttpStatusCode status = null;
+		WebRequest request = null;
+		BindingResult bindingResult = Mockito.spy(BindingResult.class);
+		MethodArgumentNotValidException ex = Mockito.mock(MethodArgumentNotValidException.class);
+		ArgumentCaptor<String> errorMessage = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<AppException> appException = ArgumentCaptor.forClass(AppException.class);
+		List<ObjectError> objectErrors = new ArrayList<>();
+		objectErrors.add(new ObjectError("", "B_defaultMessage"));
+		objectErrors.add(new ObjectError("", "C_defaultMessage"));
+		String aDefaultMessage = "A_defaultMessage"; // inserted into a list as not a first parameter
+		objectErrors.add(new ObjectError("", aDefaultMessage));
+		objectErrors.add(new ObjectError("", "D_defaultMessage"));
+		// when
+		when(ex.getBindingResult()).thenReturn(bindingResult);
+		when(bindingResult.getAllErrors()).thenReturn(objectErrors);
+		// then trigger logic and capture values
+		this.sut.handleMethodArgumentNotValid(ex, headers, status, request);
+		verify(logger).warning(errorMessage.capture(), appException.capture());
+		assertEquals(aDefaultMessage, errorMessage.getValue());
 	}
 }

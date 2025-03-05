@@ -27,6 +27,7 @@ import com.google.gson.JsonPrimitive;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
+import java.util.Comparator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.opengroup.osdu.core.common.exception.NotFoundException;
@@ -45,6 +46,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -201,7 +203,11 @@ public class GlobalExceptionMapper extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         BindingResult bindingResult = ex.getBindingResult();
-        String errorMessage = bindingResult.getAllErrors().get(0).getDefaultMessage();
+        String errorMessage = bindingResult.getAllErrors()
+            .stream()
+            .sorted(Comparator.comparing(ObjectError::getDefaultMessage, Comparator.nullsFirst(String::compareTo)))
+            .toList()
+            .get(0).getDefaultMessage();
         return this.getErrorResponse(
                 new AppException(HttpStatus.BAD_REQUEST.value(), "Validation error.",errorMessage));
     }
