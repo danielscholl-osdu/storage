@@ -41,6 +41,7 @@ import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 
 public final class PostFetchRecordsIntegrationTests extends TestBase {
+
     private static final long NOW = System.currentTimeMillis();
 
     private static final String RECORD_ID_PREFIX = TenantUtils.getFirstTenantName() + ":query:";
@@ -54,8 +55,11 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
     private static final String DATETIME_PERSISTABLE_REFERENCE = "{\"type\":\"DAT\",\"format\":\"YYYY-MM-DD\"}";
     private static final String UNIT_PERSISTABLE_REFERENCE = "{\"abcd\":{\"a\":0.0,\"b\":0.3048,\"c\":1.0,\"d\":0.0},\"symbol\":\"ft\",\"baseMeasurement\":{\"ancestry\":\"L\",\"type\":\"UM\"},\"type\":\"UAD\"}";
     private static final String UNIT_OF_MEASURE_ID = String.format("%s:reference-data--UnitOfMeasure:ft:", TenantUtils.getTenantName());
+    private static final String FRAME_OF_REFERENCE_NAME = "frame-of-reference";
+    private static final String FRAME_OF_REFERENCE_VAL = "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;";
 
     private static final TokenTestUtils TOKEN_TEST_UTILS = new TokenTestUtils();
+
 
     @BeforeAll
     public static void classSetup() throws Exception {
@@ -101,7 +105,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "none");
+        headers.put(FRAME_OF_REFERENCE_NAME, "none");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -137,7 +141,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "none");
+        headers.put(FRAME_OF_REFERENCE_NAME, "none");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -172,14 +176,13 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "none");
+        headers.put(FRAME_OF_REFERENCE_NAME, "none");
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
     }
 
     @Test
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     public void should_returnConvertedRecords_whenConversionRequiredAndNoError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithReference(2, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
@@ -194,7 +197,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -215,7 +218,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
 
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnConvertedRecords_whenConversionRequiredAndNoErrorWithMultiplePairOfCoordinates() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -231,7 +233,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -251,7 +253,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
 
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnOriginalRecordsAndConversionStatusAsNoMeta_whenConversionRequiredAndNoMetaBlockInRecord() throws Exception{
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -268,7 +269,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -304,7 +305,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -327,7 +328,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
     }
 
     @Test
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
         String jsonInput = RecordUtil.createJsonRecordWithNestedProperty(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
@@ -341,7 +341,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -357,7 +357,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         CloseableHttpResponse deleteResponse = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
-    //@Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
+
     @Test
     public void should_returnRecordsAndConversionStatus_whenConversionRequiredAndNestedPropertyProvidedInMetaBlock1() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -372,7 +372,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),
                 "");
         assertEquals(HttpStatus.SC_OK, response.getCode());
@@ -402,7 +402,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -418,7 +418,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -434,7 +433,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -456,7 +455,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
-  //  @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -471,7 +469,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -491,7 +489,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithoutError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -506,7 +503,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -525,7 +522,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithInvalidValues() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -540,7 +536,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -560,7 +556,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAndConversionStatus_whenInhomogeneousNestedArrayOfPropertiesProvidedWithIndexOutOfBoundary() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -575,7 +570,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -595,7 +590,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypePoint() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -610,7 +604,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -628,7 +622,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPoint() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -643,7 +636,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -661,7 +654,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypePolygon() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -676,7 +668,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -694,7 +686,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiPolygon() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -709,7 +700,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -727,7 +718,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeLineString() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -742,7 +732,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -760,7 +750,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeMultiLineString() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -775,7 +764,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -793,7 +782,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnRecordsAfterCrsConversion__whenProvidedRecordWithAsIngestedCoordinatesBlockTypeGeometryCollection() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -808,7 +796,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -826,7 +814,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnConvertedRecords_whenConversionRequiredWithAsIngestedCoordinatesBlockWithError() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -841,7 +828,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -859,7 +846,6 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
     }
 
-   // @Ignore // Ignoring the test for now, once we have CRS converter we should enable this test
     @Test
     public void should_returnConvertedRecords_whenConversionNotRequiredWithAsIngestedCoordinatesAndWgs84CoordinatesBlocks() throws Exception {
         String recordId = RECORD_ID_PREFIX + UUID.randomUUID().toString();
@@ -874,7 +860,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         body.add("records", records);
 
         Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
-        headers.put("frame-of-reference", "units=SI;crs=wgs84;elevation=msl;azimuth=true north;dates=utc;");
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
         CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
         assertEquals(HttpStatus.SC_OK, response.getCode());
 
@@ -890,5 +876,38 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
 
         CloseableHttpResponse deleteResponse1 = TestUtils.send("records/" + recordId + 0, "DELETE", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
         assertEquals(HttpStatus.SC_NO_CONTENT, deleteResponse1.getCode());
+    }
+
+    @Test
+    public void should_returnConvertedRecord_withPrimitiveArrayAndConfiguredUnitOfMeasure() throws Exception {
+        String recordId = RECORD_ID_PREFIX + UUID.randomUUID();
+        String jsonInput = RecordUtil.createJsonRecordForUnitConversionWithPrimitiveArray(
+            recordId,
+            KIND,
+            LEGAL_TAG,
+            UNIT_OF_MEASURE_ID,
+            "records/primitive-array-unit-conversion.json"
+        );
+        CloseableHttpResponse createResponse = TestUtils.send(
+            "records",
+            "PUT",
+            HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+                testUtils.getToken()),
+            jsonInput,
+            ""
+        );
+        assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
+        JsonArray records = new JsonArray();
+        records.add(recordId);
+        JsonObject body = new JsonObject();
+        body.add("records", records);
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        headers.put(FRAME_OF_REFERENCE_NAME, FRAME_OF_REFERENCE_VAL);
+        CloseableHttpResponse response = TestUtils.send("query/records:batch", "POST", headers, body.toString(),"");
+        assertEquals(HttpStatus.SC_OK, response.getCode());
+
+        DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
+        assertEquals(1, responseObject.conversionStatuses.size());
+        assertEquals("SUCCESS", responseObject.conversionStatuses.get(0).status);
     }
 }
