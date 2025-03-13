@@ -258,8 +258,13 @@ public class PersistenceServiceImpl implements PersistenceService {
         try {
             this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
         } catch (Exception e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
-                    "The server could not process your request at the moment.", e);
+            int status = (e instanceof AppException) ? ((AppException) e).getError().getCode() : 500;
+            if (status == HttpStatus.SC_REQUEST_TOO_LONG) {
+                throw new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "Request Too Long", "The document size in the request exceeded the allowable document size for a request!");
+            } else {
+                throw new AppException(status, "Error writing record.",
+                        "The server could not process your request at the moment.", e);
+            }
         }
     }
 
