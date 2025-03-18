@@ -416,7 +416,6 @@ class CloudStorageImplTest {
 
     @Test
     void shouldDeleteVersionsSuccessfully() {
-
         List<String> versionPaths = Arrays.asList("versionPath1", "versionPath2");
         when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
 
@@ -424,7 +423,41 @@ class CloudStorageImplTest {
 
         versionPaths.forEach(versionPath ->
                 verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, versionPath, CONTAINER));
+    }
 
+    @Test
+    void deleteAllVersionsSuccessfully_when_blobThrowsNotFound() {
+        List<String> versionPaths = Arrays.asList("versionPath1", "versionPath2", "versionPath3");
+        when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
+        when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath1", CONTAINER)).thenThrow(new AppException(404, "BlobNotFound", "404"));
+        when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath2", CONTAINER)).thenReturn(true);
+        when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath3", CONTAINER)).thenReturn(true);
+
+        cloudStorage.deleteVersions(versionPaths);
+
+        // All versions should continue to be deleted after a 404 from blob store is eaten successfully.
+        versionPaths.forEach(versionPath ->
+                verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, versionPath, CONTAINER));
+    }
+
+    @Test
+    void deleteAllVersionsFails_when_blobThrowsRandomException() {
+        List<String> versionPaths = Arrays.asList("versionPath1", "versionPath2", "versionPath3");
+        when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
+        when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath1", CONTAINER)).thenReturn(true);
+        when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath2", CONTAINER)).thenThrow(new AppException(500, "Random error", "500"));
+
+        assertThrows(AppException.class, () -> cloudStorage.deleteVersions(versionPaths));
+
+        // versionPath1 deletes successfully.
+        verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, "versionPath1", CONTAINER);
+
+        // versionPath2 delete is called but fails.
+        verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, "versionPath2", CONTAINER);
+
+        // Other than 404 by blob store, no exception should be eaten.
+        // Delete for versionPath3 is never called, as it failed at versionPath2.
+        verify(blobStore, times(0)).deleteFromStorageContainer(DATA_PARTITION, "versionPath3", CONTAINER);
     }
 
     @Test
