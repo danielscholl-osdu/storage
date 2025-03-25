@@ -206,8 +206,21 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void deleteVersions(List<String> versionPaths) {
-        versionPaths.stream().forEach(versionPath ->
-                blobStore.deleteFromStorageContainer(headers.getPartitionId(), versionPath, containerName));
+        versionPaths.stream().forEach(versionPath -> {
+            try {
+                blobStore.deleteFromStorageContainer(headers.getPartitionId(), versionPath, containerName);
+            } catch (AppException ex) {
+                //  It is possible that the record may have a version instance that is present in the metadata store and absent from the the blob store.
+                // This is a known inconsistency caused when we fail to successfully add the version instance to the blob store.
+                // To handle it we should ignore deletions from the blob store that result in a 404 (not found) error.
+                if (ex.getError().getCode() == 404) {
+                    this.logger.warning(String.format("Deletion Failed. Tried to delete non-existent version in storage account: %s", versionPath));
+                }
+                else {
+                    throw ex;
+                }
+            }
+        });
     }
 
     @Override
