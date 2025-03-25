@@ -269,6 +269,30 @@ class BatchServiceImplTest {
         assertTrue(multiRecordInfo.getRetryRecords().isEmpty());
     }
 
+    @Test
+    void fetchMultipleRecords_returnsNotFoundRecords_whenRecordsWithoutVersionPaths() {
+        List<String> recordIds = Arrays.asList(TEST_ID_1, TEST_ID_2);
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
+        RecordMetadata recordMetadataTestId1 = buildRecordMetadata(TEST_ID_1);
+        RecordMetadata recordMetadataTestId2 = buildRecordMetadata(TEST_ID_2);
+        recordMetadataTestId1.setGcsVersionPaths(new ArrayList<>());
+        recordMetadataTestId2.setGcsVersionPaths(new ArrayList<>());
+        recordMetadataMap.put(TEST_ID_1, recordMetadataTestId1);
+        recordMetadataMap.put(TEST_ID_2, recordMetadataTestId2);
+
+        MultiRecordRequest multiRecordRequest = new MultiRecordRequest();
+        multiRecordRequest.setRecords(recordIds);
+
+        when(recordRepository.get(recordIds, Optional.empty())).thenReturn(recordMetadataMap);
+
+        MultiRecordIds multiRecordIds = new MultiRecordIds();
+        multiRecordIds.setRecords(recordIds);
+        MultiRecordResponse multiRecordResponse = sut.fetchMultipleRecords(multiRecordRequest, Optional.empty());
+
+        assertTrue(multiRecordResponse.getRecords().isEmpty());
+        assertEquals(2, multiRecordResponse.getNotFound().size());
+    }
+
 
     private static RecordMetadata buildRecordMetadata(String recordId) {
         Acl acl = new Acl();
