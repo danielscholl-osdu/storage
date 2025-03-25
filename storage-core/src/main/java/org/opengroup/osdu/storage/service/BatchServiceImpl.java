@@ -187,7 +187,7 @@ public abstract class BatchServiceImpl implements BatchService {
 
         for (String recordId : recordIds) {
             RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
-            if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active)) {
+            if (recordMetadata == null || !recordMetadata.getStatus().equals(RecordState.active) || recordMetadata.getLatestVersion() == null) {
                 recordsNotFound.add(recordId);
                 continue;
             }
