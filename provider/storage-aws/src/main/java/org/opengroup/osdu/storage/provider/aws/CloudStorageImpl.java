@@ -101,7 +101,7 @@ public class CloudStorageImpl implements ICloudStorage {
             CompletableFuture<List<RecordProcessor>> results =  CompletableFuture.allOf(cfs)
                     .thenApply(ignored -> futures.stream()
                     .map(CompletableFuture::join)
-                    .collect(Collectors.toList()));
+                    .toList());
 
             List<RecordProcessor> recordProcessors = results.get();
             for(RecordProcessor recordProcessor : recordProcessors){
@@ -112,6 +112,7 @@ public class CloudStorageImpl implements ICloudStorage {
                             , recordProcessor.getRecordId()
                             , recordProcessor.getException().getErrorMessage()
                     ));
+                    throw recordProcessor.getException();
                 }
             }
         } catch (Exception e) {
