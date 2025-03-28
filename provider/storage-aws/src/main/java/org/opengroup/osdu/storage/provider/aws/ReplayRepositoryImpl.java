@@ -18,10 +18,14 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.ReplayMetadataItem;
-import org.opengroup.osdu.storage.service.replay.IReplayRepository;
-import org.opengroup.osdu.storage.service.replay.ReplayMetaDataDTO;
+import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
+import org.opengroup.osdu.storage.request.ReplayFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -46,6 +50,12 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     
     @Autowired
     private DpsHeaders headers;
+    
+    @Autowired
+    private JaxRsDpsLog logger;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
     
     @Value("${aws.dynamodb.replay-table-name}")
     private String replayTableName;
@@ -107,7 +117,6 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     @Override
     public ReplayMetaDataDTO save(ReplayMetaDataDTO replayMetaData) {
         ReplayMetadataItem item = convertToItem(replayMetaData);
-        item.setDataPartitionId(headers.getPartitionId());
         
         dynamoDBMapper.save(item);
         
@@ -131,8 +140,16 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         dto.setState(item.getState());
         dto.setStartedAt(item.getStartedAt());
         dto.setElapsedTime(item.getElapsedTime());
-        dto.setFilter(item.getFilter());
-        dto.setDataPartitionId(item.getDataPartitionId());
+        
+        // Convert filter string to ReplayFilter object
+        if (item.getFilter() != null) {
+            try {
+                dto.setFilter(objectMapper.readValue(item.getFilter(), ReplayFilter.class));
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to deserialize filter", e);
+                dto.setFilter(null);
+            }
+        }
         
         return dto;
     }
@@ -154,8 +171,18 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         item.setState(dto.getState());
         item.setStartedAt(dto.getStartedAt());
         item.setElapsedTime(dto.getElapsedTime());
-        item.setFilter(dto.getFilter());
-        item.setDataPartitionId(dto.getDataPartitionId());
+        
+        // Convert ReplayFilter object to string
+        if (dto.getFilter() != null) {
+            try {
+                item.setFilter(objectMapper.writeValueAsString(dto.getFilter()));
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to serialize filter", e);
+                item.setFilter(null);
+            }
+        }
+        
+        item.setDataPartitionId(headers.getPartitionId());
         
         return item;
     }

@@ -20,7 +20,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.service.replay.ReplayMessage;
+import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,7 +74,7 @@ public class ReplayMessageHandler {
      */
     public void handle(ReplayMessage message) {
         try {
-            logger.info("Processing replay message: " + message.getReplayId() + " for kind: " + message.getKind());
+            logger.info("Processing replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
             // Process the replay message
             replayService.processReplayMessage(message);
         } catch (Exception e) {
@@ -91,7 +91,7 @@ public class ReplayMessageHandler {
      * @param message The replay message that failed
      */
     public void handleFailure(ReplayMessage message) {
-        logger.error("Processing failure for replay message: " + message.getReplayId() + " for kind: " + message.getKind());
+        logger.error("Processing failure for replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
         replayService.processFailure(message);
     }
     
@@ -113,7 +113,7 @@ public class ReplayMessageHandler {
                     .withMessageBody(messageBody);
                 
                 sqsClient.sendMessage(sendMessageRequest);
-                logger.info("Sent replay message to queue: " + queueUrl + " for replayId: " + message.getReplayId());
+                logger.info("Sent replay message to queue: " + queueUrl + " for replayId: " + message.getBody().getReplayId());
             }
         } catch (JsonProcessingException e) {
             logger.error("Failed to serialize replay message: " + e.getMessage(), e);

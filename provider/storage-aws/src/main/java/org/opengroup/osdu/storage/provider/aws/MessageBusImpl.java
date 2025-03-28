@@ -121,7 +121,7 @@ public class MessageBusImpl implements IMessageBus {
         }
         
         // Use AWS SDK to publish messages directly to SQS queue
-        com.amazonaws.services.sqs.AmazonSQS sqsClient = new com.amazonaws.services.sqs.AmazonSQSClientBuilder.standard()
+        com.amazonaws.services.sqs.AmazonSQS sqsClient = com.amazonaws.services.sqs.AmazonSQSClientBuilder.standard()
             .withRegion(currentRegion)
             .build();
             

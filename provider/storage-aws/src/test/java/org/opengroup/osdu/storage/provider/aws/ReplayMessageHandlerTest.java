@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
@@ -25,13 +26,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.service.replay.ReplayMessage;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.dto.ReplayData;
+import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -63,15 +68,20 @@ public class ReplayMessageHandlerTest {
         ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", replayQueueUrl);
         ReflectionTestUtils.setField(messageHandler, "reindexQueueUrl", reindexQueueUrl);
         ReflectionTestUtils.setField(messageHandler, "recordsQueueUrl", recordsQueueUrl);
+        
+        // Mock SQS client to return a successful result
+        SendMessageResult mockResult = new SendMessageResult();
+        mockResult.setMessageId("test-message-id");
+        when(sqsClient.sendMessage(any(SendMessageRequest.class))).thenReturn(mockResult);
+        
+        // Override the constructor-created SQS client with our mock
+        ReflectionTestUtils.setField(messageHandler, "sqsClient", sqsClient);
     }
 
     @Test
     public void testHandle() {
         // Setup
-        ReplayMessage message = new ReplayMessage();
-        message.setReplayId("test-replay-id");
-        message.setKind("test-kind");
-        message.setOperation("replay");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
 
         // Execute
         messageHandler.handle(message);
@@ -84,10 +94,7 @@ public class ReplayMessageHandlerTest {
     @Test
     public void testHandleWithException() {
         // Setup
-        ReplayMessage message = new ReplayMessage();
-        message.setReplayId("test-replay-id");
-        message.setKind("test-kind");
-        message.setOperation("replay");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
 
         doThrow(new RuntimeException("Test exception")).when(replayService).processReplayMessage(message);
 
@@ -106,10 +113,7 @@ public class ReplayMessageHandlerTest {
     @Test
     public void testHandleFailure() {
         // Setup
-        ReplayMessage message = new ReplayMessage();
-        message.setReplayId("test-replay-id");
-        message.setKind("test-kind");
-        message.setOperation("replay");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
 
         // Execute
         messageHandler.handleFailure(message);
@@ -121,14 +125,11 @@ public class ReplayMessageHandlerTest {
     @Test
     public void testSendReplayMessage() throws JsonProcessingException {
         // Setup
-        ReplayMessage message = new ReplayMessage();
-        message.setReplayId("test-replay-id");
-        message.setKind("test-kind");
-        message.setOperation("replay");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
 
         List<ReplayMessage> messages = Collections.singletonList(message);
         String operation = "replay";
-        String serializedMessage = "{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\",\"operation\":\"replay\"}";
+        String serializedMessage = "{\"headers\":{\"data-partition-id\":\"test-partition\"},\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\",\"operation\":\"replay\"}}";
 
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
 
@@ -143,15 +144,8 @@ public class ReplayMessageHandlerTest {
     @Test
     public void testSendReplayMessageMultiple() throws JsonProcessingException {
         // Setup
-        ReplayMessage message1 = new ReplayMessage();
-        message1.setReplayId("test-replay-id-1");
-        message1.setKind("test-kind-1");
-        message1.setOperation("replay");
-
-        ReplayMessage message2 = new ReplayMessage();
-        message2.setReplayId("test-replay-id-2");
-        message2.setKind("test-kind-2");
-        message2.setOperation("replay");
+        ReplayMessage message1 = createReplayMessage("test-replay-id-1", "test-kind-1", "replay");
+        ReplayMessage message2 = createReplayMessage("test-replay-id-2", "test-kind-2", "replay");
 
         List<ReplayMessage> messages = Arrays.asList(message1, message2);
         String operation = "replay";
@@ -171,13 +165,10 @@ public class ReplayMessageHandlerTest {
     @Test
     public void testSendReplayMessageDifferentOperations() throws JsonProcessingException {
         // Setup
-        ReplayMessage message = new ReplayMessage();
-        message.setReplayId("test-replay-id");
-        message.setKind("test-kind");
-        message.setOperation("replay");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
 
         List<ReplayMessage> messages = Collections.singletonList(message);
-        String serializedMessage = "{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\",\"operation\":\"replay\"}";
+        String serializedMessage = "{\"headers\":{\"data-partition-id\":\"test-partition\"},\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\",\"operation\":\"replay\"}}";
 
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
 
@@ -194,10 +185,7 @@ public class ReplayMessageHandlerTest {
     @Test(expected = RuntimeException.class)
     public void testSendReplayMessageJsonException() throws JsonProcessingException {
         // Setup
-        ReplayMessage message = new ReplayMessage();
-        message.setReplayId("test-replay-id");
-        message.setKind("test-kind");
-        message.setOperation("replay");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
 
         List<ReplayMessage> messages = Collections.singletonList(message);
         String operation = "replay";
@@ -206,5 +194,27 @@ public class ReplayMessageHandlerTest {
 
         // Execute - should throw exception
         messageHandler.sendReplayMessage(messages, operation);
+    }
+    
+    /**
+     * Helper method to create a ReplayMessage with the current structure
+     */
+    private ReplayMessage createReplayMessage(String replayId, String kind, String operation) {
+        // Create headers
+        Map<String, String> headers = new HashMap<>();
+        headers.put(DpsHeaders.DATA_PARTITION_ID, "test-partition");
+        
+        // Create body
+        ReplayData body = ReplayData.builder()
+            .replayId(replayId)
+            .kind(kind)
+            .operation(operation)
+            .build();
+        
+        // Create message
+        return ReplayMessage.builder()
+            .headers(headers)
+            .body(body)
+            .build();
     }
 }

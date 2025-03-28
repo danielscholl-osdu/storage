@@ -21,7 +21,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.service.replay.ReplayMessage;
+import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -76,7 +76,7 @@ public class ReplaySubscriptionMessageHandler {
         for (Message message : result.getMessages()) {
             try {
                 ReplayMessage replayMessage = objectMapper.readValue(message.getBody(), ReplayMessage.class);
-                logger.info("Processing replay message from queue: " + replayMessage.getReplayId());
+                logger.info("Processing replay message from queue: " + replayMessage.getBody().getReplayId());
                 replayMessageHandler.handle(replayMessage);
                 sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
             } catch (Exception e) {
@@ -86,13 +86,13 @@ public class ReplaySubscriptionMessageHandler {
                     int receiveCount = Integer.parseInt(message.getAttributes().get("ApproximateReceiveCount"));
                     if (receiveCount >= MAX_DELIVERY_COUNT) {
                         // Dead letter the message after max retries
-                        logger.error("Max delivery attempts reached for message, sending to dead letter: " + replayMessage.getReplayId());
+                        logger.error("Max delivery attempts reached for message, sending to dead letter: " + replayMessage.getBody().getReplayId());
                         replayMessageHandler.handleFailure(replayMessage);
                         sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
                     } else {
                         // Return to queue for retry with backoff
                         int visibilityTimeout = 30 * (int)Math.pow(2, receiveCount - 1); // Exponential backoff
-                        logger.info("Returning message to queue for retry: " + replayMessage.getReplayId() + " with visibility timeout: " + visibilityTimeout);
+                        logger.info("Returning message to queue for retry: " + replayMessage.getBody().getReplayId() + " with visibility timeout: " + visibilityTimeout);
                         sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), visibilityTimeout);
                     }
                 } catch (Exception ex) {
