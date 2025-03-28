@@ -14,17 +14,17 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordIdAndKind;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
@@ -35,7 +35,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
-import jakarta.inject.Inject;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.function.Function;
@@ -45,23 +44,27 @@ import java.util.function.Function;
 @Repository
 public class QueryRepositoryImpl implements IQueryRepository {
 
-    @Inject
+    final
     DpsHeaders headers;    
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private org.opengroup.osdu.core.common.logging.JaxRsDpsLog logger;
+    private final org.opengroup.osdu.core.common.logging.JaxRsDpsLog logger;
     
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper dynamoDBMapper;
+    private final com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper dynamoDBMapper;
     
-    @Inject
-    private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
     @Value("${aws.dynamodb.schemaRepositoryTable.ssm.relativePath}")
     String schemaRepositoryTableParameterRelativePath;    
 
     @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
     String recordMetadataTableParameterRelativePath;
+
+    public QueryRepositoryImpl(DpsHeaders headers, JaxRsDpsLog logger, DynamoDBMapper dynamoDBMapper, DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory) {
+        this.headers = headers;
+        this.logger = logger;
+        this.dynamoDBMapper = dynamoDBMapper;
+        this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
+    }
 
     private DynamoDBQueryHelperV2 getSchemaTableQueryHelper() {
         return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, schemaRepositoryTableParameterRelativePath);

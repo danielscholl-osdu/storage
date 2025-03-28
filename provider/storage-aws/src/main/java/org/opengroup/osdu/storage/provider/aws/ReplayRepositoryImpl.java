@@ -48,22 +48,22 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     private final DynamoDBMapper dynamoDBMapper;
     private final AmazonDynamoDB dynamoDBClient;
     
-    @Autowired
-    private DpsHeaders headers;
+    private final DpsHeaders headers;
     
-    @Autowired
-    private JaxRsDpsLog logger;
+    private final JaxRsDpsLog logger;
     
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
     
     @Value("${aws.dynamodb.replay-table-name}")
     private String replayTableName;
     
     @Autowired
-    public ReplayRepositoryImpl(DynamoDBMapper dynamoDBMapper, AmazonDynamoDB dynamoDBClient) {
+    public ReplayRepositoryImpl(DynamoDBMapper dynamoDBMapper, AmazonDynamoDB dynamoDBClient, DpsHeaders headers, JaxRsDpsLog logger, ObjectMapper objectMapper) {
         this.dynamoDBMapper = dynamoDBMapper;
         this.dynamoDBClient = dynamoDBClient;
+        this.headers = headers;
+        this.logger = logger;
+        this.objectMapper = objectMapper;
     }
     
     /**
@@ -140,7 +140,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         dto.setState(item.getState());
         dto.setStartedAt(item.getStartedAt());
         dto.setElapsedTime(item.getElapsedTime());
-        
+
         // Convert filter string to ReplayFilter object
         if (item.getFilter() != null) {
             try {
@@ -153,7 +153,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         
         return dto;
     }
-    
+
     /**
      * Converts a ReplayMetaDataDTO to a ReplayMetadataItem.
      *

@@ -39,14 +39,11 @@ public class ReplayMessageHandler {
     
     private final AmazonSQS sqsClient;
     
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
     
-    @Autowired
-    private ReplayService replayService;
+    private final ReplayService replayService;
     
-    @Autowired
-    private JaxRsDpsLog logger;
+    private final JaxRsDpsLog logger;
     
     @Value("${aws.sqs.replay-queue-url}")
     private String replayQueueUrl;
@@ -60,11 +57,14 @@ public class ReplayMessageHandler {
     @Value("${aws.region}")
     private String region;
     
-    public ReplayMessageHandler() {
+    public ReplayMessageHandler(ObjectMapper objectMapper, ReplayService replayService, JaxRsDpsLog logger) {
         // Initialize SQS client
         this.sqsClient = AmazonSQSClientBuilder.standard()
             .withRegion(System.getProperty("aws.region", "us-east-1"))
             .build();
+        this.objectMapper = objectMapper;
+        this.replayService = replayService;
+        this.logger = logger;
     }
     
     /**
@@ -128,13 +128,10 @@ public class ReplayMessageHandler {
      * @return The SQS queue URL
      */
     private String getQueueUrlForOperation(String operation) {
-        switch (operation) {
-            case "reindex":
-                return reindexQueueUrl;
-            case "replay":
-                return recordsQueueUrl;
-            default:
-                return replayQueueUrl;
-        }
+        return switch (operation) {
+            case "reindex" -> reindexQueueUrl;
+            case "replay" -> recordsQueueUrl;
+            default -> replayQueueUrl;
+        };
     }
 }

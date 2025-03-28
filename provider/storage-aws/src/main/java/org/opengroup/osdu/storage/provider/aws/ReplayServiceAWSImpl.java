@@ -49,36 +49,39 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayServiceAWSImpl extends ReplayService {
     
-    @Autowired
-    private IReplayRepository replayRepository;
+    private final IReplayRepository replayRepository;
     
-    @Autowired
-    private ReplayMessageHandler messageHandler;
+    private final ReplayMessageHandler messageHandler;
     
-    @Autowired
-    private QueryRepositoryImpl queryRepository;
+    private final QueryRepositoryImpl queryRepository;
     
-    @Autowired
-    private IMessageBus messageBus;
+    private final IMessageBus messageBus;
     
-    @Autowired
-    private DpsHeaders headers;
+    private final DpsHeaders headers;
     
-    @Autowired
-    private StorageAuditLogger auditLogger;
+    private final StorageAuditLogger auditLogger;
     
-    @Autowired
-    private JaxRsDpsLog logger;
+    private final JaxRsDpsLog logger;
     
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
     
     @Value("#{${replay.operation.routingProperties}}")
     private Map<String, Map<String, String>> replayOperationRoutingProperties;
     
     @Value("#{${replay.routingProperties}}")
     private Map<String, String> replayRoutingProperty;
-    
+
+    public ReplayServiceAWSImpl(IReplayRepository replayRepository, ReplayMessageHandler messageHandler, QueryRepositoryImpl queryRepository, IMessageBus messageBus, DpsHeaders headers, StorageAuditLogger auditLogger, JaxRsDpsLog logger, ObjectMapper objectMapper) {
+        this.replayRepository = replayRepository;
+        this.messageHandler = messageHandler;
+        this.queryRepository = queryRepository;
+        this.messageBus = messageBus;
+        this.headers = headers;
+        this.auditLogger = auditLogger;
+        this.logger = logger;
+        this.objectMapper = objectMapper;
+    }
+
     /**
      * Gets the status of a replay operation.
      *
@@ -109,7 +112,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
         // Get kind-specific statuses
         List<ReplayMetaDataDTO> kindStatuses = replayMetaDataList.stream()
                 .filter(r -> !"overall".equals(r.getId()))
-                .collect(Collectors.toList());
+                .toList();
         
         // Build the response
         ReplayStatusResponse response = new ReplayStatusResponse();
@@ -398,7 +401,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
         // Find kind-specific statuses
         List<ReplayMetaDataDTO> kindStatuses = allStatuses.stream()
                 .filter(r -> !"overall".equals(r.getId()))
-                .collect(Collectors.toList());
+                .toList();
         
         // Calculate total processed count
         long totalProcessed = kindStatuses.stream()
@@ -427,7 +430,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
         // Find kind-specific statuses
         List<ReplayMetaDataDTO> kindStatuses = allStatuses.stream()
                 .filter(r -> !"overall".equals(r.getId()))
-                .collect(Collectors.toList());
+                .toList();
         
         // Check if all kinds are completed
         boolean allCompleted = kindStatuses.stream()
