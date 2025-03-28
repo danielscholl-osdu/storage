@@ -103,6 +103,12 @@ public class ReplayMessageHandler {
     @Value("${aws.sqs.replay-queue-url}")
     private String replayQueueUrl;
     
+    @Value("${aws.sqs.reindex-queue-url}")
+    private String reindexQueueUrl;
+    
+    @Value("${aws.sqs.records-queue-url}")
+    private String recordsQueueUrl;
+    
     public void handle(ReplayMessage message) {
         try {
             // Process the replay message
@@ -118,18 +124,32 @@ public class ReplayMessageHandler {
         replayService.processFailure(message);
     }
     
-    public void sendReplayMessage(List<ReplayMessage> messages) {
+    public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
         try {
+            // Select appropriate queue based on operation
+            String queueUrl = getQueueUrlForOperation(operation);
+            
             for (ReplayMessage message : messages) {
                 String messageBody = objectMapper.writeValueAsString(message);
                 SendMessageRequest sendMessageRequest = new SendMessageRequest()
-                    .withQueueUrl(replayQueueUrl)
+                    .withQueueUrl(queueUrl)
                     .withMessageBody(messageBody);
                 
                 sqsClient.sendMessage(sendMessageRequest);
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize replay message", e);
+        }
+    }
+    
+    private String getQueueUrlForOperation(String operation) {
+        switch (operation) {
+            case "reindex":
+                return reindexQueueUrl;
+            case "replay":
+                return recordsQueueUrl;
+            default:
+                return replayQueueUrl;
         }
     }
 }
@@ -140,23 +160,23 @@ Update the `MessageBusImpl` to support the new methods required for replay:
 
 ```java
 @Override
-public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-    // Implement to publish RecordChangedV2 messages with collaboration context
-    doPublishMessage(true, collaborationContext, headers, messages);
-}
-
-@Override
 public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
-    // Implement to publish messages with routing info
-    String topicArn = routingInfo.get("topic");
-    // Publish to the specified topic
-}
-
-@Override
-public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, PubSubInfo... messages) {
-    // Implement to publish PubSubInfo messages with routing info
-    String topicArn = routingInfo.get("topic");
-    // Publish to the specified topic
+    // Get queue URL from routing info
+    String queueUrl = routingInfo.get("queue");
+    
+    // Publish messages directly to SQS queue
+    for (Object message : messageList) {
+        try {
+            String messageBody = objectMapper.writeValueAsString(message);
+            SendMessageRequest request = new SendMessageRequest()
+                .withQueueUrl(queueUrl)
+                .withMessageBody(messageBody);
+            
+            sqsClient.sendMessage(request);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize message", e);
+        }
+    }
 }
 ```
 
@@ -298,6 +318,8 @@ feature.replay.enabled=true
 
 # AWS SQS configuration
 aws.sqs.replay-queue-url=${REPLAY_QUEUE_URL}
+aws.sqs.reindex-queue-url=${REINDEX_QUEUE_URL}
+aws.sqs.records-queue-url=${RECORDS_QUEUE_URL}
 aws.sqs.polling-interval-ms=1000
 
 # AWS DynamoDB configuration
@@ -305,12 +327,12 @@ aws.dynamodb.replay-table-name=ReplayStatus
 
 # Replay operation routing properties
 replay.operation.routingProperties = { \
-  reindex : { topic : 'reindextopic', queryBatchSize : '5000', publisherBatchSize : '50'}, \
-  replay: { topic : 'recordstopic', queryBatchSize : '5000', publisherBatchSize : '50'} \
+  reindex : { queue : '${REINDEX_QUEUE_URL}', queryBatchSize : '5000', publisherBatchSize : '50'}, \
+  replay: { queue : '${RECORDS_QUEUE_URL}', queryBatchSize : '5000', publisherBatchSize : '50'} \
 }
 
 # Replay routing properties
-replay.routingProperties = { topic : 'replaytopic' }
+replay.routingProperties = { queue : '${REPLAY_QUEUE_URL}' }
 ```
 
 ## 3. Integration Tests
@@ -378,19 +400,14 @@ The following AWS resources will need to be added to your Terraform IaC:
    - Dead letter queue for failed messages
    - Topic-specific queues for different replay operations
 
-2. **SNS Topics**:
-   - Replay topic
-   - Reindex topic
-   - Records topic
-
-3. **DynamoDB Table**:
+2. **DynamoDB Table**:
    - ReplayStatus table with appropriate capacity settings
 
-4. **IAM Permissions**:
-   - Permissions for the service to access SQS, SNS, and DynamoDB
+3. **IAM Permissions**:
+   - Permissions for the service to access SQS and DynamoDB
    - Cross-service permissions as needed
 
-5. **CloudWatch Alarms**:
+4. **CloudWatch Alarms**:
    - Alarms for queue depth
    - Alarms for failed messages
    - Alarms for DynamoDB throttling
@@ -421,6 +438,17 @@ The following AWS resources will need to be added to your Terraform IaC:
    - Maintain compatibility with existing DynamoDB schema
    - Ensure API compatibility with other cloud implementations
 
+#### Benefits of SQS-only approach:
+1. Simplified Architecture: Fewer AWS services to manage and monitor
+2. Direct Control: More direct control over message delivery and processing
+3. Cost Efficiency: Potentially lower costs by eliminating SNS
+4. Reduced Latency: Eliminating the SNS hop can reduce message delivery latency
+
+#### Considerations for SQS-only approach:
+1. Fan-out: If multiple consumers need the same messages, you'll need to implement custom fan-out logic
+2. Message Filtering: You'll need to implement custom filtering logic if needed
+3. Queue Management: Need to manage multiple queues for different operations
+
 ## 7. Detailed Implementation Notes
 
 ### 7.1 DynamoDB Table Design
@@ -442,12 +470,12 @@ The ReplayStatus table will have the following structure:
 
 1. User initiates replay via API
 2. System creates initial status entry in DynamoDB
-3. System sends initial message to SQS replay queue
+3. System sends initial message to appropriate SQS queue based on operation type
 4. SQS listener processes message:
-   - For ReplayAll: Queries for all kinds, then sends kind-specific messages
-   - For ReplayKind: Processes records for the specified kind
+   • For ReplayAll: Queries for all kinds, then sends kind-specific messages to appropriate queues
+   • For ReplayKind: Processes records for the specified kind
 5. As processing progresses, status is updated in DynamoDB
-6. Record change messages are published to appropriate SNS topics
+6. Record change messages are published directly to appropriate SQS queues
 7. Upon completion, final status is updated
 
 ### 7.3 Error Handling Strategy
@@ -464,4 +492,3 @@ The ReplayStatus table will have the following structure:
 2. Configure appropriate provisioned capacity for DynamoDB
 3. Use SQS batch operations for message processing
 4. Implement pagination for large result sets
-5. Use appropriate batch sizes for publishing messages to SNS
