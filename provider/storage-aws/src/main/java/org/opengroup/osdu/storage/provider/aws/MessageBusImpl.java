@@ -112,7 +112,37 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
-        throw new NotImplementedException();
+        // This method is used by the replay feature to publish record change messages
+        // Get queue URL from routing info
+        String queueUrl = routingInfo.get("queue");
+        if (queueUrl == null || queueUrl.isEmpty()) {
+            logger.error("No queue URL provided in routing info");
+            return;
+        }
+        
+        // Use AWS SDK to publish messages directly to SQS queue
+        com.amazonaws.services.sqs.AmazonSQS sqsClient = new com.amazonaws.services.sqs.AmazonSQSClientBuilder.standard()
+            .withRegion(currentRegion)
+            .build();
+            
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        
+        // Publish messages directly to SQS queue
+        for (Object message : messageList) {
+            try {
+                String messageBody = objectMapper.writeValueAsString(message);
+                com.amazonaws.services.sqs.model.SendMessageRequest request = new com.amazonaws.services.sqs.model.SendMessageRequest()
+                    .withQueueUrl(queueUrl)
+                    .withMessageBody(messageBody);
+                
+                sqsClient.sendMessage(request);
+                logger.debug("Published message to queue: " + queueUrl);
+                
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                logger.error("Failed to serialize message: " + e.getMessage(), e);
+                throw new RuntimeException("Failed to serialize message", e);
+            }
+        }
     }
 
     @Override

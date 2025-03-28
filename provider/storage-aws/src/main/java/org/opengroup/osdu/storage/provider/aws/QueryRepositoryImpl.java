@@ -153,21 +153,163 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor) {
-        return null;
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        
+        // Set the page size or use the default constant
+        int numRecords = PAGE_SIZE;
+        if (limit != null) {
+            numRecords = limit > 0 ? limit : PAGE_SIZE;
+        }
+        
+        RecordInfoQueryResult<RecordIdAndKind> result = new RecordInfoQueryResult<>();
+        List<RecordIdAndKind> records = new ArrayList<>();
+        
+        try {
+            // Query for all active records
+            RecordMetadataDoc queryObject = new RecordMetadataDoc();
+            queryObject.setStatus("active");
+            queryObject.setDataPartitionId(headers.getPartitionId());
+            
+            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                RecordMetadataDoc.class, 
+                queryObject, 
+                numRecords, 
+                cursor);
+            
+            // Convert to RecordIdAndKind objects
+            for (RecordMetadataDoc doc : queryPageResult.results) {
+                RecordIdAndKind record = new RecordIdAndKind();
+                record.setId(doc.getId());
+                record.setKind(doc.getKind());
+                records.add(record);
+            }
+            
+            result.setRecords(records);
+            result.setCursor(queryPageResult.cursor);
+            
+        } catch (UnsupportedEncodingException e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                    e.getMessage(), e);
+        }
+        
+        return result;
     }
 
     @Override
     public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind) {
-        throw new NotImplementedException();
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        
+        // Set the page size or use the default constant
+        int numRecords = PAGE_SIZE;
+        if (limit != null) {
+            numRecords = limit > 0 ? limit : PAGE_SIZE;
+        }
+        
+        RecordInfoQueryResult<RecordId> result = new RecordInfoQueryResult<>();
+        List<RecordId> records = new ArrayList<>();
+        
+        try {
+            // Set GSI hash key
+            RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+            recordMetadataKey.setKind(kind);
+            
+            QueryPageResult<RecordMetadataDoc> scanPageResults = recordMetadataQueryHelper.queryPage(
+                RecordMetadataDoc.class,
+                recordMetadataKey,
+                "Status",
+                "active",
+                "Id",
+                ComparisonOperator.BEGINS_WITH,
+                String.format("%s:", headers.getPartitionId()),
+                numRecords,
+                cursor);
+            
+            // Convert to RecordId objects
+            for (RecordMetadataDoc doc : scanPageResults.results) {
+                RecordId record = new RecordId();
+                record.setId(doc.getId());
+                record.setKind(doc.getKind());
+                records.add(record);
+            }
+            
+            result.setRecords(records);
+            result.setCursor(scanPageResults.cursor);
+            
+        } catch (UnsupportedEncodingException e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                    e.getMessage(), e);
+        }
+        
+        return result;
     }
 
     @Override
     public HashMap<String, Long> getActiveRecordsCount() {
-        throw new  NotImplementedException();
+        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+        HashMap<String, Long> kindCounts = new HashMap<>();
+        
+        try {
+            // First get all kinds
+            SchemaDoc queryObject = new SchemaDoc();
+            queryObject.setDataPartitionId(headers.getPartitionId());
+            QueryPageResult<SchemaDoc> queryPageResult = schemaTableQueryHelper.queryByGSI(SchemaDoc.class, queryObject, 1000, null);
+            
+            // For each kind, get the count of active records
+            for (SchemaDoc schemaDoc : queryPageResult.results) {
+                String kind = schemaDoc.getKind();
+                long count = getActiveRecordCountForKind(kind);
+                kindCounts.put(kind, count);
+            }
+            
+        } catch (UnsupportedEncodingException e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                    e.getMessage(), e);
+        }
+        
+        return kindCounts;
     }
 
     @Override
     public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
-        throw new  NotImplementedException();
+        Map<String, Long> kindCounts = new HashMap<>();
+        
+        for (String kind : kinds) {
+            long count = getActiveRecordCountForKind(kind);
+            kindCounts.put(kind, count);
+        }
+        
+        return kindCounts;
+    }
+    
+    /**
+     * Gets the count of active records for a specific kind.
+     *
+     * @param kind The kind to count records for
+     * @return The count of active records
+     */
+    private long getActiveRecordCountForKind(String kind) {
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        
+        try {
+            // Set GSI hash key
+            RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+            recordMetadataKey.setKind(kind);
+            
+            // Count active records for this kind
+            long count = recordMetadataQueryHelper.count(
+                RecordMetadataDoc.class,
+                recordMetadataKey,
+                "Status",
+                "active",
+                "Id",
+                ComparisonOperator.BEGINS_WITH,
+                String.format("%s:", headers.getPartitionId()));
+            
+            return count;
+            
+        } catch (UnsupportedEncodingException e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error counting records",
+                    e.getMessage(), e);
+        }
     }
 }
