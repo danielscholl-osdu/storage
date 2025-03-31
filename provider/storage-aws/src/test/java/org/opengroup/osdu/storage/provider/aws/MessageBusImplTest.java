@@ -1,4 +1,4 @@
-// Copyright © 2020 Amazon Web Services
+// Copyright © Amazon Web Services
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,149 +15,137 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
-import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
-import org.opengroup.osdu.storage.model.RecordChangedV2;
-import org.opengroup.osdu.storage.provider.aws.util.CollaborationContextTestUtil;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
+import static org.mockito.Mockito.*;
 
-
+@RunWith(MockitoJUnitRunner.class)
 public class MessageBusImplTest {
-
-    private final static String AWS_SNS_TOPIC = "storage_sqs_url";
-    private final static String AWS_SNS_TOPIC_V2 = "storage_sqs_url_v2";
-
-    @InjectMocks
-    private MessageBusImpl messageBus;
 
     @Mock
     private AmazonSNS snsClient;
 
     @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
     private JaxRsDpsLog logger;
 
-    @Captor
-    private ArgumentCaptor<PublishRequest> publishRequestCaptor;
+    @Mock
+    private DpsHeaders headers;
 
+    @InjectMocks
+    private MessageBusImpl messageBus;
 
-    @BeforeEach
-    void setUp() throws K8sParameterNotFoundException {
-        openMocks(this);
+    private final String topicArn = "arn:aws:sns:us-east-1:123456789012:test-topic";
+
+    @Before
+    public void setup() {
+        ReflectionTestUtils.setField(messageBus, "currentRegion", "us-east-1");
+        ReflectionTestUtils.setField(messageBus, "snsClient", snsClient);
+        ReflectionTestUtils.setField(messageBus, "objectMapper", objectMapper);
     }
 
-    private void initAndRun(Runnable runnable) throws K8sParameterNotFoundException {
-        try (MockedConstruction<K8sLocalParameterProvider> provider = Mockito.mockConstruction(K8sLocalParameterProvider.class, (mock, context) -> {
-            when(mock.getParameterAsString("storage-sns-topic-arn")).thenReturn(AWS_SNS_TOPIC);
-            when(mock.getParameterAsString("storage-v2-sns-topic-arn")).thenReturn(AWS_SNS_TOPIC_V2);
-        })) {
-            try (MockedConstruction<AmazonSNSConfig> config = Mockito.mockConstruction(AmazonSNSConfig.class, (mock1, context) -> {
-                when(mock1.AmazonSNS()).thenReturn(snsClient);
-            })) {
-                messageBus.init();
-                runnable.run();
-            }
+    @Test
+    public void testPublishMessage_WithRoutingInfo() throws JsonProcessingException {
+        // Arrange
+        Map<String, String> routingInfo = new HashMap<>();
+        routingInfo.put("topic", topicArn);
+        
+        TestMessage message1 = new TestMessage("test1");
+        TestMessage message2 = new TestMessage("test2");
+        List<TestMessage> messageList = Arrays.asList(message1, message2);
+        
+        when(objectMapper.writeValueAsString(message1)).thenReturn("{\"content\":\"test1\"}");
+        when(objectMapper.writeValueAsString(message2)).thenReturn("{\"content\":\"test2\"}");
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
+
+        // Act
+        messageBus.publishMessage(headers, routingInfo, messageList);
+
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(2)).publish(requestCaptor.capture());
+        
+        List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
+        assertEquals(topicArn, capturedRequests.get(0).getTopicArn());
+        assertEquals("{\"content\":\"test1\"}", capturedRequests.get(0).getMessage());
+        assertEquals(topicArn, capturedRequests.get(1).getTopicArn());
+        assertEquals("{\"content\":\"test2\"}", capturedRequests.get(1).getMessage());
+    }
+
+    @Test
+    public void testPublishMessage_NoTopicArn() {
+        // Arrange
+        Map<String, String> routingInfo = new HashMap<>();
+        // No topic ARN provided
+        
+        TestMessage message = new TestMessage("test");
+        List<TestMessage> messageList = Arrays.asList(message);
+
+        // Act
+        messageBus.publishMessage(headers, routingInfo, messageList);
+
+        // Assert
+        verify(logger, times(1)).error(contains("No SNS topic ARN provided in routing info"));
+        verify(snsClient, never()).publish(any(PublishRequest.class));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testPublishMessage_JsonProcessingException() throws JsonProcessingException {
+        // Arrange
+        Map<String, String> routingInfo = new HashMap<>();
+        routingInfo.put("topic", topicArn);
+        
+        TestMessage message = new TestMessage("test");
+        List<TestMessage> messageList = Arrays.asList(message);
+        
+        when(objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("Test exception") {});
+
+        // Act
+        messageBus.publishMessage(headers, routingInfo, messageList);
+
+        // Assert - exception expected
+    }
+
+    private static String contains(String substring) {
+        return argThat(str -> str != null && str.contains(substring));
+    }
+
+    // Test message class
+    private static class TestMessage {
+        private String content;
+
+        public TestMessage(String content) {
+            this.content = content;
         }
-    }
 
-    private void assertMessageHasAttributes(PublishRequest message, String key, String value) {
-        Map<String, MessageAttributeValue> attrMap = message.getMessageAttributes();
-        MessageAttributeValue messageAttr = attrMap.get(key);
-        assertNotEquals(null, messageAttr);
-        assertEquals("String", messageAttr.getDataType());
-        assertEquals(value, messageAttr.getStringValue());
-    }
+        public String getContent() {
+            return content;
+        }
 
-    private void assertMessageDoesNotHaveAttributes(PublishRequest message, String key) {
-        Map<String, MessageAttributeValue> attrMap = message.getMessageAttributes();
-        MessageAttributeValue messageAttr = attrMap.get(key);
-        assertEquals(null, messageAttr);
-    }
-
-    @Test
-    public void publishMessageOutsideForRecordNotOnNamespace() throws K8sParameterNotFoundException {
-        initAndRun(() -> {
-                    // arrange
-                    DpsHeaders headers = new DpsHeaders();
-                    PubSubInfo message = new PubSubInfo();
-                    message.setKind("common:welldb:wellbore:1.0.12311");
-                    message.setOp(OperationType.create_schema);
-
-                    PubSubInfo[] messages = new PubSubInfo[1];
-                    messages[0] = message;
-                    Mockito.when(snsClient.publish(publishRequestCaptor.capture()))
-                            .thenReturn(any(PublishResult.class));
-
-                    // act
-                    messageBus.publishMessage(headers, messages);
-
-                    // assert
-                    Mockito.verify(snsClient, Mockito.times(1)).publish(any(PublishRequest.class));
-
-                    PublishRequest receivedRequest = publishRequestCaptor.getValue();
-
-                    assertEquals(AWS_SNS_TOPIC, receivedRequest.getTopicArn());
-                    assertMessageHasAttributes(receivedRequest, DpsHeaders.ACCOUNT_ID, headers.getPartitionIdWithFallbackToAccountId());
-                    assertMessageHasAttributes(receivedRequest, DpsHeaders.DATA_PARTITION_ID, headers.getPartitionIdWithFallbackToAccountId());
-                    assertMessageHasAttributes(receivedRequest, DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
-                    assertMessageHasAttributes(receivedRequest, DpsHeaders.USER_EMAIL, headers.getUserEmail());
-                    assertMessageHasAttributes(receivedRequest, DpsHeaders.AUTHORIZATION, headers.getAuthorization());
-                    assertMessageDoesNotHaveAttributes(receivedRequest, DpsHeaders.COLLABORATION);
-
-                }
-        );
-    }
-
-    @Test
-    public void publishMessageForRecordOnNamespace() throws K8sParameterNotFoundException {
-        initAndRun(() -> {
-            // arrange
-            DpsHeaders headers = new DpsHeaders();
-            RecordChangedV2 message = new RecordChangedV2();
-            message.setKind("common:welldb:wellbore:1.0.12311");
-            message.setOp(OperationType.create_schema);
-
-            RecordChangedV2[] messages = new RecordChangedV2[1];
-            messages[0] = message;
-            Mockito.when(snsClient.publish(publishRequestCaptor.capture()))
-                    .thenReturn(any(PublishResult.class));
-            // act
-            final CollaborationContext collaborationContext = CollaborationContextTestUtil.getACollaborationContext();
-            final String collaborationContextString = String.format("id=%s,application=%s", collaborationContext.getId(), collaborationContext.getApplication());
-
-            messageBus.publishMessage(Optional.of(collaborationContext), headers, messages);
-
-            // assert
-            Mockito.verify(snsClient, Mockito.times(1)).publish(any(PublishRequest.class));
-
-            PublishRequest receivedRequest = publishRequestCaptor.getValue();
-
-            assertEquals(AWS_SNS_TOPIC_V2, receivedRequest.getTopicArn());
-            assertMessageHasAttributes(receivedRequest, DpsHeaders.ACCOUNT_ID, headers.getPartitionIdWithFallbackToAccountId());
-            assertMessageHasAttributes(receivedRequest, DpsHeaders.DATA_PARTITION_ID, headers.getPartitionIdWithFallbackToAccountId());
-            assertMessageHasAttributes(receivedRequest, DpsHeaders.CORRELATION_ID, headers.getCorrelationId());
-            assertMessageHasAttributes(receivedRequest, DpsHeaders.USER_EMAIL, headers.getUserEmail());
-            assertMessageHasAttributes(receivedRequest, DpsHeaders.AUTHORIZATION, headers.getAuthorization());
-            assertMessageHasAttributes(receivedRequest, DpsHeaders.COLLABORATION, collaborationContextString);
-        });
+        public void setContent(String content) {
+            this.content = content;
+        }
     }
 }

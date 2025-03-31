@@ -1,10 +1,21 @@
 # AWS Replay Feature Implementation Plan
 
-This document outlines the implementation plan for the Replay feature in the AWS provider for OSDU Storage Service, based on the existing Azure implementation.
+This document outlines the implementation plan for the Replay feature in the AWS provider for OSDU Storage Service, based on the existing Azure implementation but adapted to use AWS-native messaging patterns with SNS and SQS.
 
 ## 1. Core Components Implemented
 
-### 1.1 DynamoDB Table for Replay Status ✅
+### 1.1 Architecture Overview
+The AWS implementation uses an SNS-SQS pattern for message publishing and consumption:
+
+```
+User Request → Storage API → SNS Topics → SQS Queues → Consumers
+                    ↕
+               DynamoDB (status tracking)
+```
+
+This pattern provides better decoupling between publishers and consumers, allowing multiple consumers to subscribe to the same messages if needed.
+
+### 1.2 DynamoDB Table for Replay Status ✅
 We've implemented a DynamoDB table to store replay status information, similar to Azure's Cosmos DB implementation:
 
 ```java
@@ -29,7 +40,7 @@ public class ReplayMetadataItem {
 }
 ```
 
-### 1.2 AWS Repository Implementation ✅
+### 1.3 AWS Repository Implementation ✅
 Created a `ReplayRepositoryImpl` for AWS that implements the `IReplayRepository` interface:
 
 ```java
@@ -65,7 +76,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
 }
 ```
 
-### 1.3 Query Repository Extensions ✅
+### 1.4 Query Repository Extensions ✅
 Extended the existing `QueryRepositoryImpl` with the required methods for replay operations:
 
 ```java
@@ -90,13 +101,14 @@ public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
 }
 ```
 
-### 1.4 SQS Message Handling ✅
-Implemented SQS message handling for replay operations:
+### 1.5 SNS-SQS Message Handling ✅
+Implemented SNS for publishing messages and SQS for consuming messages:
 
 ```java
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
+    private final AmazonSNS snsClient;
     private final AmazonSQS sqsClient;
     
     @Autowired
@@ -111,11 +123,14 @@ public class ReplayMessageHandler {
     @Value("${aws.sqs.replay-queue-url}")
     private String replayQueueUrl;
     
-    @Value("${aws.sqs.reindex-queue-url}")
-    private String reindexQueueUrl;
+    @Value("${aws.sns.replay-topic-arn}")
+    private String replayTopicArn;
     
-    @Value("${aws.sqs.records-queue-url}")
-    private String recordsQueueUrl;
+    @Value("${aws.sns.reindex-topic-arn}")
+    private String reindexTopicArn;
+    
+    @Value("${aws.sns.records-topic-arn}")
+    private String recordsTopicArn;
     
     public void handle(ReplayMessage message) {
         // Process the replay message
@@ -126,43 +141,72 @@ public class ReplayMessageHandler {
     }
     
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
-        // Send messages to appropriate queue based on operation
+        // Determine which SNS topic to use based on operation
+        String topicArn;
+        switch (operation) {
+            case "replay":
+                topicArn = replayTopicArn;
+                break;
+            case "reindex":
+                topicArn = reindexTopicArn;
+                break;
+            default:
+                topicArn = recordsTopicArn;
+                break;
+        }
+        
+        // Publish messages to the appropriate SNS topic
+        for (ReplayMessage message : messages) {
+            try {
+                String messageBody = objectMapper.writeValueAsString(message);
+                PublishRequest publishRequest = new PublishRequest()
+                    .withTopicArn(topicArn)
+                    .withMessage(messageBody);
+                
+                snsClient.publish(publishRequest);
+                logger.debug("Published message to SNS topic: " + topicArn);
+                
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to serialize message: " + e.getMessage(), e);
+                throw new RuntimeException("Failed to serialize message", e);
+            }
+        }
     }
 }
 ```
 
-### 1.5 MessageBus Implementation Updates ✅
-Updated the `MessageBusImpl` to support the new methods required for replay:
+### 1.6 MessageBus Implementation Updates ✅
+Updated the `MessageBusImpl` to support publishing messages to SNS topics:
 
 ```java
 @Override
 public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
-    // Get queue URL from routing info
-    String queueUrl = routingInfo.get("queue");
-    if (queueUrl == null || queueUrl.isEmpty()) {
-        logger.error("No queue URL provided in routing info");
+    // Get topic ARN from routing info
+    String topicArn = routingInfo.get("topic");
+    if (topicArn == null || topicArn.isEmpty()) {
+        logger.error("No SNS topic ARN provided in routing info");
         return;
     }
     
-    // Use AWS SDK to publish messages directly to SQS queue
-    com.amazonaws.services.sqs.AmazonSQS sqsClient = new com.amazonaws.services.sqs.AmazonSQSClientBuilder.standard()
+    // Use AWS SDK to publish messages to SNS topic
+    AmazonSNS snsClient = AmazonSNSClientBuilder.standard()
         .withRegion(currentRegion)
         .build();
         
-    com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    ObjectMapper objectMapper = new ObjectMapper();
     
-    // Publish messages directly to SQS queue
+    // Publish messages to SNS topic
     for (Object message : messageList) {
         try {
             String messageBody = objectMapper.writeValueAsString(message);
-            com.amazonaws.services.sqs.model.SendMessageRequest request = new com.amazonaws.services.sqs.model.SendMessageRequest()
-                .withQueueUrl(queueUrl)
-                .withMessageBody(messageBody);
+            PublishRequest publishRequest = new PublishRequest()
+                .withTopicArn(topicArn)
+                .withMessage(messageBody);
             
-            sqsClient.sendMessage(request);
-            logger.debug("Published message to queue: " + queueUrl);
+            snsClient.publish(publishRequest);
+            logger.debug("Published message to SNS topic: " + topicArn);
             
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             logger.error("Failed to serialize message: " + e.getMessage(), e);
             throw new RuntimeException("Failed to serialize message", e);
         }
@@ -170,8 +214,8 @@ public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, 
 }
 ```
 
-### 1.6 AWS Replay Service Implementation ✅
-Implemented the AWS-specific replay service:
+### 1.7 AWS Replay Service Implementation ✅
+Implemented the AWS-specific replay service using SNS topics for message publishing:
 
 ```java
 @Service
@@ -208,7 +252,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
     
     @Override
     public void processReplayMessage(ReplayMessage replayMessage) {
-        // Process the replay message and publish record changes
+        // Process the replay message and publish record changes to SNS
     }
     
     @Override
@@ -223,7 +267,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
 }
 ```
 
-### 1.7 SQS Message Listener ✅
+### 1.8 SQS Message Listener ✅
 Created an SQS message listener to process replay messages:
 
 ```java
@@ -249,7 +293,7 @@ public class ReplaySubscriptionMessageHandler {
 ## 2. Configuration Updates ✅
 
 ### 2.1 AWS Configuration
-Added necessary configuration for SQS and DynamoDB:
+Added necessary configuration for SNS, SQS, and DynamoDB:
 
 ```java
 @Configuration
@@ -263,6 +307,14 @@ public class ReplayAwsConfig {
     @ConditionalOnMissingBean
     public AmazonSQS amazonSQSClient() {
         return AmazonSQSClientBuilder.standard()
+            .withRegion(region)
+            .build();
+    }
+    
+    @Bean
+    @ConditionalOnMissingBean
+    public AmazonSNS amazonSNSClient() {
+        return AmazonSNSClientBuilder.standard()
             .withRegion(region)
             .build();
     }
@@ -292,9 +344,12 @@ feature.replay.enabled=true
 
 # AWS SQS configuration
 aws.sqs.replay-queue-url=${REPLAY_QUEUE_URL}
-aws.sqs.reindex-queue-url=${REINDEX_QUEUE_URL}
-aws.sqs.records-queue-url=${RECORDS_QUEUE_URL}
 aws.sqs.polling-interval-ms=1000
+
+# AWS SNS configuration
+aws.sns.replay-topic-arn=${REPLAY_TOPIC_ARN}
+aws.sns.reindex-topic-arn=${REINDEX_TOPIC_ARN}
+aws.sns.records-topic-arn=${RECORDS_TOPIC_ARN}
 
 # AWS DynamoDB configuration
 aws.dynamodb.replay-table-name=ReplayStatus
@@ -304,12 +359,12 @@ aws.region=${AWS_REGION:us-east-1}
 
 # Replay operation routing properties
 replay.operation.routingProperties = { \
-  reindex : { queue : '${REINDEX_QUEUE_URL}', queryBatchSize : '5000', publisherBatchSize : '50'}, \
-  replay: { queue : '${RECORDS_QUEUE_URL}', queryBatchSize : '5000', publisherBatchSize : '50'} \
+  reindex : { topic : '${REINDEX_TOPIC_ARN}', queryBatchSize : '5000', publisherBatchSize : '50'}, \
+  replay: { topic : '${RECORDS_TOPIC_ARN}', queryBatchSize : '5000', publisherBatchSize : '50'} \
 }
 
 # Replay routing properties
-replay.routingProperties = { queue : '${REPLAY_QUEUE_URL}' }
+replay.routingProperties = { topic : '${REPLAY_TOPIC_ARN}' }
 
 # Swagger properties for Replay API
 replayApi.getReplayStatus.summary=Get the status of a replay operation
@@ -362,11 +417,11 @@ public class ReplayRepositoryImplTest {
 1. ✅ **Create DynamoDB Table Model**: Defined the ReplayStatus table model in DynamoDB
 2. ✅ **Extend Query Repository**: Implemented the required query methods for replay operations
 3. ✅ **Implement Replay Repository**: Created the AWS-specific repository implementation
-4. ✅ **Update MessageBus**: Extended the MessageBusImpl with the required methods
-5. ✅ **Implement Message Handling**: Set up SQS message handling for replay operations
+4. ✅ **Update MessageBus**: Extended the MessageBusImpl to use SNS for publishing messages
+5. ✅ **Implement Message Handling**: Set up SNS for message publishing and SQS for message consumption
 6. ✅ **Implement Service Layer**: Created the AWS-specific replay service implementation
 7. ✅ **Configure SQS Listener**: Set up the SQS message listener
-8. ⬜ **Update Terraform**: Add necessary resources to IaC templates
+8. ⬜ **Update Terraform**: Add necessary resources to IaC templates, including SNS topics
 9. ✅ **Write Unit Tests**: Created tests for the repository implementation
 10. ✅ **Documentation**: Updated documentation with AWS-specific details
 
@@ -374,19 +429,23 @@ public class ReplayRepositoryImplTest {
 
 The following AWS resources will need to be added to your Terraform IaC:
 
-1. **SQS Queues**:
-   - Main replay queue
-   - Dead letter queue for failed messages
-   - Topic-specific queues for different replay operations
+1. **SNS Topics**:
+   - Replay topic for replay operations
+   - Reindex topic for reindex operations
+   - Records topic for record change messages
 
-2. **DynamoDB Table**:
+2. **SQS Queues**:
+   - Queues that subscribe to the SNS topics
+   - Dead letter queues for failed messages
+
+3. **DynamoDB Table**:
    - ReplayStatus table with appropriate capacity settings
 
-3. **IAM Permissions**:
-   - Permissions for the service to access SQS and DynamoDB
+4. **IAM Permissions**:
+   - Permissions for the service to access SNS, SQS, and DynamoDB
    - Cross-service permissions as needed
 
-4. **CloudWatch Alarms**:
+5. **CloudWatch Alarms**:
    - Alarms for queue depth
    - Alarms for failed messages
    - Alarms for DynamoDB throttling
@@ -433,19 +492,28 @@ The ReplayStatus table has the following structure:
   - filter (String - JSON)
   - dataPartitionId (String)
 
-### 7.2 SQS Message Flow
+### 7.2 SNS-SQS Message Flow
 
 1. User initiates replay via API
 2. System creates initial status entry in DynamoDB
-3. System sends initial message to appropriate SQS queue based on operation type
-4. SQS listener processes message:
-   • For ReplayAll: Queries for all kinds, then sends kind-specific messages to appropriate queues
-   • For ReplayKind: Processes records for the specified kind
-5. As processing progresses, status is updated in DynamoDB
-6. Record change messages are published directly to appropriate SQS queues
-7. Upon completion, final status is updated
+3. System publishes initial message to appropriate SNS topic based on operation type
+4. SNS delivers the message to subscribed SQS queues
+5. SQS listener processes message:
+   - For ReplayAll: Queries for all kinds, then publishes kind-specific messages to appropriate SNS topics
+   - For ReplayKind: Processes records for the specified kind
+6. As processing progresses, status is updated in DynamoDB
+7. Record change messages are published to the Records SNS topic
+8. Upon completion, final status is updated
 
-### 7.3 Error Handling Strategy
+### 7.3 Advantages of SNS-SQS Pattern
+
+1. **Decoupling**: Publishers and consumers are completely decoupled
+2. **Fan-out**: Multiple consumers can subscribe to the same SNS topic
+3. **Reliability**: Messages are persisted in SQS queues even if consumers are temporarily unavailable
+4. **Scalability**: Both SNS and SQS can handle high throughput
+5. **Filtering**: SNS supports message filtering for subscribers
+
+### 7.4 Error Handling Strategy
 
 1. Use SQS visibility timeout for retries
 2. Implement exponential backoff for retries
@@ -453,15 +521,16 @@ The ReplayStatus table has the following structure:
 4. Update status with error information in DynamoDB
 5. Log detailed error information to CloudWatch Logs
 
-### 7.4 Performance Considerations
+### 7.5 Performance Considerations
 
-1. Use DynamoDB batch operations for efficient updates
+1. Use SNS batch publishing for efficient message delivery
 2. Use SQS batch operations for message processing
 3. Implement pagination for large result sets
+4. Configure appropriate SQS visibility timeout for long-running operations
 
 ## 8. Next Steps
 
-1. **Terraform Implementation**: Create the necessary Terraform resources for the replay feature
+1. **Terraform Implementation**: Create the necessary Terraform resources for the replay feature, including SNS topics
 2. **Integration Testing**: Implement comprehensive integration tests for the replay functionality
 3. **Monitoring Setup**: Set up CloudWatch dashboards and alarms for monitoring replay operations
 4. **Documentation**: Update user documentation with instructions for using the replay feature

@@ -17,6 +17,8 @@ package org.opengroup.osdu.storage.provider.aws.config;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +50,19 @@ public class ReplayAwsConfig {
     @ConditionalOnMissingBean
     public AmazonSQS amazonSQSClient() {
         return AmazonSQSClientBuilder.standard()
+            .withRegion(region)
+            .build();
+    }
+    
+    /**
+     * Creates an AmazonSNS client bean if not already defined.
+     *
+     * @return The AmazonSNS client
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public AmazonSNS amazonSNSClient() {
+        return AmazonSNSClientBuilder.standard()
             .withRegion(region)
             .build();
     }

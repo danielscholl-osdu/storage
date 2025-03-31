@@ -15,10 +15,11 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Component;
 /**
  * SQS message listener for replay messages.
  * This class polls the SQS queue for replay messages and processes them.
+ * The messages are published to SNS topics but consumed from SQS queues.
  */
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
@@ -45,16 +47,12 @@ public class ReplaySubscriptionMessageHandler {
     @Value("${aws.sqs.replay-queue-url}")
     private String replayQueueUrl;
     
-    @Value("${aws.region}")
-    private String region;
-    
     @Autowired
-    public ReplaySubscriptionMessageHandler(ReplayMessageHandler replayMessageHandler,
+    public ReplaySubscriptionMessageHandler(AmazonSQS sqsClient,
+                                           ReplayMessageHandler replayMessageHandler,
                                            ObjectMapper objectMapper,
                                            JaxRsDpsLog logger) {
-        this.sqsClient = AmazonSQSClientBuilder.standard()
-            .withRegion(System.getProperty("aws.region", "us-east-1"))
-            .build();
+        this.sqsClient = sqsClient;
         this.replayMessageHandler = replayMessageHandler;
         this.objectMapper = objectMapper;
         this.logger = logger;
@@ -62,6 +60,7 @@ public class ReplaySubscriptionMessageHandler {
     
     /**
      * Polls the SQS queue for replay messages at a fixed interval.
+     * The messages come from SNS topics but are delivered to SQS queues.
      */
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
@@ -75,14 +74,39 @@ public class ReplaySubscriptionMessageHandler {
         
         for (Message message : result.getMessages()) {
             try {
-                ReplayMessage replayMessage = objectMapper.readValue(message.getBody(), ReplayMessage.class);
+                // Extract the actual message from the SNS wrapper
+                String messageBody = message.getBody();
+                
+                // When a message comes from SNS to SQS, it's wrapped in an SNS envelope
+                // We need to extract the actual message from the "Message" field
+                try {
+                    JsonNode node = objectMapper.readTree(messageBody);
+                    if (node.has("Message")) {
+                        messageBody = node.get("Message").asText();
+                    }
+                } catch (Exception e) {
+                    logger.error("Error parsing SNS message wrapper: " + e.getMessage(), e);
+                }
+                
+                ReplayMessage replayMessage = objectMapper.readValue(messageBody, ReplayMessage.class);
                 logger.info("Processing replay message from queue: " + replayMessage.getBody().getReplayId());
                 replayMessageHandler.handle(replayMessage);
                 sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
             } catch (Exception e) {
                 logger.error("Error processing replay message: " + e.getMessage(), e);
                 try {
-                    ReplayMessage replayMessage = objectMapper.readValue(message.getBody(), ReplayMessage.class);
+                    // Extract the message for error handling
+                    String messageBody = message.getBody();
+                    try {
+                        JsonNode node = objectMapper.readTree(messageBody);
+                        if (node.has("Message")) {
+                            messageBody = node.get("Message").asText();
+                        }
+                    } catch (Exception ex) {
+                        logger.error("Error parsing SNS message wrapper during error handling: " + ex.getMessage(), ex);
+                    }
+                    
+                    ReplayMessage replayMessage = objectMapper.readValue(messageBody, ReplayMessage.class);
                     int receiveCount = Integer.parseInt(message.getAttributes().get("ApproximateReceiveCount"));
                     if (receiveCount >= MAX_DELIVERY_COUNT) {
                         // Dead letter the message after max retries

@@ -14,11 +14,14 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import com.amazonaws.services.sns.AmazonSNS;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -58,6 +61,9 @@ public class MessageBusImpl implements IMessageBus {
 
     @Inject
     private JaxRsDpsLog logger;
+    
+    @Inject
+    private ObjectMapper objectMapper;
 
     private <T> void doPublishMessage(boolean v2Message, Optional<CollaborationContext> collaborationContext, DpsHeaders headers, T... messages) {
         final int BATCH_SIZE = 50;
@@ -113,32 +119,33 @@ public class MessageBusImpl implements IMessageBus {
     @Override
     public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
         // This method is used by the replay feature to publish record change messages
-        // Get queue URL from routing info
-        String queueUrl = routingInfo.get("queue");
-        if (queueUrl == null || queueUrl.isEmpty()) {
-            logger.error("No queue URL provided in routing info");
+        // Get topic ARN from routing info
+        String topicArn = routingInfo.get("topic");
+        if (topicArn == null || topicArn.isEmpty()) {
+            logger.error("No SNS topic ARN provided in routing info");
             return;
         }
         
-        // Use AWS SDK to publish messages directly to SQS queue
-        com.amazonaws.services.sqs.AmazonSQS sqsClient = com.amazonaws.services.sqs.AmazonSQSClientBuilder.standard()
-            .withRegion(currentRegion)
-            .build();
-            
-        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        // Use AWS SDK to publish messages to SNS topic
+        AmazonSNS snsClient = this.snsClient;
+        if (snsClient == null) {
+            snsClient = AmazonSNSClientBuilder.standard()
+                .withRegion(currentRegion)
+                .build();
+        }
         
-        // Publish messages directly to SQS queue
+        // Publish messages to SNS topic
         for (Object message : messageList) {
             try {
                 String messageBody = objectMapper.writeValueAsString(message);
-                com.amazonaws.services.sqs.model.SendMessageRequest request = new com.amazonaws.services.sqs.model.SendMessageRequest()
-                    .withQueueUrl(queueUrl)
-                    .withMessageBody(messageBody);
+                PublishRequest publishRequest = new PublishRequest()
+                    .withTopicArn(topicArn)
+                    .withMessage(messageBody);
                 
-                sqsClient.sendMessage(request);
-                logger.debug("Published message to queue: " + queueUrl);
+                snsClient.publish(publishRequest);
+                logger.debug("Published message to SNS topic: " + topicArn);
                 
-            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            } catch (JsonProcessingException e) {
                 logger.error("Failed to serialize message: " + e.getMessage(), e);
                 throw new RuntimeException("Failed to serialize message", e);
             }

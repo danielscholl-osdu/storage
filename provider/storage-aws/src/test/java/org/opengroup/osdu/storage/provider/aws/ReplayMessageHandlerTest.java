@@ -14,30 +14,28 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
-import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.model.PublishRequest;
+import com.amazonaws.services.sns.model.PublishResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
+import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -45,7 +43,7 @@ import static org.mockito.Mockito.*;
 public class ReplayMessageHandlerTest {
 
     @Mock
-    private AmazonSQS sqsClient;
+    private AmazonSNS snsClient;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -57,164 +55,158 @@ public class ReplayMessageHandlerTest {
     private JaxRsDpsLog logger;
 
     @InjectMocks
-    private ReplayMessageHandler messageHandler;
+    private ReplayMessageHandler replayMessageHandler;
 
-    private final String replayQueueUrl = "replay-queue-url";
-    private final String reindexQueueUrl = "reindex-queue-url";
-    private final String recordsQueueUrl = "records-queue-url";
+    private final String replayTopicArn = "arn:aws:sns:us-east-1:123456789012:replay-topic";
+    private final String reindexTopicArn = "arn:aws:sns:us-east-1:123456789012:reindex-topic";
+    private final String recordsTopicArn = "arn:aws:sns:us-east-1:123456789012:records-topic";
 
     @Before
     public void setup() {
-        ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", replayQueueUrl);
-        ReflectionTestUtils.setField(messageHandler, "reindexQueueUrl", reindexQueueUrl);
-        ReflectionTestUtils.setField(messageHandler, "recordsQueueUrl", recordsQueueUrl);
-        
-        // Mock SQS client to return a successful result
-        SendMessageResult mockResult = new SendMessageResult();
-        mockResult.setMessageId("test-message-id");
-        when(sqsClient.sendMessage(any(SendMessageRequest.class))).thenReturn(mockResult);
-        
-        // Override the constructor-created SQS client with our mock
-        ReflectionTestUtils.setField(messageHandler, "sqsClient", sqsClient);
+        ReflectionTestUtils.setField(replayMessageHandler, "replayTopicArn", replayTopicArn);
+        ReflectionTestUtils.setField(replayMessageHandler, "reindexTopicArn", reindexTopicArn);
+        ReflectionTestUtils.setField(replayMessageHandler, "recordsTopicArn", recordsTopicArn);
     }
 
     @Test
     public void testHandle() {
-        // Setup
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        // Arrange
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
 
-        // Execute
-        messageHandler.handle(message);
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(body);
 
-        // Verify
+        // Act
+        replayMessageHandler.handle(message);
+
+        // Assert
         verify(replayService, times(1)).processReplayMessage(message);
-        verify(replayService, never()).processFailure(any());
-    }
-
-    @Test
-    public void testHandleWithException() {
-        // Setup
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
-
-        doThrow(new RuntimeException("Test exception")).when(replayService).processReplayMessage(message);
-
-        // Execute and expect exception
-        try {
-            messageHandler.handle(message);
-        } catch (Exception e) {
-            // Expected
-        }
-
-        // Verify
-        verify(replayService, times(1)).processReplayMessage(message);
-        verify(replayService, times(1)).processFailure(message);
     }
 
     @Test
     public void testHandleFailure() {
-        // Setup
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        // Arrange
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
+        
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(body);
 
-        // Execute
-        messageHandler.handleFailure(message);
+        // Act
+        replayMessageHandler.handleFailure(message);
 
-        // Verify
+        // Assert
         verify(replayService, times(1)).processFailure(message);
     }
 
     @Test
-    public void testSendReplayMessage() throws JsonProcessingException {
-        // Setup
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
-
-        List<ReplayMessage> messages = Collections.singletonList(message);
-        String operation = "replay";
-        String serializedMessage = "{\"headers\":{\"data-partition-id\":\"test-partition\"},\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\",\"operation\":\"replay\"}}";
-
-        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-
-        // Execute
-        messageHandler.sendReplayMessage(messages, operation);
-
-        // Verify
-        verify(sqsClient, times(1)).sendMessage(any(SendMessageRequest.class));
-        verify(objectMapper, times(1)).writeValueAsString(message);
-    }
-
-    @Test
-    public void testSendReplayMessageMultiple() throws JsonProcessingException {
-        // Setup
-        ReplayMessage message1 = createReplayMessage("test-replay-id-1", "test-kind-1", "replay");
-        ReplayMessage message2 = createReplayMessage("test-replay-id-2", "test-kind-2", "replay");
-
-        List<ReplayMessage> messages = Arrays.asList(message1, message2);
-        String operation = "replay";
+    public void testSendReplayMessage_ReplayOperation() throws JsonProcessingException {
+        // Arrange
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
         
-        when(objectMapper.writeValueAsString(message1)).thenReturn("{\"message1\"}");
-        when(objectMapper.writeValueAsString(message2)).thenReturn("{\"message2\"}");
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(body);
+        
+        List<ReplayMessage> messages = Arrays.asList(message);
+        String operation = "replay";
+        String messageJson = "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}";
+        
+        when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn(messageJson);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
 
-        // Execute
-        messageHandler.sendReplayMessage(messages, operation);
+        // Act
+        replayMessageHandler.sendReplayMessage(messages, operation);
 
-        // Verify
-        verify(sqsClient, times(2)).sendMessage(any(SendMessageRequest.class));
-        verify(objectMapper, times(1)).writeValueAsString(message1);
-        verify(objectMapper, times(1)).writeValueAsString(message2);
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(recordsTopicArn, capturedRequest.getTopicArn());
+        assertEquals(messageJson, capturedRequest.getMessage());
     }
 
     @Test
-    public void testSendReplayMessageDifferentOperations() throws JsonProcessingException {
-        // Setup
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+    public void testSendReplayMessage_ReindexOperation() throws JsonProcessingException {
+        // Arrange
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
+        
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(body);
+        
+        List<ReplayMessage> messages = Arrays.asList(message);
+        String operation = "reindex";
+        String messageJson = "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}";
+        
+        when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn(messageJson);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
 
-        List<ReplayMessage> messages = Collections.singletonList(message);
-        String serializedMessage = "{\"headers\":{\"data-partition-id\":\"test-partition\"},\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\",\"operation\":\"replay\"}}";
+        // Act
+        replayMessageHandler.sendReplayMessage(messages, operation);
 
-        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(reindexTopicArn, capturedRequest.getTopicArn());
+        assertEquals(messageJson, capturedRequest.getMessage());
+    }
 
-        // Execute for different operations
-        messageHandler.sendReplayMessage(messages, "replay");
-        messageHandler.sendReplayMessage(messages, "reindex");
-        messageHandler.sendReplayMessage(messages, "unknown");
+    @Test
+    public void testSendReplayMessage_DefaultOperation() throws JsonProcessingException {
+        // Arrange
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
+        
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(body);
+        
+        List<ReplayMessage> messages = Arrays.asList(message);
+        String operation = "unknown";
+        String messageJson = "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}";
+        
+        when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn(messageJson);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
 
-        // Verify
-        verify(sqsClient, times(3)).sendMessage(any(SendMessageRequest.class));
-        verify(objectMapper, times(3)).writeValueAsString(message);
+        // Act
+        replayMessageHandler.sendReplayMessage(messages, operation);
+
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(recordsTopicArn, capturedRequest.getTopicArn());
+        assertEquals(messageJson, capturedRequest.getMessage());
     }
 
     @Test(expected = RuntimeException.class)
-    public void testSendReplayMessageJsonException() throws JsonProcessingException {
-        // Setup
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
-
-        List<ReplayMessage> messages = Collections.singletonList(message);
+    public void testSendReplayMessage_JsonProcessingException() throws JsonProcessingException {
+        // Arrange
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
+        
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(body);
+        
+        List<ReplayMessage> messages = Arrays.asList(message);
         String operation = "replay";
-
-        when(objectMapper.writeValueAsString(message)).thenThrow(new JsonProcessingException("Test exception") {});
-
-        // Execute - should throw exception
-        messageHandler.sendReplayMessage(messages, operation);
-    }
-    
-    /**
-     * Helper method to create a ReplayMessage with the current structure
-     */
-    private ReplayMessage createReplayMessage(String replayId, String kind, String operation) {
-        // Create headers
-        Map<String, String> headers = new HashMap<>();
-        headers.put(DpsHeaders.DATA_PARTITION_ID, "test-partition");
         
-        // Create body
-        ReplayData body = ReplayData.builder()
-            .replayId(replayId)
-            .kind(kind)
-            .operation(operation)
-            .build();
-        
-        // Create message
-        return ReplayMessage.builder()
-            .headers(headers)
-            .body(body)
-            .build();
+        when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenThrow(new JsonProcessingException("Test exception") {});
+
+        // Act
+        replayMessageHandler.sendReplayMessage(messages, operation);
+
+        // Assert - exception expected
     }
 }

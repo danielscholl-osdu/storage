@@ -14,9 +14,9 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sns.model.PublishRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -31,13 +31,13 @@ import java.util.List;
 
 /**
  * Handler for replay messages in AWS.
- * This class is responsible for sending and processing replay messages using SQS.
+ * This class is responsible for sending and processing replay messages using SNS.
  */
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
     
-    private final AmazonSQS sqsClient;
+    private final AmazonSNS snsClient;
     
     private final ObjectMapper objectMapper;
     
@@ -45,23 +45,21 @@ public class ReplayMessageHandler {
     
     private final JaxRsDpsLog logger;
     
-    @Value("${aws.sqs.replay-queue-url}")
-    private String replayQueueUrl;
+    @Value("${aws.sns.replay-topic-arn}")
+    private String replayTopicArn;
     
-    @Value("${aws.sqs.reindex-queue-url}")
-    private String reindexQueueUrl;
+    @Value("${aws.sns.reindex-topic-arn}")
+    private String reindexTopicArn;
     
-    @Value("${aws.sqs.records-queue-url}")
-    private String recordsQueueUrl;
+    @Value("${aws.sns.records-topic-arn}")
+    private String recordsTopicArn;
     
     @Value("${aws.region}")
     private String region;
     
-    public ReplayMessageHandler(ObjectMapper objectMapper, ReplayService replayService, JaxRsDpsLog logger) {
-        // Initialize SQS client
-        this.sqsClient = AmazonSQSClientBuilder.standard()
-            .withRegion(System.getProperty("aws.region", "us-east-1"))
-            .build();
+    @Autowired
+    public ReplayMessageHandler(ObjectMapper objectMapper, ReplayService replayService, JaxRsDpsLog logger, AmazonSNS snsClient) {
+        this.snsClient = snsClient;
         this.objectMapper = objectMapper;
         this.replayService = replayService;
         this.logger = logger;
@@ -96,24 +94,24 @@ public class ReplayMessageHandler {
     }
     
     /**
-     * Sends replay messages to the appropriate SQS queue based on the operation.
+     * Sends replay messages to the appropriate SNS topic based on the operation.
      *
      * @param messages The replay messages to send
      * @param operation The operation type (e.g., "replay", "reindex")
      */
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
         try {
-            // Select appropriate queue based on operation
-            String queueUrl = getQueueUrlForOperation(operation);
+            // Select appropriate topic based on operation
+            String topicArn = getTopicArnForOperation(operation);
             
             for (ReplayMessage message : messages) {
                 String messageBody = objectMapper.writeValueAsString(message);
-                SendMessageRequest sendMessageRequest = new SendMessageRequest()
-                    .withQueueUrl(queueUrl)
-                    .withMessageBody(messageBody);
+                PublishRequest publishRequest = new PublishRequest()
+                    .withTopicArn(topicArn)
+                    .withMessage(messageBody);
                 
-                sqsClient.sendMessage(sendMessageRequest);
-                logger.info("Sent replay message to queue: " + queueUrl + " for replayId: " + message.getBody().getReplayId());
+                snsClient.publish(publishRequest);
+                logger.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
             }
         } catch (JsonProcessingException e) {
             logger.error("Failed to serialize replay message: " + e.getMessage(), e);
@@ -122,16 +120,16 @@ public class ReplayMessageHandler {
     }
     
     /**
-     * Gets the appropriate SQS queue URL based on the operation type.
+     * Gets the appropriate SNS topic ARN based on the operation type.
      *
      * @param operation The operation type
-     * @return The SQS queue URL
+     * @return The SNS topic ARN
      */
-    private String getQueueUrlForOperation(String operation) {
+    private String getTopicArnForOperation(String operation) {
         return switch (operation) {
-            case "reindex" -> reindexQueueUrl;
-            case "replay" -> recordsQueueUrl;
-            default -> replayQueueUrl;
+            case "reindex" -> reindexTopicArn;
+            case "replay" -> recordsTopicArn;
+            default -> replayTopicArn;
         };
     }
 }
