@@ -72,6 +72,17 @@ public class RecordUtil {
 		return records.toString();
 	}
 
+	public static String createJsonRecordForUnitConversionWithPrimitiveArray(String id, String kind, String legalTag, String unitOfMeasureId, String fileName){
+		JsonObject defaultRecord = getDefaultRecord(id, kind, legalTag);
+		JsonObject recordObject = FileReadUtil.readRecordFromFile(fileName);
+		recordObject.get("meta").getAsJsonArray().get(0).getAsJsonObject().addProperty(UNIT_OF_MEASURE_ID, unitOfMeasureId);
+		defaultRecord.add("data", recordObject.get("data"));
+		defaultRecord.add("meta", recordObject.get("meta"));
+		JsonArray records = new JsonArray();
+		records.add(defaultRecord);
+		return records.toString();
+	}
+
 	public static String createJsonRecordWithEntV2OnlyAcl(String id, String kind, String legalTag, String data) {
 		JsonObject dataJson = new JsonObject();
 		dataJson.addProperty("custom", data);

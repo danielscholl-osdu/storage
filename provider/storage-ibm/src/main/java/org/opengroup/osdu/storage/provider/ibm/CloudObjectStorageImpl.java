@@ -282,7 +282,7 @@ public class CloudObjectStorageImpl implements ICloudStorage {
 	@Override
 	public String read(RecordMetadata record, Long version, boolean checkDataInconsistency) {
 		// TODO checkDataInconsistency implement
-		validateViewerAccessToRecord(record);
+		//validateViewerAccessToRecord(record);
 		
 		String itemName = this.getItemName(record, version);
 		logger.info("Reading item: " + itemName);

@@ -5,7 +5,6 @@ entire metadata life-cycle such as ingestion (persistence), modification, deleti
 
 ## Table of Contents <a name="TOC"></a>
 * [Getting started](#Getting-started)
-* [Mappers](#Mappers)
 * [Settings and Configuration](#Settings-and-Configuration)
 * [Run service](#Run-service)
 * [Testing](#Testing)
@@ -19,24 +18,6 @@ entire metadata life-cycle such as ingestion (persistence), modification, deleti
 These instructions will get you a copy of the project up and running on your local machine for development and testing
 purposes. See deployment for notes on how to deploy the project on a live system.
 
-## Mappers
-
-This is a universal solution created using EPAM OSM, OBM and OQM mappers technology. It allows you to work with various
-implementations of KV stores, Blob stores and message brokers.
-
-For more information about mappers:
-- [OSM Readme](https://community.opengroup.org/osdu/platform/system/lib/cloud/gcp/osm/-/blob/main/README.md)
-- [OBM Readme](https://community.opengroup.org/osdu/platform/system/lib/cloud/gcp/obm/-/blob/master/README.md)
-- [OQM Readme](https://community.opengroup.org/osdu/platform/system/lib/cloud/gcp/oqm/-/blob/master/README.md)
-
-### Limitations of the current version
-
-In the current version, the mappers are equipped with several drivers to the stores and the message broker:
-
-- OSM (mapper for KV-data): Google Datastore; Postgres
-- OBM (mapper to Blob stores): Google Cloud Storage (GCS); MinIO
-- OQM (mapper to message brokers): Google PubSub; RabbitMQ
-
 ## Settings and Configuration
 
 ### Requirements:
@@ -48,8 +29,6 @@ In the current version, the mappers are equipped with several drivers to the sto
 2. For Google Cloud only
    - GCloud SDK with java (latest version)
 
-### Baremetal Service Configuration:
-[Baremetal service configuration ](docs/baremetal/README.md)
 ### Google Cloud Service Configuration:
 [Google Cloud service configuration ](docs/gc/README.md)
 
@@ -139,11 +118,8 @@ cd provider/storage-gc/ && mvn spring-boot:run
 
 This section describes how to run cloud OSDU E2E tests.
 
-### Baremetal test configuration:
-[Baremetal service configuration ](docs/baremetal/README.md)
 ### Google Cloud test configuration:
 [Google Cloud service configuration ](docs/gc/README.md)
-
 
 ## Deployment
 
@@ -152,8 +128,8 @@ Storage Service is compatible with App Engine Flexible Environment and Cloud Run
 * To deploy into Cloud run, please, use this documentation:
   https://cloud.google.com/run/docs/quickstarts/build-and-deploy
 
-* To deploy into App Engine, please, use this documentation:
-  https://cloud.google.com/appengine/docs/flexible/java/quickstart
+* To deploy into GKE, please, use this documentation:
+  https://cloud.google.com/kubernetes-engine/docs/deploy-app-cluster
 
 ## Tutorial
 

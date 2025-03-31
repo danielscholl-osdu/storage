@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~  Copyright 2020-2023 Google LLC
-  ~  Copyright 2020-2023 EPAM Systems, Inc
+  ~  Copyright 2020-2025 Google LLC
+  ~  Copyright 2020-2025 EPAM Systems, Inc
   ~
   ~  Licensed under the Apache License, Version 2.0 (the "License");
   ~  you may not use this file except in compliance with the License.
@@ -16,19 +16,19 @@
   ~  limitations under the License.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>os-storage</artifactId>
-    <version>0.28.0-SNAPSHOT</version>
+    <version>0.29.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>storage-gc</artifactId>
-  <description>Google cloud related implementation staff.</description>
+  <description>Storage Service</description>
   <packaging>jar</packaging>
 
   <properties>
@@ -58,79 +58,15 @@
   <dependencies>
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
-      <artifactId>core-lib-gc</artifactId>
-      <version>0.27.0-rc8</version>
+      <artifactId>storage-core-plus</artifactId>
+      <version>0.29.0-SNAPSHOT</version>
     </dependency>
-    <!--    Mappers    -->
-    <dependency>
-      <groupId>org.opengroup.osdu</groupId>
-      <artifactId>osm</artifactId>
-      <version>0.27.0-rc3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opengroup.osdu</groupId>
-      <artifactId>oqm</artifactId>
-      <version>0.26.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opengroup.osdu</groupId>
-      <artifactId>obm</artifactId>
-      <version>0.27.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opengroup.osdu</groupId>
-      <artifactId>storage-core</artifactId>
-      <version>0.28.0-SNAPSHOT</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.mockito</groupId>
-          <artifactId>mockito-all</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.powermock</groupId>
-          <artifactId>powermock-api-mockito</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+
     <dependency>
       <groupId>ch.qos.logback.contrib</groupId>
-      <artifactId>logback-json-classic</artifactId>
+      <artifactId>logback-jackson</artifactId>
       <version>0.1.5</version>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-webmvc</artifactId>
-      <version>${spring-webmvc.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-      <version>2.1.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- Testing packages -->
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <version>5.10.2</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -139,7 +75,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.2.2</version>
         <configuration>
           <profiles>
             <profile>
@@ -149,12 +85,6 @@
               </activation>
               <properties>
                 <spring.profiles.active>local</spring.profiles.active>
-              </properties>
-            </profile>
-            <profile>
-              <id>dev</id>
-              <properties>
-                <spring.profiles.active>dev</spring.profiles.active>
               </properties>
             </profile>
           </profiles>
@@ -167,18 +97,11 @@
             <configuration>
               <classifier>spring-boot</classifier>
               <mainClass>
-                org.opengroup.osdu.storage.provider.gcp.StorageApplicationGCP
+                org.springframework.boot.loader.launch.PropertiesLauncher
               </mainClass>
             </configuration>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <failOnMissingWebXml>false</failOnMissingWebXml>
-        </configuration>
       </plugin>
 
       <plugin>

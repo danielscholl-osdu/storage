@@ -138,7 +138,18 @@ class CloudStorageImplTest {
     }
 
     @Test
-    void write_shouldThrowAppException_whenRecordProcessingFails() {
+    void write_shouldThrowException_whenRecordProcessingHasException() {
+        when(recordProcessing.getRecordData()).thenReturn(recordData);
+        doNothing().when(userAccessService).validateRecordAcl(any());
+
+        when(recordProcessing.getRecordMetadata()).thenReturn(record);
+        doThrow(AmazonServiceException.class).when(s3RecordClient).saveRecord(recordProcessing, dataPartition);
+
+        assertThrows(AppException.class, () -> repo.write(recordProcessing));
+    }
+
+    @Test
+    void write_shouldThrowAppException_whenRecordProcessingThrowsException() {
         when(recordProcessing.getRecordData()).thenReturn(recordData);
         doNothing().when(userAccessService).validateRecordAcl(any());
         
