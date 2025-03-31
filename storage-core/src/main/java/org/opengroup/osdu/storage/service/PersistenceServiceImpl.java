@@ -45,6 +45,8 @@ import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEA
 
 @Service
 public class PersistenceServiceImpl implements PersistenceService {
+    private static final String REQUEST_TOO_LONG_ERROR_REASON = "Request Too Long";
+    private static final String REQUEST_TOO_LONG_ERROR_MESSAGE = "Metadata request size limit reached!";
 
     @Autowired
     private IRecordsMetadataRepository recordRepository;
@@ -260,7 +262,7 @@ public class PersistenceServiceImpl implements PersistenceService {
         } catch (Exception e) {
             int status = (e instanceof AppException) ? ((AppException) e).getError().getCode() : 500;
             if (status == HttpStatus.SC_REQUEST_TOO_LONG) {
-                throw new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "Request Too Long", "The document size in the request exceeded the allowable document size for a request!");
+                throw new AppException(HttpStatus.SC_REQUEST_TOO_LONG, REQUEST_TOO_LONG_ERROR_REASON, REQUEST_TOO_LONG_ERROR_MESSAGE);
             } else {
                 throw new AppException(status, "Error writing record.",
                         "The server could not process your request at the moment.", e);
