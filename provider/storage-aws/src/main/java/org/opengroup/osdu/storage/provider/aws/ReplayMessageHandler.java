@@ -126,10 +126,12 @@ public class ReplayMessageHandler {
      * @return The SNS topic ARN
      */
     private String getTopicArnForOperation(String operation) {
-        return switch (operation) {
-            case "reindex" -> reindexTopicArn;
-            case "replay" -> recordsTopicArn;
-            default -> replayTopicArn;
-        };
+        if ("reindex".equals(operation)) {
+            return reindexTopicArn;
+        } else if ("replay".equals(operation)) {
+            return recordsTopicArn;
+        } else {
+            return replayTopicArn;
+        }
     }
 }

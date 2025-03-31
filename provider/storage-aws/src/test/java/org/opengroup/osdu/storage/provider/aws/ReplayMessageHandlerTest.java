@@ -27,8 +27,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.dto.ReplayData;
+import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -74,7 +74,7 @@ public class ReplayMessageHandlerTest {
         ReplayData body = new ReplayData();
         body.setReplayId("test-replay-id");
         body.setKind("test-kind");
-
+        
         ReplayMessage message = new ReplayMessage();
         message.setBody(body);
 
@@ -185,7 +185,7 @@ public class ReplayMessageHandlerTest {
         verify(snsClient, times(1)).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(recordsTopicArn, capturedRequest.getTopicArn());
+        assertEquals(replayTopicArn, capturedRequest.getTopicArn());
         assertEquals(messageJson, capturedRequest.getMessage());
     }
 

@@ -26,8 +26,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.dto.ReplayData;
+import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
@@ -37,6 +37,7 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -53,34 +54,48 @@ public class ReplaySubscriptionMessageHandlerTest {
 
     @Mock
     private JaxRsDpsLog logger;
+    
+    @Mock
+    private JsonNode mockJsonNode;
+    
+    @Mock
+    private JsonNode mockMessageNode;
 
     @InjectMocks
     private ReplaySubscriptionMessageHandler messageHandler;
 
     private final String queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/replay-queue";
     private final String receiptHandle = "receipt-handle";
+    private ReplayMessage replayMessage;
+    private String messageBody;
+    private String snsMessageBody;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", queueUrl);
+        
+        // Create a replay message for testing
+        ReplayData body = new ReplayData();
+        body.setReplayId("test-replay-id");
+        body.setKind("test-kind");
+        
+        replayMessage = new ReplayMessage();
+        replayMessage.setBody(body);
+        
+        messageBody = "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}";
+        snsMessageBody = "{\"Message\":\"{\\\"body\\\":{\\\"replayId\\\":\\\"test-replay-id\\\",\\\"kind\\\":\\\"test-kind\\\"}}\"}";
+        
+        // Mock the JSON node behavior
+        when(mockJsonNode.has("Message")).thenReturn(true);
+        when(mockJsonNode.get("Message")).thenReturn(mockMessageNode);
+        when(mockMessageNode.asText()).thenReturn(messageBody);
     }
 
     @Test
     public void testPollMessages_Success() throws Exception {
         // Arrange
-        ReplayData body = new ReplayData();
-        body.setReplayId("test-replay-id");
-        body.setKind("test-kind");
-        
-        ReplayMessage replayMessage = new ReplayMessage();
-        replayMessage.setBody(body);
-        
-        // Create SNS message wrapper
-        ObjectNode snsWrapper = objectMapper.createObjectNode();
-        snsWrapper.put("Message", "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}");
-        
         Message sqsMessage = new Message()
-            .withBody(snsWrapper.toString())
+            .withBody(snsMessageBody)
             .withReceiptHandle(receiptHandle);
         
         ReceiveMessageResult receiveResult = new ReceiveMessageResult()
@@ -91,8 +106,8 @@ public class ReplaySubscriptionMessageHandlerTest {
         sqsMessage.setAttributes(attributes);
         
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(anyString())).thenReturn(snsWrapper);
-        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        when(objectMapper.readTree(snsMessageBody)).thenReturn(mockJsonNode);
+        when(objectMapper.readValue(messageBody, ReplayMessage.class)).thenReturn(replayMessage);
 
         // Act
         messageHandler.pollMessages();
@@ -105,19 +120,8 @@ public class ReplaySubscriptionMessageHandlerTest {
     @Test
     public void testPollMessages_HandleException() throws Exception {
         // Arrange
-        ReplayData body = new ReplayData();
-        body.setReplayId("test-replay-id");
-        body.setKind("test-kind");
-        
-        ReplayMessage replayMessage = new ReplayMessage();
-        replayMessage.setBody(body);
-        
-        // Create SNS message wrapper
-        ObjectNode snsWrapper = objectMapper.createObjectNode();
-        snsWrapper.put("Message", "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}");
-        
         Message sqsMessage = new Message()
-            .withBody(snsWrapper.toString())
+            .withBody(snsMessageBody)
             .withReceiptHandle(receiptHandle);
         
         ReceiveMessageResult receiveResult = new ReceiveMessageResult()
@@ -128,8 +132,8 @@ public class ReplaySubscriptionMessageHandlerTest {
         sqsMessage.setAttributes(attributes);
         
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(anyString())).thenReturn(snsWrapper);
-        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        when(objectMapper.readTree(snsMessageBody)).thenReturn(mockJsonNode);
+        when(objectMapper.readValue(messageBody, ReplayMessage.class)).thenReturn(replayMessage);
         doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(any(ReplayMessage.class));
 
         // Act
@@ -144,19 +148,8 @@ public class ReplaySubscriptionMessageHandlerTest {
     @Test
     public void testPollMessages_MaxDeliveryCount() throws Exception {
         // Arrange
-        ReplayData body = new ReplayData();
-        body.setReplayId("test-replay-id");
-        body.setKind("test-kind");
-        
-        ReplayMessage replayMessage = new ReplayMessage();
-        replayMessage.setBody(body);
-        
-        // Create SNS message wrapper
-        ObjectNode snsWrapper = objectMapper.createObjectNode();
-        snsWrapper.put("Message", "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}");
-        
         Message sqsMessage = new Message()
-            .withBody(snsWrapper.toString())
+            .withBody(snsMessageBody)
             .withReceiptHandle(receiptHandle);
         
         ReceiveMessageResult receiveResult = new ReceiveMessageResult()
@@ -167,8 +160,8 @@ public class ReplaySubscriptionMessageHandlerTest {
         sqsMessage.setAttributes(attributes);
         
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(anyString())).thenReturn(snsWrapper);
-        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        when(objectMapper.readTree(snsMessageBody)).thenReturn(mockJsonNode);
+        when(objectMapper.readValue(messageBody, ReplayMessage.class)).thenReturn(replayMessage);
         doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(any(ReplayMessage.class));
 
         // Act
