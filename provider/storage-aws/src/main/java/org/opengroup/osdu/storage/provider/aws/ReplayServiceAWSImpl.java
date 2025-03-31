@@ -501,6 +501,9 @@ public class ReplayServiceAWSImpl extends ReplayService {
         // Implementation depends on the structure of ReplayMessage and ReplayData
         // This is a simplified version
         ReplayMessage message = new ReplayMessage();
+        message.getBody().setReplayId(replayId);
+        message.getBody().setKind(kind);
+        message.getBody().setOperation(operation);
         // Set headers and body as needed
         return message;
     }
