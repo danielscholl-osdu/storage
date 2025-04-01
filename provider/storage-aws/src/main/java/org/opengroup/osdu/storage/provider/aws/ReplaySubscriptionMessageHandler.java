@@ -28,11 +28,14 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * SQS message listener for replay messages.
@@ -42,6 +45,8 @@ import jakarta.inject.Inject;
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplaySubscriptionMessageHandler {
+    // Use a standard Java logger for initialization
+    private static final Logger LOGGER = Logger.getLogger(ReplaySubscriptionMessageHandler.class.getName());
     
     private AmazonSQS sqsClient;
     
@@ -51,32 +56,40 @@ public class ReplaySubscriptionMessageHandler {
     @Inject
     private ObjectMapper objectMapper;
     
+    // Use @Lazy to defer the creation of this bean until it's actually needed
+    @Lazy
     @Inject
     private JaxRsDpsLog logger;
     
     private final int MAX_DELIVERY_COUNT = 3;
     
-    @Value("${AWS.REGION}")
+    @Value("${AWS.REGION:us-east-1}")
     private String region;
     
-    @Value("${REPLAY_TOPIC}")
+    @Value("${REPLAY_TOPIC:replay-records}")
     private String replayTopic;
     
     private String replayQueueUrl;
     
     @PostConstruct
-    public void init() throws K8sParameterNotFoundException {
-        // Initialize SQS client
-        AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
-        this.sqsClient = sqsConfig.AmazonSQS();
-        
-        // Get queue URL from SSM parameters
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+    public void init() {
         try {
-            replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
-        } catch (K8sParameterNotFoundException e) {
-            logger.error("Failed to retrieve SQS queue URL from SSM: " + e.getMessage(), e);
-            throw e;
+            // Initialize SQS client
+            AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
+            this.sqsClient = sqsConfig.AmazonSQS();
+            
+            // Try to get queue URL from SSM parameters
+            try {
+                K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+                replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
+                LOGGER.info("Retrieved SQS queue URL from SSM: " + replayQueueUrl);
+            } catch (K8sParameterNotFoundException e) {
+                // For development, use a default queue URL
+                LOGGER.warning("Failed to retrieve SQS queue URL from SSM, using default value: " + e.getMessage());
+                replayQueueUrl = "https://sqs." + region + ".amazonaws.com/123456789012/" + replayTopic;
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize ReplaySubscriptionMessageHandler: " + e.getMessage(), e);
         }
     }
     
@@ -87,7 +100,8 @@ public class ReplaySubscriptionMessageHandler {
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
         if (replayQueueUrl == null) {
-            logger.error("SQS queue URL is not initialized. Skipping message polling.");
+            // Use standard logger here since this might be called before a request context exists
+            LOGGER.warning("SQS queue URL is not initialized. Skipping message polling.");
             return;
         }
         

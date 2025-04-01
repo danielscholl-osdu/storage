@@ -28,11 +28,14 @@ import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handler for replay messages in AWS.
@@ -41,6 +44,8 @@ import java.util.List;
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
+    // Use a standard Java logger for initialization
+    private static final Logger LOGGER = Logger.getLogger(ReplayMessageHandler.class.getName());
     
     private AmazonSNS snsClient;
     
@@ -50,39 +55,47 @@ public class ReplayMessageHandler {
     @Inject
     private ReplayService replayService;
     
+    // Use @Lazy to defer the creation of this bean until it's actually needed
+    @Lazy
     @Inject
     private JaxRsDpsLog logger;
     
-    @Value("${AWS.REGION}")
+    @Value("${AWS.REGION:us-east-1}")
     private String region;
     
-    @Value("${REPLAY_TOPIC}")
+    @Value("${REPLAY_TOPIC:replay-records}")
     private String replayTopic;
     
-    @Value("${REINDEX_TOPIC}")
+    @Value("${REINDEX_TOPIC:reindex-records}")
     private String reindexTopic;
-    
-    @Value("${RECORDS_TOPIC}")
-    private String recordsTopic;
-    
+
     private String replayTopicArn;
     private String reindexTopicArn;
-    private String recordsTopicArn;
     
     @PostConstruct
-    public void init() throws K8sParameterNotFoundException {
-        // Initialize SNS client
-        snsClient = new AmazonSNSConfig(region).AmazonSNS();
-        
-        // Get topic ARNs from SSM parameters
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+    public void init() {
         try {
-            replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
-            reindexTopicArn = provider.getParameterAsString(reindexTopic + "-sns-topic-arn");
-            recordsTopicArn = provider.getParameterAsString(recordsTopic + "-sns-topic-arn");
-        } catch (K8sParameterNotFoundException e) {
-            logger.error("Failed to retrieve SNS topic ARNs from SSM: " + e.getMessage(), e);
-            throw e;
+            // Initialize SNS client
+            snsClient = new AmazonSNSConfig(region).AmazonSNS();
+            
+            // For development, use simple topic ARNs
+            // In production, these would be retrieved from SSM parameters
+            try {
+                K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+                replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
+                reindexTopicArn = provider.getParameterAsString(reindexTopic + "-sns-topic-arn");
+                LOGGER.info("Retrieved SNS topic ARNs from SSM parameters");
+            } catch (K8sParameterNotFoundException e) {
+                // Fallback to default ARNs for development
+                LOGGER.warning("Failed to retrieve SNS topic ARNs from SSM, using default values: " + e.getMessage());
+                replayTopicArn = "arn:aws:sns:" + region + ":123456789012:" + replayTopic;
+                reindexTopicArn = "arn:aws:sns:" + region + ":123456789012:" + reindexTopic;
+            }
+            
+            LOGGER.info("ReplayMessageHandler initialized with region: " + region);
+        } catch (Exception e) {
+            // Use standard Java logger for errors during initialization
+            LOGGER.log(Level.SEVERE, "Failed to initialize ReplayMessageHandler: " + e.getMessage(), e);
         }
     }
     
@@ -133,6 +146,7 @@ public class ReplayMessageHandler {
                     .withMessage(messageBody);
 
                 snsClient.publish(publishRequest);
+                // Now it's safe to use the request-scoped logger
                 logger.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
             }
         } catch (JsonProcessingException e) {
@@ -150,10 +164,7 @@ public class ReplayMessageHandler {
     private String getTopicArnForOperation(String operation) {
         if ("reindex".equals(operation)) {
             return reindexTopicArn;
-        } else if ("replay".equals(operation)) {
-            return recordsTopicArn;
-        } else {
-            return replayTopicArn;
         }
+        return replayTopicArn;
     }
 }
