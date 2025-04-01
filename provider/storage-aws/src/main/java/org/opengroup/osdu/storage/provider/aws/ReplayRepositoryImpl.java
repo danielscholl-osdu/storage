@@ -14,15 +14,18 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.ReplayMetadataItem;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayFilter;
@@ -31,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,25 +49,31 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayRepositoryImpl implements IReplayRepository {
     
-    private final DynamoDBMapper dynamoDBMapper;
-    private final AmazonDynamoDB dynamoDBClient;
-    
+    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    private final WorkerThreadPool workerThreadPool;
     private final DpsHeaders headers;
-    
     private final JaxRsDpsLog logger;
-    
     private final ObjectMapper objectMapper;
     
-    @Value("${aws.dynamodb.replay-table-name}")
-    private String replayTableName;
+    @Value("${aws.dynamodb.replayStatusTable.ssm.relativePath}")
+    private String replayStatusTableParameterRelativePath;
     
     @Autowired
-    public ReplayRepositoryImpl(DynamoDBMapper dynamoDBMapper, AmazonDynamoDB dynamoDBClient, DpsHeaders headers, JaxRsDpsLog logger, ObjectMapper objectMapper) {
-        this.dynamoDBMapper = dynamoDBMapper;
-        this.dynamoDBClient = dynamoDBClient;
+    public ReplayRepositoryImpl(DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
+                               WorkerThreadPool workerThreadPool,
+                               DpsHeaders headers,
+                               JaxRsDpsLog logger,
+                               ObjectMapper objectMapper) {
+        this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
+        this.workerThreadPool = workerThreadPool;
         this.headers = headers;
         this.logger = logger;
         this.objectMapper = objectMapper;
+    }
+    
+    private DynamoDBQueryHelperV2 getReplayStatusQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, replayStatusTableParameterRelativePath,
+                workerThreadPool.getClientConfiguration());
     }
     
     /**
@@ -74,6 +84,8 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     @Override
     public List<ReplayMetaDataDTO> getReplayStatusByReplayId(String replayId) {
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":replayId", new AttributeValue().withS(replayId));
         
@@ -83,11 +95,19 @@ public class ReplayRepositoryImpl implements IReplayRepository {
                 .withKeyConditionExpression("replayId = :replayId")
                 .withExpressionAttributeValues(expressionAttributeValues);
         
-        List<ReplayMetadataItem> items = dynamoDBMapper.query(ReplayMetadataItem.class, queryExpression);
-        
-        return items.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        // Use queryPage instead of query since DynamoDBQueryHelperV2 doesn't have a direct query method
+        try {
+            QueryPageResult<ReplayMetadataItem> queryResult = queryHelper.queryPage(ReplayMetadataItem.class, null, 1000, null);
+            List<ReplayMetadataItem> items = queryResult.results;
+            
+            return items.stream()
+                    .filter(item -> replayId.equals(item.getReplayId()))
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (UnsupportedEncodingException e) {
+            logger.error("Error querying replay status: " + e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
     
     /**
@@ -99,11 +119,9 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     @Override
     public ReplayMetaDataDTO getReplayStatusByKindAndReplayId(String kind, String replayId) {
-        ReplayMetadataItem key = new ReplayMetadataItem();
-        key.setId(kind);
-        key.setReplayId(replayId);
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
         
-        ReplayMetadataItem item = dynamoDBMapper.load(ReplayMetadataItem.class, key.getId(), key.getReplayId());
+        ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
         
         return item != null ? convertToDTO(item) : null;
     }
@@ -116,9 +134,10 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     @Override
     public ReplayMetaDataDTO save(ReplayMetaDataDTO replayMetaData) {
-        ReplayMetadataItem item = convertToItem(replayMetaData);
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
         
-        dynamoDBMapper.save(item);
+        ReplayMetadataItem item = convertToItem(replayMetaData);
+        queryHelper.save(item);
         
         return convertToDTO(item);
     }
@@ -151,6 +170,8 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             }
         }
         
+        // Note: ReplayMetaDataDTO doesn't have a dataPartitionId field, so we don't set it
+        
         return dto;
     }
 
@@ -182,6 +203,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             }
         }
         
+        // Set the data partition ID from the headers
         item.setDataPartitionId(headers.getPartitionId());
         
         return item;

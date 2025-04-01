@@ -21,13 +21,18 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
+import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 
 /**
  * SQS message listener for replay messages.
@@ -38,24 +43,41 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplaySubscriptionMessageHandler {
     
-    private final AmazonSQS sqsClient;
-    private final ReplayMessageHandler replayMessageHandler;
-    private final ObjectMapper objectMapper;
-    private final JaxRsDpsLog logger;
+    private AmazonSQS sqsClient;
+    
+    @Inject
+    private ReplayMessageHandler replayMessageHandler;
+    
+    @Inject
+    private ObjectMapper objectMapper;
+    
+    @Inject
+    private JaxRsDpsLog logger;
+    
     private final int MAX_DELIVERY_COUNT = 3;
     
-    @Value("${aws.sqs.replay-queue-url}")
+    @Value("${AWS.REGION}")
+    private String region;
+    
+    @Value("${REPLAY_TOPIC}")
+    private String replayTopic;
+    
     private String replayQueueUrl;
     
-    @Autowired
-    public ReplaySubscriptionMessageHandler(AmazonSQS sqsClient,
-                                           ReplayMessageHandler replayMessageHandler,
-                                           ObjectMapper objectMapper,
-                                           JaxRsDpsLog logger) {
-        this.sqsClient = sqsClient;
-        this.replayMessageHandler = replayMessageHandler;
-        this.objectMapper = objectMapper;
-        this.logger = logger;
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        // Initialize SQS client
+        AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
+        this.sqsClient = sqsConfig.AmazonSQS();
+        
+        // Get queue URL from SSM parameters
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        try {
+            replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
+        } catch (K8sParameterNotFoundException e) {
+            logger.error("Failed to retrieve SQS queue URL from SSM: " + e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -64,6 +86,11 @@ public class ReplaySubscriptionMessageHandler {
      */
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
+        if (replayQueueUrl == null) {
+            logger.error("SQS queue URL is not initialized. Skipping message polling.");
+            return;
+        }
+        
         ReceiveMessageRequest receiveRequest = new ReceiveMessageRequest()
             .withQueueUrl(replayQueueUrl)
             .withMaxNumberOfMessages(10)

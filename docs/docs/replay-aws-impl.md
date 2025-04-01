@@ -40,38 +40,75 @@ public class ReplayMetadataItem {
 }
 ```
 
-### 1.3 AWS Repository Implementation ✅
-Created a `ReplayRepositoryImpl` for AWS that implements the `IReplayRepository` interface:
+### 1.3 AWS Repository Implementation Using os-core-lib-aws ✅
+Created a `ReplayRepositoryImpl` for AWS that implements the `IReplayRepository` interface, leveraging the os-core-lib-aws library:
 
 ```java
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayRepositoryImpl implements IReplayRepository {
-    private final DynamoDBMapper dynamoDBMapper;
-    private final AmazonDynamoDB dynamoDBClient;
+    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    private final WorkerThreadPool workerThreadPool;
+    private final DpsHeaders headers;
+    private final JaxRsDpsLog logger;
+    private final ObjectMapper objectMapper;
+    
+    @Value("${aws.dynamodb.replayStatusTable.ssm.relativePath}")
+    private String replayStatusTableParameterRelativePath;
     
     @Autowired
-    private DpsHeaders headers;
+    public ReplayRepositoryImpl(DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
+                               WorkerThreadPool workerThreadPool,
+                               DpsHeaders headers,
+                               JaxRsDpsLog logger,
+                               ObjectMapper objectMapper) {
+        this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
+        this.workerThreadPool = workerThreadPool;
+        this.headers = headers;
+        this.logger = logger;
+        this.objectMapper = objectMapper;
+    }
     
-    @Value("${aws.dynamodb.replay-table-name}")
-    private String replayTableName;
+    private DynamoDBQueryHelperV2 getReplayStatusQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, replayStatusTableParameterRelativePath,
+                workerThreadPool.getClientConfiguration());
+    }
     
     @Override
     public List<ReplayMetaDataDTO> getReplayStatusByReplayId(String replayId) {
-        // Query DynamoDB for all items with the given replayId
-        // Convert to ReplayMetaDataDTO objects and return
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        try {
+            QueryPageResult<ReplayMetadataItem> queryResult = queryHelper.queryPage(ReplayMetadataItem.class, null, 1000, null);
+            List<ReplayMetadataItem> items = queryResult.results;
+            
+            return items.stream()
+                    .filter(item -> replayId.equals(item.getReplayId()))
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (UnsupportedEncodingException e) {
+            logger.error("Error querying replay status: " + e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
     
     @Override
     public ReplayMetaDataDTO getReplayStatusByKindAndReplayId(String kind, String replayId) {
-        // Query DynamoDB for the specific kind and replayId
-        // Convert to ReplayMetaDataDTO and return
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
+        
+        return item != null ? convertToDTO(item) : null;
     }
     
     @Override
     public ReplayMetaDataDTO save(ReplayMetaDataDTO replayMetaData) {
-        // Convert to DynamoDB item and save
-        // Return the saved item as DTO
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        ReplayMetadataItem item = convertToItem(replayMetaData);
+        queryHelper.save(item);
+        
+        return convertToDTO(item);
     }
 }
 ```
@@ -101,191 +138,145 @@ public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
 }
 ```
 
-### 1.5 SNS-SQS Message Handling ✅
-Implemented SNS for publishing messages and SQS for consuming messages:
+### 1.5 SNS-SQS Message Handling Using os-core-lib-aws ✅
+Implemented SNS for publishing messages and SQS for consuming messages using the os-core-lib-aws library:
 
 ```java
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
-    private final AmazonSNS snsClient;
-    private final AmazonSQS sqsClient;
+    private AmazonSNS snsClient;
     
-    @Autowired
+    @Inject
     private ObjectMapper objectMapper;
     
-    @Autowired
+    @Inject
     private ReplayService replayService;
     
-    @Autowired
+    @Inject
     private JaxRsDpsLog logger;
     
-    @Value("${aws.sqs.replay-queue-url}")
-    private String replayQueueUrl;
+    @Value("${AWS.REGION}")
+    private String region;
     
-    @Value("${aws.sns.replay-topic-arn}")
+    @Value("${REPLAY_TOPIC}")
+    private String replayTopic;
+    
+    @Value("${REINDEX_TOPIC}")
+    private String reindexTopic;
+    
+    @Value("${RECORDS_TOPIC}")
+    private String recordsTopic;
+    
     private String replayTopicArn;
-    
-    @Value("${aws.sns.reindex-topic-arn}")
     private String reindexTopicArn;
-    
-    @Value("${aws.sns.records-topic-arn}")
     private String recordsTopicArn;
     
-    public void handle(ReplayMessage message) {
-        // Process the replay message
-    }
-    
-    public void handleFailure(ReplayMessage message) {
-        // Handle failure
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        // Initialize SNS client
+        snsClient = new AmazonSNSConfig(region).AmazonSNS();
+        
+        // Get topic ARNs from SSM parameters
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        try {
+            replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
+            reindexTopicArn = provider.getParameterAsString(reindexTopic + "-sns-topic-arn");
+            recordsTopicArn = provider.getParameterAsString(recordsTopic + "-sns-topic-arn");
+        } catch (K8sParameterNotFoundException e) {
+            logger.error("Failed to retrieve SNS topic ARNs from SSM: " + e.getMessage(), e);
+            throw e;
+        }
     }
     
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
-        // Determine which SNS topic to use based on operation
-        String topicArn;
-        switch (operation) {
-            case "replay":
-                topicArn = replayTopicArn;
-                break;
-            case "reindex":
-                topicArn = reindexTopicArn;
-                break;
-            default:
-                topicArn = recordsTopicArn;
-                break;
-        }
-        
-        // Publish messages to the appropriate SNS topic
-        for (ReplayMessage message : messages) {
-            try {
+        try {
+            // Select appropriate topic based on operation
+            String topicArn = getTopicArnForOperation(operation);
+            
+            for (ReplayMessage message : messages) {
                 String messageBody = objectMapper.writeValueAsString(message);
-                PublishRequest publishRequest = new PublishRequest()
+                
+                // Use PublishRequestBuilder from os-core-lib-aws
+                PublishRequestBuilder requestBuilder = new PublishRequestBuilder()
                     .withTopicArn(topicArn)
                     .withMessage(messageBody);
                 
+                PublishRequest publishRequest = requestBuilder.build();
                 snsClient.publish(publishRequest);
-                logger.debug("Published message to SNS topic: " + topicArn);
-                
-            } catch (JsonProcessingException e) {
-                logger.error("Failed to serialize message: " + e.getMessage(), e);
-                throw new RuntimeException("Failed to serialize message", e);
+                logger.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
             }
-        }
-    }
-}
-```
-
-### 1.6 MessageBus Implementation Updates ✅
-Updated the `MessageBusImpl` to support publishing messages to SNS topics:
-
-```java
-@Override
-public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
-    // Get topic ARN from routing info
-    String topicArn = routingInfo.get("topic");
-    if (topicArn == null || topicArn.isEmpty()) {
-        logger.error("No SNS topic ARN provided in routing info");
-        return;
-    }
-    
-    // Use AWS SDK to publish messages to SNS topic
-    AmazonSNS snsClient = AmazonSNSClientBuilder.standard()
-        .withRegion(currentRegion)
-        .build();
-        
-    ObjectMapper objectMapper = new ObjectMapper();
-    
-    // Publish messages to SNS topic
-    for (Object message : messageList) {
-        try {
-            String messageBody = objectMapper.writeValueAsString(message);
-            PublishRequest publishRequest = new PublishRequest()
-                .withTopicArn(topicArn)
-                .withMessage(messageBody);
-            
-            snsClient.publish(publishRequest);
-            logger.debug("Published message to SNS topic: " + topicArn);
-            
         } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize message: " + e.getMessage(), e);
-            throw new RuntimeException("Failed to serialize message", e);
+            logger.error("Failed to serialize replay message: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to serialize replay message", e);
         }
     }
 }
 ```
 
-### 1.7 AWS Replay Service Implementation ✅
-Implemented the AWS-specific replay service using SNS topics for message publishing:
-
-```java
-@Service
-@ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
-public class ReplayServiceAWSImpl extends ReplayService {
-    @Autowired
-    private IReplayRepository replayRepository;
-    
-    @Autowired
-    private ReplayMessageHandler messageHandler;
-    
-    @Autowired
-    private QueryRepositoryImpl queryRepository;
-    
-    @Autowired
-    private IMessageBus messageBus;
-    
-    @Autowired
-    private DpsHeaders headers;
-    
-    @Autowired
-    private StorageAuditLogger auditLogger;
-    
-    @Value("#{${replay.operation.routingProperties}}")
-    private Map<String, Map<String, String>> replayOperationRoutingProperties;
-    
-    @Value("#{${replay.routingProperties}}")
-    private Map<String, String> replayRoutingProperty;
-    
-    @Override
-    public ReplayStatusResponse getReplayStatus(String replayId) {
-        // Get replay status from repository and convert to response
-    }
-    
-    @Override
-    public void processReplayMessage(ReplayMessage replayMessage) {
-        // Process the replay message and publish record changes to SNS
-    }
-    
-    @Override
-    public void processFailure(ReplayMessage replayMessage) {
-        // Handle failure cases
-    }
-    
-    @Override
-    public ReplayResponse handleReplayRequest(ReplayRequest replayRequest) {
-        // Initialize replay process and return response
-    }
-}
-```
-
-### 1.8 SQS Message Listener ✅
-Created an SQS message listener to process replay messages:
+### 1.6 SQS Message Listener Using os-core-lib-aws ✅
+Created an SQS message listener to process replay messages using the os-core-lib-aws library:
 
 ```java
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplaySubscriptionMessageHandler {
-    private final AmazonSQS sqsClient;
-    private final ReplayMessageHandler replayMessageHandler;
-    private final ObjectMapper objectMapper;
-    private final JaxRsDpsLog logger;
+    private AmazonSQS sqsClient;
+    
+    @Inject
+    private ReplayMessageHandler replayMessageHandler;
+    
+    @Inject
+    private ObjectMapper objectMapper;
+    
+    @Inject
+    private JaxRsDpsLog logger;
+    
     private final int MAX_DELIVERY_COUNT = 3;
     
-    @Value("${aws.sqs.replay-queue-url}")
+    @Value("${AWS.REGION}")
+    private String region;
+    
+    @Value("${REPLAY_TOPIC}")
+    private String replayTopic;
+    
     private String replayQueueUrl;
+    
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        // Initialize SQS client
+        AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
+        this.sqsClient = sqsConfig.AmazonSQS();
+        
+        // Get queue URL from SSM parameters
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        try {
+            replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
+        } catch (K8sParameterNotFoundException e) {
+            logger.error("Failed to retrieve SQS queue URL from SSM: " + e.getMessage(), e);
+            throw e;
+        }
+    }
     
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
-        // Poll for messages and process them
+        if (replayQueueUrl == null) {
+            logger.error("SQS queue URL is not initialized. Skipping message polling.");
+            return;
+        }
+        
+        ReceiveMessageRequest receiveRequest = new ReceiveMessageRequest()
+            .withQueueUrl(replayQueueUrl)
+            .withMaxNumberOfMessages(10)
+            .withWaitTimeSeconds(5)
+            .withAttributeNames("ApproximateReceiveCount");
+            
+        ReceiveMessageResult result = sqsClient.receiveMessage(receiveRequest);
+        
+        for (Message message : result.getMessages()) {
+            // Process messages with exponential backoff retry logic
+            // Implementation details...
+        }
     }
 }
 ```
@@ -293,74 +284,85 @@ public class ReplaySubscriptionMessageHandler {
 ## 2. Configuration Updates ✅
 
 ### 2.1 AWS Configuration
-Added necessary configuration for SNS, SQS, and DynamoDB:
+Created a main AWS configuration class that provides the necessary beans for the entire application:
 
 ```java
 @Configuration
-@EnableScheduling
-@ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
-public class ReplayAwsConfig {
-    @Value("${aws.region}")
+public class AwsConfig {
+    
+    @Value("${AWS.REGION}")
     private String region;
     
+    @Value("${aws.dynamodb.endpoint:}")
+    private String dynamoDbEndpoint;
+    
+    @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
+    private String tableName;
+    
     @Bean
-    @ConditionalOnMissingBean
+    @Primary
     public AmazonSQS amazonSQSClient() {
-        return AmazonSQSClientBuilder.standard()
-            .withRegion(region)
-            .build();
+        AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
+        return sqsConfig.AmazonSQS();
     }
     
     @Bean
-    @ConditionalOnMissingBean
+    @Primary
     public AmazonSNS amazonSNSClient() {
-        return AmazonSNSClientBuilder.standard()
-            .withRegion(region)
-            .build();
+        AmazonSNSConfig snsConfig = new AmazonSNSConfig(region);
+        return snsConfig.AmazonSNS();
     }
     
     @Bean
-    @ConditionalOnMissingBean
-    public DynamoDBMapper dynamoDBMapper(AmazonDynamoDB amazonDynamoDB) {
-        return new DynamoDBMapper(amazonDynamoDB);
+    @Primary
+    public IDynamoDBConfig dynamoDBConfig() {
+        return new DynamoDBConfigV2(
+            dynamoDbEndpoint.isEmpty() ? "https://dynamodb." + region + ".amazonaws.com" : dynamoDbEndpoint,
+            region,
+            tableName,
+            ConfigSetup.setUpConfig()
+        );
     }
     
     @Bean
-    @ConditionalOnMissingBean
-    public AmazonDynamoDB amazonDynamoDB() {
-        return AmazonDynamoDBClientBuilder.standard()
-            .withRegion(region)
-            .build();
+    @Primary
+    public DynamoDBMapper dynamoDBMapper(IDynamoDBConfig dynamoDBConfig) {
+        return dynamoDBConfig.DynamoDBMapper();
+    }
+    
+    @Bean
+    @Primary
+    public AmazonDynamoDB amazonDynamoDB(IDynamoDBConfig dynamoDBConfig) {
+        return dynamoDBConfig.amazonDynamoDB();
     }
 }
 ```
 
 ### 2.2 Application Properties ✅
-Added the following to `application-replay.properties`:
+Updated `application-replay.properties` to use SSM parameter paths and topic names:
 
 ```properties
 # Replay feature flag
 feature.replay.enabled=true
 
 # AWS SQS configuration
-aws.sqs.replay-queue-url=${REPLAY_QUEUE_URL}
 aws.sqs.polling-interval-ms=1000
 
 # AWS SNS configuration
-aws.sns.replay-topic-arn=${REPLAY_TOPIC_ARN}
-aws.sns.reindex-topic-arn=${REINDEX_TOPIC_ARN}
-aws.sns.records-topic-arn=${RECORDS_TOPIC_ARN}
+REPLAY_TOPIC=${REPLAY_TOPIC:replay-records}
+REINDEX_TOPIC=${REINDEX_TOPIC:reindex-records}
+RECORDS_TOPIC=${OSDU_STORAGE_TOPIC:records-change}
 
 # AWS DynamoDB configuration
-aws.dynamodb.replay-table-name=ReplayStatus
+aws.dynamodb.replayStatusTable.ssm.relativePath=${REPLAY_REPOSITORY_SSM_RELATIVE_PATH:services/core/storage/ReplayStatusTable}
 
 # AWS Region
-aws.region=${AWS_REGION:us-east-1}
+AWS.REGION=${AWS_REGION:us-east-1}
 
 # Replay operation routing properties
 replay.operation.routingProperties = { \
   reindex : { topic : '${REINDEX_TOPIC_ARN}', queryBatchSize : '5000', publisherBatchSize : '50'}, \
-  replay: { topic : '${RECORDS_TOPIC_ARN}', queryBatchSize : '5000', publisherBatchSize : '50'} \
+  replay: { topic : '${OSDU_STORAGE_TOPIC}', queryBatchSize : '5000', publisherBatchSize : '50'} \
 }
 
 # Replay routing properties
@@ -373,42 +375,58 @@ replayApi.triggerReplay.summary=Trigger a new replay operation
 replayApi.triggerReplay.description=Initiates a new replay operation to publish record change messages for the specified kinds or all kinds
 ```
 
-## 3. Integration Tests ✅
+## 3. Implementation Challenges and Solutions
 
-Implemented unit tests for the repository implementation:
+### 3.1 DynamoDB Query Helper
+The `DynamoDBQueryHelperV2` class from os-core-lib-aws doesn't have a direct `query` method that returns a list of items. We had to use the `queryPage` method instead and filter the results:
 
 ```java
-@RunWith(MockitoJUnitRunner.class)
-public class ReplayRepositoryImplTest {
-    @Mock
-    private DynamoDBMapper dynamoDBMapper;
+try {
+    QueryPageResult<ReplayMetadataItem> queryResult = queryHelper.queryPage(ReplayMetadataItem.class, null, 1000, null);
+    List<ReplayMetadataItem> items = queryResult.results;
+    
+    return items.stream()
+            .filter(item -> replayId.equals(item.getReplayId()))
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+} catch (UnsupportedEncodingException e) {
+    logger.error("Error querying replay status: " + e.getMessage(), e);
+    return new ArrayList<>();
+}
+```
 
-    @Mock
-    private AmazonDynamoDB dynamoDBClient;
+### 3.2 DynamoDBMapper Bean Injection
+The `QueryRepositoryImpl` class was expecting a `DynamoDBMapper` bean to be injected through its constructor. We created a comprehensive AWS configuration class that provides this bean:
 
-    @Mock
-    private DpsHeaders headers;
+```java
+@Bean
+@Primary
+public DynamoDBMapper dynamoDBMapper(IDynamoDBConfig dynamoDBConfig) {
+    return dynamoDBConfig.DynamoDBMapper();
+}
+```
 
-    @Mock
-    private PaginatedQueryList<ReplayMetadataItem> queryResults;
+### 3.3 Data Partition ID Field
+The `ReplayMetaDataDTO` class doesn't have a `dataPartitionId` field, but the `ReplayMetadataItem` class does. We had to handle this mismatch in the conversion methods:
 
-    @InjectMocks
-    private ReplayRepositoryImpl replayRepository;
+```java
+private ReplayMetaDataDTO convertToDTO(ReplayMetadataItem item) {
+    ReplayMetaDataDTO dto = new ReplayMetaDataDTO();
+    // Set other fields...
+    
+    // Note: ReplayMetaDataDTO doesn't have a dataPartitionId field, so we don't set it
+    
+    return dto;
+}
 
-    @Test
-    public void testGetReplayStatusByReplayId() {
-        // Test implementation
-    }
-
-    @Test
-    public void testGetReplayStatusByKindAndReplayId() {
-        // Test implementation
-    }
-
-    @Test
-    public void testSave() {
-        // Test implementation
-    }
+private ReplayMetadataItem convertToItem(ReplayMetaDataDTO dto) {
+    ReplayMetadataItem item = new ReplayMetadataItem();
+    // Set other fields...
+    
+    // Set the data partition ID from the headers
+    item.setDataPartitionId(headers.getPartitionId());
+    
+    return item;
 }
 ```
 
@@ -450,85 +468,7 @@ The following AWS resources will need to be added to your Terraform IaC:
    - Alarms for failed messages
    - Alarms for DynamoDB throttling
 
-## 6. Considerations
-
-1. **Error Handling**:
-   - Implemented robust error handling with dead-letter queues
-   - Added tracking and logging of all failures in CloudWatch
-   - Implemented status updates in DynamoDB for failed operations
-
-2. **Scaling**:
-   - Configured appropriate SQS visibility timeout for long-running operations
-   - Implemented exponential backoff for retries
-
-3. **Monitoring**:
-   - Added logging for replay operations
-   - Implemented status tracking for monitoring replay progress
-
-4. **Security**:
-   - Ensured proper IAM permissions for accessing resources
-   - Implemented data encryption for messages in transit
-
-5. **Backwards Compatibility**:
-   - Maintained compatibility with existing implementations
-   - Used conditional beans to avoid conflicts with existing beans
-   - Ensured API compatibility with other cloud implementations
-
-## 7. Detailed Implementation Notes
-
-### 7.1 DynamoDB Table Design
-
-The ReplayStatus table has the following structure:
-- Partition Key: `id` (String) - For overall status, this is "overall". For kind-specific status, this is the kind name.
-- Sort Key: `replayId` (String) - The unique identifier for the replay operation
-- Other attributes:
-  - kind (String) - Only present for kind-specific status items
-  - operation (String)
-  - totalRecords (Number)
-  - processedRecords (Number)
-  - state (String) - One of: QUEUED, IN_PROGRESS, COMPLETED, FAILED
-  - startedAt (Date)
-  - elapsedTime (String)
-  - filter (String - JSON)
-  - dataPartitionId (String)
-
-### 7.2 SNS-SQS Message Flow
-
-1. User initiates replay via API
-2. System creates initial status entry in DynamoDB
-3. System publishes initial message to appropriate SNS topic based on operation type
-4. SNS delivers the message to subscribed SQS queues
-5. SQS listener processes message:
-   - For ReplayAll: Queries for all kinds, then publishes kind-specific messages to appropriate SNS topics
-   - For ReplayKind: Processes records for the specified kind
-6. As processing progresses, status is updated in DynamoDB
-7. Record change messages are published to the Records SNS topic
-8. Upon completion, final status is updated
-
-### 7.3 Advantages of SNS-SQS Pattern
-
-1. **Decoupling**: Publishers and consumers are completely decoupled
-2. **Fan-out**: Multiple consumers can subscribe to the same SNS topic
-3. **Reliability**: Messages are persisted in SQS queues even if consumers are temporarily unavailable
-4. **Scalability**: Both SNS and SQS can handle high throughput
-5. **Filtering**: SNS supports message filtering for subscribers
-
-### 7.4 Error Handling Strategy
-
-1. Use SQS visibility timeout for retries
-2. Implement exponential backoff for retries
-3. After maximum retries, move message to dead-letter queue
-4. Update status with error information in DynamoDB
-5. Log detailed error information to CloudWatch Logs
-
-### 7.5 Performance Considerations
-
-1. Use SNS batch publishing for efficient message delivery
-2. Use SQS batch operations for message processing
-3. Implement pagination for large result sets
-4. Configure appropriate SQS visibility timeout for long-running operations
-
-## 8. Next Steps
+## 6. Next Steps
 
 1. **Terraform Implementation**: Create the necessary Terraform resources for the replay feature, including SNS topics
 2. **Integration Testing**: Implement comprehensive integration tests for the replay functionality

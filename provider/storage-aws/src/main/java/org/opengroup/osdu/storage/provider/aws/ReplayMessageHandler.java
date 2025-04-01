@@ -15,10 +15,13 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
+import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
@@ -27,6 +30,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 import java.util.List;
 
 /**
@@ -37,32 +42,48 @@ import java.util.List;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
     
-    private final AmazonSNS snsClient;
+    private AmazonSNS snsClient;
     
-    private final ObjectMapper objectMapper;
+    @Inject
+    private ObjectMapper objectMapper;
     
-    private final ReplayService replayService;
+    @Inject
+    private ReplayService replayService;
     
-    private final JaxRsDpsLog logger;
+    @Inject
+    private JaxRsDpsLog logger;
     
-    @Value("${aws.sns.replay-topic-arn}")
-    private String replayTopicArn;
-    
-    @Value("${aws.sns.reindex-topic-arn}")
-    private String reindexTopicArn;
-    
-    @Value("${aws.sns.records-topic-arn}")
-    private String recordsTopicArn;
-    
-    @Value("${aws.region}")
+    @Value("${AWS.REGION}")
     private String region;
     
-    @Autowired
-    public ReplayMessageHandler(ObjectMapper objectMapper, ReplayService replayService, JaxRsDpsLog logger, AmazonSNS snsClient) {
-        this.snsClient = snsClient;
-        this.objectMapper = objectMapper;
-        this.replayService = replayService;
-        this.logger = logger;
+    @Value("${REPLAY_TOPIC}")
+    private String replayTopic;
+    
+    @Value("${REINDEX_TOPIC}")
+    private String reindexTopic;
+    
+    @Value("${RECORDS_TOPIC}")
+    private String recordsTopic;
+    
+    private String replayTopicArn;
+    private String reindexTopicArn;
+    private String recordsTopicArn;
+    
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        // Initialize SNS client
+        snsClient = new AmazonSNSConfig(region).AmazonSNS();
+        
+        // Get topic ARNs from SSM parameters
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        try {
+            replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
+            reindexTopicArn = provider.getParameterAsString(reindexTopic + "-sns-topic-arn");
+            recordsTopicArn = provider.getParameterAsString(recordsTopic + "-sns-topic-arn");
+        } catch (K8sParameterNotFoundException e) {
+            logger.error("Failed to retrieve SNS topic ARNs from SSM: " + e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -106,10 +127,11 @@ public class ReplayMessageHandler {
             
             for (ReplayMessage message : messages) {
                 String messageBody = objectMapper.writeValueAsString(message);
+
                 PublishRequest publishRequest = new PublishRequest()
                     .withTopicArn(topicArn)
                     .withMessage(messageBody);
-                
+
                 snsClient.publish(publishRequest);
                 logger.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
             }
