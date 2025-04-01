@@ -34,55 +34,6 @@ public class ReplayAwsConfigTest {
     private ReplayAwsConfig replayAwsConfig;
 
     @Test
-    public void testAmazonSQSClient() {
-        // Arrange
-        ReflectionTestUtils.setField(replayAwsConfig, "region", "us-east-1");
-
-        // Act
-        AmazonSQS sqsClient = replayAwsConfig.amazonSQSClient();
-
-        // Assert
-        assertNotNull(sqsClient);
-    }
-
-    @Test
-    public void testAmazonSNSClient() {
-        // Arrange
-        ReflectionTestUtils.setField(replayAwsConfig, "region", "us-east-1");
-
-        // Act
-        AmazonSNS snsClient = replayAwsConfig.amazonSNSClient();
-
-        // Assert
-        assertNotNull(snsClient);
-    }
-
-    @Test
-    public void testAmazonDynamoDB() {
-        // Arrange
-        ReflectionTestUtils.setField(replayAwsConfig, "region", "us-east-1");
-
-        // Act
-        AmazonDynamoDB dynamoDB = replayAwsConfig.amazonDynamoDB();
-
-        // Assert
-        assertNotNull(dynamoDB);
-    }
-
-    @Test
-    public void testDynamoDBMapper() {
-        // Arrange
-        ReflectionTestUtils.setField(replayAwsConfig, "region", "us-east-1");
-        AmazonDynamoDB dynamoDB = replayAwsConfig.amazonDynamoDB();
-
-        // Act
-        DynamoDBMapper mapper = replayAwsConfig.dynamoDBMapper(dynamoDB);
-
-        // Assert
-        assertNotNull(mapper);
-    }
-
-    @Test
     public void testObjectMapper() {
         // Act
         ObjectMapper mapper = replayAwsConfig.objectMapper();

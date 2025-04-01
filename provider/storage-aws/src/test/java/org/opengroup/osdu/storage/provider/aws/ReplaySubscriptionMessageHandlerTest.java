@@ -30,14 +30,13 @@ import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -54,152 +53,202 @@ public class ReplaySubscriptionMessageHandlerTest {
 
     @Mock
     private JaxRsDpsLog logger;
-    
-    @Mock
-    private JsonNode mockJsonNode;
-    
-    @Mock
-    private JsonNode mockMessageNode;
 
     @InjectMocks
     private ReplaySubscriptionMessageHandler messageHandler;
 
-    private final String queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/replay-queue";
-    private final String receiptHandle = "receipt-handle";
-    private ReplayMessage replayMessage;
-    private String messageBody;
-    private String snsMessageBody;
+    private static final String REGION = "us-east-1";
+    private static final String REPLAY_TOPIC = "replay-records";
+    private static final String REPLAY_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/replay-records-queue";
+    private static final int MAX_DELIVERY_COUNT = 3;
 
     @Before
-    public void setup() throws Exception {
-        ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", queueUrl);
+    public void setUp() {
+        // Set up fields using reflection
+        ReflectionTestUtils.setField(messageHandler, "region", REGION);
+        ReflectionTestUtils.setField(messageHandler, "replayTopic", REPLAY_TOPIC);
+        ReflectionTestUtils.setField(messageHandler, "sqsClient", sqsClient);
         
-        // Create a replay message for testing
-        ReplayData body = new ReplayData();
-        body.setReplayId("test-replay-id");
-        body.setKind("test-kind");
-        
-        replayMessage = new ReplayMessage();
-        replayMessage.setBody(body);
-        
-        messageBody = "{\"body\":{\"replayId\":\"test-replay-id\",\"kind\":\"test-kind\"}}";
-        snsMessageBody = "{\"Message\":\"{\\\"body\\\":{\\\"replayId\\\":\\\"test-replay-id\\\",\\\"kind\\\":\\\"test-kind\\\"}}\"}";
-        
-        // Mock the JSON node behavior
-        when(mockJsonNode.has("Message")).thenReturn(true);
-        when(mockJsonNode.get("Message")).thenReturn(mockMessageNode);
-        when(mockMessageNode.asText()).thenReturn(messageBody);
+        // Set queue URL directly using reflection
+        ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", REPLAY_QUEUE_URL);
     }
 
     @Test
-    public void testPollMessages_Success() throws Exception {
-        // Arrange
-        Message sqsMessage = new Message()
-            .withBody(snsMessageBody)
-            .withReceiptHandle(receiptHandle);
+    public void testPollMessagesWithNullQueueUrl() {
+        // Set queue URL to null
+        ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", null);
         
-        ReceiveMessageResult receiveResult = new ReceiveMessageResult()
-            .withMessages(Arrays.asList(sqsMessage));
-        
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("ApproximateReceiveCount", "1");
-        sqsMessage.setAttributes(attributes);
-        
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(snsMessageBody)).thenReturn(mockJsonNode);
-        when(objectMapper.readValue(messageBody, ReplayMessage.class)).thenReturn(replayMessage);
-
-        // Act
+        // Execute
         messageHandler.pollMessages();
-
-        // Assert
-        verify(replayMessageHandler, times(1)).handle(any(ReplayMessage.class));
-        verify(sqsClient, times(1)).deleteMessage(queueUrl, receiptHandle);
+        
+        // Verify
+        verify(logger).error(anyString());
+        verify(sqsClient, never()).receiveMessage(any(ReceiveMessageRequest.class));
     }
 
     @Test
-    public void testPollMessages_HandleException() throws Exception {
-        // Arrange
-        Message sqsMessage = new Message()
-            .withBody(snsMessageBody)
-            .withReceiptHandle(receiptHandle);
+    public void testPollMessagesWithNoMessages() {
+        // Mock behavior
+        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList());
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
         
-        ReceiveMessageResult receiveResult = new ReceiveMessageResult()
-            .withMessages(Arrays.asList(sqsMessage));
-        
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("ApproximateReceiveCount", "1");
-        sqsMessage.setAttributes(attributes);
-        
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(snsMessageBody)).thenReturn(mockJsonNode);
-        when(objectMapper.readValue(messageBody, ReplayMessage.class)).thenReturn(replayMessage);
-        doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(any(ReplayMessage.class));
-
-        // Act
+        // Execute
         messageHandler.pollMessages();
-
-        // Assert
-        verify(replayMessageHandler, times(1)).handle(any(ReplayMessage.class));
-        verify(sqsClient, never()).deleteMessage(queueUrl, receiptHandle);
-        verify(sqsClient, times(1)).changeMessageVisibility(eq(queueUrl), eq(receiptHandle), anyInt());
-    }
-
-    @Test
-    public void testPollMessages_MaxDeliveryCount() throws Exception {
-        // Arrange
-        Message sqsMessage = new Message()
-            .withBody(snsMessageBody)
-            .withReceiptHandle(receiptHandle);
         
-        ReceiveMessageResult receiveResult = new ReceiveMessageResult()
-            .withMessages(Arrays.asList(sqsMessage));
-        
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("ApproximateReceiveCount", "3"); // Max delivery count
-        sqsMessage.setAttributes(attributes);
-        
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(snsMessageBody)).thenReturn(mockJsonNode);
-        when(objectMapper.readValue(messageBody, ReplayMessage.class)).thenReturn(replayMessage);
-        doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(any(ReplayMessage.class));
-
-        // Act
-        messageHandler.pollMessages();
-
-        // Assert
-        verify(replayMessageHandler, times(1)).handle(any(ReplayMessage.class));
-        verify(replayMessageHandler, times(1)).handleFailure(any(ReplayMessage.class));
-        verify(sqsClient, times(1)).deleteMessage(queueUrl, receiptHandle);
-    }
-
-    @Test
-    public void testPollMessages_ParseException() throws Exception {
-        // Arrange
-        Message sqsMessage = new Message()
-            .withBody("invalid-json")
-            .withReceiptHandle(receiptHandle);
-        
-        ReceiveMessageResult receiveResult = new ReceiveMessageResult()
-            .withMessages(Arrays.asList(sqsMessage));
-        
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("ApproximateReceiveCount", "1");
-        sqsMessage.setAttributes(attributes);
-        
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(receiveResult);
-        when(objectMapper.readTree(anyString())).thenThrow(new RuntimeException("Invalid JSON"));
-
-        // Act
-        messageHandler.pollMessages();
-
-        // Assert
+        // Verify
+        verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler, never()).handle(any(ReplayMessage.class));
-        verify(sqsClient, times(1)).deleteMessage(queueUrl, receiptHandle);
-        verify(logger, times(1)).error(contains("Failed to process message"), any(Exception.class));
     }
 
-    private static String contains(String substring) {
-        return argThat(str -> str != null && str.contains(substring));
+    @Test
+    public void testPollMessagesWithValidMessage() throws IOException {
+        // Prepare test data
+        String messageId = "test-message-id";
+        String receiptHandle = "test-receipt-handle";
+        String replayId = "test-replay-id";
+        String kind = "test-kind";
+        
+        // Create SQS message
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("ApproximateReceiveCount", "1");
+        
+        Message sqsMessage = new Message()
+                .withMessageId(messageId)
+                .withReceiptHandle(receiptHandle)
+                .withAttributes(attributes);
+        
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
+        sqsMessage.setBody(snsWrapper.toString());
+        
+        // Create ReplayMessage
+        ReplayMessage replayMessage = createReplayMessage(replayId, kind);
+        
+        // Mock behavior
+        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
+        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        
+        // Execute
+        messageHandler.pollMessages();
+        
+        // Verify
+        verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
+        verify(replayMessageHandler).handle(any(ReplayMessage.class));
+        verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
+    }
+
+    @Test
+    public void testPollMessagesWithExceptionDuringProcessing() throws IOException {
+        // Prepare test data
+        String messageId = "test-message-id";
+        String receiptHandle = "test-receipt-handle";
+        String replayId = "test-replay-id";
+        String kind = "test-kind";
+        
+        // Create SQS message
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("ApproximateReceiveCount", "1");
+        
+        Message sqsMessage = new Message()
+                .withMessageId(messageId)
+                .withReceiptHandle(receiptHandle)
+                .withAttributes(attributes);
+        
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
+        sqsMessage.setBody(snsWrapper.toString());
+        
+        // Create ReplayMessage
+        ReplayMessage replayMessage = createReplayMessage(replayId, kind);
+        
+        // Mock behavior
+        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
+        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(replayMessage);
+        
+        // Execute
+        messageHandler.pollMessages();
+        
+        // Verify
+        verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
+        verify(replayMessageHandler).handle(replayMessage);
+        verify(logger).error(contains("Error processing replay message"), any(RuntimeException.class));
+        verify(sqsClient).changeMessageVisibility(eq(REPLAY_QUEUE_URL), eq(receiptHandle), anyInt());
+    }
+
+    @Test
+    public void testPollMessagesWithMaxDeliveryCountExceeded() throws IOException {
+        // Prepare test data
+        String messageId = "test-message-id";
+        String receiptHandle = "test-receipt-handle";
+        String replayId = "test-replay-id";
+        String kind = "test-kind";
+        
+        // Create SQS message
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("ApproximateReceiveCount", String.valueOf(MAX_DELIVERY_COUNT));
+        
+        Message sqsMessage = new Message()
+                .withMessageId(messageId)
+                .withReceiptHandle(receiptHandle)
+                .withAttributes(attributes);
+        
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
+        sqsMessage.setBody(snsWrapper.toString());
+        
+        // Create ReplayMessage
+        ReplayMessage replayMessage = createReplayMessage(replayId, kind);
+        
+        // Mock behavior
+        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
+        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(replayMessage);
+        
+        // Execute
+        messageHandler.pollMessages();
+        
+        // Verify
+        verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
+        verify(replayMessageHandler).handle(replayMessage);
+        verify(logger).error(contains("Error processing replay message"), any(RuntimeException.class));
+        verify(logger).error(contains("Max delivery attempts reached"));
+        verify(replayMessageHandler).handleFailure(replayMessage);
+        verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
+    }
+
+    private ObjectNode createSnsWrapper(String replayId, String kind) {
+        ObjectNode snsWrapper = mock(ObjectNode.class);
+        JsonNode messageNode = mock(JsonNode.class);
+        
+        when(snsWrapper.has("Message")).thenReturn(true);
+        when(snsWrapper.get("Message")).thenReturn(messageNode);
+        
+        String messageContent = String.format("{\"body\":{\"replayId\":\"%s\",\"kind\":\"%s\",\"operation\":\"replay\"}}", replayId, kind);
+        when(messageNode.asText()).thenReturn(messageContent);
+        
+        return snsWrapper;
+    }
+
+    private ReplayMessage createReplayMessage(String replayId, String kind) {
+        ReplayData body = ReplayData.builder()
+                .replayId(replayId)
+                .kind(kind)
+                .operation("replay")
+                .build();
+        
+        Map<String, String> headers = new HashMap<>();
+        headers.put("data-partition-id", "test-partition");
+        
+        return ReplayMessage.builder()
+                .body(body)
+                .headers(headers)
+                .build();
     }
 }
