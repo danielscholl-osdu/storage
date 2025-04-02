@@ -240,7 +240,7 @@ public class PersistenceServiceImplTest {
         TransferBatch batch = this.createBatchTransfer();
 
         this.setupRecordRepository(23, 10, 25);
-        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "Request Too Long", "etadata request size limit reached!")).when(this.recordRepository).createOrUpdate(any(), any());
         try {
             this.sut.persistRecordBatch(batch, Optional.empty());
             fail("Expected exception");
