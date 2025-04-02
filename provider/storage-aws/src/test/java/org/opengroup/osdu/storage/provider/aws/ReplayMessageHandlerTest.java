@@ -61,10 +61,8 @@ public class ReplayMessageHandlerTest {
     private static final String REGION = "us-east-1";
     private static final String REPLAY_TOPIC = "replay-records";
     private static final String REINDEX_TOPIC = "reindex-records";
-    private static final String RECORDS_TOPIC = "records-change";
     private static final String REPLAY_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:replay-records";
     private static final String REINDEX_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:reindex-records";
-    private static final String RECORDS_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:records-change";
 
     @Before
     public void setUp() {
@@ -72,13 +70,11 @@ public class ReplayMessageHandlerTest {
         ReflectionTestUtils.setField(replayMessageHandler, "region", REGION);
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopic", REPLAY_TOPIC);
         ReflectionTestUtils.setField(replayMessageHandler, "reindexTopic", REINDEX_TOPIC);
-        ReflectionTestUtils.setField(replayMessageHandler, "recordsTopic", RECORDS_TOPIC);
         ReflectionTestUtils.setField(replayMessageHandler, "snsClient", snsClient);
         
         // Set topic ARNs using reflection
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopicArn", REPLAY_TOPIC_ARN);
         ReflectionTestUtils.setField(replayMessageHandler, "reindexTopicArn", REINDEX_TOPIC_ARN);
-        ReflectionTestUtils.setField(replayMessageHandler, "recordsTopicArn", RECORDS_TOPIC_ARN);
     }
 
     @Test
@@ -95,7 +91,7 @@ public class ReplayMessageHandlerTest {
         when(objectMapper.writeValueAsString(message1)).thenReturn(serializedMessage1);
         when(objectMapper.writeValueAsString(message2)).thenReturn(serializedMessage2);
         
-        PublishRequest publishRequest = new PublishRequest().withTopicArn(RECORDS_TOPIC_ARN).withMessage(serializedMessage1);
+        PublishRequest publishRequest = new PublishRequest().withTopicArn(REPLAY_TOPIC_ARN).withMessage(serializedMessage1);
         when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
         
         // Execute

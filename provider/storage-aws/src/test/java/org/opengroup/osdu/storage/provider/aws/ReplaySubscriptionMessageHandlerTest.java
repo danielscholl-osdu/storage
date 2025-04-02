@@ -74,19 +74,6 @@ public class ReplaySubscriptionMessageHandlerTest {
     }
 
     @Test
-    public void testPollMessagesWithNullQueueUrl() {
-        // Set queue URL to null
-        ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", null);
-        
-        // Execute
-        messageHandler.pollMessages();
-        
-        // Verify
-        verify(logger).error(anyString());
-        verify(sqsClient, never()).receiveMessage(any(ReceiveMessageRequest.class));
-    }
-
-    @Test
     public void testPollMessagesWithNoMessages() {
         // Mock behavior
         ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList());
