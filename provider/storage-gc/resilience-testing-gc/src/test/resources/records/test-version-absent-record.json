@@ -1,0 +1,23 @@
+{
+  "id": "${record_id}",
+  "kind": "osdu:test:test-error-handling:1.0.0",
+  "acl": {
+    "viewers": [
+      "${acl_viewers}"
+    ],
+    "owners": [
+      "${acl_owners}"
+    ]
+  },
+  "legal": {
+    "legaltags": [
+      "${legal_tag}"
+    ],
+    "otherRelevantDataCountries": [
+      "BR"
+    ]
+  },
+  "data": {
+    "test": "test"
+  }
+}
