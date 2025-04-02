@@ -114,27 +114,193 @@ public class ReplayRepositoryImpl implements IReplayRepository {
 ```
 
 ### 1.4 Query Repository Extensions ✅
-Extended the existing `QueryRepositoryImpl` with the required methods for replay operations:
+Extended the existing `QueryRepositoryImpl` with the required methods for replay operations, now retrieving unique kinds directly from the record metadata table instead of the schema repository table:
 
 ```java
 @Override
 public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor) {
-    // Implementation to return all record IDs and kinds with pagination
+    DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+    
+    // Set the page size or use the default constant
+    int numRecords = PAGE_SIZE;
+    if (limit != null) {
+        numRecords = limit > 0 ? limit : PAGE_SIZE;
+    }
+    
+    RecordInfoQueryResult<RecordIdAndKind> result = new RecordInfoQueryResult<>();
+    List<RecordIdAndKind> records = new ArrayList<>();
+    
+    try {
+        // Query for all active records
+        RecordMetadataDoc queryObject = new RecordMetadataDoc();
+        queryObject.setStatus("active");
+        
+        QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+            RecordMetadataDoc.class, 
+            queryObject, 
+            numRecords, 
+            cursor);
+        
+        // Convert to RecordIdAndKind objects
+        for (RecordMetadataDoc doc : queryPageResult.results) {
+            RecordIdAndKind record = new RecordIdAndKind();
+            record.setId(doc.getId());
+            record.setKind(doc.getKind());
+            records.add(record);
+        }
+        
+        result.setResults(records);
+        result.setCursor(queryPageResult.cursor);
+        
+    } catch (UnsupportedEncodingException e) {
+        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                e.getMessage(), e);
+    }
+    
+    return result;
 }
 
 @Override
 public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind) {
-    // Implementation to return all record IDs for a specific kind with pagination
+    DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+    
+    // Set the page size or use the default constant
+    int numRecords = PAGE_SIZE;
+    if (limit != null) {
+        numRecords = limit > 0 ? limit : PAGE_SIZE;
+    }
+    
+    RecordInfoQueryResult<RecordId> result = new RecordInfoQueryResult<>();
+    List<RecordId> records = new ArrayList<>();
+    
+    try {
+        // Set GSI hash key
+        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+        recordMetadataKey.setKind(kind);
+        
+        QueryPageResult<RecordMetadataDoc> scanPageResults = recordMetadataQueryHelper.queryPage(
+            RecordMetadataDoc.class,
+            recordMetadataKey,
+            "Status",
+            "active",
+            "Id",
+            ComparisonOperator.BEGINS_WITH,
+            String.format("%s:", headers.getPartitionId()),
+            numRecords,
+            cursor);
+        
+        // Convert to RecordId objects
+        for (RecordMetadataDoc doc : scanPageResults.results) {
+            RecordId record = new RecordId();
+            record.setId(doc.getId());
+            records.add(record);
+        }
+        
+        result.setResults(records);
+        result.setCursor(scanPageResults.cursor);
+        
+    } catch (UnsupportedEncodingException e) {
+        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                e.getMessage(), e);
+    }
+    
+    return result;
 }
 
 @Override
 public HashMap<String, Long> getActiveRecordsCount() {
-    // Implementation to return count of all active records
+    // Modified to retrieve unique kinds from record metadata table instead of schema repository
+    DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+    HashMap<String, Long> kindCounts = new HashMap<>();
+    
+    try {
+        // Query for all active records to get unique kinds
+        RecordMetadataDoc queryObject = new RecordMetadataDoc();
+        queryObject.setStatus("active");
+        
+        // Use a large limit to get as many records as possible in one query
+        QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+            RecordMetadataDoc.class, 
+            queryObject, 
+            1000, 
+            null);
+        
+        // Extract unique kinds and count occurrences
+        Map<String, Long> kindCountMap = new HashMap<>();
+        for (RecordMetadataDoc doc : queryPageResult.results) {
+            String kind = doc.getKind();
+            kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+        }
+        
+        // Process any additional pages if needed
+        String cursor = queryPageResult.cursor;
+        while (cursor != null && !cursor.isEmpty()) {
+            queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                RecordMetadataDoc.class, 
+                queryObject, 
+                1000, 
+                cursor);
+            
+            for (RecordMetadataDoc doc : queryPageResult.results) {
+                String kind = doc.getKind();
+                kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+            }
+            
+            cursor = queryPageResult.cursor;
+        }
+        
+        return new HashMap<>(kindCountMap);
+        
+    } catch (UnsupportedEncodingException e) {
+        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                e.getMessage(), e);
+    }
 }
 
 @Override
 public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
-    // Implementation to return count of active records for specific kinds
+    Map<String, Long> kindCounts = new HashMap<>();
+    DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+    
+    for (String kind : kinds) {
+        try {
+            // Set GSI hash key
+            RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+            recordMetadataKey.setKind(kind);
+            recordMetadataKey.setStatus("active");
+            
+            // Count active records for this kind using the record metadata table
+            long count = 0;
+            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                RecordMetadataDoc.class, 
+                recordMetadataKey, 
+                1000, 
+                null);
+            
+            count += queryPageResult.results.size();
+            
+            // Process any additional pages if needed
+            String cursor = queryPageResult.cursor;
+            while (cursor != null && !cursor.isEmpty()) {
+                queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                    RecordMetadataDoc.class, 
+                    recordMetadataKey, 
+                    1000, 
+                    cursor);
+                
+                count += queryPageResult.results.size();
+                cursor = queryPageResult.cursor;
+            }
+            
+            kindCounts.put(kind, count);
+            
+        } catch (UnsupportedEncodingException e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                    e.getMessage(), e);
+        }
+    }
+    
+    return kindCounts;
 }
 ```
 
@@ -395,7 +561,46 @@ try {
 }
 ```
 
-### 3.2 DynamoDBMapper Bean Injection
+### 3.2 Retrieving Unique Kinds from Record Metadata
+Instead of using the schema repository table, we now retrieve unique kinds directly from the record metadata table. This approach has several advantages:
+
+1. **More accurate representation**: We only count kinds that actually have active records
+2. **Reduced dependencies**: No need to rely on the schema repository being up-to-date
+3. **Improved performance**: Direct access to the data we need
+
+The implementation uses a map to track unique kinds and their counts:
+
+```java
+// Extract unique kinds and count occurrences
+Map<String, Long> kindCountMap = new HashMap<>();
+for (RecordMetadataDoc doc : queryPageResult.results) {
+    String kind = doc.getKind();
+    kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+}
+```
+
+We also handle pagination to ensure we process all records:
+
+```java
+// Process any additional pages if needed
+String cursor = queryPageResult.cursor;
+while (cursor != null && !cursor.isEmpty()) {
+    queryPageResult = recordMetadataQueryHelper.queryByGSI(
+        RecordMetadataDoc.class, 
+        queryObject, 
+        1000, 
+        cursor);
+    
+    for (RecordMetadataDoc doc : queryPageResult.results) {
+        String kind = doc.getKind();
+        kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+    }
+    
+    cursor = queryPageResult.cursor;
+}
+```
+
+### 3.3 DynamoDBMapper Bean Injection
 The `QueryRepositoryImpl` class was expecting a `DynamoDBMapper` bean to be injected through its constructor. We created a comprehensive AWS configuration class that provides this bean:
 
 ```java
@@ -406,7 +611,7 @@ public DynamoDBMapper dynamoDBMapper(IDynamoDBConfig dynamoDBConfig) {
 }
 ```
 
-### 3.3 Data Partition ID Field
+### 3.4 Data Partition ID Field
 The `ReplayMetaDataDTO` class doesn't have a `dataPartitionId` field, but the `ReplayMetadataItem` class does. We had to handle this mismatch in the conversion methods:
 
 ```java

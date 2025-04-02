@@ -257,70 +257,99 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public HashMap<String, Long> getActiveRecordsCount() {
-        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+        // Modified to retrieve unique kinds from record metadata table instead of schema repository
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         HashMap<String, Long> kindCounts = new HashMap<>();
         
         try {
-            // First get all kinds
-            SchemaDoc queryObject = new SchemaDoc();
-            queryObject.setDataPartitionId(headers.getPartitionId());
-            QueryPageResult<SchemaDoc> queryPageResult = schemaTableQueryHelper.queryByGSI(SchemaDoc.class, queryObject, 1000, null);
+            // Query for all active records to get unique kinds
+            RecordMetadataDoc queryObject = new RecordMetadataDoc();
+            queryObject.setStatus("active");
             
-            // For each kind, get the count of active records
-            for (SchemaDoc schemaDoc : queryPageResult.results) {
-                String kind = schemaDoc.getKind();
-                long count = getActiveRecordCountForKind(kind);
-                kindCounts.put(kind, count);
+            // Use a large limit to get as many records as possible in one query
+            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                RecordMetadataDoc.class, 
+                queryObject, 
+                1000, 
+                null);
+            
+            // Extract unique kinds and count occurrences
+            Map<String, Long> kindCountMap = new HashMap<>();
+            for (RecordMetadataDoc doc : queryPageResult.results) {
+                String kind = doc.getKind();
+                kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
             }
+            
+            // Process any additional pages if needed
+            String cursor = queryPageResult.cursor;
+            while (cursor != null && !cursor.isEmpty()) {
+                queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                    RecordMetadataDoc.class, 
+                    queryObject, 
+                    1000, 
+                    cursor);
+                
+                for (RecordMetadataDoc doc : queryPageResult.results) {
+                    String kind = doc.getKind();
+                    kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+                }
+                
+                cursor = queryPageResult.cursor;
+            }
+            
+            return new HashMap<>(kindCountMap);
             
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
                     e.getMessage(), e);
         }
-        
-        return kindCounts;
     }
 
     @Override
     public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
         Map<String, Long> kindCounts = new HashMap<>();
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         
         for (String kind : kinds) {
-            long count = getActiveRecordCountForKind(kind);
-            kindCounts.put(kind, count);
+            try {
+                // Set GSI hash key
+                RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+                recordMetadataKey.setKind(kind);
+                recordMetadataKey.setStatus("active");
+                
+                // Count active records for this kind using the record metadata table
+                long count = 0;
+                QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                    RecordMetadataDoc.class, 
+                    recordMetadataKey, 
+                    1000, 
+                    null);
+                
+                count += queryPageResult.results.size();
+                
+                // Process any additional pages if needed
+                String cursor = queryPageResult.cursor;
+                while (cursor != null && !cursor.isEmpty()) {
+                    queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                        RecordMetadataDoc.class, 
+                        recordMetadataKey, 
+                        1000, 
+                        cursor);
+                    
+                    count += queryPageResult.results.size();
+                    cursor = queryPageResult.cursor;
+                }
+                
+                kindCounts.put(kind, count);
+                
+            } catch (UnsupportedEncodingException e) {
+                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+                        e.getMessage(), e);
+            }
         }
         
         return kindCounts;
     }
     
-    /**
-     * Gets the count of active records for a specific kind.
-     *
-     * @param kind The kind to count records for
-     * @return The count of active records
-     */
-    private long getActiveRecordCountForKind(String kind) {
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
 
-        // Set GSI hash key
-        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-        recordMetadataKey.setKind(kind);
-        
-        // Count active records for this kind
-        // Use a different approach to count records since the count method signature is different
-        long count = 0;
-        try {
-            // This is a simplified approach - you may need to implement a proper counting method
-            com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression<RecordMetadataDoc> queryExpression = new com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression<RecordMetadataDoc>()
-                .withHashKeyValues(recordMetadataKey)
-                .withConsistentRead(false);
-            
-            count = dynamoDBMapper.count(RecordMetadataDoc.class, queryExpression);
-        } catch (Exception ex) {
-            logger.error("Error counting records: " + ex.getMessage(), ex);
-        }
-        
-        return count;
-
-    }
 }
