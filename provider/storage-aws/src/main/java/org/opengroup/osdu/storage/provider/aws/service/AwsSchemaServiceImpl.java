@@ -135,9 +135,9 @@ public class AwsSchemaServiceImpl implements SchemaService {
         
         // Extract unique entity types (kinds) from schema infos
         List<String> kinds = response.getSchemaInfos().stream()
-                .map(schemaInfo -> schemaInfo.getSchemaIdentity().getEntityType())
+                .map(schemaInfo -> schemaInfo.getSchemaIdentity().getId())
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
         
         logger.info("Retrieved " + kinds.size() + " unique kinds from Schema Service");
         return kinds;
