@@ -1,16 +1,19 @@
 variables:
-  CORE_SERVICE: storage-core-plus
-  CORE_BUILD_PATH: "storage-core-plus/cloudbuild/Dockerfile"
-  CORE_HELM_PACKAGE_NAME: core-plus-storage-deploy
-  CORE_HELM_TIMEOUT: "--timeout 15m"
-  OPA_INTEGRATION_ENABLED: "true"
-  CORE_TEST_PROJECT: "storage-test-core,storage-test-baremetal"
-  CORE_TEST_SUBDIR: "testing/storage-test-baremetal"
+  CIMPL_SERVICE: storage-cimpl                          
+  CIMPL_BUILD_PATH: "storage-core-plus/cloudbuild/Dockerfile"
+  CIMPL_HELM_PACKAGE_NAME: core-plus-storage-deploy             
+  CIMPL_HELM_TIMEOUT: "--timeout 15m"
+  CIMPL_TEST_PROJECT: "storage-test-core,storage-test-baremetal"
+  CIMPL_TEST_SUBDIR: "testing/storage-test-baremetal"
 
-core-deploy:
+cimpl-deploy:
   variables:
-    CORE_SERVICE: "storage"
+    CIMPL_SERVICE: "storage"
 
-core-test:
+cimpl-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "false"
+
+cimpl-acceptance-test:
   variables:
     OPA_INTEGRATION_ENABLED: "false"

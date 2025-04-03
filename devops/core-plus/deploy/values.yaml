@@ -6,6 +6,9 @@ global:
   domain: ""
   limitsEnabled: true
 
+# This flag enables configuration specific to ROSA environments.
+rosa: false 
+
 data:
   # configmaps
   logLevel: "ERROR"
