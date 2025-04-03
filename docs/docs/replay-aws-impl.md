@@ -209,50 +209,25 @@ public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, St
 
 @Override
 public HashMap<String, Long> getActiveRecordsCount() {
-    // Modified to retrieve unique kinds from record metadata table instead of schema repository
-    DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+    // First, get all distinct kinds from the schema service
     HashMap<String, Long> kindCounts = new HashMap<>();
     
     try {
-        // Query for all active records to get unique kinds
-        RecordMetadataDoc queryObject = new RecordMetadataDoc();
-        queryObject.setStatus("active");
+        // Get all kinds from schema service
+        List<String> kinds = getAllKindsFromSchemaService();
         
-        // Use a large limit to get as many records as possible in one query
-        QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
-            RecordMetadataDoc.class, 
-            queryObject, 
-            1000, 
-            null);
-        
-        // Extract unique kinds and count occurrences
-        Map<String, Long> kindCountMap = new HashMap<>();
-        for (RecordMetadataDoc doc : queryPageResult.results) {
-            String kind = doc.getKind();
-            kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
-        }
-        
-        // Process any additional pages if needed
-        String cursor = queryPageResult.cursor;
-        while (cursor != null && !cursor.isEmpty()) {
-            queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                RecordMetadataDoc.class, 
-                queryObject, 
-                1000, 
-                cursor);
-            
-            for (RecordMetadataDoc doc : queryPageResult.results) {
-                String kind = doc.getKind();
-                kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+        // Now count active records for each kind
+        for (String kind : kinds) {
+            long count = getActiveRecordCountForKind(kind);
+            if (count > 0) {
+                kindCounts.put(kind, count);
             }
-            
-            cursor = queryPageResult.cursor;
         }
         
-        return new HashMap<>(kindCountMap);
+        return kindCounts;
         
-    } catch (UnsupportedEncodingException e) {
-        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+    } catch (Exception e) {
+        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error retrieving active records count",
                 e.getMessage(), e);
     }
 }
@@ -561,42 +536,93 @@ try {
 }
 ```
 
-### 3.2 Retrieving Unique Kinds from Record Metadata
-Instead of using the schema repository table, we now retrieve unique kinds directly from the record metadata table. This approach has several advantages:
+### 3.2 Retrieving Unique Kinds and Counting Records
 
-1. **More accurate representation**: We only count kinds that actually have active records
-2. **Reduced dependencies**: No need to rely on the schema repository being up-to-date
-3. **Improved performance**: Direct access to the data we need
+We encountered a "No hash key condition is found in the query" error when trying to query DynamoDB without specifying a hash key. To solve this, we implemented a solution that uses the Schema Service to get all kinds and then queries each kind individually:
 
-The implementation uses a map to track unique kinds and their counts:
+1. **Get all kinds from Schema Service**: Instead of trying to scan the entire record metadata table without a hash key, we first get all available kinds from the Schema Service.
+
+2. **Query each kind individually**: For each kind, we query the record metadata table using the KindStatusIndex GSI with Kind as the hash key and Status as the range key.
+
+This approach has several advantages:
+- **Proper use of DynamoDB indexes**: Uses the GSI correctly with both hash and range keys
+- **Efficient queries**: Each query is focused on a specific kind
+- **Accurate counts**: Only counts records that actually exist in the database
+
+The implementation first retrieves all kinds from the Schema Service:
 
 ```java
-// Extract unique kinds and count occurrences
-Map<String, Long> kindCountMap = new HashMap<>();
-for (RecordMetadataDoc doc : queryPageResult.results) {
-    String kind = doc.getKind();
-    kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+private List<String> getAllKindsFromSchemaService() {
+    // Create a REST client to call the schema service
+    RestTemplate restTemplate = new RestTemplate();
+    
+    // Get the schema service URL from configuration
+    String schemaServiceUrl = config.getSchemaApiUrl() + "/schema";
+    
+    // Set up headers for the request
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("Authorization", this.headers.getAuthorization());
+    headers.set("data-partition-id", this.headers.getPartitionId());
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    
+    // Create the HTTP entity
+    HttpEntity<String> entity = new HttpEntity<>(headers);
+    
+    // Make the request to the schema service
+    ResponseEntity<SchemaInfoResponse> response = restTemplate.exchange(
+        schemaServiceUrl, 
+        HttpMethod.GET, 
+        entity, 
+        SchemaInfoResponse.class);
+    
+    // Extract unique entity types (kinds) from schema infos
+    return response.getBody().getSchemaInfos().stream()
+        .map(schemaInfo -> schemaInfo.getSchemaIdentity().getEntityType())
+        .distinct()
+        .collect(Collectors.toList());
 }
 ```
 
-We also handle pagination to ensure we process all records:
+Then, for each kind, it counts the active records:
 
 ```java
-// Process any additional pages if needed
-String cursor = queryPageResult.cursor;
-while (cursor != null && !cursor.isEmpty()) {
-    queryPageResult = recordMetadataQueryHelper.queryByGSI(
-        RecordMetadataDoc.class, 
-        queryObject, 
-        1000, 
-        cursor);
+private long getActiveRecordCountForKind(String kind) {
+    DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
     
-    for (RecordMetadataDoc doc : queryPageResult.results) {
-        String kind = doc.getKind();
-        kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
+    try {
+        // Set up query parameters using the KindStatusIndex GSI
+        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+        recordMetadataKey.setKind(kind);
+        recordMetadataKey.setStatus("active");
+        
+        // Count active records for this kind
+        long count = 0;
+        QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+            RecordMetadataDoc.class, 
+            recordMetadataKey, 
+            1000, 
+            null);
+        
+        count += queryPageResult.results.size();
+        
+        // Process any additional pages
+        String cursor = queryPageResult.cursor;
+        while (cursor != null && !cursor.isEmpty()) {
+            queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                RecordMetadataDoc.class, 
+                recordMetadataKey, 
+                1000, 
+                cursor);
+            
+            count += queryPageResult.results.size();
+            cursor = queryPageResult.cursor;
+        }
+        
+        return count;
+    } catch (UnsupportedEncodingException e) {
+        logger.error("Error counting records for kind " + kind + ": " + e.getMessage(), e);
+        return 0;
     }
-    
-    cursor = queryPageResult.cursor;
 }
 ```
 
@@ -644,13 +670,13 @@ private ReplayMetadataItem convertToItem(ReplayMetaDataDTO dto) {
 5. ✅ **Implement Message Handling**: Set up SNS for message publishing and SQS for message consumption
 6. ✅ **Implement Service Layer**: Created the AWS-specific replay service implementation
 7. ✅ **Configure SQS Listener**: Set up the SQS message listener
-8. ⬜ **Update Terraform**: Add necessary resources to IaC templates, including SNS topics
+8. ✅ **Update Terraform**: Added necessary resources to IaC templates, including SNS topics
 9. ✅ **Write Unit Tests**: Created tests for the repository implementation
 10. ✅ **Documentation**: Updated documentation with AWS-specific details
 
-## 5. Terraform Resources (To Be Implemented)
+## 5. Terraform Resources (Implemented) ✅
 
-The following AWS resources will need to be added to your Terraform IaC:
+The following AWS resources have been added to the Terraform IaC:
 
 1. **SNS Topics**:
    - Replay topic for replay operations
@@ -675,7 +701,84 @@ The following AWS resources will need to be added to your Terraform IaC:
 
 ## 6. Next Steps
 
-1. **Terraform Implementation**: Create the necessary Terraform resources for the replay feature, including SNS topics
-2. **Integration Testing**: Implement comprehensive integration tests for the replay functionality
-3. **Monitoring Setup**: Set up CloudWatch dashboards and alarms for monitoring replay operations
+1. **Integration Testing**: Implement comprehensive integration tests for:
+   - Replay API endpoints
+   - Message publishing and consumption
+   - Status tracking and reporting
+
+2. **Schema Service Integration**: Finalize the integration with the Schema Service to retrieve all available kinds
+
+3. **Monitoring Setup**: Set up CloudWatch dashboards and alarms for:
+   - Message processing rates
+   - Queue depths
+   - Error rates
+   - DynamoDB throttling events
+
 4. **Documentation**: Update user documentation with instructions for using the replay feature
+
+### 3.5 Schema Service Integration
+
+To get a complete list of kinds, we integrated with the Schema Service:
+
+```java
+/**
+ * Helper method to get all kinds from the schema service
+ */
+private List<String> getAllKindsFromSchemaService() {
+    // Create a REST client to call the schema service
+    RestTemplate restTemplate = new RestTemplate();
+    
+    // Get the schema service URL from configuration
+    String schemaServiceUrl = config.getSchemaApiUrl() + "/schema";
+    
+    // Set up headers for the request
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("Authorization", this.headers.getAuthorization());
+    headers.set("data-partition-id", this.headers.getPartitionId());
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    
+    // Create the HTTP entity
+    HttpEntity<String> entity = new HttpEntity<>(headers);
+    
+    // Make the request to the schema service
+    ResponseEntity<SchemaInfoResponse> response = restTemplate.exchange(
+        schemaServiceUrl, 
+        HttpMethod.GET, 
+        entity, 
+        SchemaInfoResponse.class);
+    
+    // Extract unique entity types (kinds) from schema infos
+    return response.getBody().getSchemaInfos().stream()
+        .map(schemaInfo -> schemaInfo.getSchemaIdentity().getEntityType())
+        .distinct()
+        .collect(Collectors.toList());
+}
+
+// Schema response classes
+@Data
+private static class SchemaInfoResponse {
+    private List<SchemaInfo> schemaInfos;
+}
+
+@Data
+private static class SchemaInfo {
+    private SchemaIdentity schemaIdentity;
+    private String createdBy;
+    private String dateCreated;
+    private String status;
+    private String scope;
+}
+
+@Data
+private static class SchemaIdentity {
+    private String authority;
+    private String source;
+    private String entityType;
+    private int schemaVersionMajor;
+    private int schemaVersionMinor;
+    private int schemaVersionPatch;
+    private String id;
+}
+```
+
+This approach ensures we have a complete list of kinds to query against, even if some kinds don't have any active records yet.

@@ -28,9 +28,11 @@ import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordIdAndKind;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.opengroup.osdu.storage.provider.aws.service.AwsSchemaServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
@@ -52,6 +54,9 @@ public class QueryRepositoryImpl implements IQueryRepository {
     private final com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper dynamoDBMapper;
     
     private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    
+    @Autowired
+    private AwsSchemaServiceImpl schemaService;
 
     @Value("${aws.dynamodb.schemaRepositoryTable.ssm.relativePath}")
     String schemaRepositoryTableParameterRelativePath;    
@@ -176,14 +181,17 @@ public class QueryRepositoryImpl implements IQueryRepository {
         try {
             // Query for all active records
             RecordMetadataDoc queryObject = new RecordMetadataDoc();
-            queryObject.setStatus("active");
-            // Set partition ID using available method or field
-            // queryObject.setDataPartitionId(headers.getPartitionId());
             
-            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                RecordMetadataDoc.class, 
-                queryObject, 
-                numRecords, 
+            // Use queryPage instead of queryByGSI
+            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryPage(
+                RecordMetadataDoc.class,
+                queryObject,
+                "Status",
+                "active",
+                null,
+                null,
+                null,
+                numRecords,
                 cursor);
             
             // Convert to RecordIdAndKind objects
@@ -257,51 +265,68 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public HashMap<String, Long> getActiveRecordsCount() {
-        // Modified to retrieve unique kinds from record metadata table instead of schema repository
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        // First, get all distinct kinds from the schema service
         HashMap<String, Long> kindCounts = new HashMap<>();
         
         try {
-            // Query for all active records to get unique kinds
-            RecordMetadataDoc queryObject = new RecordMetadataDoc();
-            queryObject.setStatus("active");
+            // Get all kinds from schema service
+            List<String> kinds = schemaService.getAllKinds();
             
-            // Use a large limit to get as many records as possible in one query
+            // Now count active records for each kind
+            for (String kind : kinds) {
+                long count = getActiveRecordCountForKind(kind);
+                if (count > 0) {
+                    kindCounts.put(kind, count);
+                }
+            }
+            
+            return kindCounts;
+            
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error retrieving active records count",
+                    e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Helper method to get active record count for a specific kind
+     */
+    private long getActiveRecordCountForKind(String kind) {
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        
+        try {
+            // Set up query parameters using the KindStatusIndex GSI
+            RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+            recordMetadataKey.setKind(kind);
+            recordMetadataKey.setStatus("active");
+            
+            // Count active records for this kind
+            long count = 0;
             QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
                 RecordMetadataDoc.class, 
-                queryObject, 
+                recordMetadataKey, 
                 1000, 
                 null);
             
-            // Extract unique kinds and count occurrences
-            Map<String, Long> kindCountMap = new HashMap<>();
-            for (RecordMetadataDoc doc : queryPageResult.results) {
-                String kind = doc.getKind();
-                kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
-            }
+            count += queryPageResult.results.size();
             
-            // Process any additional pages if needed
+            // Process any additional pages
             String cursor = queryPageResult.cursor;
             while (cursor != null && !cursor.isEmpty()) {
                 queryPageResult = recordMetadataQueryHelper.queryByGSI(
                     RecordMetadataDoc.class, 
-                    queryObject, 
+                    recordMetadataKey, 
                     1000, 
                     cursor);
                 
-                for (RecordMetadataDoc doc : queryPageResult.results) {
-                    String kind = doc.getKind();
-                    kindCountMap.put(kind, kindCountMap.getOrDefault(kind, 0L) + 1);
-                }
-                
+                count += queryPageResult.results.size();
                 cursor = queryPageResult.cursor;
             }
             
-            return new HashMap<>(kindCountMap);
-            
+            return count;
         } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
-                    e.getMessage(), e);
+            logger.error("Error counting records for kind " + kind + ": " + e.getMessage(), e);
+            return 0;
         }
     }
 
@@ -312,7 +337,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
         
         for (String kind : kinds) {
             try {
-                // Set GSI hash key
+                // Set up query parameters
                 RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
                 recordMetadataKey.setKind(kind);
                 recordMetadataKey.setStatus("active");
@@ -350,6 +375,4 @@ public class QueryRepositoryImpl implements IQueryRepository {
         
         return kindCounts;
     }
-    
-
 }
