@@ -257,14 +257,13 @@ public class PersistenceServiceImpl implements PersistenceService {
     private void commitDatastoreTransaction(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         try {
             this.recordRepository.createOrUpdate(recordsMetadata, collaborationContext);
-        } catch (Exception e) {
-            int status = (e instanceof AppException) ? ((AppException) e).getError().getCode() : 500;
-            if (status == HttpStatus.SC_REQUEST_TOO_LONG) {
-                throw new AppException(HttpStatus.SC_REQUEST_TOO_LONG, ((AppException) e).getError().getReason(), ((AppException) e).getError().getMessage());
-            } else {
-                throw new AppException(status, "Error writing record.",
-                        "The server could not process your request at the moment.", e);
+        } catch (AppException e) {
+            if (e.getError().getCode() == HttpStatus.SC_REQUEST_TOO_LONG) {
+                throw new AppException(HttpStatus.SC_REQUEST_TOO_LONG, e.getError().getReason(), e.getError().getMessage());
             }
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
+                    "The server could not process your request at the moment.", e);
         }
     }
 
