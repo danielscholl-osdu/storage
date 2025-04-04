@@ -24,16 +24,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
+import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +46,7 @@ import java.util.logging.Logger;
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplaySubscriptionMessageHandler {
-    // Use a standard Java logger for initialization
+    // Use a standard Java logger for all logging
     private static final Logger LOGGER = Logger.getLogger(ReplaySubscriptionMessageHandler.class.getName());
     
     private AmazonSQS sqsClient;
@@ -56,10 +57,8 @@ public class ReplaySubscriptionMessageHandler {
     @Inject
     private ObjectMapper objectMapper;
     
-    // Use @Lazy to defer the creation of this bean until it's actually needed
-    @Lazy
     @Inject
-    private JaxRsDpsLog logger;
+    private RequestScopeUtil requestScopeUtil;
     
     private final int MAX_DELIVERY_COUNT = 3;
     
@@ -99,13 +98,13 @@ public class ReplaySubscriptionMessageHandler {
      */
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
-
         if (replayQueueUrl == null) {
-            // Use standard logger here since this might be called before a request context exists
             LOGGER.warning("SQS queue URL is not initialized. Skipping message polling.");
             return;
         }
-
+        LOGGER.info("Polling for messages.");
+        
+        // First, poll for messages outside the request context
         ReceiveMessageRequest receiveRequest = new ReceiveMessageRequest()
             .withQueueUrl(replayQueueUrl)
             .withMaxNumberOfMessages(10)
@@ -114,59 +113,91 @@ public class ReplaySubscriptionMessageHandler {
             
         ReceiveMessageResult result = sqsClient.receiveMessage(receiveRequest);
         
+        // Process each message in its own request context
         for (Message message : result.getMessages()) {
+            processMessage(message);
+        }
+    }
+    
+    /**
+     * Process a single SQS message within its own request context.
+     * 
+     * @param message The SQS message to process
+     */
+    private void processMessage(Message message) {
+        try {
+            // Extract the actual message from the SNS wrapper
+            String messageBody = message.getBody();
+            String unwrappedMessageBody = messageBody;
+            
+            // When a message comes from SNS to SQS, it's wrapped in an SNS envelope
+            // We need to extract the actual message from the "Message" field
             try {
-                // Extract the actual message from the SNS wrapper
-                String messageBody = message.getBody();
-                
-                // When a message comes from SNS to SQS, it's wrapped in an SNS envelope
-                // We need to extract the actual message from the "Message" field
-                try {
-                    JsonNode node = objectMapper.readTree(messageBody);
-                    if (node.has("Message")) {
-                        messageBody = node.get("Message").asText();
-                    }
-                } catch (Exception e) {
-                    logger.error("Error parsing SNS message wrapper: " + e.getMessage(), e);
+                JsonNode node = objectMapper.readTree(messageBody);
+                if (node.has("Message")) {
+                    unwrappedMessageBody = node.get("Message").asText();
                 }
-                
-                ReplayMessage replayMessage = objectMapper.readValue(messageBody, ReplayMessage.class);
-                logger.info("Processing replay message from queue: " + replayMessage.getBody().getReplayId());
-                replayMessageHandler.handle(replayMessage);
-                sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
             } catch (Exception e) {
-                logger.error("Error processing replay message: " + e.getMessage(), e);
-                try {
-                    // Extract the message for error handling
-                    String messageBody = message.getBody();
-                    try {
-                        JsonNode node = objectMapper.readTree(messageBody);
-                        if (node.has("Message")) {
-                            messageBody = node.get("Message").asText();
-                        }
-                    } catch (Exception ex) {
-                        logger.error("Error parsing SNS message wrapper during error handling: " + ex.getMessage(), ex);
-                    }
-                    
-                    ReplayMessage replayMessage = objectMapper.readValue(messageBody, ReplayMessage.class);
-                    int receiveCount = Integer.parseInt(message.getAttributes().get("ApproximateReceiveCount"));
-                    if (receiveCount >= MAX_DELIVERY_COUNT) {
-                        // Dead letter the message after max retries
-                        logger.error("Max delivery attempts reached for message, sending to dead letter: " + replayMessage.getBody().getReplayId());
-                        replayMessageHandler.handleFailure(replayMessage);
-                        sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
-                    } else {
-                        // Return to queue for retry with backoff
-                        int visibilityTimeout = 30 * (int)Math.pow(2, receiveCount - 1); // Exponential backoff
-                        logger.info("Returning message to queue for retry: " + replayMessage.getBody().getReplayId() + " with visibility timeout: " + visibilityTimeout);
-                        sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), visibilityTimeout);
-                    }
-                } catch (Exception ex) {
-                    // If we can't even parse the message, just delete it
-                    logger.error("Failed to process message, deleting from queue: " + ex.getMessage(), ex);
-                    sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
-                }
+                LOGGER.log(Level.SEVERE, "Error parsing SNS message wrapper: " + e.getMessage(), e);
             }
+            
+            // Parse the message to extract headers before creating the request context
+            ReplayMessage replayMessage = objectMapper.readValue(unwrappedMessageBody, ReplayMessage.class);
+            
+            // Extract headers from the message
+            Map<String, String> headers = new HashMap<>();
+            if (replayMessage.getHeaders() != null) {
+                headers.putAll(replayMessage.getHeaders());
+                LOGGER.info("Extracted headers from message: " + headers);
+            }
+            
+            // Now process the message within a request context with the extracted headers
+            String finalUnwrappedMessageBody = unwrappedMessageBody;
+            requestScopeUtil.executeInRequestScope(() -> {
+                try {
+                    LOGGER.info("Processing replay message from queue: " + replayMessage.getBody().getReplayId());
+                    replayMessageHandler.handle(replayMessage);
+                    sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, "Error processing replay message: " + e.getMessage(), e);
+                    handleMessageError(message, finalUnwrappedMessageBody, e);
+                }
+            }, headers);
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error preparing replay message: " + e.getMessage(), e);
+            // If we can't even parse the message, just delete it
+            sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
+        }
+    }
+    
+    /**
+     * Handle errors that occur during message processing.
+     * 
+     * @param message The original SQS message
+     * @param messageBody The unwrapped message body
+     * @param originalException The exception that occurred
+     */
+    private void handleMessageError(Message message, String messageBody, Exception originalException) {
+        try {
+            ReplayMessage replayMessage = objectMapper.readValue(messageBody, ReplayMessage.class);
+            int receiveCount = Integer.parseInt(message.getAttributes().get("ApproximateReceiveCount"));
+            
+            if (receiveCount >= MAX_DELIVERY_COUNT) {
+                // Dead letter the message after max retries
+                LOGGER.log(Level.SEVERE, "Max delivery attempts reached for message, sending to dead letter: " + replayMessage.getBody().getReplayId());
+                replayMessageHandler.handleFailure(replayMessage);
+                sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
+            } else {
+                // Return to queue for retry with backoff
+                int visibilityTimeout = 30 * (int)Math.pow(2, receiveCount - 1); // Exponential backoff
+                LOGGER.info("Returning message to queue for retry: " + replayMessage.getBody().getReplayId() + " with visibility timeout: " + visibilityTimeout);
+                sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), visibilityTimeout);
+            }
+        } catch (Exception ex) {
+            // If we can't even parse the message, just delete it
+            LOGGER.log(Level.SEVERE, "Failed to process message error handling, deleting from queue: " + ex.getMessage(), ex);
+            sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
         }
     }
 }

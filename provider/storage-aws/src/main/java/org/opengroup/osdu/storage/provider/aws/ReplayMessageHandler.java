@@ -21,12 +21,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -42,7 +40,7 @@ import java.util.logging.Logger;
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
-    // Use a standard Java logger for initialization
+    // Use a standard Java logger for all logging
     private static final Logger LOGGER = Logger.getLogger(ReplayMessageHandler.class.getName());
     
     private AmazonSNS snsClient;
@@ -52,11 +50,6 @@ public class ReplayMessageHandler {
     
     @Inject
     private ReplayService replayService;
-    
-    // Use @Lazy to defer the creation of this bean until it's actually needed
-    @Lazy
-    @Inject
-    private JaxRsDpsLog logger;
     
     @Value("${AWS.REGION:us-east-1}")
     private String region;
@@ -104,11 +97,11 @@ public class ReplayMessageHandler {
      */
     public void handle(ReplayMessage message) {
         try {
-            logger.info("Processing replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
+            LOGGER.info("Processing replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
             // Process the replay message
             replayService.processReplayMessage(message);
         } catch (Exception e) {
-            logger.error("Error processing replay message: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error processing replay message: " + e.getMessage(), e);
             // Handle failure
             handleFailure(message);
             throw e;
@@ -121,7 +114,7 @@ public class ReplayMessageHandler {
      * @param message The replay message that failed
      */
     public void handleFailure(ReplayMessage message) {
-        logger.error("Processing failure for replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
+        LOGGER.log(Level.SEVERE, "Processing failure for replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
         replayService.processFailure(message);
     }
     
@@ -144,11 +137,10 @@ public class ReplayMessageHandler {
                     .withMessage(messageBody);
 
                 snsClient.publish(publishRequest);
-                // Now it's safe to use the request-scoped logger
-                logger.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
+                LOGGER.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
             }
         } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize replay message: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Failed to serialize replay message: " + e.getMessage(), e);
             throw new RuntimeException("Failed to serialize replay message", e);
         }
     }
