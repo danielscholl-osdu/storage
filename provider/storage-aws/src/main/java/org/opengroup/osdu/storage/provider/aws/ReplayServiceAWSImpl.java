@@ -19,13 +19,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
+import org.opengroup.osdu.storage.dto.ReplayStatus;
 import org.opengroup.osdu.storage.enums.ReplayState;
+import org.opengroup.osdu.storage.enums.ReplayType;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
@@ -33,6 +38,7 @@ import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.opengroup.osdu.storage.response.ReplayResponse;
 import org.opengroup.osdu.storage.response.ReplayStatusResponse;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
+import org.opengroup.osdu.storage.util.ReplayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -97,48 +103,159 @@ public class ReplayServiceAWSImpl extends ReplayService {
                     "No replay found with ID: " + replayId);
         }
         
-        // Find the overall status
-        Optional<ReplayMetaDataDTO> overallStatus = replayMetaDataList.stream()
-                .filter(r -> "overall".equals(r.getId()))
-                .findFirst();
+        // Calculate overall status
+        ReplayState overallState = calculateOverallState(replayMetaDataList);
+        long totalRecords = replayMetaDataList.stream().mapToLong(ReplayMetaDataDTO::getTotalRecords).sum();
+        long processedRecords = replayMetaDataList.stream().mapToLong(ReplayMetaDataDTO::getProcessedRecords).sum();
         
-        if (!overallStatus.isPresent()) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Invalid replay data", 
-                    "No overall status found for replay ID: " + replayId);
-        }
+        // Get the first record to extract common fields
+        ReplayMetaDataDTO firstRecord = replayMetaDataList.get(0);
         
-        ReplayMetaDataDTO overall = overallStatus.get();
-        
-        // Get kind-specific statuses
-        List<ReplayMetaDataDTO> kindStatuses = replayMetaDataList.stream()
-                .filter(r -> !"overall".equals(r.getId()))
-                .toList();
-        
-        // Build the response
+        // Create the response
         ReplayStatusResponse response = new ReplayStatusResponse();
         response.setReplayId(replayId);
-        response.setOperation(overall.getOperation());
-        response.setOverallState(overall.getState());
-        response.setStartedAt(overall.getStartedAt());
-        response.setElapsedTime(overall.getElapsedTime());
-        response.setTotalRecords(overall.getTotalRecords());
-        response.setProcessedRecords(overall.getProcessedRecords());
+        response.setOperation(firstRecord.getOperation());
+        response.setOverallState(overallState.name());
+        response.setStartedAt(firstRecord.getStartedAt());
+        response.setElapsedTime(firstRecord.getElapsedTime());
+        response.setTotalRecords(totalRecords);
+        response.setProcessedRecords(processedRecords);
+        response.setFilter(firstRecord.getFilter());
         
-        // Add kind-specific statuses
-        List<org.opengroup.osdu.storage.dto.ReplayStatus> statusList = new ArrayList<>();
-        for (ReplayMetaDataDTO kindStatus : kindStatuses) {
-            org.opengroup.osdu.storage.dto.ReplayStatus status = new org.opengroup.osdu.storage.dto.ReplayStatus();
-            status.setKind(kindStatus.getKind());
-            status.setState(kindStatus.getState());
-            status.setTotalRecords(kindStatus.getTotalRecords());
-            status.setProcessedRecords(kindStatus.getProcessedRecords());
-            status.setStartedAt(kindStatus.getStartedAt());
-            status.setElapsedTime(kindStatus.getElapsedTime());
+        // Convert ReplayMetaDataDTO objects to ReplayStatus objects
+        List<ReplayStatus> statusList = new ArrayList<>();
+        for (ReplayMetaDataDTO dto : replayMetaDataList) {
+            ReplayStatus status = new ReplayStatus();
+            status.setKind(dto.getKind());
+            status.setState(dto.getState());
+            status.setTotalRecords(dto.getTotalRecords());
+            status.setProcessedRecords(dto.getProcessedRecords());
+            status.setStartedAt(dto.getStartedAt());
+            status.setElapsedTime(dto.getElapsedTime());
             statusList.add(status);
         }
         response.setStatus(statusList);
         
         return response;
+    }
+    
+    private ReplayState calculateOverallState(List<ReplayMetaDataDTO> replayMetaDataList) {
+        // If any kind is FAILED, the overall state is FAILED
+        if (replayMetaDataList.stream().anyMatch(dto -> ReplayState.FAILED.name().equals(dto.getState()))) {
+            return ReplayState.FAILED;
+        }
+        
+        // If any kind is IN_PROGRESS, the overall state is IN_PROGRESS
+        if (replayMetaDataList.stream().anyMatch(dto -> ReplayState.IN_PROGRESS.name().equals(dto.getState()))) {
+            return ReplayState.IN_PROGRESS;
+        }
+        
+        // If all kinds are COMPLETED, the overall state is COMPLETED
+        if (replayMetaDataList.stream().allMatch(dto -> ReplayState.COMPLETED.name().equals(dto.getState()))) {
+            return ReplayState.COMPLETED;
+        }
+        
+        // Default to QUEUED
+        return ReplayState.QUEUED;
+    }
+    
+    /**
+     * Handles a replay request by creating individual records for each kind.
+     *
+     * @param replayRequest The replay request
+     * @return The response to the replay request
+     */
+    @Override
+    public ReplayResponse handleReplayRequest(ReplayRequest replayRequest) {
+        // Generate a unique replay ID if not provided
+        if (replayRequest.getReplayId() == null || replayRequest.getReplayId().isEmpty()) {
+            replayRequest.setReplayId(UUID.randomUUID().toString());
+        }
+        String replayId = replayRequest.getReplayId();
+        
+        // Get the list of kinds to replay
+        List<String> kinds;
+        if (replayRequest.getFilter() != null && replayRequest.getFilter().getKinds() != null && !replayRequest.getFilter().getKinds().isEmpty()) {
+            kinds = replayRequest.getFilter().getKinds();
+        } else {
+            // If no kinds specified, get all kinds
+            Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
+            kinds = new ArrayList<>(kindCounts.keySet());
+        }
+        
+        // Create a replay metadata record for EACH kind
+        for (String kind : kinds) {
+            ReplayMetaDataDTO replayMetaData = new ReplayMetaDataDTO();
+            replayMetaData.setId(kind);  // Use kind as the ID (hash key)
+            replayMetaData.setReplayId(replayId);
+            replayMetaData.setKind(kind);
+            replayMetaData.setOperation(replayRequest.getOperation());
+            replayMetaData.setState(ReplayState.QUEUED.name());
+            replayMetaData.setStartedAt(new Date());
+            
+            // Get count of records for this kind
+            Map<String, Long> kindCount = queryRepository.getActiveRecordsCountForKinds(Collections.singletonList(kind));
+            Long count = kindCount.getOrDefault(kind, 0L);
+            replayMetaData.setTotalRecords(count);
+            replayMetaData.setProcessedRecords(0L);
+            
+            // Save the replay metadata for this kind
+            replayRepository.save(replayMetaData);
+        }
+        
+        // Create and publish replay messages - one message per kind
+        List<ReplayMessage> messages = createReplayMessages(replayRequest, replayId, kinds);
+        messageHandler.sendReplayMessage(messages, replayRequest.getOperation());
+        
+        // Log success
+        auditLogger.createReplayRequestSuccess(Collections.singletonList("Replay started for ID: " + replayId));
+        
+        return new ReplayResponse(replayId);
+    }
+    
+    /**
+     * Creates replay messages for the specified kinds.
+     *
+     * @param replayRequest The replay request
+     * @param replayId The unique identifier for the replay operation
+     * @param kinds The kinds of records to replay
+     * @return A list of replay messages
+     */
+    private List<ReplayMessage> createReplayMessages(ReplayRequest replayRequest, String replayId, List<String> kinds) {
+        List<ReplayMessage> messages = new ArrayList<>();
+        int kindCounter = 0;
+        
+        for (String kind : kinds) {
+            // Get count of records for this kind
+            Map<String, Long> kindCount = queryRepository.getActiveRecordsCountForKinds(Collections.singletonList(kind));
+            Long count = kindCount.getOrDefault(kind, 0L);
+            
+            // Create the replay data
+            org.opengroup.osdu.storage.dto.ReplayData body = new org.opengroup.osdu.storage.dto.ReplayData();
+            body.setId(UUID.randomUUID().toString());
+            body.setReplayId(replayId);
+            body.setKind(kind);
+            body.setOperation(replayRequest.getOperation());
+            body.setTotalCount(count);
+            body.setCompletionCount(0L);
+            // Always use REPLAY_KIND type even for REPLAY_ALL operations
+            body.setReplayType(ReplayType.REPLAY_KIND.name());
+            body.setStartAtTimestamp(System.currentTimeMillis());
+            
+            // Create the message
+            ReplayMessage message = new ReplayMessage();
+            message.setBody(body);
+            
+            // Add headers from the current request
+            String messageCorrelationId = ReplayUtils.getNextCorrelationId(headers.getCorrelationId(), Optional.of(kindCounter));
+            Map<String, String> messageHeaders = ReplayUtils.createHeaders(headers.getPartitionId(), messageCorrelationId);
+            message.setHeaders(messageHeaders);
+            
+            messages.add(message);
+            kindCounter++;
+        }
+        
+        return messages;
     }
     
     /**
@@ -150,77 +267,177 @@ public class ReplayServiceAWSImpl extends ReplayService {
     public void processReplayMessage(ReplayMessage replayMessage) {
         String replayId = replayMessage.getBody().getReplayId();
         String kind = replayMessage.getBody().getKind();
-        String operation = replayMessage.getBody().getOperation();
-        
-        logger.info("Processing replay message: " + replayId + " for kind: " + kind + " with operation: " + operation);
         
         try {
-            // Update status to IN_PROGRESS if it's not already
-            ReplayMetaDataDTO kindStatus = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
-            if (kindStatus != null && !ReplayState.IN_PROGRESS.name().equals(kindStatus.getState())) {
-                kindStatus.setState(ReplayState.IN_PROGRESS.name());
-                replayRepository.save(kindStatus);
+            logger.info("Processing replay message for kind: " + kind + " and replayId: " + replayId);
+            
+            // Update status to IN_PROGRESS
+            ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+            if (replayMetaData != null) {
+                replayMetaData.setState(ReplayState.IN_PROGRESS.name());
+                replayRepository.save(replayMetaData);
+            } else {
+                logger.warning("No replay metadata found for kind: " + kind + " and replayId: " + replayId);
             }
             
-            // Get routing properties for the operation
-            Map<String, String> routingProps = replayOperationRoutingProperties.get(operation);
-            if (routingProps == null) {
-                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Invalid operation", 
-                        "No routing properties found for operation: " + operation);
-            }
-            
-            // Get batch sizes
-            int queryBatchSize = Integer.parseInt(routingProps.getOrDefault("queryBatchSize", "5000"));
-            int publisherBatchSize = Integer.parseInt(routingProps.getOrDefault("publisherBatchSize", "50"));
-            
-            // Process records in batches
+            // Get record IDs for this kind using getAllRecordIdsFromKind
+            // This avoids the "No hash key condition" error by always using a specific kind
             String cursor = null;
-            long processedCount = 0;
+            int batchSize = 1000; // Default batch size
+            long processedRecords = 0;
             
             do {
-                // Query for records
-                RecordInfoQueryResult<RecordId> queryResult = queryRepository.getAllRecordIdsFromKind(queryBatchSize, cursor, kind);
-                List<RecordId> recordIds = queryResult.getResults();
-                cursor = queryResult.getCursor();
+                RecordInfoQueryResult<RecordId> recordIds = queryRepository.getAllRecordIdsFromKind(
+                    batchSize, 
+                    cursor, 
+                    kind);
                 
-                if (recordIds != null && !recordIds.isEmpty()) {
-                    // Process records in smaller batches for publishing
-                    for (int i = 0; i < recordIds.size(); i += publisherBatchSize) {
-                        int endIndex = Math.min(i + publisherBatchSize, recordIds.size());
-                        List<RecordId> batch = recordIds.subList(i, endIndex);
-                        
-                        // Publish record change messages
-                        publishRecordChanges(batch, operation, routingProps, kind);
-                        
-                        // Update processed count
-                        processedCount += batch.size();
-                        
-                        // Update status periodically
-                        if (processedCount % 1000 == 0 || cursor == null) {
-                            updateReplayStatus(replayId, kind, processedCount);
-                        }
-                    }
+                if (recordIds == null || recordIds.getResults() == null || recordIds.getResults().isEmpty()) {
+                    logger.info("No more records found for kind: " + kind);
+                    break;
                 }
-            } while (cursor != null);
+                
+                // Process the batch of records
+                processRecordBatch(replayMessage, recordIds.getResults());
+                
+                // Update cursor for next batch
+                cursor = recordIds.getCursor();
+                
+                // Update processed records count
+                processedRecords += recordIds.getResults().size();
+                
+                // Update replay metadata with progress
+                if (replayMetaData != null) {
+                    replayMetaData.setProcessedRecords(processedRecords);
+                    replayRepository.save(replayMetaData);
+                }
+                
+                logger.info("Processed " + processedRecords + " records for kind: " + kind);
+                
+            } while (cursor != null && !cursor.isEmpty());
             
-            // Update final status
-            updateReplayStatus(replayId, kind, processedCount);
+            // Update status to COMPLETED
+            replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+            if (replayMetaData != null) {
+                replayMetaData.setState(ReplayState.COMPLETED.name());
+                replayMetaData.setProcessedRecords(processedRecords);
+                replayRepository.save(replayMetaData);
+            }
             
-            // Mark as completed
-            kindStatus = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
-            kindStatus.setState(ReplayState.COMPLETED.name());
-            replayRepository.save(kindStatus);
-            
-            // Check if all kinds are completed
-            checkAndUpdateOverallStatus(replayId);
-            
-            logger.info("Completed processing replay message: " + replayId + " for kind: " + kind);
+            logger.info("Completed processing replay message for kind: " + kind + " and replayId: " + replayId);
             
         } catch (Exception e) {
             logger.error("Error processing replay message: " + e.getMessage(), e);
             processFailure(replayMessage);
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error processing replay", 
-                    "Failed to process replay for kind: " + kind + ", error: " + e.getMessage(), e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Process a batch of records for replay.
+     * 
+     * @param replayMessage The replay message
+     * @param records The records to process
+     */
+    private void processRecordBatch(ReplayMessage replayMessage, List<RecordId> records) {
+        String operation = replayMessage.getBody().getOperation();
+        
+        try {
+            // Get the routing properties for this operation
+            Map<String, String> routingInfo = replayOperationRoutingProperties.get(operation);
+            if (routingInfo == null) {
+                logger.error("No routing properties found for operation: " + operation);
+                return;
+            }
+            
+            // Create record change messages for each record
+            List<RecordChangedV2> recordChangedMessages = new ArrayList<>();
+            
+            for (RecordId record : records) {
+                RecordChangedV2 recordChanged = new RecordChangedV2();
+                recordChanged.setId(record.getId());
+                
+                // Convert string operation to OperationType enum
+                OperationType opType = convertToOperationType(operation);
+                recordChanged.setOp(opType);
+                
+                recordChangedMessages.add(recordChanged);
+                
+                // Publish in batches of 50 to avoid exceeding SNS message size limits
+                if (recordChangedMessages.size() >= 50) {
+                    // Get collaboration context from the message headers if present
+                    Optional<CollaborationContext> collaborationContext = getCollaborationContext(replayMessage);
+                    
+                    // Publish the batch
+                    if (collaborationContext.isPresent()) {
+                        messageBus.publishMessage(collaborationContext, headers, 
+                            recordChangedMessages.toArray(new RecordChangedV2[0]));
+                    } else {
+                        // Use the routing info approach for non-collaboration messages
+                        messageBus.publishMessage(headers, routingInfo, recordChangedMessages);
+                    }
+                    
+                    // Clear the batch
+                    recordChangedMessages.clear();
+                }
+            }
+            
+            // Publish any remaining records
+            if (!recordChangedMessages.isEmpty()) {
+                // Get collaboration context from the message headers if present
+                Optional<CollaborationContext> collaborationContext = getCollaborationContext(replayMessage);
+                
+                // Publish the batch
+                if (collaborationContext.isPresent()) {
+                    messageBus.publishMessage(collaborationContext, headers, 
+                        recordChangedMessages.toArray(new RecordChangedV2[0]));
+                } else {
+                    // Use the routing info approach for non-collaboration messages
+                    messageBus.publishMessage(headers, routingInfo, recordChangedMessages);
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error publishing record change messages: " + e.getMessage(), e);
+            // Continue processing other records
+        }
+    }
+    
+    /**
+     * Extract collaboration context from replay message headers if present
+     * 
+     * @param replayMessage The replay message
+     * @return Optional containing the collaboration context if present
+     */
+    private Optional<CollaborationContext> getCollaborationContext(ReplayMessage replayMessage) {
+        if (replayMessage.getHeaders() == null) {
+            return Optional.empty();
+        }
+        
+        String collaborationHeader = replayMessage.getHeaders().get("x-collaboration");
+        if (collaborationHeader == null || collaborationHeader.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        try {
+            // Parse the collaboration header
+            // Format is typically: id=<id>,application=<application>
+            String[] parts = collaborationHeader.split(",");
+            if (parts.length < 2) {
+                return Optional.empty();
+            }
+            
+            String id = parts[0].substring(parts[0].indexOf('=') + 1);
+            String application = parts[1].substring(parts[1].indexOf('=') + 1);
+            
+            CollaborationContext context = new CollaborationContext();
+            context.setId(UUID.fromString(id));
+            context.setApplication(application);
+            
+            return Optional.of(context);
+        } catch (Exception e) {
+            logger.error("Error parsing collaboration context: " + e.getMessage(), e);
+            return Optional.empty();
         }
     }
     
@@ -242,286 +459,50 @@ public class ReplayServiceAWSImpl extends ReplayService {
             if (kindStatus != null) {
                 kindStatus.setState(ReplayState.FAILED.name());
                 replayRepository.save(kindStatus);
-            }
-            
-            // Update overall status
-            ReplayMetaDataDTO overallStatus = replayRepository.getReplayStatusByKindAndReplayId("overall", replayId);
-            if (overallStatus != null) {
-                overallStatus.setState(ReplayState.FAILED.name());
-                replayRepository.save(overallStatus);
+            } else {
+                logger.error("Failed to find replay metadata for kind: " + kind + " and replayId: " + replayId);
             }
             
             // Log the failure
-            logger.error("Failed to process replay message: " + replayId + " for kind: " + kind);
-            // Use a different approach for logging failures
-            try {
-                // Log the failure using available methods
-                logger.error("Replay operation failed for replayId: " + replayId + ", kind: " + kind);
-            } catch (Exception e) {
-                logger.error("Error logging failure: " + e.getMessage(), e);
-            }
-            
+            auditLogger.createReplayRequestFail(Collections.singletonList(kindStatus != null ? kindStatus.toString() : "null"));
         } catch (Exception e) {
             logger.error("Error updating failure status: " + e.getMessage(), e);
         }
     }
-    
+
     /**
-     * Handles a replay request.
+     * Convert string operation to OperationType enum
      *
-     * @param replayRequest The replay request
-     * @return The response to the replay request
+     * @param operation The operation as a string
+     * @return The corresponding OperationType enum value
      */
-    @Override
-    public ReplayResponse handleReplayRequest(ReplayRequest replayRequest) {
-        String replayId = replayRequest.getReplayId();
-        String operation = replayRequest.getOperation();
-        List<String> kinds = null;
-        
-        if (replayRequest.getFilter() != null && replayRequest.getFilter().getKinds() != null) {
-            kinds = replayRequest.getFilter().getKinds();
-        }
-        
-        logger.info("Handling replay request: " + replayId + " for operation: " + operation);
-        
-        try {
-            // Validate operation
-            if (!replayOperationRoutingProperties.containsKey(operation)) {
-                throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid operation", 
-                        "Operation not supported: " + operation);
-            }
-            
-            // Initialize overall status
-            ReplayMetaDataDTO overallStatus = new ReplayMetaDataDTO();
-            overallStatus.setId("overall");
-            overallStatus.setReplayId(replayId);
-            overallStatus.setOperation(operation);
-            overallStatus.setState(ReplayState.QUEUED.name());
-            overallStatus.setStartedAt(new Date());
-            overallStatus.setProcessedRecords(0L);
-            
-            // Serialize filter if present
-            if (replayRequest.getFilter() != null) {
-                overallStatus.setFilter(replayRequest.getFilter());
-            }
-            
-            // If no kinds specified, get all kinds
-            if (kinds == null || kinds.isEmpty()) {
-                Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
-                kinds = new ArrayList<>(kindCounts.keySet());
-                
-                // Set total records count
-                long totalRecords = kindCounts.values().stream().mapToLong(Long::longValue).sum();
-                overallStatus.setTotalRecords(totalRecords);
-            } else {
-                // Get counts for specified kinds
-                Map<String, Long> kindCounts = queryRepository.getActiveRecordsCountForKinds(kinds);
-                long totalRecords = kindCounts.values().stream().mapToLong(Long::longValue).sum();
-                overallStatus.setTotalRecords(totalRecords);
-            }
-            
-            // Save overall status
-            replayRepository.save(overallStatus);
-            
-            // Create and save status for each kind
-            for (String kind : kinds) {
-                ReplayMetaDataDTO kindStatus = new ReplayMetaDataDTO();
-                kindStatus.setId(kind);
-                kindStatus.setKind(kind);
-                kindStatus.setReplayId(replayId);
-                kindStatus.setOperation(operation);
-                kindStatus.setState(ReplayState.QUEUED.name());
-                kindStatus.setStartedAt(new Date());
-                kindStatus.setProcessedRecords(0L);
-                
-                // Get record count for this kind
-                Map<String, Long> kindCount = queryRepository.getActiveRecordsCountForKinds(Collections.singletonList(kind));
-                kindStatus.setTotalRecords(kindCount.getOrDefault(kind, 0L));
-                
-                replayRepository.save(kindStatus);
-                
-                // Create and send replay message
-                ReplayMessage message = createReplayMessage(replayId, kind, operation, replayRequest.getFilter());
-                
-                messageHandler.sendReplayMessage(Collections.singletonList(message), operation);
-            }
-            
-            // Create response
-            ReplayResponse response = ReplayResponse.builder()
-                .replayId(replayId)
-                .build();
-            
-            // Log the request
-            // Use a different approach for logging success
-            try {
-                logger.info("Successfully initiated replay operation: " + replayId + " for operation: " + operation);
-            } catch (Exception e) {
-                logger.error("Error logging success: " + e.getMessage(), e);
-            }
-            
-            return response;
-            
-        } catch (Exception e) {
-            logger.error("Error handling replay request: " + e.getMessage(), e);
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling replay request", 
-                    "Failed to process replay request: " + e.getMessage(), e);
+    private OperationType convertToOperationType(String operation) {
+        // Map the operation string to the appropriate OperationType enum value
+        switch (operation.toLowerCase()) {
+            case "create":
+                return OperationType.create;
+            case "update":
+                return OperationType.update;
+            case "delete":
+                return OperationType.delete;
+            case "purge":
+                return OperationType.purge;
+            case "view":
+                return OperationType.view;
+            case "create_schema":
+                return OperationType.create_schema;
+            case "purge_schema":
+                return OperationType.purge_schema;
+            case "reindex":
+                // For reindex operations, we typically want to use update
+                return OperationType.update;
+            case "replay":
+                // For replay operations, we typically want to use update
+                return OperationType.update;
+            default:
+                logger.warning("Unknown operation type: " + operation + ". Defaulting to update.");
+                return OperationType.update;
         }
     }
-    
-    /**
-     * Updates the status of a replay operation for a specific kind.
-     *
-     * @param replayId The unique identifier for the replay operation
-     * @param kind The kind of records being replayed
-     * @param processedCount The number of records processed so far
-     */
-    private void updateReplayStatus(String replayId, String kind, long processedCount) {
-        // Update kind status
-        ReplayMetaDataDTO kindStatus = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
-        if (kindStatus != null) {
-            kindStatus.setProcessedRecords(processedCount);
-            // Calculate elapsed time
-            long elapsedMillis = System.currentTimeMillis() - kindStatus.getStartedAt().getTime();
-            kindStatus.setElapsedTime(formatElapsedTime(elapsedMillis));
-            replayRepository.save(kindStatus);
-        }
-        
-        // Update overall status
-        updateOverallProcessedCount(replayId);
-    }
-    
-    /**
-     * Updates the overall processed count for a replay operation.
-     *
-     * @param replayId The unique identifier for the replay operation
-     */
-    private void updateOverallProcessedCount(String replayId) {
-        List<ReplayMetaDataDTO> allStatuses = replayRepository.getReplayStatusByReplayId(replayId);
-        
-        // Find kind-specific statuses
-        List<ReplayMetaDataDTO> kindStatuses = allStatuses.stream()
-                .filter(r -> !"overall".equals(r.getId()))
-                .toList();
-        
-        // Calculate total processed count
-        long totalProcessed = kindStatuses.stream()
-                .mapToLong(ReplayMetaDataDTO::getProcessedRecords)
-                .sum();
-        
-        // Update overall status
-        ReplayMetaDataDTO overallStatus = replayRepository.getReplayStatusByKindAndReplayId("overall", replayId);
-        if (overallStatus != null) {
-            overallStatus.setProcessedRecords(totalProcessed);
-            // Calculate elapsed time
-            long elapsedMillis = System.currentTimeMillis() - overallStatus.getStartedAt().getTime();
-            overallStatus.setElapsedTime(formatElapsedTime(elapsedMillis));
-            replayRepository.save(overallStatus);
-        }
-    }
-    
-    /**
-     * Checks if all kinds are completed and updates the overall status accordingly.
-     *
-     * @param replayId The unique identifier for the replay operation
-     */
-    private void checkAndUpdateOverallStatus(String replayId) {
-        List<ReplayMetaDataDTO> allStatuses = replayRepository.getReplayStatusByReplayId(replayId);
-        
-        // Find kind-specific statuses
-        List<ReplayMetaDataDTO> kindStatuses = allStatuses.stream()
-                .filter(r -> !"overall".equals(r.getId()))
-                .toList();
-        
-        // Check if all kinds are completed
-        boolean allCompleted = kindStatuses.stream()
-                .allMatch(r -> ReplayState.COMPLETED.name().equals(r.getState()));
-        
-        // Check if any kind failed
-        boolean anyFailed = kindStatuses.stream()
-                .anyMatch(r -> ReplayState.FAILED.name().equals(r.getState()));
-        
-        // Update overall status
-        ReplayMetaDataDTO overallStatus = replayRepository.getReplayStatusByKindAndReplayId("overall", replayId);
-        if (overallStatus != null) {
-            if (allCompleted) {
-                overallStatus.setState(ReplayState.COMPLETED.name());
-            } else if (anyFailed) {
-                overallStatus.setState(ReplayState.FAILED.name());
-            }
-            replayRepository.save(overallStatus);
-        }
-    }
-    
-    /**
-     * Publishes record change messages for a batch of records.
-     *
-     * @param recordIds The record IDs to publish changes for
-     * @param operation The operation being performed
-     * @param routingProps The routing properties for the operation
-     * @param kind The kind of records being processed
-     */
-    private void publishRecordChanges(List<RecordId> recordIds, String operation, Map<String, String> routingProps, String kind) {
-        // Get the queue URL from routing properties
-        String queueUrl = routingProps.get("queue");
-        if (queueUrl == null) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Invalid routing properties", 
-                    "No queue URL found for operation: " + operation);
-        }
-        
-        // Create routing info map
-        Map<String, String> routingInfo = new HashMap<>();
-        routingInfo.put("queue", queueUrl);
-        
-        // Create record change messages
-        List<Map<String, Object>> recordChanges = new ArrayList<>();
-        for (RecordId recordId : recordIds) {
-            Map<String, Object> recordChange = new HashMap<>();
-            recordChange.put("id", recordId.getId());
-            // Since RecordId doesn't have getKind(), we need to handle this differently
-            // For now, we'll use the kind parameter passed to this method
-            recordChange.put("kind", kind);
-            recordChange.put("op", "update");
-            recordChanges.add(recordChange);
-        }
-        
-        // Publish messages
-        messageBus.publishMessage(headers, routingInfo, recordChanges);
-    }
-    
-    /**
-     * Creates a replay message.
-     *
-     * @param replayId The unique identifier for the replay operation
-     * @param kind The kind of records being replayed
-     * @param operation The operation being performed
-     * @param filter The filter for the replay operation
-     * @return The created replay message
-     */
-    private ReplayMessage createReplayMessage(String replayId, String kind, String operation, Object filter) {
-        // Implementation depends on the structure of ReplayMessage and ReplayData
-        // This is a simplified version
-        ReplayMessage message = new ReplayMessage();
-        message.getBody().setReplayId(replayId);
-        message.getBody().setKind(kind);
-        message.getBody().setOperation(operation);
-        // Set headers and body as needed
-        return message;
-    }
-    
-    /**
-     * Formats elapsed time in milliseconds to a human-readable string.
-     *
-     * @param elapsedMillis The elapsed time in milliseconds
-     * @return A formatted string representing the elapsed time
-     */
-    private String formatElapsedTime(long elapsedMillis) {
-        long seconds = elapsedMillis / 1000;
-        long minutes = seconds / 60;
-        long hours = minutes / 60;
-        
-        seconds %= 60;
-        minutes %= 60;
-        
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
+
 }

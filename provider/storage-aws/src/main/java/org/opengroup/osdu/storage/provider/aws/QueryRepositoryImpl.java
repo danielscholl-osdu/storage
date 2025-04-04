@@ -179,20 +179,16 @@ public class QueryRepositoryImpl implements IQueryRepository {
         List<RecordIdAndKind> records = new ArrayList<>();
         
         try {
-            // Query for all active records
+            // Create a query object with status as the hash key for the GSI
             RecordMetadataDoc queryObject = new RecordMetadataDoc();
-            
-            // Use queryPage instead of queryByGSI
-            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryPage(
-                RecordMetadataDoc.class,
-                queryObject,
-                "Status",
-                "active",
-                null,
-                null,
-                null,
-                numRecords,
-                cursor);
+            queryObject.setStatus("active");
+
+            // Use queryByGSI instead of queryPage
+            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
+                    RecordMetadataDoc.class,
+                    queryObject,
+                    numRecords,
+                    cursor);
             
             // Convert to RecordIdAndKind objects
             for (RecordMetadataDoc doc : queryPageResult.results) {

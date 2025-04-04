@@ -121,6 +121,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     public ReplayMetaDataDTO getReplayStatusByKindAndReplayId(String kind, String replayId) {
         DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
         
+        // Use the kind as the hash key and replayId as the range key
         ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
         
         return item != null ? convertToDTO(item) : null;
@@ -183,7 +184,14 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     private ReplayMetadataItem convertToItem(ReplayMetaDataDTO dto) {
         ReplayMetadataItem item = new ReplayMetadataItem();
-        item.setId(dto.getId());
+        
+        // Use the kind as the hash key (id) if it's not already set
+        if (dto.getId() == null || dto.getId().isEmpty()) {
+            item.setId(dto.getKind());
+        } else {
+            item.setId(dto.getId());
+        }
+        
         item.setReplayId(dto.getReplayId());
         item.setKind(dto.getKind());
         item.setOperation(dto.getOperation());

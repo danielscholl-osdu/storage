@@ -23,7 +23,7 @@ We've implemented a DynamoDB table to store replay status information, similar t
 @DynamoDBTable(tableName = "ReplayStatus")
 public class ReplayMetadataItem {
     @DynamoDBHashKey
-    private String id;
+    private String id;  // This will be the kind
     
     @DynamoDBRangeKey
     private String replayId;
@@ -39,6 +39,26 @@ public class ReplayMetadataItem {
     private String dataPartitionId;
 }
 ```
+
+#### 1.2.1 Improved Approach: Individual Records Per Kind ✅
+
+The initial implementation created only a single record in the DynamoDB table for each replay operation. This caused issues when processing failures, as the system couldn't find the appropriate record for a specific kind.
+
+Our improved approach creates individual records for each kind involved in a replay operation:
+
+1. **One Record Per Kind**: When a replay operation is initiated, we create a separate record in the DynamoDB table for each kind being replayed.
+
+2. **Hash Key is Kind**: We use the kind as the hash key (id) and the replayId as the range key, allowing efficient lookups by both kind and replayId.
+
+3. **Status Tracking Per Kind**: Each record tracks the status, progress, and other metadata specific to that kind.
+
+4. **Failure Handling**: When a failure occurs for a specific kind, we can easily find and update the corresponding record.
+
+This approach provides several benefits:
+- More granular status tracking
+- Better failure handling
+- Improved query performance
+- Consistent with the data model used by other cloud providers
 
 ### 1.3 AWS Repository Implementation Using os-core-lib-aws ✅
 Created a `ReplayRepositoryImpl` for AWS that implements the `IReplayRepository` interface, leveraging the os-core-lib-aws library:
@@ -782,3 +802,111 @@ private static class SchemaIdentity {
 ```
 
 This approach ensures we have a complete list of kinds to query against, even if some kinds don't have any active records yet.
+## 7. Implementation Improvements
+
+### 7.1 Per-Kind Replay Status Records
+
+#### Current Issue
+The current implementation creates only a single record in the DynamoDB table for each replay operation. This causes issues when processing failures, as the system can't find the appropriate record for a specific kind when `getReplayStatusByKindAndReplayId` is called.
+
+#### Improved Approach
+We need to modify the implementation to create individual records for each kind involved in a replay operation:
+
+1. **ReplayServiceAWSImpl.triggerReplay Method**:
+   ```java
+   @Override
+   public ReplayResponse triggerReplay(ReplayRequest replayRequest) {
+       // Generate a unique replay ID
+       String replayId = UUID.randomUUID().toString();
+       
+       // Get the list of kinds to replay
+       List<String> kinds = replayRequest.getKinds();
+       if (kinds == null || kinds.isEmpty()) {
+           // If no kinds specified, get all kinds
+           Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
+           kinds = new ArrayList<>(kindCounts.keySet());
+       }
+       
+       // Create a replay metadata record for EACH kind
+       for (String kind : kinds) {
+           ReplayMetaDataDTO replayMetaData = new ReplayMetaDataDTO();
+           replayMetaData.setReplayId(replayId);
+           replayMetaData.setKind(kind);
+           replayMetaData.setOperation(replayRequest.getOperation());
+           replayMetaData.setState(ReplayState.SUBMITTED.name());
+           replayMetaData.setStartedAt(new Date());
+           
+           // Get count of records for this kind
+           Map<String, Long> kindCount = queryRepository.getActiveRecordsCountForKinds(Collections.singletonList(kind));
+           Long count = kindCount.getOrDefault(kind, 0L);
+           replayMetaData.setTotalRecords(count);
+           replayMetaData.setProcessedRecords(0L);
+           
+           // Save the replay metadata for this kind
+           replayRepository.save(replayMetaData);
+       }
+       
+       // Create and publish replay messages
+       // ...
+       
+       return new ReplayResponse(replayId);
+   }
+   ```
+
+2. **ReplayRepositoryImpl.getReplayStatusByKindAndReplayId Method**:
+   ```java
+   @Override
+   public ReplayMetaDataDTO getReplayStatusByKindAndReplayId(String kind, String replayId) {
+       DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+       
+       // Use the kind as the hash key and replayId as the range key
+       ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
+       
+       return item != null ? convertToDTO(item) : null;
+   }
+   ```
+
+3. **ReplayRepositoryImpl.convertToItem Method**:
+   ```java
+   private ReplayMetadataItem convertToItem(ReplayMetaDataDTO dto) {
+       ReplayMetadataItem item = new ReplayMetadataItem();
+       
+       // Use the kind as the hash key (id)
+       item.setId(dto.getKind());
+       item.setReplayId(dto.getReplayId());
+       item.setKind(dto.getKind());
+       item.setOperation(dto.getOperation());
+       item.setTotalRecords(dto.getTotalRecords());
+       item.setProcessedRecords(dto.getProcessedRecords());
+       item.setState(dto.getState());
+       item.setStartedAt(dto.getStartedAt());
+       item.setElapsedTime(dto.getElapsedTime());
+       
+       // Set the data partition ID from the headers
+       item.setDataPartitionId(headers.getPartitionId());
+       
+       return item;
+   }
+   ```
+
+### 7.2 Benefits of the Improved Approach
+
+1. **More Granular Status Tracking**: Each kind has its own status record, allowing for more detailed progress tracking.
+
+2. **Better Failure Handling**: When a failure occurs for a specific kind, we can easily find and update the corresponding record.
+
+3. **Improved Query Performance**: Using the kind as the hash key allows for efficient lookups by both kind and replayId.
+
+4. **Consistent with Other Cloud Providers**: This approach aligns with how the Azure implementation handles replay status tracking.
+
+### 7.3 Implementation Tasks
+
+1. **Update ReplayServiceAWSImpl**: Modify the `triggerReplay` method to create individual records for each kind.
+
+2. **Update ReplayRepositoryImpl**: Ensure the repository methods correctly use the kind as the hash key.
+
+3. **Update DynamoDB Table**: Verify the DynamoDB table has the correct key structure (hash key = kind, range key = replayId).
+
+4. **Test Failure Handling**: Verify that failures for specific kinds are properly handled and status is updated correctly.
+
+5. **Update Status Aggregation**: Modify the `getReplayStatus` method to aggregate status across all kinds for a given replayId.
