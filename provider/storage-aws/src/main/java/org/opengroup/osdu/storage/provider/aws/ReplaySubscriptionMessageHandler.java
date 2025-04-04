@@ -99,12 +99,13 @@ public class ReplaySubscriptionMessageHandler {
      */
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
+
         if (replayQueueUrl == null) {
             // Use standard logger here since this might be called before a request context exists
             LOGGER.warning("SQS queue URL is not initialized. Skipping message polling.");
             return;
         }
-        
+
         ReceiveMessageRequest receiveRequest = new ReceiveMessageRequest()
             .withQueueUrl(replayQueueUrl)
             .withMaxNumberOfMessages(10)
