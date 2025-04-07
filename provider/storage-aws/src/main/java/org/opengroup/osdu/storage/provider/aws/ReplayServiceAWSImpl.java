@@ -34,6 +34,7 @@ import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.opengroup.osdu.storage.util.ReplayUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -42,6 +43,7 @@ import java.util.*;
  * AWS implementation of the ReplayService.
  * This class handles the replay API functionality for the AWS provider.
  */
+@Primary
 @Service
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayServiceAWSImpl extends ReplayService {

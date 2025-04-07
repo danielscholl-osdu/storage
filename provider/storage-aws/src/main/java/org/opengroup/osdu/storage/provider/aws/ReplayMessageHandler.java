@@ -47,9 +47,9 @@ public class ReplayMessageHandler {
     
     @Inject
     private ObjectMapper objectMapper;
-    
+
     @Inject
-    private ReplayService replayService;
+    private ReplayMessageProcessorAWSImpl replayMessageProcessor;
     
     @Value("${AWS.REGION:us-east-1}")
     private String region;
@@ -89,10 +89,7 @@ public class ReplayMessageHandler {
             LOGGER.log(Level.SEVERE, "Failed to initialize ReplayMessageHandler: " + e.getMessage(), e);
         }
     }
-    
-    @Inject
-    private ReplayMessageProcessorAWSImpl replayMessageProcessor;
-    
+
     /**
      * Handles a replay message by processing it through the replay message processor.
      *
