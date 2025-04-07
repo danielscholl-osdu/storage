@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -25,6 +27,8 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,8 +62,11 @@ public class ReplayMessageProcessorAWSImpl {
     
     private final JaxRsDpsLog logger;
     
-    @Value("#{${replay.operation.routingProperties}}")
-    private Map<String, Map<String, String>> replayOperationRoutingProperties;
+    @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
+    private String recordMetadataTableParameterRelativePath;
+    
+    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    private final WorkerThreadPool workerThreadPool;
 
     @Autowired
     public ReplayMessageProcessorAWSImpl(IReplayRepository replayRepository, 
@@ -67,14 +74,21 @@ public class ReplayMessageProcessorAWSImpl {
                                         IMessageBus messageBus, 
                                         DpsHeaders headers, 
                                         StorageAuditLogger auditLogger, 
-                                        JaxRsDpsLog logger) {
+                                        JaxRsDpsLog logger,
+                                        DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
+                                        WorkerThreadPool workerThreadPool) {
         this.replayRepository = replayRepository;
         this.queryRepository = queryRepository;
         this.messageBus = messageBus;
         this.headers = headers;
         this.auditLogger = auditLogger;
         this.logger = logger;
+        this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
+        this.workerThreadPool = workerThreadPool;
     }
+    
+    @Value("#{${replay.operation.routingProperties}}")
+    private Map<String, Map<String, String>> replayOperationRoutingProperties;
 
     /**
      * Processes a replay message.
@@ -171,13 +185,37 @@ public class ReplayMessageProcessorAWSImpl {
             // Create record change messages for each record
             List<RecordChangedV2> recordChangedMessages = new ArrayList<>();
             
+            // Get the record metadata helper to fetch additional record information
+            DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+            
             for (RecordId record : records) {
+                // Fetch the complete record metadata to get additional attributes
+                RecordMetadataDoc recordMetadata = recordMetadataQueryHelper.loadByPrimaryKey(
+                    RecordMetadataDoc.class, 
+                    record.getId());
+                
+                if (recordMetadata == null) {
+                    LOGGER.warning("Record metadata not found for ID: " + record.getId());
+                    continue;
+                }
+                
+                // Create the record changed message with all required attributes
                 RecordChangedV2 recordChanged = new RecordChangedV2();
                 recordChanged.setId(record.getId());
+                recordChanged.setKind(recordMetadata.getKind());
+                
+                // Set version and modifiedBy from metadata if available
+                if (recordMetadata.getMetadata() != null) {
+                    recordChanged.setVersion(recordMetadata.getMetadata().getLatestVersion());
+                    recordChanged.setModifiedBy(recordMetadata.getMetadata().getModifyUser());
+                }
                 
                 // Convert string operation to OperationType enum
                 OperationType opType = convertToOperationType(operation);
                 recordChanged.setOp(opType);
+                
+                // Set recordBlocks to indicate all blocks are included
+                recordChanged.setRecordBlocks("data metadata");
                 
                 recordChangedMessages.add(recordChanged);
 
@@ -214,6 +252,16 @@ public class ReplayMessageProcessorAWSImpl {
             LOGGER.log(Level.SEVERE, "Error publishing record change messages: " + e.getMessage(), e);
             // Continue processing other records
         }
+    }
+    
+    /**
+     * Get the record metadata query helper
+     * 
+     * @return DynamoDBQueryHelperV2 for record metadata
+     */
+    private DynamoDBQueryHelperV2 getRecordMetadataQueryHelper() {
+        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath,
+                workerThreadPool.getClientConfiguration());
     }
     
     /**
