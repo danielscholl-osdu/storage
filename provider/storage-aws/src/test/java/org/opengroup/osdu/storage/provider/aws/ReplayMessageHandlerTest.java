@@ -50,7 +50,7 @@ public class ReplayMessageHandlerTest {
     private ObjectMapper objectMapper;
 
     @Mock
-    private ReplayService replayService;
+    private ReplayMessageProcessorAWSImpl replayMessageProcessor;
 
     @Mock
     private JaxRsDpsLog logger;
@@ -101,7 +101,7 @@ public class ReplayMessageHandlerTest {
         verify(objectMapper).writeValueAsString(message1);
         verify(objectMapper).writeValueAsString(message2);
         verify(snsClient, times(2)).publish(any(PublishRequest.class));
-        verify(logger, times(2)).info(anyString());
+        // Don't verify logger.info calls since we're using standard Java logger now
     }
 
     @Test
@@ -124,7 +124,7 @@ public class ReplayMessageHandlerTest {
         // Verify
         verify(objectMapper).writeValueAsString(message);
         verify(snsClient).publish(any(PublishRequest.class));
-        verify(logger).info(anyString());
+        // Don't verify logger.info calls since we're using standard Java logger now
     }
 
     @Test
@@ -147,7 +147,7 @@ public class ReplayMessageHandlerTest {
         // Verify
         verify(objectMapper).writeValueAsString(message);
         verify(snsClient).publish(any(PublishRequest.class));
-        verify(logger).info(anyString());
+        // Don't verify logger.info calls since we're using standard Java logger now
     }
 
     @Test(expected = RuntimeException.class)
@@ -175,7 +175,7 @@ public class ReplayMessageHandlerTest {
         replayMessageHandler.handle(message);
         
         // Verify
-        verify(replayService).processReplayMessage(message);
+        verify(replayMessageProcessor).processReplayMessage(message);
     }
 
     @Test
@@ -187,7 +187,7 @@ public class ReplayMessageHandlerTest {
         replayMessageHandler.handleFailure(message);
         
         // Verify
-        verify(replayService).processFailure(message);
+        verify(replayMessageProcessor).processFailure(message);
     }
 
     @Test
@@ -196,7 +196,7 @@ public class ReplayMessageHandlerTest {
         ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
         
         // Mock behavior to throw exception
-        doThrow(new RuntimeException("Test exception")).when(replayService).processReplayMessage(message);
+        doThrow(new RuntimeException("Test exception")).when(replayMessageProcessor).processReplayMessage(message);
         
         try {
             // Execute
@@ -204,9 +204,9 @@ public class ReplayMessageHandlerTest {
             fail("Expected RuntimeException was not thrown");
         } catch (RuntimeException e) {
             // Verify
-            verify(replayService).processReplayMessage(message);
-            verify(logger).error(anyString(), any(RuntimeException.class));
-            verify(replayService).processFailure(message);
+            verify(replayMessageProcessor).processReplayMessage(message);
+            // Don't verify logger.error calls since we're using standard Java logger now
+            verify(replayMessageProcessor).processFailure(message);
         }
     }
 

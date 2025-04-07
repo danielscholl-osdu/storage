@@ -28,6 +28,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
+import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class ReplaySubscriptionMessageHandlerTest {
     private ObjectMapper objectMapper;
 
     @Mock
-    private JaxRsDpsLog logger;
+    private RequestScopeUtil requestScopeUtil;
 
     @InjectMocks
     private ReplaySubscriptionMessageHandler messageHandler;
@@ -71,6 +72,9 @@ public class ReplaySubscriptionMessageHandlerTest {
         
         // Set queue URL directly using reflection
         ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", REPLAY_QUEUE_URL);
+        
+        // Set MAX_DELIVERY_COUNT using reflection
+        ReflectionTestUtils.setField(messageHandler, "MAX_DELIVERY_COUNT", MAX_DELIVERY_COUNT);
     }
 
     @Test
@@ -117,6 +121,13 @@ public class ReplaySubscriptionMessageHandlerTest {
         when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         
+        // Mock RequestScopeUtil to actually execute the runnable
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(requestScopeUtil).executeInRequestScope(any(Runnable.class), anyMap());
+        
         // Execute
         messageHandler.pollMessages();
         
@@ -157,13 +168,20 @@ public class ReplaySubscriptionMessageHandlerTest {
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(replayMessage);
         
+        // Mock RequestScopeUtil to actually execute the runnable
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(requestScopeUtil).executeInRequestScope(any(Runnable.class), anyMap());
+        
         // Execute
         messageHandler.pollMessages();
         
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
-        verify(logger).error(contains("Error processing replay message"), any(RuntimeException.class));
+        // Don't verify logger.error calls since we're using standard Java logger now
         verify(sqsClient).changeMessageVisibility(eq(REPLAY_QUEUE_URL), eq(receiptHandle), anyInt());
     }
 
@@ -198,14 +216,20 @@ public class ReplaySubscriptionMessageHandlerTest {
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(replayMessage);
         
+        // Mock RequestScopeUtil to actually execute the runnable
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(requestScopeUtil).executeInRequestScope(any(Runnable.class), anyMap());
+        
         // Execute
         messageHandler.pollMessages();
         
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
-        verify(logger).error(contains("Error processing replay message"), any(RuntimeException.class));
-        verify(logger).error(contains("Max delivery attempts reached"));
+        // Don't verify logger.error calls since we're using standard Java logger now
         verify(replayMessageHandler).handleFailure(replayMessage);
         verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
     }
