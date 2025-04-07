@@ -90,16 +90,19 @@ public class ReplayMessageHandler {
         }
     }
     
+    @Inject
+    private ReplayMessageProcessorAWSImpl replayMessageProcessor;
+    
     /**
-     * Handles a replay message by processing it through the replay service.
+     * Handles a replay message by processing it through the replay message processor.
      *
      * @param message The replay message to handle
      */
     public void handle(ReplayMessage message) {
         try {
             LOGGER.info("Processing replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
-            // Process the replay message
-            replayService.processReplayMessage(message);
+            // Process the replay message using the dedicated processor
+            replayMessageProcessor.processReplayMessage(message);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error processing replay message: " + e.getMessage(), e);
             // Handle failure
@@ -115,7 +118,7 @@ public class ReplayMessageHandler {
      */
     public void handleFailure(ReplayMessage message) {
         LOGGER.log(Level.SEVERE, "Processing failure for replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
-        replayService.processFailure(message);
+        replayMessageProcessor.processFailure(message);
     }
     
     /**
