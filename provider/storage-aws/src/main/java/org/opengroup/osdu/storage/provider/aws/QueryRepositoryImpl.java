@@ -286,22 +286,27 @@ public class QueryRepositoryImpl implements IQueryRepository {
     
     /**
      * Helper method to get active record count for a specific kind
+     * Filters by both active status and the current partition ID
      */
     private long getActiveRecordCountForKind(String kind) {
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         
         try {
-            // Set up query parameters using the KindStatusIndex GSI
+            // Set GSI hash key for kind
             RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
             recordMetadataKey.setKind(kind);
-            recordMetadataKey.setStatus("active");
             
-            // Count active records for this kind
+            // Count active records for this kind that belong to the current partition
             long count = 0;
-            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                RecordMetadataDoc.class, 
-                recordMetadataKey, 
-                1000, 
+            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryPage(
+                RecordMetadataDoc.class,
+                recordMetadataKey,
+                "Status",
+                "active",
+                "Id",
+                ComparisonOperator.BEGINS_WITH,
+                String.format("%s:", headers.getPartitionId()),
+                1000,
                 null);
             
             count += queryPageResult.results.size();
@@ -309,10 +314,15 @@ public class QueryRepositoryImpl implements IQueryRepository {
             // Process any additional pages
             String cursor = queryPageResult.cursor;
             while (cursor != null && !cursor.isEmpty()) {
-                queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                    RecordMetadataDoc.class, 
-                    recordMetadataKey, 
-                    1000, 
+                queryPageResult = recordMetadataQueryHelper.queryPage(
+                    RecordMetadataDoc.class,
+                    recordMetadataKey,
+                    "Status",
+                    "active",
+                    "Id",
+                    ComparisonOperator.BEGINS_WITH,
+                    String.format("%s:", headers.getPartitionId()),
+                    1000,
                     cursor);
                 
                 count += queryPageResult.results.size();
@@ -329,43 +339,15 @@ public class QueryRepositoryImpl implements IQueryRepository {
     @Override
     public Map<String, Long> getActiveRecordsCountForKinds(List<String> kinds) {
         Map<String, Long> kindCounts = new HashMap<>();
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         
         for (String kind : kinds) {
             try {
-                // Set up query parameters
-                RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-                recordMetadataKey.setKind(kind);
-                recordMetadataKey.setStatus("active");
-                
-                // Count active records for this kind using the record metadata table
-                long count = 0;
-                QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                    RecordMetadataDoc.class, 
-                    recordMetadataKey, 
-                    1000, 
-                    null);
-                
-                count += queryPageResult.results.size();
-                
-                // Process any additional pages if needed
-                String cursor = queryPageResult.cursor;
-                while (cursor != null && !cursor.isEmpty()) {
-                    queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                        RecordMetadataDoc.class, 
-                        recordMetadataKey, 
-                        1000, 
-                        cursor);
-                    
-                    count += queryPageResult.results.size();
-                    cursor = queryPageResult.cursor;
-                }
-                
+                // Use the same helper method as getActiveRecordsCount to ensure consistency
+                long count = getActiveRecordCountForKind(kind);
                 kindCounts.put(kind, count);
-                
-            } catch (UnsupportedEncodingException e) {
-                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
-                        e.getMessage(), e);
+            } catch (Exception e) {
+                logger.error("Error counting records for kind " + kind + ": " + e.getMessage(), e);
+                kindCounts.put(kind, 0L);
             }
         }
         
