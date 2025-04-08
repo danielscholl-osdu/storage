@@ -90,14 +90,6 @@ public class ReplayMessageProcessorAWSImplTest {
         // Set up fields using reflection
         ReflectionTestUtils.setField(replayMessageProcessor, "recordMetadataTableParameterRelativePath", RECORD_METADATA_TABLE_PATH);
         
-        Map<String, Map<String, String>> routingProperties = new HashMap<>();
-        Map<String, String> replayRouting = new HashMap<>();
-        replayRouting.put("topic", "test-topic");
-        routingProperties.put("replay", replayRouting);
-        routingProperties.put("reindex", replayRouting);
-        
-        ReflectionTestUtils.setField(replayMessageProcessor, "replayOperationRoutingProperties", routingProperties);
-        
         // Mock behavior for DynamoDBQueryHelperFactory
         when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(eq(headers), eq(RECORD_METADATA_TABLE_PATH), any()))
             .thenReturn(dynamoDBQueryHelper);

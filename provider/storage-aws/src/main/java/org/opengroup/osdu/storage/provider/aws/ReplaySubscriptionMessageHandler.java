@@ -59,9 +59,7 @@ public class ReplaySubscriptionMessageHandler {
     
     @Inject
     private RequestScopeUtil requestScopeUtil;
-    
-    private final int MAX_DELIVERY_COUNT = 3;
-    
+
     @Value("${AWS.REGION:us-east-1}")
     private String region;
     
@@ -182,8 +180,9 @@ public class ReplaySubscriptionMessageHandler {
         try {
             ReplayMessage replayMessage = objectMapper.readValue(messageBody, ReplayMessage.class);
             int receiveCount = Integer.parseInt(message.getAttributes().get("ApproximateReceiveCount"));
-            
-            if (receiveCount >= MAX_DELIVERY_COUNT) {
+
+            int maxDeliveryCount = 3;
+            if (receiveCount >= maxDeliveryCount) {
                 // Dead letter the message after max retries
                 LOGGER.log(Level.SEVERE, "Max delivery attempts reached for message, sending to dead letter: " + replayMessage.getBody().getReplayId());
                 replayMessageHandler.handleFailure(replayMessage);

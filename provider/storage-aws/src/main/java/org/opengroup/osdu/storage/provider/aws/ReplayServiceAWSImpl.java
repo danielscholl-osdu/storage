@@ -32,7 +32,6 @@ import org.opengroup.osdu.storage.response.ReplayResponse;
 import org.opengroup.osdu.storage.response.ReplayStatusResponse;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
 import org.opengroup.osdu.storage.util.ReplayUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -59,12 +58,6 @@ public class ReplayServiceAWSImpl extends ReplayService {
     private final StorageAuditLogger auditLogger;
     
     private final JaxRsDpsLog logger;
-    
-    @Value("#{${replay.operation.routingProperties}}")
-    private Map<String, Map<String, String>> replayOperationRoutingProperties;
-    
-    @Value("#{${replay.routingProperties}}")
-    private Map<String, String> replayRoutingProperty;
 
     public ReplayServiceAWSImpl(IReplayRepository replayRepository, ReplayMessageHandler messageHandler, QueryRepositoryImpl queryRepository, IMessageBus messageBus, DpsHeaders headers, StorageAuditLogger auditLogger, JaxRsDpsLog logger, ObjectMapper objectMapper) {
         this.replayRepository = replayRepository;

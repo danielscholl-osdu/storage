@@ -86,9 +86,6 @@ public class ReplayMessageProcessorAWSImpl {
         this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
         this.workerThreadPool = workerThreadPool;
     }
-    
-    @Value("#{${replay.operation.routingProperties}}")
-    private Map<String, Map<String, String>> replayOperationRoutingProperties;
 
     /**
      * Processes a replay message.
@@ -174,14 +171,6 @@ public class ReplayMessageProcessorAWSImpl {
         String operation = replayMessage.getBody().getOperation();
         
         try {
-            // Get the routing properties for this operation - not used directly anymore
-            // but we still check if the operation is valid
-            Map<String, String> routingInfo = replayOperationRoutingProperties.get(operation);
-            if (routingInfo == null) {
-                LOGGER.log(Level.SEVERE, "No routing properties found for operation: " + operation);
-                return;
-            }
-            
             // Create record change messages for each record
             List<RecordChangedV2> recordChangedMessages = new ArrayList<>();
             

@@ -61,6 +61,7 @@ public class ReplaySubscriptionMessageHandlerTest {
     private static final String REGION = "us-east-1";
     private static final String REPLAY_TOPIC = "replay-records";
     private static final String REPLAY_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/123456789012/replay-records-queue";
+    // Define a constant for MAX_DELIVERY_COUNT that matches the implementation
     private static final int MAX_DELIVERY_COUNT = 3;
 
     @Before
@@ -72,9 +73,6 @@ public class ReplaySubscriptionMessageHandlerTest {
         
         // Set queue URL directly using reflection
         ReflectionTestUtils.setField(messageHandler, "replayQueueUrl", REPLAY_QUEUE_URL);
-        
-        // Set MAX_DELIVERY_COUNT using reflection
-        ReflectionTestUtils.setField(messageHandler, "MAX_DELIVERY_COUNT", MAX_DELIVERY_COUNT);
     }
 
     @Test
