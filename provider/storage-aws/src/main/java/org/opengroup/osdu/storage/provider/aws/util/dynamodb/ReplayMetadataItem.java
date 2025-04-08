@@ -18,6 +18,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import lombok.Data;
 
 import java.util.Date;
@@ -40,12 +41,14 @@ public class ReplayMetadataItem {
      * The unique identifier for the replay operation.
      */
     @DynamoDBRangeKey(attributeName = "replayId")
+    @DynamoDBIndexHashKey(globalSecondaryIndexName = "ReplayIdIndex")
     private String replayId;
     
     /**
      * The kind of records being replayed. Only present for kind-specific status items.
      */
     @DynamoDBAttribute(attributeName = "kind")
+    @DynamoDBIndexHashKey(globalSecondaryIndexName = "KindIndex")
     private String kind;
     
     /**

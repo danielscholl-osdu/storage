@@ -89,22 +89,22 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":replayId", new AttributeValue().withS(replayId));
         
-        DynamoDBQueryExpression<ReplayMetadataItem> queryExpression = new DynamoDBQueryExpression<ReplayMetadataItem>()
-                .withIndexName("replayId-index")
-                .withConsistentRead(false)
-                .withKeyConditionExpression("replayId = :replayId")
-                .withExpressionAttributeValues(expressionAttributeValues);
-        
-        // Use queryPage instead of query since DynamoDBQueryHelperV2 doesn't have a direct query method
         try {
-            QueryPageResult<ReplayMetadataItem> queryResult = queryHelper.queryPage(ReplayMetadataItem.class, null, 1000, null);
-            List<ReplayMetadataItem> items = queryResult.results;
+            // Create a query object with replayId as the hash key for the GSI
+            ReplayMetadataItem queryObject = new ReplayMetadataItem();
+            queryObject.setReplayId(replayId);
+
+            // Use queryByGSI to query the GSI directly
+            QueryPageResult<ReplayMetadataItem> queryPageResult = queryHelper.queryByGSI(
+                    ReplayMetadataItem.class,
+                    queryObject,
+                    1000,  // Use a reasonable page size
+                    null); // Start with no cursor
             
-            return items.stream()
-                    .filter(item -> replayId.equals(item.getReplayId()))
+            return queryPageResult.results.stream()
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             logger.error("Error querying replay status: " + e.getMessage(), e);
             return new ArrayList<>();
         }
