@@ -76,10 +76,7 @@ public class ParallelReplayProcessor {
                     LOGGER.info("Created " + batches.size() + " batches for replay ID: " + replayId);
 
                     for (List<String> batch : batches) {
-                        // Create and send messages for this batch
-                        List<ReplayMessage> messages = createReplayMessages(replayRequest, batch);
-                        messageHandler.sendReplayMessage(messages, replayRequest.getOperation());
-                        
+
                         // Update status to QUEUED for all kinds in this batch
                         for (String kind : batch) {
                             try {
@@ -92,6 +89,10 @@ public class ParallelReplayProcessor {
                                 LOGGER.log(Level.SEVERE, "Error updating status for kind " + kind + ": " + e.getMessage(), e);
                             }
                         }
+
+                        // Create and send messages for this batch - must run after replay status table update, since messages can be fully processed before table update resulting in incorrect status of QUEUED.
+                        List<ReplayMessage> messages = createReplayMessages(replayRequest, batch);
+                        messageHandler.sendReplayMessage(messages, replayRequest.getOperation());
                     }
 
                     LOGGER.info("Completed sending all replay messages for ID: " + replayId);
