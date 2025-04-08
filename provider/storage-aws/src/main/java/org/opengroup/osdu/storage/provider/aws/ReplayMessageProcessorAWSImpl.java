@@ -208,11 +208,6 @@ public class ReplayMessageProcessorAWSImpl {
                 
                 recordChangedMessages.add(recordChanged);
 
-                // Set a default user email if it's missing to avoid SNS validation errors
-                if (headers.getUserEmail() == null || headers.getUserEmail().isEmpty()) {
-                    headers.put(DpsHeaders.USER_EMAIL, "replay-service@osdu.org");
-                }
-                
                 // Publish in batches of 50 to avoid exceeding SNS message size limits
                 if (recordChangedMessages.size() >= 50) {
                     // Get collaboration context from the message headers if present

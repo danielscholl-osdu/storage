@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -107,7 +109,8 @@ public class ReplaySubscriptionMessageHandler {
             .withQueueUrl(replayQueueUrl)
             .withMaxNumberOfMessages(10)
             .withWaitTimeSeconds(5)
-            .withAttributeNames("ApproximateReceiveCount");
+            .withAttributeNames("ApproximateReceiveCount")
+            .withMessageAttributeNames("All"); // Request all message attributes
             
         ReceiveMessageResult result = sqsClient.receiveMessage(receiveRequest);
         
@@ -144,9 +147,25 @@ public class ReplaySubscriptionMessageHandler {
             
             // Extract headers from the message
             Map<String, String> headers = new HashMap<>();
+            
+            // First check for headers in the message attributes (SNS message attributes)
+            if (message.getMessageAttributes() != null && !message.getMessageAttributes().isEmpty()) {
+                for (Map.Entry<String, com.amazonaws.services.sqs.model.MessageAttributeValue> entry : 
+                     message.getMessageAttributes().entrySet()) {
+                    if (entry.getValue() != null && entry.getValue().getStringValue() != null) {
+                        headers.put(entry.getKey(), entry.getValue().getStringValue());
+                    }
+                }
+            }
+            
+            // Then check for headers in the message body (for backward compatibility)
             if (replayMessage.getHeaders() != null) {
                 headers.putAll(replayMessage.getHeaders());
-                LOGGER.info("Extracted headers from message: " + headers);
+            }
+
+            if (!headers.containsKey(org.opengroup.osdu.core.common.model.http.DpsHeaders.CORRELATION_ID)) {
+                headers.put(org.opengroup.osdu.core.common.model.http.DpsHeaders.CORRELATION_ID, 
+                           UUID.randomUUID().toString());
             }
             
             // Now process the message within a request context with the extracted headers

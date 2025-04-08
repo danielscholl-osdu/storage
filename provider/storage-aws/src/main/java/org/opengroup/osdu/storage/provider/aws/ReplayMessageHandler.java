@@ -16,20 +16,25 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.PublishRequest;
+import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import org.opengroup.osdu.storage.service.replay.ReplayService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,6 +55,9 @@ public class ReplayMessageHandler {
 
     @Inject
     private ReplayMessageProcessorAWSImpl replayMessageProcessor;
+    
+    @Autowired
+    private DpsHeaders headers;
     
     @Value("${AWS.REGION:us-east-1}")
     private String region;
@@ -130,11 +138,29 @@ public class ReplayMessageHandler {
             String topicArn = getTopicArnForOperation(operation);
             
             for (ReplayMessage message : messages) {
+                // Ensure the message has all current headers
+                updateMessageWithCurrentHeaders(message);
+                
                 String messageBody = objectMapper.writeValueAsString(message);
+
+                // Create message attributes for SNS
+                Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+                
+                // Add all headers as message attributes for SNS
+                if (message.getHeaders() != null) {
+                    for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
+                        if (header.getValue() != null) {
+                            messageAttributes.put(header.getKey(), new MessageAttributeValue()
+                                .withDataType("String")
+                                .withStringValue(header.getValue()));
+                        }
+                    }
+                }
 
                 PublishRequest publishRequest = new PublishRequest()
                     .withTopicArn(topicArn)
-                    .withMessage(messageBody);
+                    .withMessage(messageBody)
+                    .withMessageAttributes(messageAttributes);
 
                 snsClient.publish(publishRequest);
                 LOGGER.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
@@ -142,6 +168,38 @@ public class ReplayMessageHandler {
         } catch (JsonProcessingException e) {
             LOGGER.log(Level.SEVERE, "Failed to serialize replay message: " + e.getMessage(), e);
             throw new RuntimeException("Failed to serialize replay message", e);
+        }
+    }
+    
+    /**
+     * Updates the message with all current headers from the request context.
+     * This ensures that all necessary context information is preserved when the message is processed.
+     *
+     * @param message The replay message to update
+     */
+    private void updateMessageWithCurrentHeaders(ReplayMessage message) {
+        try {
+            // Initialize headers if null
+            if (message.getHeaders() == null) {
+                message.setHeaders(new HashMap<>());
+            }
+            
+            // Add all current headers to the message from the injected DpsHeaders
+            if (headers != null && headers.getHeaders() != null) {
+                message.getHeaders().putAll(headers.getHeaders());
+                
+                // Ensure critical headers are present
+                if (message.getHeaders().get(DpsHeaders.CORRELATION_ID) == null) {
+                    message.getHeaders().put(DpsHeaders.CORRELATION_ID, UUID.randomUUID().toString());
+                }
+                
+                LOGGER.info("Updated message with current headers: " + message.getHeaders());
+            } else {
+                LOGGER.warning("DpsHeaders is null or empty, unable to update message headers");
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to update message with current headers: " + e.getMessage(), e);
+            // Continue without failing - we'll use the headers that were already in the message
         }
     }
     
