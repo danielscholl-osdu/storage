@@ -87,22 +87,33 @@ public class ReplayRepositoryImplTest {
         
         QueryPageResult<ReplayMetadataItem> queryResult = new QueryPageResult<>(null, items);
         
-        // Mock behavior
-        when(dynamoDBQueryHelper.queryPage(eq(ReplayMetadataItem.class), isNull(), eq(1000), isNull())).thenReturn(queryResult);
+        // Mock behavior for queryByGSI
+        when(dynamoDBQueryHelper.queryByGSI(
+                eq(ReplayMetadataItem.class),
+                any(ReplayMetadataItem.class),
+                eq(1000),
+                isNull())).thenReturn(queryResult);
         
         // Execute
         List<ReplayMetaDataDTO> result = replayRepository.getReplayStatusByReplayId(REPLAY_ID);
         
         // Verify
         assertEquals(2, result.size());
-        verify(dynamoDBQueryHelper).queryPage(eq(ReplayMetadataItem.class), isNull(), eq(1000), isNull());
+        verify(dynamoDBQueryHelper).queryByGSI(
+                eq(ReplayMetadataItem.class),
+                any(ReplayMetadataItem.class),
+                eq(1000),
+                isNull());
     }
 
     @Test
     public void testGetReplayStatusByReplayIdHandlesException() throws UnsupportedEncodingException {
         // Mock behavior to throw exception
-        when(dynamoDBQueryHelper.queryPage(eq(ReplayMetadataItem.class), isNull(), eq(1000), isNull()))
-                .thenThrow(new UnsupportedEncodingException("Test exception"));
+        when(dynamoDBQueryHelper.queryByGSI(
+                eq(ReplayMetadataItem.class),
+                any(ReplayMetadataItem.class),
+                eq(1000),
+                isNull())).thenThrow(new UnsupportedEncodingException("Test exception"));
         
         // Execute
         List<ReplayMetaDataDTO> result = replayRepository.getReplayStatusByReplayId(REPLAY_ID);
