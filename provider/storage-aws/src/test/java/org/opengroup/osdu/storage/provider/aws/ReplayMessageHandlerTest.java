@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -36,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -60,21 +63,17 @@ public class ReplayMessageHandlerTest {
 
     private static final String REGION = "us-east-1";
     private static final String REPLAY_TOPIC = "replay-records";
-    private static final String REINDEX_TOPIC = "reindex-records";
     private static final String REPLAY_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:replay-records";
-    private static final String REINDEX_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:reindex-records";
 
     @Before
     public void setUp() {
         // Set up fields using reflection
         ReflectionTestUtils.setField(replayMessageHandler, "region", REGION);
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopic", REPLAY_TOPIC);
-        ReflectionTestUtils.setField(replayMessageHandler, "reindexTopic", REINDEX_TOPIC);
         ReflectionTestUtils.setField(replayMessageHandler, "snsClient", snsClient);
         
-        // Set topic ARNs using reflection
+        // Set topic ARN using reflection
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopicArn", REPLAY_TOPIC_ARN);
-        ReflectionTestUtils.setField(replayMessageHandler, "reindexTopicArn", REINDEX_TOPIC_ARN);
     }
 
     @Test
@@ -91,7 +90,6 @@ public class ReplayMessageHandlerTest {
         when(objectMapper.writeValueAsString(message1)).thenReturn(serializedMessage1);
         when(objectMapper.writeValueAsString(message2)).thenReturn(serializedMessage2);
         
-        PublishRequest publishRequest = new PublishRequest().withTopicArn(REPLAY_TOPIC_ARN).withMessage(serializedMessage1);
         when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
         
         // Execute
@@ -101,7 +99,20 @@ public class ReplayMessageHandlerTest {
         verify(objectMapper).writeValueAsString(message1);
         verify(objectMapper).writeValueAsString(message2);
         verify(snsClient, times(2)).publish(any(PublishRequest.class));
-        // Don't verify logger.info calls since we're using standard Java logger now
+        
+        // Capture and verify the PublishRequest
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(2)).publish(requestCaptor.capture());
+        
+        // Verify the first request
+        PublishRequest capturedRequest = requestCaptor.getAllValues().get(0);
+        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.getTopicArn());
+        assertEquals(serializedMessage1, capturedRequest.getMessage());
+        
+        // Verify operation attribute
+        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        assertEquals("String", attributes.get("operation").getDataType());
+        assertEquals("replay", attributes.get("operation").getStringValue());
     }
 
     @Test
@@ -115,7 +126,6 @@ public class ReplayMessageHandlerTest {
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
         
-        PublishRequest publishRequest = new PublishRequest().withTopicArn(REINDEX_TOPIC_ARN).withMessage(serializedMessage);
         when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
         
         // Execute
@@ -124,7 +134,19 @@ public class ReplayMessageHandlerTest {
         // Verify
         verify(objectMapper).writeValueAsString(message);
         verify(snsClient).publish(any(PublishRequest.class));
-        // Don't verify logger.info calls since we're using standard Java logger now
+        
+        // Capture and verify the PublishRequest
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.getTopicArn());
+        assertEquals(serializedMessage, capturedRequest.getMessage());
+        
+        // Verify operation attribute
+        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        assertEquals("String", attributes.get("operation").getDataType());
+        assertEquals("reindex", attributes.get("operation").getStringValue());
     }
 
     @Test
@@ -138,7 +160,6 @@ public class ReplayMessageHandlerTest {
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
         
-        PublishRequest publishRequest = new PublishRequest().withTopicArn(REPLAY_TOPIC_ARN).withMessage(serializedMessage);
         when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
         
         // Execute
@@ -147,7 +168,18 @@ public class ReplayMessageHandlerTest {
         // Verify
         verify(objectMapper).writeValueAsString(message);
         verify(snsClient).publish(any(PublishRequest.class));
-        // Don't verify logger.info calls since we're using standard Java logger now
+        
+        // Capture and verify the PublishRequest
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.getTopicArn());
+        
+        // Verify operation attribute
+        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        assertEquals("String", attributes.get("operation").getDataType());
+        assertEquals("unknown", attributes.get("operation").getStringValue());
     }
 
     @Test(expected = RuntimeException.class)
@@ -161,9 +193,6 @@ public class ReplayMessageHandlerTest {
         
         // Execute - should throw RuntimeException
         replayMessageHandler.sendReplayMessage(messages, "replay");
-        
-        // Verify
-        verify(logger).error(anyString(), any(JsonProcessingException.class));
     }
 
     @Test
@@ -205,7 +234,6 @@ public class ReplayMessageHandlerTest {
         } catch (RuntimeException e) {
             // Verify
             verify(replayMessageProcessor).processReplayMessage(message);
-            // Don't verify logger.error calls since we're using standard Java logger now
             verify(replayMessageProcessor).processFailure(message);
         }
     }

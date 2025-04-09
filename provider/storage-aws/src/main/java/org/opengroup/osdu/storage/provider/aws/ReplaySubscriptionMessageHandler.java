@@ -43,7 +43,8 @@ import java.util.logging.Logger;
 /**
  * SQS message listener for replay messages.
  * This class polls the SQS queue for replay messages and processes them.
- * The messages are published to SNS topics but consumed from SQS queues.
+ * The messages are published to a single SNS topic but consumed from a single SQS queue.
+ * The operation type (replay or reindex) is determined from message attributes.
  */
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
@@ -94,7 +95,7 @@ public class ReplaySubscriptionMessageHandler {
     
     /**
      * Polls the SQS queue for replay messages at a fixed interval.
-     * The messages come from SNS topics but are delivered to SQS queues.
+     * The messages come from the consolidated SNS topic but are delivered to a single SQS queue.
      */
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
@@ -168,11 +169,17 @@ public class ReplaySubscriptionMessageHandler {
                            UUID.randomUUID().toString());
             }
             
+            // Extract operation type from message attributes if available
+            String operation = "unknown";
+            if (message.getMessageAttributes() != null && message.getMessageAttributes().containsKey("operation")) {
+                operation = message.getMessageAttributes().get("operation").getStringValue();
+            }
+            LOGGER.info("Processing " + operation + " message from queue: " + replayMessage.getBody().getReplayId());
+            
             // Now process the message within a request context with the extracted headers
             String finalUnwrappedMessageBody = unwrappedMessageBody;
             requestScopeUtil.executeInRequestScope(() -> {
                 try {
-                    LOGGER.info("Processing replay message from queue: " + replayMessage.getBody().getReplayId());
                     replayMessageHandler.handle(replayMessage);
                     sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
                 } catch (Exception e) {

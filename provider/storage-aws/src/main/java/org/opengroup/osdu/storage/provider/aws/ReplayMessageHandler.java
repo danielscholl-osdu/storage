@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 /**
  * Handler for replay messages in AWS.
  * This class is responsible for sending and processing replay messages using SNS.
+ * Uses a consolidated approach with a single SNS topic for all replay operations.
  */
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
@@ -64,12 +65,8 @@ public class ReplayMessageHandler {
     
     @Value("${REPLAY_TOPIC:replay-records}")
     private String replayTopic;
-    
-    @Value("${REINDEX_TOPIC:reindex-records}")
-    private String reindexTopic;
 
     private String replayTopicArn;
-    private String reindexTopicArn;
     
     @PostConstruct
     public void init() {
@@ -82,13 +79,11 @@ public class ReplayMessageHandler {
             try {
                 K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
                 replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
-                reindexTopicArn = provider.getParameterAsString(reindexTopic + "-sns-topic-arn");
-                LOGGER.info("Retrieved SNS topic ARNs from SSM parameters");
+                LOGGER.info("Retrieved SNS topic ARN from SSM parameter: " + replayTopicArn);
             } catch (K8sParameterNotFoundException e) {
-                // Fallback to default ARNs for development
-                LOGGER.warning("Failed to retrieve SNS topic ARNs from SSM, using default values: " + e.getMessage());
+                // Fallback to default ARN for development
+                LOGGER.warning("Failed to retrieve SNS topic ARN from SSM, using default value: " + e.getMessage());
                 replayTopicArn = "arn:aws:sns:" + region + ":123456789012:" + replayTopic;
-                reindexTopicArn = "arn:aws:sns:" + region + ":123456789012:" + reindexTopic;
             }
             
             LOGGER.info("ReplayMessageHandler initialized with region: " + region);
@@ -127,16 +122,15 @@ public class ReplayMessageHandler {
     }
     
     /**
-     * Sends replay messages to the appropriate SNS topic based on the operation.
+     * Sends replay messages to the consolidated SNS topic with operation-specific attributes.
+     * This method uses a single topic for both replay and reindex operations, differentiating
+     * them using message attributes.
      *
      * @param messages The replay messages to send
      * @param operation The operation type (e.g., "replay", "reindex")
      */
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
         try {
-            // Select appropriate topic based on operation
-            String topicArn = getTopicArnForOperation(operation);
-            
             for (ReplayMessage message : messages) {
                 // Ensure the message has all current headers
                 updateMessageWithCurrentHeaders(message);
@@ -145,6 +139,11 @@ public class ReplayMessageHandler {
 
                 // Create message attributes for SNS
                 Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+                
+                // Add operation as a message attribute
+                messageAttributes.put("operation", new MessageAttributeValue()
+                    .withDataType("String")
+                    .withStringValue(operation));
                 
                 // Add all headers as message attributes for SNS
                 if (message.getHeaders() != null) {
@@ -158,12 +157,12 @@ public class ReplayMessageHandler {
                 }
 
                 PublishRequest publishRequest = new PublishRequest()
-                    .withTopicArn(topicArn)
+                    .withTopicArn(replayTopicArn)
                     .withMessage(messageBody)
                     .withMessageAttributes(messageAttributes);
 
                 snsClient.publish(publishRequest);
-                LOGGER.info("Published replay message to SNS topic: " + topicArn + " for replayId: " + message.getBody().getReplayId());
+                LOGGER.info("Published replay message to SNS topic for operation: " + operation + ", replayId: " + message.getBody().getReplayId());
             }
         } catch (JsonProcessingException e) {
             LOGGER.log(Level.SEVERE, "Failed to serialize replay message: " + e.getMessage(), e);
@@ -201,18 +200,5 @@ public class ReplayMessageHandler {
             LOGGER.log(Level.WARNING, "Failed to update message with current headers: " + e.getMessage(), e);
             // Continue without failing - we'll use the headers that were already in the message
         }
-    }
-    
-    /**
-     * Gets the appropriate SNS topic ARN based on the operation type.
-     *
-     * @param operation The operation type
-     * @return The SNS topic ARN
-     */
-    private String getTopicArnForOperation(String operation) {
-        if ("reindex".equals(operation)) {
-            return reindexTopicArn;
-        }
-        return replayTopicArn;
     }
 }

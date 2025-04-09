@@ -101,10 +101,70 @@ public class ReplaySubscriptionMessageHandlerTest {
         Map<String, String> attributes = new HashMap<>();
         attributes.put("ApproximateReceiveCount", "1");
         
+        // Add message attributes with operation
+        Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+        messageAttributes.put("operation", new MessageAttributeValue()
+            .withDataType("String")
+            .withStringValue("replay"));
+        
         Message sqsMessage = new Message()
                 .withMessageId(messageId)
                 .withReceiptHandle(receiptHandle)
-                .withAttributes(attributes);
+                .withAttributes(attributes)
+                .withMessageAttributes(messageAttributes);
+        
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
+        sqsMessage.setBody(snsWrapper.toString());
+        
+        // Create ReplayMessage
+        ReplayMessage replayMessage = createReplayMessage(replayId, kind);
+        
+        // Mock behavior
+        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
+        when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
+        
+        // Mock RequestScopeUtil to actually execute the runnable
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(requestScopeUtil).executeInRequestScope(any(Runnable.class), anyMap());
+        
+        // Execute
+        messageHandler.pollMessages();
+        
+        // Verify
+        verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
+        verify(replayMessageHandler).handle(any(ReplayMessage.class));
+        verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
+    }
+
+    @Test
+    public void testPollMessagesWithReindexOperation() throws IOException {
+        // Prepare test data
+        String messageId = "test-message-id";
+        String receiptHandle = "test-receipt-handle";
+        String replayId = "test-replay-id";
+        String kind = "test-kind";
+        
+        // Create SQS message
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("ApproximateReceiveCount", "1");
+        
+        // Add message attributes with operation
+        Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+        messageAttributes.put("operation", new MessageAttributeValue()
+            .withDataType("String")
+            .withStringValue("reindex"));
+        
+        Message sqsMessage = new Message()
+                .withMessageId(messageId)
+                .withReceiptHandle(receiptHandle)
+                .withAttributes(attributes)
+                .withMessageAttributes(messageAttributes);
         
         // Create SNS wrapper
         ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
@@ -179,7 +239,6 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
-        // Don't verify logger.error calls since we're using standard Java logger now
         verify(sqsClient).changeMessageVisibility(eq(REPLAY_QUEUE_URL), eq(receiptHandle), anyInt());
     }
 
@@ -227,7 +286,6 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
-        // Don't verify logger.error calls since we're using standard Java logger now
         verify(replayMessageHandler).handleFailure(replayMessage);
         verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
     }
