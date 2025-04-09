@@ -29,6 +29,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
+import org.opengroup.osdu.storage.request.ReplayFilter;
 import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.opengroup.osdu.storage.response.ReplayResponse;
 import org.opengroup.osdu.storage.response.ReplayStatusResponse;
@@ -103,10 +104,26 @@ public class ReplayServiceAWSImpl extends ReplayService {
                     "The replay ID " + replayId + " is invalid.");
         }
         
-        // Calculate overall status
+        // Check if we only have the initial system record
+        boolean hasOnlySystemRecord = replayMetaDataList.size() == 1 && 
+                                     "system".equals(replayMetaDataList.get(0).getKind());
+        
+        // Calculate overall status - we don't need special handling here anymore
+        // as calculateOverallState now properly handles the system record
         ReplayState overallState = calculateOverallState(replayMetaDataList);
-        long totalRecords = replayMetaDataList.stream().mapToLong(ReplayMetaDataDTO::getTotalRecords).sum();
-        long processedRecords = replayMetaDataList.stream().mapToLong(ReplayMetaDataDTO::getProcessedRecords).sum();
+        
+        // For system-only records, we don't have real counts yet
+        long totalRecords = hasOnlySystemRecord ? 0 : 
+                replayMetaDataList.stream()
+                    .filter(dto -> !"system".equals(dto.getKind()))
+                    .mapToLong(ReplayMetaDataDTO::getTotalRecords)
+                    .sum();
+                    
+        long processedRecords = hasOnlySystemRecord ? 0 : 
+                replayMetaDataList.stream()
+                    .filter(dto -> !"system".equals(dto.getKind()))
+                    .mapToLong(ReplayMetaDataDTO::getProcessedRecords)
+                    .sum();
         
         // Get the first record to extract common fields
         ReplayMetaDataDTO firstRecord = replayMetaDataList.get(0);
@@ -125,6 +142,11 @@ public class ReplayServiceAWSImpl extends ReplayService {
         // Convert ReplayMetaDataDTO objects to ReplayStatus objects
         List<ReplayStatus> statusList = new ArrayList<>();
         for (ReplayMetaDataDTO dto : replayMetaDataList) {
+            // Skip the system record in the detailed status list
+            if ("system".equals(dto.getKind())) {
+                continue;
+            }
+            
             ReplayStatus status = new ReplayStatus();
             status.setKind(dto.getKind());
             status.setState(dto.getState());
@@ -140,23 +162,33 @@ public class ReplayServiceAWSImpl extends ReplayService {
     }
     
     private ReplayState calculateOverallState(List<ReplayMetaDataDTO> replayMetaDataList) {
+        // Filter out the system record for status calculation
+        List<ReplayMetaDataDTO> actualKindRecords = replayMetaDataList.stream()
+                .filter(dto -> !"system".equals(dto.getKind()))
+                .toList();
+        
+        // If there are no actual kind records, use the system record status
+        if (actualKindRecords.isEmpty()) {
+            return ReplayState.valueOf(replayMetaDataList.get(0).getState());
+        }
+        
         // If any kind is FAILED, the overall state is FAILED
-        if (replayMetaDataList.stream().anyMatch(dto -> ReplayState.FAILED.name().equals(dto.getState()))) {
+        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.FAILED.name().equals(dto.getState()))) {
             return ReplayState.FAILED;
         }
         
         // If any kind is IN_PROGRESS, the overall state is IN_PROGRESS
-        if (replayMetaDataList.stream().anyMatch(dto -> ReplayState.IN_PROGRESS.name().equals(dto.getState()))) {
+        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.IN_PROGRESS.name().equals(dto.getState()))) {
             return ReplayState.IN_PROGRESS;
         }
         
         // If any kind is QUEUED, the overall state is QUEUED
-        if (replayMetaDataList.stream().anyMatch(dto -> ReplayState.QUEUED.name().equals(dto.getState()))) {
+        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.QUEUED.name().equals(dto.getState()))) {
             return ReplayState.QUEUED;
         }
         
         // If all kinds are COMPLETED, the overall state is COMPLETED
-        if (replayMetaDataList.stream().allMatch(dto -> ReplayState.COMPLETED.name().equals(dto.getState()))) {
+        if (actualKindRecords.stream().allMatch(dto -> ReplayState.COMPLETED.name().equals(dto.getState()))) {
             return ReplayState.COMPLETED;
         }
         
@@ -189,6 +221,9 @@ public class ReplayServiceAWSImpl extends ReplayService {
             replayRequest.setReplayId(UUID.randomUUID().toString());
         }
         String replayId = replayRequest.getReplayId();
+        
+        // Create an initial status record immediately so users can query status right away
+        createInitialStatusRecord(replayId, replayRequest.getOperation(), replayRequest.getFilter());
         
         // Get the list of kinds to replay - MOVED TO ASYNC PROCESSING
         List<String> kinds;
@@ -299,6 +334,41 @@ public class ReplayServiceAWSImpl extends ReplayService {
                 LOGGER.log(Level.SEVERE, "Error creating replay metadata for kind " + kind + ": " + e.getMessage(), e);
                 // Continue with other kinds
             }
+        }
+    }
+    
+    /**
+     * Creates an initial status record for a replay operation.
+     * This ensures that users can query the status immediately after the replay ID is returned.
+     *
+     * @param replayId The replay ID
+     * @param operation The operation type
+     * @param filter The filter (may be null)
+     */
+    private void createInitialStatusRecord(String replayId, String operation, ReplayFilter filter) {
+        try {
+            LOGGER.info("Creating initial status record for replay ID: " + replayId);
+            
+            ReplayMetaDataDTO initialStatus = new ReplayMetaDataDTO();
+            initialStatus.setId("system");  // Special ID for the initial record
+            initialStatus.setReplayId(replayId);
+            initialStatus.setKind("system");  // Special kind to indicate it's a system record
+            initialStatus.setOperation(operation);
+            initialStatus.setState(ReplayState.QUEUED.name());
+            initialStatus.setStartedAt(new Date());
+            initialStatus.setTotalRecords(0L);
+            initialStatus.setProcessedRecords(0L);
+            
+            // Serialize the filter if present
+            if (filter != null) {
+                initialStatus.setFilter(filter);
+            }
+            
+            // Save the initial status
+            replayRepository.save(initialStatus);
+        } catch (Exception e) {
+            // Log but don't fail - this is just to improve user experience
+            LOGGER.log(Level.WARNING, "Error creating initial status record: " + e.getMessage(), e);
         }
     }
     
