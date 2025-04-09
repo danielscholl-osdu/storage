@@ -30,11 +30,9 @@ echo "$SCRIPT_SOURCE_DIR"
 # see os-deploy-aws/build-aws/integration-test-env-variables.py for an updated list
 
 # AWS_COGNITO_CLIENT_ID
-# ELASTIC_HOST
-# ELASTIC_PORT
-# FILE_URL
 # LEGAL_URL
 # SEARCH_URL
+# INDEXER_URL
 # STORAGE_URL
 export OTHER_RELEVANT_DATA_COUNTRIES=US
 export DEPLOY_ENV=empty
@@ -45,13 +43,15 @@ export AWS_COGNITO_AUTH_PARAMS_PASSWORD=$ADMIN_PASSWORD
 export AWS_COGNITO_AUTH_PARAMS_USER=$ADMIN_USER
 export AWS_COGNITO_AUTH_PARAMS_USER_NO_ACCESS=$USER_NO_ACCESS
 export STORAGE_URL=$STORAGE_URL
+export SEARCH_URL=SEARCH_URL
+export INDEXER_URL=$INDEXER_URL
 export DOMAIN=example.com
 export LEGAL_URL=$LEGAL_URL
 
 #### RUN INTEGRATION TEST #########################################################################
 JAVA_HOME=$JAVA17_HOME
 
-mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
+mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml -Dtest=*Replay*
 #mvn -Dmaven.surefire.debug test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
 TEST_EXIT_CODE=$?
 
