@@ -4,15 +4,15 @@ This document outlines the implementation of the Replay feature in the AWS provi
 
 ## 1. Architecture Overview
 
-The AWS implementation uses an SNS-SQS pattern for message publishing and consumption:
+The AWS implementation uses a consolidated SNS-SQS pattern for message publishing and consumption:
 
 ```
-User Request → Storage API → SNS Topics → SQS Queues → Consumers
+User Request → Storage API → Single SNS Topic → Single SQS Queue → Consumers
                     ↕
                DynamoDB (status tracking)
 ```
 
-This pattern provides better decoupling between publishers and consumers, allowing multiple consumers to subscribe to the same messages if needed.
+This pattern provides better decoupling between publishers and consumers while simplifying the infrastructure by using a single topic for all replay operations.
 
 ## 2. Core Components
 
@@ -79,7 +79,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
 
 #### 2.3.1 Publishing Messages with SNS
 
-The `ReplayMessageHandler` class is responsible for publishing replay messages to SNS topics:
+The `ReplayMessageHandler` class is responsible for publishing replay messages to a single SNS topic with operation-specific attributes:
 
 ```java
 @Component
@@ -88,24 +88,45 @@ public class ReplayMessageHandler {
     // Implementation details...
     
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
-        // Select appropriate topic based on operation
-        String topicArn = getTopicArnForOperation(operation);
-        
-        // Publish each message to the SNS topic
         for (ReplayMessage message : messages) {
-            // Serialize and publish the message
+            // Ensure the message has all current headers
+            updateMessageWithCurrentHeaders(message);
+            
+            String messageBody = objectMapper.writeValueAsString(message);
+
+            // Create message attributes for SNS
+            Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+            
+            // Add operation as a message attribute
+            messageAttributes.put("operation", new MessageAttributeValue()
+                .withDataType("String")
+                .withStringValue(operation));
+            
+            // Add all headers as message attributes for SNS
+            if (message.getHeaders() != null) {
+                for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
+                    if (header.getValue() != null) {
+                        messageAttributes.put(header.getKey(), new MessageAttributeValue()
+                            .withDataType("String")
+                            .withStringValue(header.getValue()));
+                    }
+                }
+            }
+
+            PublishRequest publishRequest = new PublishRequest()
+                .withTopicArn(replayTopicArn)
+                .withMessage(messageBody)
+                .withMessageAttributes(messageAttributes);
+
+            snsClient.publish(publishRequest);
         }
-    }
-    
-    private String getTopicArnForOperation(String operation) {
-        // Return the appropriate SNS topic ARN based on the operation
     }
 }
 ```
 
 #### 2.3.2 Consuming Messages with SQS
 
-The `ReplaySubscriptionMessageHandler` class polls SQS queues for replay messages:
+The `ReplaySubscriptionMessageHandler` class polls a single SQS queue for replay messages and processes them based on the operation attribute:
 
 ```java
 @Component
@@ -116,12 +137,41 @@ public class ReplaySubscriptionMessageHandler {
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
         // Poll the SQS queue for messages
-        // Process each message with exponential backoff retry logic
+        ReceiveMessageRequest receiveRequest = new ReceiveMessageRequest()
+            .withQueueUrl(replayQueueUrl)
+            .withMaxNumberOfMessages(10)
+            .withWaitTimeSeconds(5)
+            .withAttributeNames("ApproximateReceiveCount")
+            .withMessageAttributeNames("All"); // Request all message attributes
+            
+        ReceiveMessageResult result = sqsClient.receiveMessage(receiveRequest);
+        
+        // Process each message in its own request context
+        for (Message message : result.getMessages()) {
+            processMessage(message);
+        }
     }
     
     private void processMessage(Message message) {
-        // Extract the replay message from the SQS message
-        // Process the message within a request context
+        // Extract headers and operation type from message attributes
+        Map<String, String> headers = extractHeaders(message);
+        String operation = "unknown";
+        if (message.getMessageAttributes() != null && message.getMessageAttributes().containsKey("operation")) {
+            operation = message.getMessageAttributes().get("operation").getStringValue();
+        }
+        
+        // Process the message within a request context with the extracted headers
+        requestScopeUtil.executeInRequestScope(() -> {
+            try {
+                // Process the message
+                ReplayMessage replayMessage = extractReplayMessage(message);
+                replayMessageHandler.handle(replayMessage);
+                sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
+            } catch (Exception e) {
+                // Handle errors with exponential backoff
+                handleMessageError(message, e);
+            }
+        }, headers);
     }
 }
 ```
@@ -179,7 +229,17 @@ public class ReplayServiceAWSImpl extends ReplayService {
 
 ## 3. Key Implementation Features
 
-### 3.1 Per-Kind Status Tracking
+### 3.1 Consolidated Messaging Approach
+
+The implementation uses a single SNS topic for all replay operations:
+
+1. Different operation types (replay, reindex) are distinguished by message attributes.
+2. A single SQS queue subscribes to the SNS topic and processes all messages.
+3. The operation type is extracted from message attributes during processing.
+
+This approach simplifies the infrastructure and reduces the number of AWS resources needed.
+
+### 3.2 Per-Kind Status Tracking
 
 The implementation creates individual records in DynamoDB for each kind involved in a replay operation:
 
@@ -193,18 +253,18 @@ This approach provides several benefits:
 - Improved query performance
 - Consistent with the data model used by other cloud providers
 
-### 3.2 Asynchronous Processing
+### 3.3 Asynchronous Processing
 
 The replay operation is fully asynchronous:
 
 1. The API endpoint returns immediately with a replay ID.
-2. Messages are published to SNS topics for each kind.
-3. SQS queues receive these messages and process them asynchronously.
+2. Messages are published to the SNS topic for each kind.
+3. The SQS queue receives these messages and processes them asynchronously.
 4. Status updates are stored in DynamoDB and can be queried at any time.
 
 This design ensures that the operation is scalable and resilient to failures.
 
-### 3.3 Efficient Record Processing
+### 3.4 Efficient Record Processing
 
 Records are processed in batches to optimize performance:
 
@@ -212,7 +272,7 @@ Records are processed in batches to optimize performance:
 2. Each batch is processed and published to the appropriate SNS topic.
 3. Progress is tracked and updated in DynamoDB after each batch.
 
-### 3.4 Error Handling and Retries
+### 3.5 Error Handling and Retries
 
 The implementation includes robust error handling and retry logic:
 
@@ -236,28 +296,29 @@ aws.sqs.polling-interval-ms=1000
 # AWS DynamoDB configuration
 aws.dynamodb.replayStatusTable.ssm.relativePath=${REPLAY_REPOSITORY_SSM_RELATIVE_PATH:services/core/storage/ReplayStatusTable}
 
-# Replay operation routing properties
+# Replay operation routing properties - Used by core code
 replay.operation.routingProperties = { \
-  reindex : { topic : '${REINDEX_TOPIC_ARN}', queryBatchSize : '5000', publisherBatchSize : '50'}, \
-  replay: { topic : '${OSDU_STORAGE_TOPIC}', queryBatchSize : '5000', publisherBatchSize : '50'} \
+  reindex : { topic : '${REPLAY_TOPIC:replay-records}', queryBatchSize : '5000', publisherBatchSize : '50'}, \
+  replay: { topic : '${REPLAY_TOPIC:replay-records}', queryBatchSize : '5000', publisherBatchSize : '50'} \
 }
 
-# Replay routing properties
-replay.routingProperties = { topic : '${REPLAY_TOPIC_ARN}' }
+# Replay routing properties - Used by core code
+replay.routingProperties = { topic : '${REPLAY_TOPIC:replay-records}' }
+
+# Replay topic environment variable
+REPLAY_TOPIC=${REPLAY_TOPIC:replay-records}
 ```
 
 ### 4.2 AWS Resources
 
 The following AWS resources are required for the replay feature:
 
-1. **SNS Topics**:
-   - Replay topic for replay operations
-   - Reindex topic for reindex operations
-   - Records topic for record change messages
+1. **SNS Topic**:
+   - A single replay topic for all replay operations
 
-2. **SQS Queues**:
-   - Queues that subscribe to the SNS topics
-   - Dead letter queues for failed messages
+2. **SQS Queue**:
+   - A queue that subscribes to the SNS topic
+   - A dead letter queue for failed messages
 
 3. **DynamoDB Table**:
    - ReplayStatus table with appropriate capacity settings
@@ -346,16 +407,58 @@ private void processMessage(Message message) {
 
 This ensures that all necessary context information (like partition ID and authorization) is available during message processing.
 
-## 6. Future Enhancements
+### 5.4 Message Attribute Handling
 
-### 6.1 Integration Testing
+To support the consolidated approach, we needed to add operation type as a message attribute:
+
+```java
+// Add operation as a message attribute
+messageAttributes.put("operation", new MessageAttributeValue()
+    .withDataType("String")
+    .withStringValue(operation));
+```
+
+And then extract it during message processing:
+
+```java
+String operation = "unknown";
+if (message.getMessageAttributes() != null && message.getMessageAttributes().containsKey("operation")) {
+    operation = message.getMessageAttributes().get("operation").getStringValue();
+}
+```
+
+This allows us to use a single topic for multiple operation types.
+
+## 6. Benefits of the Consolidated Approach
+
+### 6.1 Simplified Infrastructure
+
+Using a single SNS topic and SQS queue for all replay operations provides several benefits:
+
+1. **Reduced Resource Count**: Fewer AWS resources to manage and monitor
+2. **Simplified Configuration**: Single topic ARN and queue URL to configure
+3. **Consistent Processing**: All replay operations follow the same processing pattern
+4. **Easier Monitoring**: Single queue for monitoring message throughput
+5. **Simplified Error Handling**: Consolidated dead letter queue handling
+
+### 6.2 Flexible Operation Types
+
+The message attribute-based approach allows for easy addition of new operation types:
+
+1. **Extensible Design**: New operation types can be added without infrastructure changes
+2. **Clear Differentiation**: Operation types are clearly identified in message attributes
+3. **Consistent Processing**: All operations use the same processing pipeline
+
+## 7. Future Enhancements
+
+### 7.1 Integration Testing
 
 Implement comprehensive integration tests for:
 - Replay API endpoints
 - Message publishing and consumption
 - Status tracking and reporting
 
-### 6.2 Monitoring Improvements
+### 7.2 Monitoring Improvements
 
 Set up CloudWatch dashboards and alarms for:
 - Message processing rates
@@ -363,14 +466,14 @@ Set up CloudWatch dashboards and alarms for:
 - Error rates
 - DynamoDB throttling events
 
-### 6.3 Performance Optimizations
+### 7.3 Performance Optimizations
 
 Potential areas for performance improvement:
 - Batch size tuning for record retrieval and message publishing
 - DynamoDB read/write capacity optimization
 - Parallel processing of different kinds
 
-### 6.4 User Documentation
+### 7.4 User Documentation
 
 Create detailed user documentation with:
 - API usage examples
