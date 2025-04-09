@@ -23,6 +23,7 @@ import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.dto.ReplayStatus;
+import org.opengroup.osdu.storage.enums.ReplayOperation;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
@@ -174,6 +175,15 @@ public class ReplayServiceAWSImpl extends ReplayService {
     public ReplayResponse handleReplayRequest(ReplayRequest replayRequest) {
         LOGGER.info("Handling replay request with ID: " + replayRequest.getReplayId());
         
+        // Validate operation type
+        Set<String> validReplayOperation = ReplayOperation.getValidReplayOperations();
+        boolean isValidReplayOperation = validReplayOperation.contains(replayRequest.getOperation());
+        
+        if (!isValidReplayOperation) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST,
+                    "Validation Error", "Not a valid operation. The valid operations are: " + validReplayOperation);
+        }
+        
         // Generate a unique replay ID if not provided
         if (replayRequest.getReplayId() == null || replayRequest.getReplayId().isEmpty()) {
             replayRequest.setReplayId(UUID.randomUUID().toString());
@@ -237,13 +247,14 @@ public class ReplayServiceAWSImpl extends ReplayService {
     /**
      * Validates that the specified kinds have active records.
      * Throws an AppException with a 400 status code if any kind has no active records.
+     * Uses the more efficient getActiveRecordsCountForKinds method to check only the specified kinds.
      * 
      * @param kinds The list of kinds to validate
      */
     private void validateKindsHaveActiveRecords(List<String> kinds) {
         LOGGER.info("Validating that kinds have active records: " + kinds);
-        
-        Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
+
+        Map<String, Long> kindCounts = queryRepository.getActiveRecordsCountForKinds(kinds);
         
         List<String> kindsWithNoRecords = new ArrayList<>();
         for (String kind : kinds) {
