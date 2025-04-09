@@ -86,16 +86,14 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             String reindexRequestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
             ReplayStatusResponseHelper reindexResponse = performReplay(reindexRequestBody);
             assertEquals("reindex", reindexResponse.getOperation());
-            assertEquals(1, reindexResponse.getFilter().getKinds().size());
-            assertEquals(kind, reindexResponse.getFilter().getKinds().get(0));
+            assertEquals(kind, reindexResponse.getStatus().get(0).getKind());
             assertEquals("COMPLETED", reindexResponse.getOverallState());
 
             // Test replay operation
             String replayRequestBody = ReplayUtils.createJsonWithKind("replay", kindList);
             ReplayStatusResponseHelper replayResponse = performReplay(replayRequestBody);
             assertEquals("replay", replayResponse.getOperation());
-            assertEquals(1, replayResponse.getFilter().getKinds().size());
-            assertEquals(kind, replayResponse.getFilter().getKinds().get(0));
+            assertEquals(kind, replayResponse.getStatus().get(0).getKind());
             assertEquals("COMPLETED", replayResponse.getOverallState());
         } finally {
             // Clean up
@@ -125,7 +123,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
         try {
             // Trigger first replay operation
             String requestBody1 = ReplayUtils.createJsonWithKind("reindex", kind1List);
-            CloseableHttpResponse response1 = TestUtils.send("replay", "POST", 
+            CloseableHttpResponse response1 = TestUtils.send("replay", "POST",
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 requestBody1, "");
             assertEquals(202, response1.getCode());
