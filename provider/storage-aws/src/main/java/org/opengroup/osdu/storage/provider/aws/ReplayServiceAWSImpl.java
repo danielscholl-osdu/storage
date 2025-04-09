@@ -99,7 +99,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
         
         if (replayMetaDataList == null || replayMetaDataList.isEmpty()) {
             throw new AppException(HttpStatus.SC_NOT_FOUND, "Replay not found", 
-                    "No replay found with ID: " + replayId);
+                    "The replay ID " + replayId + " is invalid.");
         }
         
         // Calculate overall status
@@ -186,6 +186,9 @@ public class ReplayServiceAWSImpl extends ReplayService {
             // If kinds are specified in the filter, use them immediately
             kinds = replayRequest.getFilter().getKinds();
             
+            // Validate that the specified kinds have active records
+            validateKindsHaveActiveRecords(kinds);
+            
             // Create initial metadata records for these kinds
             createInitialMetadataRecords(replayId, kinds, replayRequest.getOperation());
             
@@ -229,6 +232,30 @@ public class ReplayServiceAWSImpl extends ReplayService {
         
         // Return immediately with the replay ID
         return new ReplayResponse(replayId);
+    }
+    
+    /**
+     * Validates that the specified kinds have active records.
+     * Throws an AppException with a 400 status code if any kind has no active records.
+     * 
+     * @param kinds The list of kinds to validate
+     */
+    private void validateKindsHaveActiveRecords(List<String> kinds) {
+        LOGGER.info("Validating that kinds have active records: " + kinds);
+        
+        Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
+        
+        List<String> kindsWithNoRecords = new ArrayList<>();
+        for (String kind : kinds) {
+            if (!kindCounts.containsKey(kind) || kindCounts.get(kind) <= 0) {
+                kindsWithNoRecords.add(kind);
+            }
+        }
+        
+        if (!kindsWithNoRecords.isEmpty()) {
+            LOGGER.warning("The following kinds have no active records: " + String.join(", ", kindsWithNoRecords));
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid kind", "The requested kind does not exist.");
+        }
     }
     
     /**
