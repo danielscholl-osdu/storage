@@ -26,26 +26,36 @@ import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
 import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
+import org.opengroup.osdu.storage.model.RecordId;
+import org.opengroup.osdu.storage.model.RecordIdAndKind;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.opengroup.osdu.storage.provider.aws.service.AwsSchemaServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
@@ -65,200 +75,482 @@ class QueryRepositoryImplTest {
 
     @Mock
     private DpsHeaders dpsHeaders;
+    
+    @Mock
+    private JaxRsDpsLog logger;
+    
+    @Mock
+    private AwsSchemaServiceImpl schemaService;
 
     @BeforeEach
     void setUp() {
         openMocks(this);
         Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
-        .thenReturn(queryHelper);
+            .thenReturn(queryHelper);
+        
+        // Manually set the schemaService field in the repo
+        repo.schemaService = schemaService;
     }
 
     @Test
-    void getAllKinds() throws UnsupportedEncodingException {
+    void getAllRecordIdAndKind() throws UnsupportedEncodingException {
         // Arrange
-        String dataPartitionId = "test-data-partition-id";
-        String kind = dataPartitionId + ":source:type:1.0.0";
         String cursor = "abc123";
-        String user = "test-user@testing.com";
-
-        List<String> resultsKinds = new ArrayList<>();
-        resultsKinds.add(kind);
-        DatastoreQueryResult expectedDatastoreQueryResult = new DatastoreQueryResult(cursor, resultsKinds);
-        Schema expectedSchema = new Schema();
-        expectedSchema.setKind(kind);
-
-        SchemaItem item = new SchemaItem();
-        item.setKind(kind);
-        item.setPath("schemaPath");
-        SchemaItem[] schemaItems = new SchemaItem[1];
-        schemaItems[0] = item;
-        expectedSchema.setSchema(schemaItems);
-
-        SchemaDoc expectedSd = new SchemaDoc();
-        expectedSd.setKind(expectedSchema.getKind());
-        expectedSd.setExtension(expectedSchema.getExt());
-        expectedSd.setUser(user);
-        expectedSd.setSchemaItems(Arrays.asList(expectedSchema.getSchema()));
-
-        List<SchemaDoc> expectedSchemaDocList = new ArrayList<>();
-        expectedSchemaDocList.add(expectedSd);
-        QueryPageResult<SchemaDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedSchemaDocList);
-
-        Mockito.when(dpsHeaders.getPartitionId()).thenReturn(dataPartitionId);
-        Mockito.when(queryHelper.queryByGSI(Mockito.eq(SchemaDoc.class),
-                Mockito.any(), Mockito.anyInt(), Mockito.eq(cursor)))
-                .thenReturn(expectedQueryPageResult);
-
+        String recordId1 = "tenant:source:type1:1.0.0.1212";
+        String recordId2 = "tenant:source:type2:1.0.0.3434";
+        String kind1 = "tenant:source:type1:1.0.0";
+        String kind2 = "tenant:source:type2:1.0.0";
+        
+        // Create test data
+        RecordMetadataDoc doc1 = new RecordMetadataDoc();
+        doc1.setId(recordId1);
+        doc1.setKind(kind1);
+        doc1.setStatus("active");
+        
+        RecordMetadataDoc doc2 = new RecordMetadataDoc();
+        doc2.setId(recordId2);
+        doc2.setKind(kind2);
+        doc2.setStatus("active");
+        
+        List<RecordMetadataDoc> docList = Arrays.asList(doc1, doc2);
+        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(cursor, docList);
+        
+        // Mock the query helper
+        when(queryHelper.queryByGSI(
+                eq(RecordMetadataDoc.class),
+                any(),
+                anyInt(),
+                anyString()))
+                .thenReturn(queryResult);
+        
         // Act
-        DatastoreQueryResult datastoreQueryResult = repo.getAllKinds(50, cursor);
-
+        RecordInfoQueryResult<RecordIdAndKind> result = repo.getAllRecordIdAndKind(50, cursor);
+        
         // Assert
-        Assert.assertEquals(datastoreQueryResult, expectedDatastoreQueryResult);
+        assertEquals(cursor, result.getCursor());
+        assertEquals(2, result.getResults().size());
+        
+        RecordIdAndKind record1 = result.getResults().get(0);
+        assertEquals(recordId1, record1.getId());
+        assertEquals(kind1, record1.getKind());
+        
+        RecordIdAndKind record2 = result.getResults().get(1);
+        assertEquals(recordId2, record2.getId());
+        assertEquals(kind2, record2.getKind());
+        
+        verify(queryHelper, times(1)).queryByGSI(
+                eq(RecordMetadataDoc.class),
+                any(),
+                eq(50),
+                eq(cursor));
     }
-
+    
     @Test
-    void getAllKindsThrowsException() throws IllegalArgumentException, UnsupportedEncodingException {
+    void getAllRecordIdAndKindThrowsException() throws UnsupportedEncodingException {
+        // Arrange
         String cursor = "abc123";
         Integer limit = 50;
-        when(queryHelper.queryByGSI(Mockito.eq(SchemaDoc.class),
-                any(), anyInt(), Mockito.eq(cursor)))
+        
+        when(queryHelper.queryByGSI(
+                eq(RecordMetadataDoc.class),
+                any(),
+                anyInt(),
+                anyString()))
                 .thenThrow(UnsupportedEncodingException.class);
         
+        // Act & Assert
         assertThrows(AppException.class, () -> {
-            repo.getAllKinds(limit, cursor);
+            repo.getAllRecordIdAndKind(limit, cursor);
         });
     }
-
+    
     @Test
-    void getAllRecordIdsFromKind() throws UnsupportedEncodingException {
+    void getAllRecordIdsFromKindWithRecordId() throws UnsupportedEncodingException {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
         String cursor = "abc123";
-        String recordId = "tenant:source:type:1.0.0.1212";
-        List<String> resultsIds = new ArrayList<>();
-        resultsIds.add(recordId);
-        DatastoreQueryResult expectedDatastoreQueryResult = new DatastoreQueryResult(cursor, resultsIds);
-        String user = "test-user";
-        RecordMetadataDoc expectedRecordMetadataDoc = new RecordMetadataDoc();
-        expectedRecordMetadataDoc.setId(recordId);
-        expectedRecordMetadataDoc.setKind(kind);
-        expectedRecordMetadataDoc.setUser(user);
-        expectedRecordMetadataDoc.setStatus("active");
-        RecordMetadata expectedRecordMetadata = new RecordMetadata();
-        expectedRecordMetadata.setId(recordId);
-        expectedRecordMetadataDoc.setMetadata(expectedRecordMetadata);
-        List<RecordMetadataDoc> expectedRecordMetadataDocList = new ArrayList<>();
-        expectedRecordMetadataDocList.add(expectedRecordMetadataDoc);
-        QueryPageResult<RecordMetadataDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedRecordMetadataDocList);
-        // Set GSI hash key
-        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-        recordMetadataKey.setKind(kind);
-
-        Mockito.when(queryHelper.queryPage(
-            Mockito.eq(RecordMetadataDoc.class),
-            Mockito.any(),
-            Mockito.anyString(),
-            Mockito.anyString(),
-            Mockito.anyString(),
-            Mockito.eq(ComparisonOperator.BEGINS_WITH),
-            Mockito.anyString(),
-            Mockito.anyInt(),
-            Mockito.anyString()))
-            .thenReturn(expectedQueryPageResult);
-
+        String recordId1 = "tenant:source:type:1.0.0.1212";
+        String recordId2 = "tenant:source:type:1.0.0.3434";
+        String partitionId = "tenant";
+        
+        // Create test data
+        RecordMetadataDoc doc1 = new RecordMetadataDoc();
+        doc1.setId(recordId1);
+        doc1.setKind(kind);
+        doc1.setStatus("active");
+        
+        RecordMetadataDoc doc2 = new RecordMetadataDoc();
+        doc2.setId(recordId2);
+        doc2.setKind(kind);
+        doc2.setStatus("active");
+        
+        List<RecordMetadataDoc> docList = Arrays.asList(doc1, doc2);
+        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(cursor, docList);
+        
+        // Mock the query helper and headers
+        when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                any(),
+                anyString(),
+                anyString(),
+                anyString(),
+                eq(ComparisonOperator.BEGINS_WITH),
+                anyString(),
+                anyInt(),
+                anyString()))
+                .thenReturn(queryResult);
+        
         // Act
-        DatastoreQueryResult datastoreQueryResult = repo.getAllRecordIdsFromKind(kind, 50, cursor, Optional.empty());
-
+        RecordInfoQueryResult<RecordId> result = repo.getAllRecordIdsFromKind(50, cursor, kind);
+        
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).queryPage(
-            Mockito.eq(RecordMetadataDoc.class),
-            Mockito.any(),
-            Mockito.anyString(),
-            Mockito.anyString(),
-            Mockito.anyString(),
-            Mockito.eq(ComparisonOperator.BEGINS_WITH),
-            Mockito.anyString(),
-            Mockito.eq(50),
-            Mockito.eq(cursor)
-            );
-        Assert.assertEquals(expectedDatastoreQueryResult, datastoreQueryResult);
+        assertEquals(cursor, result.getCursor());
+        assertEquals(2, result.getResults().size());
+        
+        RecordId record1 = result.getResults().get(0);
+        assertEquals(recordId1, record1.getId());
+        
+        RecordId record2 = result.getResults().get(1);
+        assertEquals(recordId2, record2.getId());
+        
+        verify(queryHelper, times(1)).queryPage(
+                eq(RecordMetadataDoc.class),
+                any(),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                anyString(),
+                eq(50),
+                eq(cursor));
     }
-
+    
     @Test
-    void getAllRecordIdsFromKindThrowsException() throws InvalidCursorException, IllegalArgumentException, UnsupportedEncodingException {
+    void getAllRecordIdsFromKindWithRecordIdThrowsException() throws UnsupportedEncodingException {
+        // Arrange
         String kind = "tenant:source:type:1.0.0";
         String cursor = "abc123";
         Integer limit = 50;
-
+        
         when(queryHelper.queryPage(
-            eq(RecordMetadataDoc.class),
-            any(),
-            anyString(),
-            anyString(),
-            anyString(),
-            eq(ComparisonOperator.BEGINS_WITH),
-            anyString(),
-            anyInt(),
-            anyString()))
-            .thenThrow(UnsupportedEncodingException.class);
-
-        assertThrows(AppException.class, () -> { 
-            repo.getAllRecordIdsFromKind(kind, limit, cursor, Optional.empty());
+                eq(RecordMetadataDoc.class),
+                any(),
+                anyString(),
+                anyString(),
+                anyString(),
+                eq(ComparisonOperator.BEGINS_WITH),
+                anyString(),
+                anyInt(),
+                anyString()))
+                .thenThrow(UnsupportedEncodingException.class);
+        
+        // Act & Assert
+        assertThrows(AppException.class, () -> {
+            repo.getAllRecordIdsFromKind(limit, cursor, kind);
         });
     }
-
+    
     @Test
-    void getAllRecordIdsFromDifferentKind() throws UnsupportedEncodingException {
+    void getActiveRecordsCount() throws UnsupportedEncodingException {
         // Arrange
-        String kind = "osdu:source:type:1.0.0";
-        String cursor = "abc123";
-        String recordId = "tenant:source:type:1.0.0.1212";
-        List<String> resultsIds = new ArrayList<>();
-        resultsIds.add(recordId);
-        DatastoreQueryResult expectedDatastoreQueryResult = new DatastoreQueryResult(cursor, resultsIds);
-        String user = "test-user";
-        RecordMetadataDoc expectedRecordMetadataDoc = new RecordMetadataDoc();
-        expectedRecordMetadataDoc.setId(recordId);
-        expectedRecordMetadataDoc.setKind(kind);
-        expectedRecordMetadataDoc.setUser(user);
-        expectedRecordMetadataDoc.setStatus("active");
-        RecordMetadata expectedRecordMetadata = new RecordMetadata();
-        expectedRecordMetadata.setId(recordId);;
-        expectedRecordMetadataDoc.setMetadata(expectedRecordMetadata);
-        List<RecordMetadataDoc> expectedRecordMetadataDocList = new ArrayList<>();
-        expectedRecordMetadataDocList.add(expectedRecordMetadataDoc);
-        QueryPageResult<RecordMetadataDoc> expectedQueryPageResult = new QueryPageResult<>(cursor, expectedRecordMetadataDocList);
-        // Set GSI hash key
-        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-        recordMetadataKey.setKind(kind);
-
-        Mockito.when(queryHelper.queryPage(
-                Mockito.eq(RecordMetadataDoc.class),
-                Mockito.any(),
-                Mockito.anyString(),
-                Mockito.anyString(),
-                Mockito.anyString(),
-                Mockito.eq(ComparisonOperator.BEGINS_WITH),
-                Mockito.anyString(),
-                Mockito.anyInt(),
-                Mockito.anyString()))
-            .thenReturn(expectedQueryPageResult);
-
+        String partitionId = "tenant";
+        String kind1 = "tenant:source:type1:1.0.0";
+        String kind2 = "tenant:source:type2:1.0.0";
+        List<String> kinds = Arrays.asList(kind1, kind2);
+        
+        // Create test data for kind1
+        RecordMetadataDoc doc1 = new RecordMetadataDoc();
+        doc1.setId("tenant:source:type1:1.0.0.1212");
+        doc1.setKind(kind1);
+        doc1.setStatus("active");
+        
+        RecordMetadataDoc doc2 = new RecordMetadataDoc();
+        doc2.setId("tenant:source:type1:1.0.0.3434");
+        doc2.setKind(kind1);
+        doc2.setStatus("active");
+        
+        List<RecordMetadataDoc> docList1 = Arrays.asList(doc1, doc2);
+        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(null, docList1);
+        
+        // Create test data for kind2
+        RecordMetadataDoc doc3 = new RecordMetadataDoc();
+        doc3.setId("tenant:source:type2:1.0.0.5656");
+        doc3.setKind(kind2);
+        doc3.setStatus("active");
+        
+        List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        
+        // Mock the schema service and query helper
+        when(schemaService.getAllKinds()).thenReturn(kinds);
+        when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
+        
+        // Mock for kind1
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                Mockito.argThat(arg -> arg != null && kind1.equals(arg.getKind())),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenReturn(queryResult1);
+        
+        // Mock for kind2
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                Mockito.argThat(arg -> arg != null && kind2.equals(arg.getKind())),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenReturn(queryResult2);
+        
         // Act
-        DatastoreQueryResult datastoreQueryResult = repo.getAllRecordIdsFromKind(kind, 50, cursor, Optional.empty());
-
+        HashMap<String, Long> result = repo.getActiveRecordsCount();
+        
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).queryPage(
-            Mockito.eq(RecordMetadataDoc.class),
-            Mockito.any(),
-            Mockito.anyString(),
-            Mockito.anyString(),
-            Mockito.anyString(),
-            Mockito.eq(ComparisonOperator.BEGINS_WITH),
-            Mockito.anyString(),
-            Mockito.eq(50),
-            Mockito.eq(cursor)
-        );
-        Assert.assertEquals(expectedDatastoreQueryResult, datastoreQueryResult);
+        assertEquals(2, result.size());
+        assertEquals(Long.valueOf(2), result.get(kind1));
+        assertEquals(Long.valueOf(1), result.get(kind2));
+    }
+    
+    @Test
+    void getActiveRecordsCountWithPagination() throws UnsupportedEncodingException {
+        // Arrange
+        String partitionId = "tenant";
+        String kind = "tenant:source:type:1.0.0";
+        List<String> kinds = Arrays.asList(kind);
+        String cursor = "abc123";
+        
+        // Create test data for first page
+        RecordMetadataDoc doc1 = new RecordMetadataDoc();
+        doc1.setId("tenant:source:type:1.0.0.1212");
+        doc1.setKind(kind);
+        doc1.setStatus("active");
+        
+        RecordMetadataDoc doc2 = new RecordMetadataDoc();
+        doc2.setId("tenant:source:type:1.0.0.3434");
+        doc2.setKind(kind);
+        doc2.setStatus("active");
+        
+        List<RecordMetadataDoc> docList1 = Arrays.asList(doc1, doc2);
+        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(cursor, docList1);
+        
+        // Create test data for second page
+        RecordMetadataDoc doc3 = new RecordMetadataDoc();
+        doc3.setId("tenant:source:type:1.0.0.5656");
+        doc3.setKind(kind);
+        doc3.setStatus("active");
+        
+        List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        
+        // Mock the schema service and query helper
+        when(schemaService.getAllKinds()).thenReturn(kinds);
+        when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
+        
+        // Mock for first page
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                any(),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenReturn(queryResult1);
+        
+        // Mock for second page
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                any(),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(cursor)))
+                .thenReturn(queryResult2);
+        
+        // Act
+        HashMap<String, Long> result = repo.getActiveRecordsCount();
+        
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(Long.valueOf(3), result.get(kind));
+        
+        // Verify that both pages were queried
+        verify(queryHelper, times(1)).queryPage(
+                eq(RecordMetadataDoc.class),
+                any(),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null));
+        
+        verify(queryHelper, times(1)).queryPage(
+                eq(RecordMetadataDoc.class),
+                any(),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(cursor));
+    }
+    
+    @Test
+    void getActiveRecordsCountWithException() throws UnsupportedEncodingException {
+        // Arrange
+        String kind = "tenant:source:type:1.0.0";
+        List<String> kinds = Arrays.asList(kind);
+        
+        // Mock the schema service to throw an exception
+        when(schemaService.getAllKinds()).thenThrow(new RuntimeException("Test exception"));
+        
+        // Act & Assert
+        assertThrows(AppException.class, () -> {
+            repo.getActiveRecordsCount();
+        });
+    }
+    
+    @Test
+    void getActiveRecordsCountForKinds() throws UnsupportedEncodingException {
+        // Arrange
+        String partitionId = "tenant";
+        String kind1 = "tenant:source:type1:1.0.0";
+        String kind2 = "tenant:source:type2:1.0.0";
+        List<String> kinds = Arrays.asList(kind1, kind2);
+        
+        // Create test data for kind1
+        RecordMetadataDoc doc1 = new RecordMetadataDoc();
+        doc1.setId("tenant:source:type1:1.0.0.1212");
+        doc1.setKind(kind1);
+        doc1.setStatus("active");
+        
+        RecordMetadataDoc doc2 = new RecordMetadataDoc();
+        doc2.setId("tenant:source:type1:1.0.0.3434");
+        doc2.setKind(kind1);
+        doc2.setStatus("active");
+        
+        List<RecordMetadataDoc> docList1 = Arrays.asList(doc1, doc2);
+        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(null, docList1);
+        
+        // Create test data for kind2
+        RecordMetadataDoc doc3 = new RecordMetadataDoc();
+        doc3.setId("tenant:source:type2:1.0.0.5656");
+        doc3.setKind(kind2);
+        doc3.setStatus("active");
+        
+        List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        
+        // Mock the query helper
+        when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
+        
+        // Mock for kind1
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                Mockito.argThat(arg -> arg != null && kind1.equals(arg.getKind())),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenReturn(queryResult1);
+        
+        // Mock for kind2
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                Mockito.argThat(arg -> arg != null && kind2.equals(arg.getKind())),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenReturn(queryResult2);
+        
+        // Act
+        Map<String, Long> result = repo.getActiveRecordsCountForKinds(kinds);
+        
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals(Long.valueOf(2), result.get(kind1));
+        assertEquals(Long.valueOf(1), result.get(kind2));
+    }
+    
+    @Test
+    void getActiveRecordsCountForKindsWithException() throws UnsupportedEncodingException {
+        // Arrange
+        String partitionId = "tenant";
+        String kind1 = "tenant:source:type1:1.0.0";
+        String kind2 = "tenant:source:type2:1.0.0";
+        List<String> kinds = Arrays.asList(kind1, kind2);
+        
+        when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
+        
+        // Mock for kind1 to throw exception
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                Mockito.argThat(arg -> arg != null && kind1.equals(arg.getKind())),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenThrow(UnsupportedEncodingException.class);
+        
+        // Create test data for kind2
+        RecordMetadataDoc doc3 = new RecordMetadataDoc();
+        doc3.setId("tenant:source:type2:1.0.0.5656");
+        doc3.setKind(kind2);
+        doc3.setStatus("active");
+        
+        List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        
+        // Mock for kind2 to succeed
+        when(queryHelper.queryPage(
+                eq(RecordMetadataDoc.class),
+                Mockito.argThat(arg -> arg != null && kind2.equals(arg.getKind())),
+                eq("Status"),
+                eq("active"),
+                eq("Id"),
+                eq(ComparisonOperator.BEGINS_WITH),
+                eq(partitionId + ":"),
+                eq(1000),
+                eq(null)))
+                .thenReturn(queryResult2);
+        
+        // Act
+        Map<String, Long> result = repo.getActiveRecordsCountForKinds(kinds);
+        
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals(Long.valueOf(0), result.get(kind1)); // Should be 0 due to exception
+        assertEquals(Long.valueOf(1), result.get(kind2));
+        
+        // Verify that logger.error was called for the exception
+        verify(logger, times(1)).error(Mockito.contains("Error counting records for kind " + kind1), any(Exception.class));
     }
 }

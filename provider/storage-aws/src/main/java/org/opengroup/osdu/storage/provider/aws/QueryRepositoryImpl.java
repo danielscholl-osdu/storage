@@ -55,7 +55,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
     
-    private final AwsSchemaServiceImpl schemaService;
+    AwsSchemaServiceImpl schemaService;
 
     @Value("${aws.dynamodb.schemaRepositoryTable.ssm.relativePath}")
     String schemaRepositoryTableParameterRelativePath;    
