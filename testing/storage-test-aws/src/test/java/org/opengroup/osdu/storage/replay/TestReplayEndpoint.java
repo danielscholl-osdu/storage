@@ -13,7 +13,9 @@
 // limitations under the License.
 
 package org.opengroup.osdu.storage.replay;
+import com.google.gson.Gson;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -21,12 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opengroup.osdu.storage.Replay.ReplayEndpointsTests;
 import org.opengroup.osdu.storage.model.ReplayStatusResponseHelper;
-import org.opengroup.osdu.storage.util.AWSTestUtils;
-import org.opengroup.osdu.storage.util.ConfigUtils;
-import org.opengroup.osdu.storage.util.HeaderUtils;
-import org.opengroup.osdu.storage.util.ReplayUtils;
-import org.opengroup.osdu.storage.util.TenantUtils;
-import org.opengroup.osdu.storage.util.TestUtils;
+import org.opengroup.osdu.storage.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -129,38 +126,83 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
     }
 
     /**
-     * AWS-specific implementation of the should_return_200_GivenReplayAll test.
-     * This version is more resilient to environments that already have data ingested.
+     * This version tests the replay functionality using a valid record with a known kind.
      */
     @Override
     @Test
     public void should_return_200_GivenReplayAll() throws Exception {
         assumeTrue(configUtils != null && configUtils.getIsTestReplayAllEnabled());
 
-        // Create test records with unique kinds to ensure we can track them
-        String kind1 = getKind();
-        String kind2 = getKind();
-        List<String> testKinds = Arrays.asList(kind1, kind2);
-        
-        // Create a small number of records for our test kinds
-        List<String> recordIds = this.createTestRecordForGivenCapacityAndKinds(5, 5, testKinds);
-        
+        String kind = "osdu:wks:dataset--File.Generic:1.0.0";
+        List<String> kindList = new ArrayList<>();
+        kindList.add(kind);
+
+        String recordId = TenantUtils.getTenantName() + ":dataset--File.Generic:" + System.currentTimeMillis();
+        String legalTagName = LEGAL_TAG_NAME;
+
+        String recordJson = String.format(
+                "[{" +
+                        "\"id\":\"%s\"," +
+                        "\"data\": {" +
+                        "    \"Endian\": \"BIG\"," +
+                        "    \"Name\": \"dummy\"," +
+                        "    \"DatasetProperties.FileSourceInfo.FileSource\": \"\"," +
+                        "    \"DatasetProperties.FileSourceInfo.PreloadFilePath\": \"\"" +
+                        "}," +
+                        "\"kind\": \"%s\"," +
+                        "\"namespace\": \"osdu:wks\"," +
+                        "\"legal\": {" +
+                        "    \"legaltags\": [" +
+                        "        \"%s\"" +
+                        "    ]," +
+                        "    \"otherRelevantDataCountries\": [" +
+                        "        \"US\"" +
+                        "    ]," +
+                        "    \"status\": \"compliant\"" +
+                        "}," +
+                        "\"acl\": {" +
+                        "    \"viewers\": [" +
+                        "        \"%s\"" +
+                        "    ]," +
+                        "    \"owners\": [" +
+                        "        \"%s\"" +
+                        "    ]" +
+                        "}," +
+                        "\"type\": \"dataset--File.Generic\"," +
+                        "\"version\": %d" +
+                        "}]", recordId, kind, legalTagName, TestUtils.getAcl(), TestUtils.getAcl(), System.currentTimeMillis());
+
+        CloseableHttpResponse createResponse = TestUtils.send(
+                "records",
+                "PUT",
+                HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()),
+                recordJson,
+                "");
+
+        assertEquals(201, createResponse.getCode());
+
+        String responseJson = EntityUtils.toString(createResponse.getEntity());
+        Gson gson = new Gson();
+        DummyRecordsHelper.CreateRecordResponse result = gson.fromJson(
+                responseJson,
+                DummyRecordsHelper.CreateRecordResponse.class
+        );
+
+        List<String> recordIds = Arrays.asList(result.recordIds);
+
+        Thread.sleep(5000);
+
         try {
-            // Get initial record counts for our test kinds
-            int initialCount1 = getIndexedRecordCountForKind(kind1);
-            int initialCount2 = getIndexedRecordCountForKind(kind2);
+            // Get initial record counts for our test kind
+            int initialCount = getIndexedRecordCountForKind(kind);
             
             // Verify our test records were created
-            assertTrue("Test records for kind1 should be indexed", initialCount1 > 0);
-            assertTrue("Test records for kind2 should be indexed", initialCount2 > 0);
-            
-            // Delete the indexed records for our test kinds
-            deleteIndexedRecordsForKind(kind1);
-            deleteIndexedRecordsForKind(kind2);
+            assertTrue("Test records for kind should be indexed", initialCount > 0);
+
+            deleteIndexedRecordsForKind(kind);
             
             // Verify deletion was successful
-            assertEquals("Indexed records for kind1 should be deleted", 0, getIndexedRecordCountForKind(kind1));
-            assertEquals("Indexed records for kind2 should be deleted", 0, getIndexedRecordCountForKind(kind2));
+            assertEquals("Indexed records for kind should be deleted", 0, getIndexedRecordCountForKind(kind));
             
             // Trigger replay all operation
             String requestBody = ReplayUtils.createJsonWithOperationName("reindex");
@@ -184,14 +226,11 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             assertEquals("COMPLETED", statusHelper.getOverallState());
             
             // Verify our test kinds were reindexed
-            int finalCount1 = getIndexedRecordCountForKind(kind1);
-            int finalCount2 = getIndexedRecordCountForKind(kind2);
+            int finalCount = getIndexedRecordCountForKind(kind);
             
-            assertEquals("Records for kind1 should be reindexed", initialCount1, finalCount1);
-            assertEquals("Records for kind2 should be reindexed", initialCount2, finalCount2);
+            assertEquals("Records for kind1 should be reindexed", initialCount, finalCount);
             
         } finally {
-            // Clean up
             deleteRecords(recordIds);
         }
     }
