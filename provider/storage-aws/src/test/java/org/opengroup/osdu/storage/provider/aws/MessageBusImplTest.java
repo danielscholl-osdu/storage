@@ -15,10 +15,12 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,16 +29,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
+import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -58,12 +62,106 @@ public class MessageBusImplTest {
     private MessageBusImpl messageBus;
 
     private final String topicArn = "arn:aws:sns:us-east-1:123456789012:test-topic";
+    private final String topicArnV2 = "arn:aws:sns:us-east-1:123456789012:test-topic-v2";
+    private final String osduTopic = "records-changed";
+    private final String osduTopicV2 = "records-changed-v2";
 
     @Before
     public void setup() {
         ReflectionTestUtils.setField(messageBus, "currentRegion", "us-east-1");
         ReflectionTestUtils.setField(messageBus, "snsClient", snsClient);
         ReflectionTestUtils.setField(messageBus, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(messageBus, "amazonSNSTopic", topicArn);
+        ReflectionTestUtils.setField(messageBus, "amazonSNSTopicV2", topicArnV2);
+        ReflectionTestUtils.setField(messageBus, "osduStorageTopic", osduTopic);
+        ReflectionTestUtils.setField(messageBus, "osduStorageTopicV2", osduTopicV2);
+        
+        when(headers.getCorrelationId()).thenReturn("test-correlation-id");
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
+    }
+
+    @Test
+    public void testPublishMessage_WithPubSubInfo() {
+        // Arrange
+        PubSubInfo message1 = new PubSubInfo();
+        message1.setId("id1");
+        PubSubInfo message2 = new PubSubInfo();
+        message2.setId("id2");
+        
+        // Act
+        messageBus.publishMessage(headers, message1, message2);
+
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(topicArn, capturedRequest.getTopicArn());
+        
+        // Verify message attributes
+        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        assertTrue(attributes.containsKey("data-partition-id"));
+        assertTrue(attributes.containsKey("correlation-id"));
+    }
+
+    @Test
+    public void testPublishMessage_WithRecordChangedV2_NoCollaboration() {
+        // Arrange
+        RecordChangedV2 message1 = new RecordChangedV2();
+        message1.setId("id1");
+        RecordChangedV2 message2 = new RecordChangedV2();
+        message2.setId("id2");
+        
+        Optional<CollaborationContext> noCollaboration = Optional.empty();
+        
+        // Act
+        messageBus.publishMessage(noCollaboration, headers, message1, message2);
+
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(topicArnV2, capturedRequest.getTopicArn());
+        
+        // Verify message attributes
+        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        assertTrue(attributes.containsKey("data-partition-id"));
+        assertTrue(attributes.containsKey("correlation-id"));
+        // No collaboration attribute should be present
+        assertTrue(!attributes.containsKey("collaboration"));
+    }
+
+    @Test
+    public void testPublishMessage_WithRecordChangedV2_WithCollaboration() {
+        // Arrange
+        RecordChangedV2 message = new RecordChangedV2();
+        message.setId("id1");
+        
+        CollaborationContext collaborationContext = new CollaborationContext();
+        collaborationContext.setId(UUID.randomUUID());
+        collaborationContext.setApplication("test-app");
+        Optional<CollaborationContext> withCollaboration = Optional.of(collaborationContext);
+        
+        // Act
+        messageBus.publishMessage(withCollaboration, headers, message);
+
+        // Assert
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        
+        PublishRequest capturedRequest = requestCaptor.getValue();
+        assertEquals(topicArnV2, capturedRequest.getTopicArn());
+        
+        // Verify message attributes
+        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+
+        assertTrue(attributes.containsKey("data-partition-id"));
+        assertTrue(attributes.containsKey("correlation-id"));
+        assertTrue(attributes.containsKey("x-collaboration"));
+        assertEquals("String", attributes.get("x-collaboration").getDataType());
+        assertTrue(attributes.get("x-collaboration").getStringValue().contains("id="));
+        assertTrue(attributes.get("x-collaboration").getStringValue().contains("application=test-app"));
     }
 
     @Test
@@ -78,7 +176,6 @@ public class MessageBusImplTest {
         
         when(objectMapper.writeValueAsString(message1)).thenReturn("{\"content\":\"test1\"}");
         when(objectMapper.writeValueAsString(message2)).thenReturn("{\"content\":\"test2\"}");
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
 
         // Act
         messageBus.publishMessage(headers, routingInfo, messageList);
@@ -126,6 +223,42 @@ public class MessageBusImplTest {
         messageBus.publishMessage(headers, routingInfo, messageList);
 
         // Assert - exception expected
+    }
+
+    @Test
+    public void testPublishMessage_WithLargeBatch() {
+        // Arrange
+        int messageCount = 101; // More than the batch size of 50
+        RecordChangedV2[] messages = new RecordChangedV2[messageCount];
+        for (int i = 0; i < messageCount; i++) {
+            RecordChangedV2 message = new RecordChangedV2();
+            message.setId("id" + i);
+            messages[i] = message;
+        }
+        
+        Optional<CollaborationContext> noCollaboration = Optional.empty();
+        
+        // Act
+        messageBus.publishMessage(noCollaboration, headers, messages);
+
+        // Assert
+        // Should have 3 batches: 50 + 50 + 1
+        verify(snsClient, times(3)).publish(any(PublishRequest.class));
+    }
+
+    @Test(expected = NotImplementedException.class)
+    public void testPublishMessage_WithRoutingInfoAndPubSubInfo() {
+        // Arrange
+        Map<String, String> routingInfo = new HashMap<>();
+        routingInfo.put("topic", topicArn);
+        
+        PubSubInfo message = new PubSubInfo();
+        message.setId("id1");
+        
+        // Act
+        messageBus.publishMessage(headers, routingInfo, message);
+        
+        // Assert - NotImplementedException expected
     }
 
     private static String contains(String substring) {
