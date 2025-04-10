@@ -32,23 +32,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * AWS implementation of the Schema Service.
+ */
 @Service
 public class AwsSchemaServiceImpl implements SchemaService {
+
+    private static final int PAGE_SIZE = 1000; // Request larger page size to minimize API calls
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String DATA_PARTITION_ID_HEADER = "data-partition-id";
+    private static final String SCHEMA_ENDPOINT = "/schema";
+    private static final String PAGINATION_PARAMS = "?offset=%d&limit=%d";
 
     @Value("${SCHEMA_API:}")
     private String schemaApiUrl;
 
     private final RestTemplate restTemplate;
-
     private final DpsHeaders headers;
-
     private final JaxRsDpsLog logger;
-    
-    private static final int PAGE_SIZE = 1000; // Request larger page size to minimize API calls
 
+    /**
+     * Constructor for AwsSchemaServiceImpl.
+     *
+     * @param restTemplate the REST template for making HTTP requests
+     * @param headers the DPS headers for authentication and context
+     * @param logger the logger for logging messages
+     */
     public AwsSchemaServiceImpl(RestTemplate restTemplate, DpsHeaders headers, JaxRsDpsLog logger) {
         this.restTemplate = restTemplate;
         this.headers = headers;
@@ -58,68 +73,25 @@ public class AwsSchemaServiceImpl implements SchemaService {
     @Override
     public SchemaInfoResponse getAllSchemas() {
         try {
-            // Set up headers for the request
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.set("Authorization", this.headers.getAuthorization());
-            httpHeaders.set("data-partition-id", this.headers.getPartitionId());
-            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-            
-            // Create the HTTP entity
+            HttpHeaders httpHeaders = createHttpHeaders();
             HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
             
-            // Initialize a combined response to hold all schemas
             SchemaInfoResponse combinedResponse = new SchemaInfoResponse();
-            List<SchemaInfo> allSchemas = new ArrayList<>();
+            List<SchemaInfo> allSchemas = fetchAllSchemaPages(entity);
             
-            // Start with offset 0
-            int offset = 0;
-            boolean hasMoreData = true;
+            populateResponseWithSchemas(combinedResponse, allSchemas);
             
-            // Loop until we've fetched all schemas
-            while (hasMoreData) {
-                // Make the request to the schema service with pagination parameters
-                ResponseEntity<SchemaInfoResponse> response = restTemplate.exchange(
-                    schemaApiUrl + "/schema?offset=" + offset + "&limit=" + PAGE_SIZE, 
-                    HttpMethod.GET, 
-                    entity, 
-                    SchemaInfoResponse.class);
-                
-                SchemaInfoResponse pageResponse = response.getBody();
-                
-                if (pageResponse == null || pageResponse.getSchemaInfos() == null || pageResponse.getSchemaInfos().isEmpty()) {
-                    // No more data to fetch
-                    hasMoreData = false;
-                } else {
-                    // Add schemas from this page to our combined list
-                    allSchemas.addAll(pageResponse.getSchemaInfos());
-                    
-                    // Update offset for next page
-                    offset += pageResponse.getSchemaInfos().size();
-                    
-                    // Check if we've reached the total count
-                    if (pageResponse.getTotalCount() > 0 && offset >= pageResponse.getTotalCount()) {
-                        hasMoreData = false;
-                    }
-                    
-                    logger.info(String.format("Retrieved %d schemas, total so far: %d, total available: %d", 
-                        pageResponse.getSchemaInfos().size(), allSchemas.size(), pageResponse.getTotalCount()));
-                }
-            }
-            
-            // Set the combined results
-            combinedResponse.setSchemaInfos(allSchemas);
-            combinedResponse.setCount(allSchemas.size());
-            combinedResponse.setTotalCount(allSchemas.size());
-            combinedResponse.setOffset(0);
-            
-            logger.info("Successfully retrieved all " + allSchemas.size() + " schemas from Schema Service");
+            logger.info("Successfully retrieved all {} schemas from Schema Service", String.valueOf(allSchemas.size()));
             return combinedResponse;
             
         } catch (RestClientException e) {
-            logger.error("Error retrieving schemas from Schema Service: " + e.getMessage(), e);
+            logAndThrowSchemaError(e);
+            return null; // This line will never be reached due to the exception being thrown
+        } catch (URISyntaxException e) {
+            logger.error("Invalid URI syntax when accessing Schema Service: {}", e.getMessage());
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, 
                     "Error retrieving schemas", 
-                    "Failed to retrieve schemas from Schema Service: " + e.getMessage());
+                    "Invalid URI when accessing Schema Service: " + e.getMessage());
         }
     }
 
@@ -137,10 +109,93 @@ public class AwsSchemaServiceImpl implements SchemaService {
         // Extract unique entity types (kinds) from schema infos
         List<String> kinds = response.getSchemaInfos().stream()
                 .map(schemaInfo -> schemaInfo.getSchemaIdentity().getId())
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
         
-        logger.info("Retrieved " + kinds.size() + " unique kinds from Schema Service");
+        logger.info("Retrieved {} unique kinds from Schema Service", String.valueOf(kinds.size()));
         return kinds;
+    }
+    
+    /**
+     * Creates HTTP headers for Schema Service requests.
+     *
+     * @return HttpHeaders with authorization and partition ID
+     */
+    private HttpHeaders createHttpHeaders() {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set(AUTHORIZATION_HEADER, this.headers.getAuthorization());
+        httpHeaders.set(DATA_PARTITION_ID_HEADER, this.headers.getPartitionId());
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        return httpHeaders;
+    }
+    
+    /**
+     * Fetches all schema pages from the Schema Service.
+     *
+     * @param entity HTTP entity with headers
+     * @return List of all schema infos
+     * @throws URISyntaxException if the URI is invalid
+     */
+    private List<SchemaInfo> fetchAllSchemaPages(HttpEntity<String> entity) throws URISyntaxException {
+        List<SchemaInfo> allSchemas = new ArrayList<>();
+        int offset = 0;
+        boolean hasMoreData = true;
+        
+        while (hasMoreData) {
+            String url = schemaApiUrl + SCHEMA_ENDPOINT + String.format(PAGINATION_PARAMS, offset, PAGE_SIZE);
+            URI uri = new URI(url);
+            
+            ResponseEntity<SchemaInfoResponse> response = restTemplate.exchange(
+                uri, 
+                HttpMethod.GET, 
+                entity, 
+                SchemaInfoResponse.class);
+            
+            SchemaInfoResponse pageResponse = response.getBody();
+            
+            if (pageResponse == null || pageResponse.getSchemaInfos() == null || pageResponse.getSchemaInfos().isEmpty()) {
+                hasMoreData = false;
+            } else {
+                List<SchemaInfo> pageSchemas = pageResponse.getSchemaInfos();
+                allSchemas.addAll(pageSchemas);
+                
+                offset += pageSchemas.size();
+                
+                if (pageResponse.getTotalCount() > 0 && offset >= pageResponse.getTotalCount()) {
+                    hasMoreData = false;
+                }
+
+                logger.info("Retrieved " + pageSchemas.size() + " schemas, total so far: " + allSchemas.size() + ", total available: " + pageResponse.getTotalCount());
+            }
+        }
+        
+        return allSchemas;
+    }
+    
+    /**
+     * Populates the response object with schema information.
+     *
+     * @param response the response object to populate
+     * @param schemas the list of schemas to include in the response
+     */
+    private void populateResponseWithSchemas(SchemaInfoResponse response, List<SchemaInfo> schemas) {
+        response.setSchemaInfos(schemas);
+        response.setCount(schemas.size());
+        response.setTotalCount(schemas.size());
+        response.setOffset(0);
+    }
+    
+    /**
+     * Logs an error and throws an AppException for schema retrieval failures.
+     *
+     * @param e the exception that occurred
+     * @throws AppException always thrown with error details
+     */
+    private void logAndThrowSchemaError(Exception e) {
+        logger.error("Error retrieving schemas from Schema Service: {}", e.getMessage());
+        throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, 
+                "Error retrieving schemas", 
+                "Failed to retrieve schemas from Schema Service: " + e.getMessage());
     }
 }

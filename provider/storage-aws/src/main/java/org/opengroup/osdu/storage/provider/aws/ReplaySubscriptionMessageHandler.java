@@ -103,7 +103,6 @@ public class ReplaySubscriptionMessageHandler {
             LOGGER.warning("SQS queue URL is not initialized. Skipping message polling.");
             return;
         }
-        LOGGER.info("Polling for messages.");
         
         // First, poll for messages outside the request context
         ReceiveMessageRequest receiveRequest = new ReceiveMessageRequest()
