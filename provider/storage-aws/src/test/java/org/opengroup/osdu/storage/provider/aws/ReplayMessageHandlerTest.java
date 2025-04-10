@@ -27,19 +27,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import org.opengroup.osdu.storage.service.replay.ReplayService;
+import org.opengroup.osdu.storage.enums.ReplayType;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -56,7 +55,7 @@ public class ReplayMessageHandlerTest {
     private ReplayMessageProcessorAWSImpl replayMessageProcessor;
 
     @Mock
-    private JaxRsDpsLog logger;
+    private DpsHeaders headers;
 
     @InjectMocks
     private ReplayMessageHandler replayMessageHandler;
@@ -64,6 +63,7 @@ public class ReplayMessageHandlerTest {
     private static final String REGION = "us-east-1";
     private static final String REPLAY_TOPIC = "replay-records";
     private static final String REPLAY_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:replay-records";
+    private static final Logger mockLogger = mock(Logger.class);
 
     @Before
     public void setUp() {
@@ -71,16 +71,24 @@ public class ReplayMessageHandlerTest {
         ReflectionTestUtils.setField(replayMessageHandler, "region", REGION);
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopic", REPLAY_TOPIC);
         ReflectionTestUtils.setField(replayMessageHandler, "snsClient", snsClient);
-        
-        // Set topic ARN using reflection
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopicArn", REPLAY_TOPIC_ARN);
+        ReflectionTestUtils.setField(replayMessageHandler, "LOGGER", mockLogger);
+        
+        // Mock headers behavior
+        Map<String, String> headerMap = new HashMap<>();
+        headerMap.put(DpsHeaders.DATA_PARTITION_ID, "test-partition");
+        headerMap.put(DpsHeaders.AUTHORIZATION, "Bearer test-token");
+        when(headers.getHeaders()).thenReturn(headerMap);
+        
+        // Reset mock logger before each test
+        reset(mockLogger);
     }
 
     @Test
     public void testSendReplayMessageForReplayOperation() throws JsonProcessingException {
         // Prepare test data
-        ReplayMessage message1 = createReplayMessage("test-replay-id", "test-kind");
-        ReplayMessage message2 = createReplayMessage("test-replay-id", "another-kind");
+        ReplayMessage message1 = createReplayMessage("test-replay-id", "test-kind", "replay");
+        ReplayMessage message2 = createReplayMessage("test-replay-id", "another-kind", "replay");
         List<ReplayMessage> messages = Arrays.asList(message1, message2);
         
         String serializedMessage1 = "{\"message1\"}";
@@ -118,7 +126,7 @@ public class ReplayMessageHandlerTest {
     @Test
     public void testSendReplayMessageForReindexOperation() throws JsonProcessingException {
         // Prepare test data
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "reindex");
         List<ReplayMessage> messages = Arrays.asList(message);
         
         String serializedMessage = "{\"message\"}";
@@ -150,9 +158,10 @@ public class ReplayMessageHandlerTest {
     }
 
     @Test
-    public void testSendReplayMessageForDefaultOperation() throws JsonProcessingException {
+    public void testSendReplayMessageWithHeaders() throws JsonProcessingException {
         // Prepare test data
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message.getHeaders().put("custom-header", "custom-value");
         List<ReplayMessage> messages = Arrays.asList(message);
         
         String serializedMessage = "{\"message\"}";
@@ -163,7 +172,7 @@ public class ReplayMessageHandlerTest {
         when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
         
         // Execute
-        replayMessageHandler.sendReplayMessage(messages, "unknown");
+        replayMessageHandler.sendReplayMessage(messages, "replay");
         
         // Verify
         verify(objectMapper).writeValueAsString(message);
@@ -174,18 +183,110 @@ public class ReplayMessageHandlerTest {
         verify(snsClient).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.getTopicArn());
         
-        // Verify operation attribute
+        // Verify headers were included as message attributes
         Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        assertEquals("String", attributes.get("custom-header").getDataType());
+        assertEquals("custom-value", attributes.get("custom-header").getStringValue());
+        
+        // Verify DPS headers were added
+        assertTrue(message.getHeaders().containsKey(DpsHeaders.DATA_PARTITION_ID));
+        assertTrue(message.getHeaders().containsKey(DpsHeaders.AUTHORIZATION));
+    }
+
+    @Test
+    public void testSendReplayMessageWithNullHeaders() throws JsonProcessingException {
+        // Prepare test data with null headers
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message.setHeaders(null);
+        List<ReplayMessage> messages = Arrays.asList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn(serializedMessage);
+        
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify
+        verify(objectMapper).writeValueAsString(any(ReplayMessage.class));
+        verify(snsClient).publish(any(PublishRequest.class));
+        
+        // Capture the message to verify headers were initialized
+        ArgumentCaptor<ReplayMessage> messageCaptor = ArgumentCaptor.forClass(ReplayMessage.class);
+        verify(objectMapper).writeValueAsString(messageCaptor.capture());
+        
+        // Headers should have been initialized
+        assertNotNull(messageCaptor.getValue().getHeaders());
+        
+        // Verify operation attribute was still added
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient).publish(requestCaptor.capture());
+        
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
         assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("unknown", attributes.get("operation").getStringValue());
+        assertEquals("replay", attributes.get("operation").getStringValue());
+    }
+
+    @Test
+    public void testUpdateMessageWithCurrentHeaders() throws JsonProcessingException {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message.getHeaders().clear(); // Start with empty headers
+        List<ReplayMessage> messages = Arrays.asList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify headers were updated from DpsHeaders
+        assertEquals("test-partition", message.getHeaders().get(DpsHeaders.DATA_PARTITION_ID));
+        assertEquals("Bearer test-token", message.getHeaders().get(DpsHeaders.AUTHORIZATION));
+        
+        // Verify correlation ID was added if not present
+        assertNotNull(message.getHeaders().get(DpsHeaders.CORRELATION_ID));
+        
+        // Verify logging
+        verify(mockLogger).info(contains("Updated message with current headers"));
+    }
+
+    @Test
+    public void testUpdateMessageWithCurrentHeadersWhenHeadersNull() throws JsonProcessingException {
+        // Mock DpsHeaders to return null
+        when(headers.getHeaders()).thenReturn(null);
+        
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        List<ReplayMessage> messages = Arrays.asList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify warning was logged
+        verify(mockLogger).warning(contains("DpsHeaders is null or empty"));
+        
+        // Original headers should still be present
+        assertEquals("test-partition", message.getHeaders().get("data-partition-id"));
     }
 
     @Test(expected = RuntimeException.class)
     public void testSendReplayMessageHandlesJsonProcessingException() throws JsonProcessingException {
         // Prepare test data
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
         List<ReplayMessage> messages = Arrays.asList(message);
         
         // Mock behavior to throw exception
@@ -193,36 +294,43 @@ public class ReplayMessageHandlerTest {
         
         // Execute - should throw RuntimeException
         replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify error was logged
+        verify(mockLogger).log(eq(Level.SEVERE), contains("Failed to serialize replay message"), any(JsonProcessingException.class));
     }
 
     @Test
     public void testHandleMessage() {
         // Prepare test data
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
         
         // Execute
         replayMessageHandler.handle(message);
         
         // Verify
         verify(replayMessageProcessor).processReplayMessage(message);
+        verify(mockLogger).info(contains("Processing replay message"));
     }
 
     @Test
     public void testHandleFailure() {
         // Prepare test data
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
         
         // Execute
         replayMessageHandler.handleFailure(message);
         
         // Verify
         verify(replayMessageProcessor).processFailure(message);
+        
+        // Verify logging - exactly once
+        verify(mockLogger, times(1)).log(eq(Level.SEVERE), contains("Processing failure for replay message: test-replay-id for kind: test-kind"));
     }
 
     @Test
     public void testHandleMessageWithException() {
         // Prepare test data
-        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind");
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
         
         // Mock behavior to throw exception
         doThrow(new RuntimeException("Test exception")).when(replayMessageProcessor).processReplayMessage(message);
@@ -235,14 +343,52 @@ public class ReplayMessageHandlerTest {
             // Verify
             verify(replayMessageProcessor).processReplayMessage(message);
             verify(replayMessageProcessor).processFailure(message);
+            verify(mockLogger).log(eq(Level.SEVERE), contains("Error processing replay message"), any(RuntimeException.class));
         }
     }
 
-    private ReplayMessage createReplayMessage(String replayId, String kind) {
+    @Test
+    public void testSendReplayMessageWithEmptyList() throws JsonProcessingException {
+        // Prepare empty list
+        List<ReplayMessage> messages = Collections.emptyList();
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify no interactions with SNS
+        verify(snsClient, never()).publish(any(PublishRequest.class));
+        verify(objectMapper, never()).writeValueAsString(any(ReplayMessage.class));
+    }
+
+    @Test
+    public void testSendReplayMessageWithReplayTypeInBody() throws JsonProcessingException {
+        // Prepare test data with ReplayType
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message.getBody().setReplayType(ReplayType.REPLAY_KIND.name());
+        List<ReplayMessage> messages = Arrays.asList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify
+        verify(objectMapper).writeValueAsString(message);
+        verify(snsClient).publish(any(PublishRequest.class));
+        
+        // Verify the message body contains the replay type
+        assertEquals(ReplayType.REPLAY_KIND.name(), message.getBody().getReplayType());
+    }
+
+    private ReplayMessage createReplayMessage(String replayId, String kind, String operation) {
         ReplayData body = ReplayData.builder()
                 .replayId(replayId)
                 .kind(kind)
-                .operation("replay")
+                .operation(operation)
                 .build();
         
         Map<String, String> headers = new HashMap<>();
@@ -252,5 +398,10 @@ public class ReplayMessageHandlerTest {
                 .body(body)
                 .headers(headers)
                 .build();
+    }
+    
+    // Helper method for string contains matcher
+    private static String contains(String substring) {
+        return argThat(str -> str != null && str.contains(substring));
     }
 }

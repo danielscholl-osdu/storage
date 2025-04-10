@@ -47,18 +47,15 @@ import java.util.logging.Logger;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
     // Use a standard Java logger for all logging
-    private static final Logger LOGGER = Logger.getLogger(ReplayMessageHandler.class.getName());
+    private static Logger LOGGER = Logger.getLogger(ReplayMessageHandler.class.getName());
     
     private AmazonSNS snsClient;
     
-    @Inject
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    @Inject
-    private ReplayMessageProcessorAWSImpl replayMessageProcessor;
+    private final ReplayMessageProcessorAWSImpl replayMessageProcessor;
     
-    @Autowired
-    private DpsHeaders headers;
+    private final DpsHeaders headers;
     
     @Value("${AWS.REGION:us-east-1}")
     private String region;
@@ -67,7 +64,13 @@ public class ReplayMessageHandler {
     private String replayTopic;
 
     private String replayTopicArn;
-    
+
+    public ReplayMessageHandler(ObjectMapper objectMapper, ReplayMessageProcessorAWSImpl replayMessageProcessor, DpsHeaders headers) {
+        this.objectMapper = objectMapper;
+        this.replayMessageProcessor = replayMessageProcessor;
+        this.headers = headers;
+    }
+
     @PostConstruct
     public void init() {
         try {
