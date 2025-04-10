@@ -61,7 +61,9 @@ public class RequestScopeUtil {
         } else {
             // Add custom headers from the message
             headers.forEach((key, value) -> {
-                LOGGER.info("Adding header to simulated request: " + key + "=" + value);
+                if (!key.equalsIgnoreCase("authorization")) {
+                    LOGGER.info("Adding header to simulated request: " + key + "=" + value);
+                }
                 request.addHeader(key, value);
             });
             
