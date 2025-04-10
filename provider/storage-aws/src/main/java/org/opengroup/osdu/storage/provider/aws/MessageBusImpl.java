@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,8 +35,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
@@ -59,11 +58,14 @@ public class MessageBusImpl implements IMessageBus {
     @Value("${OSDU_TOPIC_V2}")
     private String osduStorageTopicV2;
 
-    @Inject
-    private JaxRsDpsLog logger;
+    private final JaxRsDpsLog logger;
     
-    @Inject
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
+
+    public MessageBusImpl(JaxRsDpsLog logger, ObjectMapper objectMapper) {
+        this.logger = logger;
+        this.objectMapper = objectMapper;
+    }
 
     private <T> void doPublishMessage(boolean v2Message, Optional<CollaborationContext> collaborationContext, DpsHeaders headers, T... messages) {
         final int BATCH_SIZE = 50;
@@ -79,9 +81,7 @@ public class MessageBusImpl implements IMessageBus {
             String messageOsduTopic;
 
             if (v2Message) {
-                if (collaborationContext.isPresent()) {
-                    additionalAttrs.put(DpsHeaders.COLLABORATION, getAttrValForContext(collaborationContext.get()));
-                }
+                collaborationContext.ifPresent(context -> additionalAttrs.put(DpsHeaders.COLLABORATION, getAttrValForContext(context)));
                 messageOsduTopic = osduStorageTopicV2; //records-changed-v2
                 messageSNSTopic = amazonSNSTopicV2;
             } else {
@@ -125,15 +125,7 @@ public class MessageBusImpl implements IMessageBus {
             logger.error("No SNS topic ARN provided in routing info");
             return;
         }
-        
-        // Use AWS SDK to publish messages to SNS topic
-        AmazonSNS snsClient = this.snsClient;
-        if (snsClient == null) {
-            snsClient = AmazonSNSClientBuilder.standard()
-                .withRegion(currentRegion)
-                .build();
-        }
-        
+
         // Publish messages to SNS topic
         for (Object message : messageList) {
             try {
@@ -147,7 +139,7 @@ public class MessageBusImpl implements IMessageBus {
                 
             } catch (JsonProcessingException e) {
                 logger.error("Failed to serialize message: " + e.getMessage(), e);
-                throw new RuntimeException("Failed to serialize message", e);
+                throw new MessagePublishException("Failed to serialize message", e);
             }
         }
     }
@@ -155,5 +147,14 @@ public class MessageBusImpl implements IMessageBus {
     @Override
     public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, PubSubInfo... messages) {
         throw new NotImplementedException();
+    }
+
+    public static class MessagePublishException extends RuntimeException {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        public MessagePublishException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }
