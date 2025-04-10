@@ -51,7 +51,7 @@ export LEGAL_URL=$LEGAL_URL
 #### RUN INTEGRATION TEST #########################################################################
 JAVA_HOME=$JAVA17_HOME
 
-mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml -Dtest=*Replay*
+mvn -ntp test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
 #mvn -Dmaven.surefire.debug test -f "$SCRIPT_SOURCE_DIR"/../pom.xml
 TEST_EXIT_CODE=$?
 
