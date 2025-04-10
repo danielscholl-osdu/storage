@@ -46,17 +46,16 @@ import java.util.function.Function;
 @Repository
 public class QueryRepositoryImpl implements IQueryRepository {
 
-    final
-    DpsHeaders headers;    
+    public static final String STATUS = "Status";
+    public static final String ERROR_PARSING_RESULTS = "Error parsing results";
+    public static final String ACTIVE = "active";
+    final DpsHeaders headers;
 
     private final org.opengroup.osdu.core.common.logging.JaxRsDpsLog logger;
-    
-    private final com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper dynamoDBMapper;
-    
+
     private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
     
-    @Autowired
-    private AwsSchemaServiceImpl schemaService;
+    private final AwsSchemaServiceImpl schemaService;
 
     @Value("${aws.dynamodb.schemaRepositoryTable.ssm.relativePath}")
     String schemaRepositoryTableParameterRelativePath;    
@@ -64,11 +63,11 @@ public class QueryRepositoryImpl implements IQueryRepository {
     @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
     String recordMetadataTableParameterRelativePath;
 
-    public QueryRepositoryImpl(DpsHeaders headers, JaxRsDpsLog logger, DynamoDBMapper dynamoDBMapper, DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory) {
+    public QueryRepositoryImpl(DpsHeaders headers, JaxRsDpsLog logger, DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory, AwsSchemaServiceImpl schemaService) {
         this.headers = headers;
         this.logger = logger;
-        this.dynamoDBMapper = dynamoDBMapper;
         this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
+        this.schemaService = schemaService;
     }
 
     private DynamoDBQueryHelperV2 getSchemaTableQueryHelper() {
@@ -104,7 +103,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 kinds.add(schemaDoc.getKind());
             }
         } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
         }
 
@@ -144,15 +143,15 @@ public class QueryRepositoryImpl implements IQueryRepository {
             scanPageResults = recordMetadataQueryHelper.queryPage(
                 RecordMetadataDoc.class,
                 recordMetadataKey,
-                "Status",
-                "active",
+                STATUS,
+                    ACTIVE,
                 "Id",
                 ComparisonOperator.BEGINS_WITH,
                 String.format("%s:", idPrefix),
                 numRecords,
                 cursor);
         } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
         }
         dqr.setCursor(scanPageResults.cursor); // set the cursor for the next page, if applicable
@@ -181,7 +180,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
         try {
             // Create a query object with status as the hash key for the GSI
             RecordMetadataDoc queryObject = new RecordMetadataDoc();
-            queryObject.setStatus("active");
+            queryObject.setStatus(ACTIVE);
 
             // Use queryByGSI instead of queryPage
             QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
@@ -192,10 +191,10 @@ public class QueryRepositoryImpl implements IQueryRepository {
             
             // Convert to RecordIdAndKind objects
             for (RecordMetadataDoc doc : queryPageResult.results) {
-                RecordIdAndKind record = new RecordIdAndKind();
-                record.setId(doc.getId());
-                record.setKind(doc.getKind());
-                records.add(record);
+                RecordIdAndKind idAndKind = new RecordIdAndKind();
+                idAndKind.setId(doc.getId());
+                idAndKind.setKind(doc.getKind());
+                records.add(idAndKind);
             }
             
             // Create a new result with the records and cursor
@@ -203,7 +202,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
             result.setCursor(queryPageResult.cursor);
             
         } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
         }
         
@@ -231,8 +230,8 @@ public class QueryRepositoryImpl implements IQueryRepository {
             QueryPageResult<RecordMetadataDoc> scanPageResults = recordMetadataQueryHelper.queryPage(
                 RecordMetadataDoc.class,
                 recordMetadataKey,
-                "Status",
-                "active",
+                STATUS,
+                    ACTIVE,
                 "Id",
                 ComparisonOperator.BEGINS_WITH,
                 String.format("%s:", headers.getPartitionId()),
@@ -241,10 +240,10 @@ public class QueryRepositoryImpl implements IQueryRepository {
             
             // Convert to RecordId objects
             for (RecordMetadataDoc doc : scanPageResults.results) {
-                RecordId record = new RecordId();
-                record.setId(doc.getId());
+                RecordId id = new RecordId();
+                id.setId(doc.getId());
                 // RecordId doesn't have setKind method, so we can't set it here
-                records.add(record);
+                records.add(id);
             }
             
             // Create a new result with the records and cursor
@@ -252,7 +251,7 @@ public class QueryRepositoryImpl implements IQueryRepository {
             result.setCursor(scanPageResults.cursor);
             
         } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error parsing results",
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
         }
         
@@ -301,8 +300,8 @@ public class QueryRepositoryImpl implements IQueryRepository {
             QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryPage(
                 RecordMetadataDoc.class,
                 recordMetadataKey,
-                "Status",
-                "active",
+                STATUS,
+                    ACTIVE,
                 "Id",
                 ComparisonOperator.BEGINS_WITH,
                 String.format("%s:", headers.getPartitionId()),
@@ -317,8 +316,8 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 queryPageResult = recordMetadataQueryHelper.queryPage(
                     RecordMetadataDoc.class,
                     recordMetadataKey,
-                    "Status",
-                    "active",
+                    STATUS,
+                        ACTIVE,
                     "Id",
                     ComparisonOperator.BEGINS_WITH,
                     String.format("%s:", headers.getPartitionId()),
