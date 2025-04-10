@@ -190,11 +190,9 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
 
         List<String> recordIds = Arrays.asList(result.recordIds);
 
-        Thread.sleep(5000);
-
         try {
-            // Get initial record counts for our test kind
-            int initialCount = getIndexedRecordCountForKind(kind);
+            // Wait for records to be indexed
+            int initialCount = waitForRecordsToBeIndexed(kind, 1, 60);
             
             // Verify our test records were created
             assertTrue("Test records for kind should be indexed", initialCount > 0);
@@ -224,15 +222,51 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             // Verify operation completed successfully
             assertEquals("reindex", statusHelper.getOperation());
             assertEquals("COMPLETED", statusHelper.getOverallState());
+
+            // Wait for records to be reindexed
+            int finalCount = waitForRecordsToBeIndexed(kind, initialCount, 60);
             
-            // Verify our test kinds were reindexed
-            int finalCount = getIndexedRecordCountForKind(kind);
-            
-            assertEquals("Records for kind1 should be reindexed", initialCount, finalCount);
+            assertEquals("Records for kind should be reindexed", initialCount, finalCount);
             
         } finally {
             deleteRecords(recordIds);
         }
+    }
+
+    /**
+     * Helper method to wait for a specific number of records to be indexed for a kind.
+     * 
+     * @param kind The kind to check
+     * @param expectedCount The expected number of records
+     * @param timeoutSeconds Maximum time to wait in seconds
+     * @return The actual count of records found
+     */
+    private int waitForRecordsToBeIndexed(String kind, int expectedCount, int timeoutSeconds) throws Exception {
+        // Get initial count to handle cases where records might already exist
+        int initialCount = getIndexedRecordCountForKind(kind);
+        
+        // If we already have the expected count, return immediately
+        if (initialCount >= expectedCount) {
+            return initialCount;
+        }
+        
+        int currentCount = initialCount;
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + (timeoutSeconds * 1000);
+        
+        while (System.currentTimeMillis() < endTime) {
+            currentCount = getIndexedRecordCountForKind(kind);
+            
+            if (currentCount >= expectedCount) {
+                return currentCount;
+            }
+            
+            // Wait 5 seconds before checking again
+            TimeUnit.SECONDS.sleep(5);
+        }
+        
+        // Return the current count even if we didn't reach the expected count
+        return currentCount;
     }
 
     /**
