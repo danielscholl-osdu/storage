@@ -126,7 +126,7 @@ public class AwsSchemaServiceImpl implements SchemaService {
     public List<String> getAllKinds() {
         SchemaInfoResponse response = getAllSchemas();
         
-        if (response == null || response.getSchemaInfos() == null) {
+        if (response == null || response.getSchemaInfos() == null || response.getSchemaInfos().isEmpty()) {
             logger.error("No schemas returned from Schema Service");
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, 
                     "No schemas available", 

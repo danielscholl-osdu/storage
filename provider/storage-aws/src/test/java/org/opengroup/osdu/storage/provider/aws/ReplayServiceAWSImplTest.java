@@ -97,8 +97,15 @@ public class ReplayServiceAWSImplTest {
         request.setOperation("replay");
         
         ReplayFilter filter = new ReplayFilter();
-        filter.setKinds(Arrays.asList("kind1", "kind2"));
+        List<String> kinds = Arrays.asList("kind1", "kind2");
+        filter.setKinds(kinds);
         request.setFilter(filter);
+
+        // Mock the queryRepository to return active records for the test kinds
+        Map<String, Long> kindCounts = new HashMap<>();
+        kindCounts.put("kind1", 100L);
+        kindCounts.put("kind2", 200L);
+        when(queryRepository.getActiveRecordsCountForKinds(kinds)).thenReturn(kindCounts);
 
         // Act
         ReplayResponse response = replayService.handleReplayRequest(request);
@@ -106,8 +113,9 @@ public class ReplayServiceAWSImplTest {
         // Assert
         assertEquals("test-replay-id", response.getReplayId());
         
-        // Verify metadata records were created
-        verify(replayRepository, times(2)).save(any(ReplayMetaDataDTO.class));
+        // Verify metadata records were created - 3 calls:
+        // 1 for initial status record + 2 for the kinds
+        verify(replayRepository, times(3)).save(any(ReplayMetaDataDTO.class));
         
         // Verify parallel processing was started
         verify(parallelReplayProcessor).processReplayAsync(eq(request), eq(Arrays.asList("kind1", "kind2")));
