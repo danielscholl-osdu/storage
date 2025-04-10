@@ -33,10 +33,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * AWS implementation of the IReplayRepository interface.
@@ -82,10 +79,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     @Override
     public List<ReplayMetaDataDTO> getReplayStatusByReplayId(String replayId) {
         DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
-        
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":replayId", new AttributeValue().withS(replayId));
-        
+
         try {
             // Create a query object with replayId as the hash key for the GSI
             ReplayMetadataItem queryObject = new ReplayMetadataItem();
@@ -100,7 +94,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             
             return queryPageResult.results.stream()
                     .map(this::convertToDTO)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (Exception e) {
             logger.error("Error querying replay status: " + e.getMessage(), e);
             return new ArrayList<>();

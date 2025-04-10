@@ -44,9 +44,6 @@ public class ReplayServiceAWSImplTest {
     private StorageAuditLogger auditLogger;
 
     @Mock
-    private JaxRsDpsLog logger;
-
-    @Mock
     private ParallelReplayProcessor parallelReplayProcessor;
 
     @Mock
@@ -66,7 +63,6 @@ public class ReplayServiceAWSImplTest {
                 queryRepository,
                 headers,
                 auditLogger,
-                logger,
                 parallelReplayProcessor,
                 executorService,
                 requestScopeUtil

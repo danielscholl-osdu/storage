@@ -54,7 +54,6 @@ public class ReplayServiceAWSImpl extends ReplayService {
     private final QueryRepositoryImpl queryRepository;
     private final DpsHeaders headers;
     private final StorageAuditLogger auditLogger;
-    private final JaxRsDpsLog logger;
     private final ParallelReplayProcessor parallelReplayProcessor;
     private final ExecutorService executorService;
     private final RequestScopeUtil requestScopeUtil;
@@ -63,8 +62,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
             IReplayRepository replayRepository,
             QueryRepositoryImpl queryRepository,
             DpsHeaders headers, 
-            StorageAuditLogger auditLogger, 
-            JaxRsDpsLog logger,
+            StorageAuditLogger auditLogger,
             ParallelReplayProcessor parallelReplayProcessor,
             ExecutorService replayExecutorService,
             RequestScopeUtil requestScopeUtil) {
@@ -72,7 +70,6 @@ public class ReplayServiceAWSImpl extends ReplayService {
         this.queryRepository = queryRepository;
         this.headers = headers;
         this.auditLogger = auditLogger;
-        this.logger = logger;
         this.parallelReplayProcessor = parallelReplayProcessor;
         this.executorService = replayExecutorService;
         this.requestScopeUtil = requestScopeUtil;
@@ -371,7 +368,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
     public void processReplayMessage(ReplayMessage replayMessage) {
         // This method should not be called directly in AWS implementation
         // It's here to satisfy the interface requirements
-        logger.error("ReplayServiceAWSImpl.processReplayMessage called directly. This should be handled by ReplayMessageHandler instead.");
+        LOGGER.log(Level.SEVERE, "ReplayServiceAWSImpl.processReplayMessage called directly. This should be handled by ReplayMessageHandler instead.");
         throw new UnsupportedOperationException("This method should be called on ReplayMessageHandler");
     }
     
@@ -385,7 +382,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
     public void processFailure(ReplayMessage replayMessage) {
         // This method should not be called directly in AWS implementation
         // It's here to satisfy the interface requirements
-        logger.error("ReplayServiceAWSImpl.processFailure called directly. This should be handled by ReplayMessageHandler instead.");
+        LOGGER.log(Level.SEVERE, "ReplayServiceAWSImpl.processFailure called directly. This should be handled by ReplayMessageHandler instead.");
         throw new UnsupportedOperationException("This method should be called on ReplayMessageHandler");
     }
 }
