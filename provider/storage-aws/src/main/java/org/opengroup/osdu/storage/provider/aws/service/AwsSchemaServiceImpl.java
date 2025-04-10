@@ -22,7 +22,6 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.aws.model.schema.SchemaInfo;
 import org.opengroup.osdu.storage.provider.aws.model.schema.SchemaInfoResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -35,7 +34,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class AwsSchemaServiceImpl implements SchemaService {
@@ -43,16 +41,19 @@ public class AwsSchemaServiceImpl implements SchemaService {
     @Value("${SCHEMA_API:}")
     private String schemaApiUrl;
 
-    @Autowired
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
-    @Autowired
-    private DpsHeaders headers;
+    private final DpsHeaders headers;
 
-    @Autowired
-    private JaxRsDpsLog logger;
+    private final JaxRsDpsLog logger;
     
     private static final int PAGE_SIZE = 1000; // Request larger page size to minimize API calls
+
+    public AwsSchemaServiceImpl(RestTemplate restTemplate, DpsHeaders headers, JaxRsDpsLog logger) {
+        this.restTemplate = restTemplate;
+        this.headers = headers;
+        this.logger = logger;
+    }
 
     @Override
     public SchemaInfoResponse getAllSchemas() {

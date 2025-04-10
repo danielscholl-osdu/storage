@@ -14,7 +14,6 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -26,8 +25,6 @@ import org.opengroup.osdu.storage.dto.ReplayStatus;
 import org.opengroup.osdu.storage.enums.ReplayOperation;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
-import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayFilter;
 import org.opengroup.osdu.storage.request.ReplayRequest;
@@ -54,37 +51,29 @@ public class ReplayServiceAWSImpl extends ReplayService {
     private static final Logger LOGGER = Logger.getLogger(ReplayServiceAWSImpl.class.getName());
     
     private final IReplayRepository replayRepository;
-    private final ReplayMessageHandler messageHandler;
     private final QueryRepositoryImpl queryRepository;
     private final DpsHeaders headers;
     private final StorageAuditLogger auditLogger;
     private final JaxRsDpsLog logger;
     private final ParallelReplayProcessor parallelReplayProcessor;
-    private final ReplayBatchConfig batchConfig;
     private final ExecutorService executorService;
     private final RequestScopeUtil requestScopeUtil;
 
     public ReplayServiceAWSImpl(
-            IReplayRepository replayRepository, 
-            ReplayMessageHandler messageHandler, 
-            QueryRepositoryImpl queryRepository, 
-            IMessageBus messageBus, 
+            IReplayRepository replayRepository,
+            QueryRepositoryImpl queryRepository,
             DpsHeaders headers, 
             StorageAuditLogger auditLogger, 
-            JaxRsDpsLog logger, 
-            ObjectMapper objectMapper,
+            JaxRsDpsLog logger,
             ParallelReplayProcessor parallelReplayProcessor,
-            ReplayBatchConfig batchConfig,
             ExecutorService replayExecutorService,
             RequestScopeUtil requestScopeUtil) {
         this.replayRepository = replayRepository;
-        this.messageHandler = messageHandler;
         this.queryRepository = queryRepository;
         this.headers = headers;
         this.auditLogger = auditLogger;
         this.logger = logger;
         this.parallelReplayProcessor = parallelReplayProcessor;
-        this.batchConfig = batchConfig;
         this.executorService = replayExecutorService;
         this.requestScopeUtil = requestScopeUtil;
     }

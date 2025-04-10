@@ -35,13 +35,7 @@ public class ReplayServiceAWSImplTest {
     private IReplayRepository replayRepository;
 
     @Mock
-    private ReplayMessageHandler messageHandler;
-
-    @Mock
     private QueryRepositoryImpl queryRepository;
-
-    @Mock
-    private IMessageBus messageBus;
 
     @Mock
     private DpsHeaders headers;
@@ -53,13 +47,7 @@ public class ReplayServiceAWSImplTest {
     private JaxRsDpsLog logger;
 
     @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
     private ParallelReplayProcessor parallelReplayProcessor;
-
-    @Mock
-    private ReplayBatchConfig batchConfig;
 
     @Mock
     private ExecutorService executorService;
@@ -75,15 +63,11 @@ public class ReplayServiceAWSImplTest {
         
         replayService = new ReplayServiceAWSImpl(
                 replayRepository,
-                messageHandler,
                 queryRepository,
-                messageBus,
                 headers,
                 auditLogger,
                 logger,
-                objectMapper,
                 parallelReplayProcessor,
-                batchConfig,
                 executorService,
                 requestScopeUtil
         );

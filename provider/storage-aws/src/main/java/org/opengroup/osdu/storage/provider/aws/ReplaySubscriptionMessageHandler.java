@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
@@ -24,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +31,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -54,14 +51,11 @@ public class ReplaySubscriptionMessageHandler {
     
     private AmazonSQS sqsClient;
     
-    @Inject
-    private ReplayMessageHandler replayMessageHandler;
+    private final ReplayMessageHandler replayMessageHandler;
     
-    @Inject
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
     
-    @Inject
-    private RequestScopeUtil requestScopeUtil;
+    private final RequestScopeUtil requestScopeUtil;
 
     @Value("${AWS.REGION:us-east-1}")
     private String region;
@@ -70,7 +64,13 @@ public class ReplaySubscriptionMessageHandler {
     private String replayTopic;
     
     private String replayQueueUrl;
-    
+
+    public ReplaySubscriptionMessageHandler(ReplayMessageHandler replayMessageHandler, ObjectMapper objectMapper, RequestScopeUtil requestScopeUtil) {
+        this.replayMessageHandler = replayMessageHandler;
+        this.objectMapper = objectMapper;
+        this.requestScopeUtil = requestScopeUtil;
+    }
+
     @PostConstruct
     public void init() {
         try {

@@ -16,7 +16,6 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -59,9 +58,7 @@ public class ReplayMessageProcessorAWSImpl {
     private final DpsHeaders headers;
     
     private final StorageAuditLogger auditLogger;
-    
-    private final JaxRsDpsLog logger;
-    
+
     @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
     private String recordMetadataTableParameterRelativePath;
     
@@ -73,8 +70,7 @@ public class ReplayMessageProcessorAWSImpl {
                                         QueryRepositoryImpl queryRepository, 
                                         IMessageBus messageBus, 
                                         DpsHeaders headers, 
-                                        StorageAuditLogger auditLogger, 
-                                        JaxRsDpsLog logger,
+                                        StorageAuditLogger auditLogger,
                                         DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
                                         WorkerThreadPool workerThreadPool) {
         this.replayRepository = replayRepository;
@@ -82,7 +78,6 @@ public class ReplayMessageProcessorAWSImpl {
         this.messageBus = messageBus;
         this.headers = headers;
         this.auditLogger = auditLogger;
-        this.logger = logger;
         this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
         this.workerThreadPool = workerThreadPool;
     }
@@ -322,30 +317,17 @@ public class ReplayMessageProcessorAWSImpl {
      */
     private OperationType convertToOperationType(String operation) {
         // Map the operation string to the appropriate OperationType enum value
-        switch (operation.toLowerCase()) {
-            case "create":
-                return OperationType.create;
-            case "update":
-                return OperationType.update;
-            case "delete":
-                return OperationType.delete;
-            case "purge":
-                return OperationType.purge;
-            case "view":
-                return OperationType.view;
-            case "create_schema":
-                return OperationType.create_schema;
-            case "purge_schema":
-                return OperationType.purge_schema;
-            case "reindex":
+        return switch (operation.toLowerCase()) {
+            case "reindex" ->
                 // For reindex operations, we typically want to use update
-                return OperationType.update;
-            case "replay":
+                    OperationType.update;
+            case "replay" ->
                 // For replay operations, we typically want to use update
-                return OperationType.update;
-            default:
+                    OperationType.update;
+            default -> {
                 LOGGER.warning("Unknown operation type: " + operation + ". Defaulting to update.");
-                return OperationType.update;
-        }
+                yield OperationType.update;
+            }
+        };
     }
 }

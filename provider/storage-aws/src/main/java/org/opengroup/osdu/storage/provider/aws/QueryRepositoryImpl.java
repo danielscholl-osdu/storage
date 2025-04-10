@@ -14,7 +14,6 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
@@ -32,7 +31,6 @@ import org.opengroup.osdu.storage.provider.aws.service.AwsSchemaServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IQueryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
