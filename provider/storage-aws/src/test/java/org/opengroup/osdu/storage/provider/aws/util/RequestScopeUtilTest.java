@@ -45,32 +45,26 @@ public class RequestScopeUtilTest {
         RequestContextHolder.resetRequestAttributes();
     }
 
-    @Test
-    public void executeInRequestScope_WithNoHeaders_ShouldCreateDefaultRequestContext() {
+    @Test(expected = IllegalArgumentException.class)
+    public void executeInRequestScope_WithNullHeaders_ShouldThrowException() {
         // Arrange
-        AtomicBoolean taskExecuted = new AtomicBoolean(false);
-        AtomicReference<RequestAttributes> capturedAttributes = new AtomicReference<>();
+        Map<String, String> nullHeaders = null;
 
-        // Act
+        // Act - should throw IllegalArgumentException
         requestScopeUtil.executeInRequestScope(() -> {
-            taskExecuted.set(true);
-            capturedAttributes.set(RequestContextHolder.getRequestAttributes());
-        });
+            // This should not execute
+        }, nullHeaders);
+    }
 
-        // Assert
-        assertTrue("Task should have been executed", taskExecuted.get());
-        assertNull("Request context should be cleaned up after execution", 
-                RequestContextHolder.getRequestAttributes());
-        assertNotNull("Request attributes should have been available during execution", 
-                capturedAttributes.get());
-        
-        ServletRequestAttributes attributes = (ServletRequestAttributes) capturedAttributes.get();
-        assertEquals("Default partition ID should be set", 
-                "default", attributes.getRequest().getHeader("data-partition-id"));
-        assertEquals("Default authorization header should be set", 
-                "Bearer simulated-token-for-background-task", attributes.getRequest().getHeader("Authorization"));
-        assertEquals("Default correlation ID should be set", 
-                "simulated-correlation-id", attributes.getRequest().getHeader("correlation-id"));
+    @Test(expected = IllegalArgumentException.class)
+    public void executeInRequestScope_WithEmptyHeaders_ShouldThrowException() {
+        // Arrange
+        Map<String, String> emptyHeaders = new HashMap<>();
+
+        // Act - should throw IllegalArgumentException
+        requestScopeUtil.executeInRequestScope(() -> {
+            // This should not execute
+        }, emptyHeaders);
     }
 
     @Test
@@ -79,7 +73,6 @@ public class RequestScopeUtilTest {
         Map<String, String> customHeaders = new HashMap<>();
         customHeaders.put("data-partition-id", "custom-partition");
         customHeaders.put("Authorization", "Bearer custom-token");
-        customHeaders.put("correlation-id", "custom-correlation-id");
         customHeaders.put("custom-header", "custom-value");
 
         AtomicReference<RequestAttributes> capturedAttributes = new AtomicReference<>();
@@ -98,35 +91,6 @@ public class RequestScopeUtilTest {
                 "custom-partition", attributes.getRequest().getHeader("data-partition-id"));
         assertEquals("Custom authorization header should be used", 
                 "Bearer custom-token", attributes.getRequest().getHeader("Authorization"));
-        assertEquals("Custom correlation ID should be used", 
-                "custom-correlation-id", attributes.getRequest().getHeader("correlation-id"));
-        assertEquals("Custom header should be included", 
-                "custom-value", attributes.getRequest().getHeader("custom-header"));
-    }
-
-    @Test
-    public void executeInRequestScope_WithPartialHeaders_ShouldAddDefaultsForMissingHeaders() {
-        // Arrange
-        Map<String, String> partialHeaders = new HashMap<>();
-        partialHeaders.put("custom-header", "custom-value");
-        // Note: Not including data-partition-id or Authorization
-
-        AtomicReference<RequestAttributes> capturedAttributes = new AtomicReference<>();
-
-        // Act
-        requestScopeUtil.executeInRequestScope(() -> {
-            capturedAttributes.set(RequestContextHolder.getRequestAttributes());
-        }, partialHeaders);
-
-        // Assert
-        assertNotNull("Request attributes should have been available during execution", 
-                capturedAttributes.get());
-        
-        ServletRequestAttributes attributes = (ServletRequestAttributes) capturedAttributes.get();
-        assertEquals("Default partition ID should be added", 
-                "default", attributes.getRequest().getHeader("data-partition-id"));
-        assertEquals("Default authorization header should be added", 
-                "Bearer simulated-token-for-background-task", attributes.getRequest().getHeader("Authorization"));
         assertEquals("Custom header should be included", 
                 "custom-value", attributes.getRequest().getHeader("custom-header"));
     }
@@ -135,12 +99,15 @@ public class RequestScopeUtilTest {
     public void executeInRequestScope_WhenTaskThrowsException_ShouldCleanupContext() {
         // Arrange
         RuntimeException expectedException = new RuntimeException("Test exception");
+        Map<String, String> headers = new HashMap<>();
+        headers.put("data-partition-id", "test-partition");
+        headers.put("Authorization", "Bearer test-token");
 
         // Act & Assert
         try {
             requestScopeUtil.executeInRequestScope(() -> {
                 throw expectedException;
-            });
+            }, headers);
             fail("Expected exception was not thrown");
         } catch (RuntimeException e) {
             assertSame("Should throw the original exception", expectedException, e);
@@ -150,50 +117,26 @@ public class RequestScopeUtilTest {
     }
 
     @Test
-    public void executeInRequestScope_WithEmptyHeadersMap_ShouldUseDefaultHeaders() {
+    public void executeInRequestScope_ShouldLogHeadersExceptAuthorization() {
+        // This test verifies that headers are logged but can't directly test the logging output
+        // We're just ensuring the method runs without exceptions when logging headers
+        
         // Arrange
-        Map<String, String> emptyHeaders = new HashMap<>();
-        AtomicReference<RequestAttributes> capturedAttributes = new AtomicReference<>();
-
+        Map<String, String> headers = new HashMap<>();
+        headers.put("data-partition-id", "test-partition");
+        headers.put("Authorization", "Bearer test-token");
+        headers.put("custom-header", "custom-value");
+        
+        AtomicBoolean executed = new AtomicBoolean(false);
+        
         // Act
         requestScopeUtil.executeInRequestScope(() -> {
-            capturedAttributes.set(RequestContextHolder.getRequestAttributes());
-        }, emptyHeaders);
-
-        // Assert
-        assertNotNull("Request attributes should have been available during execution", 
-                capturedAttributes.get());
+            executed.set(true);
+        }, headers);
         
-        ServletRequestAttributes attributes = (ServletRequestAttributes) capturedAttributes.get();
-        assertEquals("Default partition ID should be used with empty map", 
-                "default", attributes.getRequest().getHeader("data-partition-id"));
-        assertEquals("Default authorization header should be used with empty map", 
-                "Bearer simulated-token-for-background-task", attributes.getRequest().getHeader("Authorization"));
-        assertEquals("Default correlation ID should be used with empty map", 
-                "simulated-correlation-id", attributes.getRequest().getHeader("correlation-id"));
-    }
-
-    @Test
-    public void executeInRequestScope_WithNullHeadersMap_ShouldUseDefaultHeaders() {
-        // Arrange
-        Map<String, String> nullHeaders = null;
-        AtomicReference<RequestAttributes> capturedAttributes = new AtomicReference<>();
-
-        // Act
-        requestScopeUtil.executeInRequestScope(() -> {
-            capturedAttributes.set(RequestContextHolder.getRequestAttributes());
-        }, nullHeaders);
-
         // Assert
-        assertNotNull("Request attributes should have been available during execution", 
-                capturedAttributes.get());
-        
-        ServletRequestAttributes attributes = (ServletRequestAttributes) capturedAttributes.get();
-        assertEquals("Default partition ID should be used with null map", 
-                "default", attributes.getRequest().getHeader("data-partition-id"));
-        assertEquals("Default authorization header should be used with null map", 
-                "Bearer simulated-token-for-background-task", attributes.getRequest().getHeader("Authorization"));
-        assertEquals("Default correlation ID should be used with null map", 
-                "simulated-correlation-id", attributes.getRequest().getHeader("correlation-id"));
+        assertTrue("Task should have been executed", executed.get());
+        assertNull("Request context should be cleaned up after execution", 
+                RequestContextHolder.getRequestAttributes());
     }
 }

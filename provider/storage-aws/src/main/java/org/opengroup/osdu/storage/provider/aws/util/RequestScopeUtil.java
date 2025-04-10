@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws.util;
 
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -30,17 +29,7 @@ import java.util.logging.Logger;
 @Component
 public class RequestScopeUtil {
     private static final Logger LOGGER = Logger.getLogger(RequestScopeUtil.class.getName());
-    
-    /**
-     * Executes the given task within a simulated request context.
-     * This allows request-scoped beans to be used in non-request contexts like scheduled tasks.
-     *
-     * @param task The task to execute within the request context
-     */
-    public void executeInRequestScope(Runnable task) {
-        executeInRequestScope(task, null);
-    }
-    
+
     /**
      * Executes the given task within a simulated request context with custom headers.
      * This allows request-scoped beans to be used in non-request contexts like scheduled tasks.
@@ -51,30 +40,16 @@ public class RequestScopeUtil {
     public void executeInRequestScope(Runnable task, Map<String, String> headers) {
         LOGGER.info("Creating simulated request context for background task");
         MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        
-        // Add default headers if no custom headers are provided
+
         if (headers == null || headers.isEmpty()) {
-            request.addHeader("data-partition-id", "default");
-            request.addHeader("Authorization", "Bearer simulated-token-for-background-task");
-            request.addHeader("correlation-id", "simulated-correlation-id");
+            throw new IllegalArgumentException("Headers cannot be null or empty");
         } else {
-            // Add custom headers from the message
             headers.forEach((key, value) -> {
                 if (!key.equalsIgnoreCase("authorization")) {
                     LOGGER.info("Adding header to simulated request: " + key + "=" + value);
                 }
                 request.addHeader(key, value);
             });
-            
-            // Ensure critical headers exist
-            if (!headers.containsKey("data-partition-id")) {
-                request.addHeader("data-partition-id", "default");
-            }
-            
-            if (!headers.containsKey("Authorization")) {
-                request.addHeader("Authorization", "Bearer simulated-token-for-background-task");
-            }
         }
         
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
