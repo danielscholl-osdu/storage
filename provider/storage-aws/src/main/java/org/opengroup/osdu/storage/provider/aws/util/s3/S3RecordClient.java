@@ -17,15 +17,6 @@ package org.opengroup.osdu.storage.provider.aws.util.s3;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.inject.Inject;
-
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.aws.s3.IS3ClientFactory;
 import org.opengroup.osdu.core.aws.s3.S3ClientWithBucket;
@@ -37,6 +28,15 @@ import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.amazonaws.SdkClientException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import jakarta.inject.Inject;
 
 @Component
 public class S3RecordClient {
@@ -53,11 +53,11 @@ public class S3RecordClient {
     @Inject
     private WorkerThreadPool workerThreadPool;
 
-    private final static String RECORD_DELETE_ERROR_MSG = "Error deleting record";
+    private static final String RECORD_DELETE_ERROR_MSG = "Error deleting record";
 
-    private final static String RECORD_FIND_ERROR_MSG = "Error finding record";
+    private static final String RECORD_FIND_ERROR_MSG = "Error finding record";
 
-    private final static String RECORD_GET_ERROR_MSG = "Error getting record";
+    private static final String RECORD_GET_ERROR_MSG = "Error getting record";
 
     private S3ClientWithBucket getS3ClientWithBucket(String dataPartition) {
         s3ClientFactory.setConfig(workerThreadPool.getClientConfiguration());
