@@ -182,7 +182,7 @@ The following software have components provided under the terms of this license:
 - Netty/Handler/Proxy (from https://repo1.maven.org/maven2/io/netty/netty-handler-proxy)
 - Netty/Resolver (from https://repo1.maven.org/maven2/io/netty/netty-resolver)
 - Netty/Resolver/DNS (from https://repo1.maven.org/maven2/io/netty/netty-resolver-dns)
-- Netty/Resolver/DNS/Classes/MacOS (from https://repo1.maven.org/maven2/io/netty/netty-resolver-dns-classes-macos)
+- Netty/Resolver/DNS/Classes/MacOS (from https://repo1.maven.org/maven2/io/netty/netty-resolver-dns-classes-macos, https://repository.cloudera.com/artifactory/cloudera-repos/io/netty/netty-resolver-dns-classes-macos)
 - Netty/TomcatNative [BoringSSL - Static] (from https://github.com/netty/netty-tcnative/netty-tcnative-boringssl-static/)
 - Netty/TomcatNative [OpenSSL - Classes] (from https://repo1.maven.org/maven2/io/netty/netty-tcnative-classes)
 - Netty/Transport (from https://repo1.maven.org/maven2/io/netty/netty-transport)
