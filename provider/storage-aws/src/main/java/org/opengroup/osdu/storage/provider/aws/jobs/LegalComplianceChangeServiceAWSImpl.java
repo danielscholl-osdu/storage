@@ -56,8 +56,8 @@ import lombok.NoArgsConstructor;
 @Service
 public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChangeService {
 
-    private final static String INCOMPLIANT_STRING = "incompliant";
-    private final static String COMPLIANT_STRING = "compliant";
+    private static final String INCOMPLIANT_STRING = "incompliant";
+    private static final String COMPLIANT_STRING = "compliant";
 
     @Autowired
     private CollaborationContextFactory collaborationContextFactory;

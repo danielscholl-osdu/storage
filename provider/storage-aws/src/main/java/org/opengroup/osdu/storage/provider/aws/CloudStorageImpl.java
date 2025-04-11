@@ -43,7 +43,6 @@ import jakarta.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Repository
 public class CloudStorageImpl implements ICloudStorage {
@@ -97,7 +96,7 @@ public class CloudStorageImpl implements ICloudStorage {
         }
 
         try {
-            CompletableFuture[] cfs = futures.toArray(new CompletableFuture[0]);
+            CompletableFuture<?>[] cfs = futures.toArray(CompletableFuture[]::new);
             CompletableFuture<List<RecordProcessor>> results =  CompletableFuture.allOf(cfs)
                     .thenApply(ignored -> futures.stream()
                     .map(CompletableFuture::join)
@@ -117,13 +116,14 @@ public class CloudStorageImpl implements ICloudStorage {
             }
         } catch (Exception e) {
             Thread.currentThread().interrupt();
-            if (e.getCause() instanceof AppException) {
-                throw (AppException) e.getCause();
+            if (e.getCause() instanceof AppException appException) {
+                throw appException;
             } else {
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
                         e.getMessage(), e);
             }
         }
+        
     }
 
     @Override

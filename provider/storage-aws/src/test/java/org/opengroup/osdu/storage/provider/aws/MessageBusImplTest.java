@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 
-public class MessageBusImplTest {
+class MessageBusImplTest {
 
     private final static String AWS_SNS_TOPIC = "storage_sqs_url";
     private final static String AWS_SNS_TOPIC_V2 = "storage_sqs_url_v2";
@@ -94,7 +94,7 @@ public class MessageBusImplTest {
     }
 
     @Test
-    public void publishMessageOutsideForRecordNotOnNamespace() throws K8sParameterNotFoundException {
+    void publishMessageOutsideForRecordNotOnNamespace() throws K8sParameterNotFoundException {
         initAndRun(() -> {
                     // arrange
                     DpsHeaders headers = new DpsHeaders();
@@ -128,7 +128,7 @@ public class MessageBusImplTest {
     }
 
     @Test
-    public void publishMessageForRecordOnNamespace() throws K8sParameterNotFoundException {
+    void publishMessageForRecordOnNamespace() throws K8sParameterNotFoundException {
         initAndRun(() -> {
             // arrange
             DpsHeaders headers = new DpsHeaders();

@@ -160,7 +160,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
                 .map(objectBatch -> CompletableFuture.supplyAsync(
                         () -> legalTagHelper.batchDelete(objectBatch), workerThreadPool.getThreadPool())
                 ).collect(Collectors.toList()));
-        CompletableFuture[] cfs = batchWriteProcesses.toArray(new CompletableFuture[0]);
+        CompletableFuture<?>[] cfs = batchWriteProcesses.toArray(CompletableFuture[]::new);
         CompletableFuture<List<DynamoDBMapper.FailedBatch>> jointFutures = CompletableFuture.allOf(cfs)
                 .thenApply(ignored -> batchWriteProcesses.stream()
                         .map(CompletableFuture::join)
@@ -169,10 +169,15 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
         List<DynamoDBMapper.FailedBatch> failed = null;
         try {
             failed = jointFutures.get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR,
+                    "Could not collect thread futures.", e);
+        } catch (ExecutionException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, UNKNOWN_ERROR,
                     "Could not collect thread futures.", e);
         }
+        
         Exception firstFailedException = null;
         for (DynamoDBMapper.FailedBatch failedDoc : failed) {
             logger.error("Failed to save some objects to DynamoDB", failedDoc.getException());
@@ -261,7 +266,7 @@ public class RecordsMetadataRepositoryImpl implements IRecordsMetadataRepository
     
     @Override
     public AbstractMap.SimpleEntry<String, List<RecordMetadata>> queryByLegalTagName(
-            String legalTagName[], int limit, String cursor) {
+            String[] legalTagName, int limit, String cursor) {
         throw new UnsupportedOperationException("Method not implemented.");
     }
 
