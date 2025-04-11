@@ -1,9 +1,13 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Sets;
+
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.ToNumberPolicy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,6 +40,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.mockito.Mock;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -87,8 +92,16 @@ class BatchServiceImplTest {
     private static final String TEST_KIND = "test_kind";
     private static final String TEST_ID_1 = "test_id1";
     private static final String TEST_ID_2 = "test_id2";
+    private static final String INT_NUMBER = "IntegerNumber";
+    private static final String[] OWNERS = new String[]{ACL_OWNER};
 
-    private final static String[] OWNERS = new String[]{ACL_OWNER};
+    @BeforeEach
+    void setUp() throws NoSuchFieldException, IllegalAccessException {
+        Field gsonField = BatchServiceImpl.class.getDeclaredField("gson");
+        gsonField.setAccessible(true);
+        gsonField.set(sut, new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create());
+    }
+
     @Test
     void getMultipleRecords_returnsInvalidRecords_whenRecordsAreNotFound() {
         List<String> recordIds = Arrays.asList(TEST_ID_1, TEST_ID_2);
@@ -129,6 +142,35 @@ class BatchServiceImplTest {
         assertTrue(!multiRecordInfo.getRecords().isEmpty());
         assertTrue(multiRecordInfo.getInvalidRecords().isEmpty());
         assertTrue(multiRecordInfo.getRetryRecords().isEmpty());
+    }
+
+    @Test
+    void getMultipleRecords_returnsValidRecords_whenRecordsContainIntegerNumberInDataField() {
+        List<String> recordIds = Arrays.asList(TEST_ID_1);
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
+        recordMetadataMap.put(TEST_ID_1, buildRecordMetadata(TEST_ID_1));
+
+        when(recordRepository.get(recordIds, Optional.empty())).thenReturn(recordMetadataMap);
+
+        MultiRecordIds multiRecordIds = new MultiRecordIds();
+        multiRecordIds.setRecords(recordIds);
+
+        Map<String, String> recordIdContentMap = new HashMap<>();
+        Record record = buildRecord(TEST_ID_1);
+        Map<String, Object> recordData = new HashMap<>();
+        recordData.put(INT_NUMBER, 1);
+        record.setData(recordData);
+        recordIdContentMap.put(TEST_ID_1, new Gson().toJson(record));
+
+        when(cloudStorage.read(any(),any())).thenReturn(recordIdContentMap);
+        when(entitlementsAndCacheService.isDataManager(headers)).thenReturn(true);
+
+        MultiRecordInfo multiRecordInfo = sut.getMultipleRecords(multiRecordIds, Optional.empty());
+
+        assertFalse(multiRecordInfo.getRecords().isEmpty());
+        assertTrue(multiRecordInfo.getInvalidRecords().isEmpty());
+        assertTrue(multiRecordInfo.getRetryRecords().isEmpty());
+        assertEquals("1", multiRecordInfo.getRecords().get(0).getData().get(INT_NUMBER).toString());
     }
 
     @Test
