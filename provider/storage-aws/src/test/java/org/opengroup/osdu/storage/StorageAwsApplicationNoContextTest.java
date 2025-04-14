@@ -22,7 +22,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * This test class verifies the annotations on the StorageAwsApplication class
@@ -39,17 +39,15 @@ class StorageAwsApplicationNoContextTest {
     @Test
     void verifyPropertySourceAnnotation() {
         PropertySource annotation = StorageAwsApplication.class.getAnnotation(PropertySource.class);
-        assertTrue(annotation != null, "StorageAwsApplication should have @PropertySource annotation");
-        assertTrue(annotation.value()[0].equals("classpath:swagger.properties"), 
-                "PropertySource should point to classpath:swagger.properties");
+        assertNotNull(annotation, "StorageAwsApplication should have @PropertySource annotation");
+        assertEquals("classpath:swagger.properties", annotation.value()[0], "PropertySource should point to classpath:swagger.properties");
     }
 
     @Test
     void verifyComponentScanAnnotation() {
         ComponentScan annotation = StorageAwsApplication.class.getAnnotation(ComponentScan.class);
-        assertTrue(annotation != null, "StorageAwsApplication should have @ComponentScan annotation");
-        assertTrue(annotation.value()[0].equals("org.opengroup.osdu"), 
-                "ComponentScan should include org.opengroup.osdu package");
+        assertNotNull(annotation, "StorageAwsApplication should have @ComponentScan annotation");
+        assertEquals("org.opengroup.osdu", annotation.value()[0], "ComponentScan should include org.opengroup.osdu package");
     }
 
     @Test

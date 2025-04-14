@@ -1,22 +1,22 @@
-
-// Copyright © 2020 Amazon Web Services
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright © Amazon Web Services
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.aws;
 
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -25,28 +25,20 @@ import org.mockito.Mockito;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
-import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.opengroup.osdu.core.common.model.storage.Schema;
-import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordIdAndKind;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.aws.service.AwsSchemaServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
-import org.opengroup.osdu.storage.provider.aws.util.dynamodb.SchemaDoc;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -414,11 +406,7 @@ class QueryRepositoryImplTest {
     }
     
     @Test
-    void getActiveRecordsCountWithException() throws UnsupportedEncodingException {
-        // Arrange
-        String kind = "tenant:source:type:1.0.0";
-        List<String> kinds = Arrays.asList(kind);
-        
+    void getActiveRecordsCountWithException() {
         // Mock the schema service to throw an exception
         when(schemaService.getAllKinds()).thenThrow(new RuntimeException("Test exception"));
         

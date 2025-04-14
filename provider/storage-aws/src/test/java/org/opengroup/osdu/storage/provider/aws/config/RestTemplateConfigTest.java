@@ -21,10 +21,10 @@ import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class RestTemplateConfigTest {
+class RestTemplateConfigTest {
 
     @Test
-    public void testRestTemplateCreation() {
+    void testRestTemplateCreation() {
         // Arrange
         RestTemplateConfig config = new RestTemplateConfig();
         
@@ -36,7 +36,7 @@ public class RestTemplateConfigTest {
     }
     
     @Test
-    public void testRestTemplateIsProperlyConfigured() {
+    void testRestTemplateIsProperlyConfigured() {
         // Arrange
         RestTemplateConfig config = new RestTemplateConfig();
         

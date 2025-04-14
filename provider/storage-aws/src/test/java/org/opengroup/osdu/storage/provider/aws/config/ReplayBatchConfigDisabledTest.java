@@ -27,8 +27,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.concurrent.ExecutorService;
 
-import static org.junit.Assert.*;
-
 /**
  * Tests for ReplayBatchConfig when the feature is disabled.
  */

@@ -22,6 +22,8 @@ import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
 
+import java.lang.reflect.Field;
+
 /**
  * Unit tests for {@link ReplayMessageHandlerException}.
  */
@@ -82,8 +84,10 @@ public class ReplayMessageHandlerExceptionTest {
      * Test serialization constant is defined.
      */
     @Test
-    public void testSerialVersionUID() throws NoSuchFieldException {
-        ReplayMessageHandlerException.class.getDeclaredField("serialVersionUID");
-        // No assertion needed - if the field doesn't exist, the test will fail with NoSuchFieldException
+    public void testSerialVersionUID() throws NoSuchFieldException, IllegalAccessException {
+        Field field = ReplayMessageHandlerException.class.getDeclaredField("serialVersionUID");
+        field.setAccessible(true);
+        long serialVersionUID = (long) field.get(null);
+        assertEquals("SerialVersionUID should be 1L", 1L, serialVersionUID);
     }
 }

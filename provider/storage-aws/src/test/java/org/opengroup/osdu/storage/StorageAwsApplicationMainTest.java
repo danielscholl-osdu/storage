@@ -27,10 +27,10 @@ import org.springframework.boot.SpringApplication;
  * Test class for the main method of StorageAwsApplication.
  */
 @ExtendWith(MockitoExtension.class)
-public class StorageAwsApplicationMainTest {
+class StorageAwsApplicationMainTest {
 
     @Test
-    public void mainMethodCallsSpringApplicationRun() {
+    void mainMethodCallsSpringApplicationRun() {
         // Use Mockito to mock the static SpringApplication.run method
         try (MockedStatic<SpringApplication> mocked = Mockito.mockStatic(SpringApplication.class)) {
             // Set up the mock to do nothing when run is called

@@ -22,6 +22,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import static  org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,32 +32,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This test class avoids loading the Spring context to prevent conflicts with
  * multiple @SpringBootApplication classes in the classpath.
  */
-public class StorageAwsApplicationTest {
+class StorageAwsApplicationTest {
 
     @Test
-    public void verifySpringBootApplicationAnnotation() {
+    void verifySpringBootApplicationAnnotation() {
         boolean hasAnnotation = StorageAwsApplication.class.isAnnotationPresent(SpringBootApplication.class);
         assertTrue(hasAnnotation, "StorageAwsApplication should have @SpringBootApplication annotation");
     }
 
     @Test
-    public void verifyPropertySourceAnnotation() {
+    void verifyPropertySourceAnnotation() {
         PropertySource annotation = StorageAwsApplication.class.getAnnotation(PropertySource.class);
         assertNotNull(annotation, "StorageAwsApplication should have @PropertySource annotation");
-        assertTrue(annotation.value()[0].equals("classpath:swagger.properties"), 
+        assertEquals("classpath:swagger.properties", annotation.value()[0],
                 "PropertySource should point to classpath:swagger.properties");
     }
 
     @Test
-    public void verifyComponentScanAnnotation() {
+    void verifyComponentScanAnnotation() {
         ComponentScan annotation = StorageAwsApplication.class.getAnnotation(ComponentScan.class);
         assertNotNull(annotation, "StorageAwsApplication should have @ComponentScan annotation");
-        assertTrue(annotation.value()[0].equals("org.opengroup.osdu"), 
+        assertEquals("org.opengroup.osdu", annotation.value()[0],
                 "ComponentScan should include org.opengroup.osdu package");
     }
 
     @Test
-    public void verifyEnableSchedulingAnnotation() {
+    void verifyEnableSchedulingAnnotation() {
         boolean hasAnnotation = StorageAwsApplication.class.isAnnotationPresent(EnableScheduling.class);
         assertTrue(hasAnnotation, "StorageAwsApplication should have @EnableScheduling annotation");
     }

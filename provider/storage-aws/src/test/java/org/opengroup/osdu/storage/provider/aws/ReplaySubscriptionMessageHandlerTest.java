@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
@@ -34,7 +33,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
