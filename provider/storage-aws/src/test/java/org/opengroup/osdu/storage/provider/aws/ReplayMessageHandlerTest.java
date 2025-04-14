@@ -373,6 +373,141 @@ public class ReplayMessageHandlerTest {
         assertEquals(ReplayType.REPLAY_KIND.name(), message.getBody().getReplayType());
     }
 
+    @Test
+    public void testHandleNullMessage() {
+        // Execute
+        replayMessageHandler.handle(null);
+        
+        // Verify
+        verify(replayMessageProcessor, never()).processReplayMessage(any());
+        verify(mockLogger).severe("Cannot process null replay message or message with null body");
+    }
+
+    @Test
+    public void testHandleMessageWithNullBody() {
+        // Prepare test data
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(null);
+        
+        // Execute
+        replayMessageHandler.handle(message);
+        
+        // Verify
+        verify(replayMessageProcessor, never()).processReplayMessage(any());
+        verify(mockLogger).severe("Cannot process null replay message or message with null body");
+    }
+
+    @Test
+    public void testHandleFailureWithNullMessage() {
+        // Execute
+        replayMessageHandler.handleFailure(null);
+        
+        // Verify
+        verify(replayMessageProcessor, never()).processFailure(any());
+        verify(mockLogger).severe("Cannot process failure for null replay message");
+    }
+
+    @Test
+    public void testHandleFailureWithNullBody() {
+        // Prepare test data
+        ReplayMessage message = new ReplayMessage();
+        message.setBody(null);
+        
+        // Execute
+        replayMessageHandler.handleFailure(message);
+        
+        // Verify
+        verify(replayMessageProcessor, never()).processFailure(any());
+        verify(mockLogger).severe("Cannot process failure for null replay message");
+    }
+
+    @Test
+    public void testSendReplayMessageWithNullOperation() throws JsonProcessingException, ReplayMessageHandlerException {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        List<ReplayMessage> messages = Arrays.asList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute with null operation
+        replayMessageHandler.sendReplayMessage(messages, null);
+        
+        // Verify warning was logged
+        verify(mockLogger).warning("Operation type is null or empty, using default");
+        
+        // Verify default operation was used
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient).publish(requestCaptor.capture());
+        
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
+        assertEquals("replay", attributes.get("operation").getStringValue());
+    }
+
+    @Test
+    public void testSendReplayMessageWithNullMessageInBatch() throws JsonProcessingException, ReplayMessageHandlerException {
+        // Prepare test data with a null message in the batch
+        ReplayMessage message1 = createReplayMessage("test-replay-id", "test-kind", "replay");
+        List<ReplayMessage> messages = Arrays.asList(message1, null);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message1)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify warning was logged
+        verify(mockLogger).warning("Skipping null message in batch");
+        
+        // Verify only the non-null message was processed
+        verify(objectMapper, times(1)).writeValueAsString(any(ReplayMessage.class));
+        verify(snsClient, times(1)).publish(any(PublishRequest.class));
+    }
+
+    @Test(expected = ReplayMessageHandlerException.class)
+    public void testSendReplayMessageHandlesSNSException() throws JsonProcessingException, ReplayMessageHandlerException {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        List<ReplayMessage> messages = Arrays.asList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenThrow(new RuntimeException("SNS error"));
+        
+        // Execute - should throw ReplayMessageHandlerException
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+    }
+
+    @Test
+    public void testCreateMessageAttributes() throws Exception {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message.getHeaders().put("custom-header", "custom-value");
+        
+        // Call the private method using reflection
+        java.lang.reflect.Method method = ReplayMessageHandler.class.getDeclaredMethod(
+                "createMessageAttributes", ReplayMessage.class, String.class);
+        method.setAccessible(true);
+        
+        @SuppressWarnings("unchecked")
+        Map<String, MessageAttributeValue> attributes = 
+                (Map<String, MessageAttributeValue>) method.invoke(replayMessageHandler, message, "replay");
+        
+        // Verify
+        assertEquals("String", attributes.get("operation").getDataType());
+        assertEquals("replay", attributes.get("operation").getStringValue());
+        assertEquals("String", attributes.get("custom-header").getDataType());
+        assertEquals("custom-value", attributes.get("custom-header").getStringValue());
+    }
+
     private ReplayMessage createReplayMessage(String replayId, String kind, String operation) {
         ReplayData body = ReplayData.builder()
                 .replayId(replayId)
