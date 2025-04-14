@@ -113,7 +113,7 @@ public class ReplayServiceAWSImplTest {
         verify(replayRepository, times(3)).save(any(ReplayMetaDataDTO.class));
         
         // Verify parallel processing was started
-        verify(parallelReplayProcessor).processReplayAsync(eq(request), eq(Arrays.asList("kind1", "kind2")));
+        verify(parallelReplayProcessor).processReplayAsync(request, Arrays.asList("kind1", "kind2"));
         
         // Verify audit logging
         verify(auditLogger).createReplayRequestSuccess(anyList());
