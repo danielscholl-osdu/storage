@@ -24,6 +24,7 @@ import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
+import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -45,14 +46,16 @@ import java.util.logging.Logger;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayMessageHandler {
     // Use a standard Java logger for all logging
+    // LOGGER is not final for unit testing
     private static Logger LOGGER = Logger.getLogger(ReplayMessageHandler.class.getName());
+    
+    private static final String OPERATION_ATTRIBUTE = "operation";
+    private static final String STRING_DATA_TYPE = "String";
     
     private AmazonSNS snsClient;
     
     private final ObjectMapper objectMapper;
-
     private final ReplayMessageProcessorAWSImpl replayMessageProcessor;
-    
     private final DpsHeaders headers;
     
     @Value("${AWS.REGION:us-east-1}")
@@ -77,20 +80,24 @@ public class ReplayMessageHandler {
             
             // For development, use simple topic ARNs
             // In production, these would be retrieved from SSM parameters
-            try {
-                K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-                replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
-                LOGGER.info("Retrieved SNS topic ARN from SSM parameter: " + replayTopicArn);
-            } catch (K8sParameterNotFoundException e) {
-                // Fallback to default ARN for development
-                LOGGER.warning("Failed to retrieve SNS topic ARN from SSM, using default value: " + e.getMessage());
-                replayTopicArn = "arn:aws:sns:" + region + ":123456789012:" + replayTopic;
-            }
-            
-            LOGGER.info("ReplayMessageHandler initialized with region: " + region);
+            setReplayTopicArn();
+
+            LOGGER.info(() -> String.format("ReplayMessageHandler initialized with region: %s", region));
         } catch (Exception e) {
             // Use standard Java logger for errors during initialization
-            LOGGER.log(Level.SEVERE, "Failed to initialize ReplayMessageHandler: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, String.format("Failed to initialize ReplayMessageHandler: %s", e.getMessage()), e);
+        }
+    }
+
+    private void setReplayTopicArn() {
+        try {
+            K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+            replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
+            LOGGER.info(() -> String.format("Retrieved SNS topic ARN from SSM parameter: %s", replayTopicArn));
+        } catch (K8sParameterNotFoundException e) {
+            // Fallback to default ARN for development
+            LOGGER.warning(() -> String.format("Failed to retrieve SNS topic ARN from SSM, using default value: %s", e.getMessage()));
+            replayTopicArn = "arn:aws:sns:" + region + ":123456789012:" + replayTopic;
         }
     }
 
@@ -100,13 +107,17 @@ public class ReplayMessageHandler {
      * @param message The replay message to handle
      */
     public void handle(ReplayMessage message) {
+        if (message == null || message.getBody() == null) {
+            LOGGER.severe("Cannot process null replay message or message with null body");
+            return;
+        }
+
         try {
-            LOGGER.info("Processing replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
+            LOGGER.info(() -> String.format("Processing replay message: %s for kind: %s",
+                message.getBody().getReplayId(), message.getBody().getKind()));
             // Process the replay message using the dedicated processor
             replayMessageProcessor.processReplayMessage(message);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error processing replay message: " + e.getMessage(), e);
-            // Handle failure
             handleFailure(message);
             throw e;
         }
@@ -118,7 +129,13 @@ public class ReplayMessageHandler {
      * @param message The replay message that failed
      */
     public void handleFailure(ReplayMessage message) {
-        LOGGER.log(Level.SEVERE, "Processing failure for replay message: " + message.getBody().getReplayId() + " for kind: " + message.getBody().getKind());
+        if (message == null || message.getBody() == null) {
+            LOGGER.severe("Cannot process failure for null replay message");
+            return;
+        }
+        
+        LOGGER.log(Level.SEVERE, () -> String.format("Processing failure for replay message: %s for kind: %s", 
+            message.getBody().getReplayId(), message.getBody().getKind()));
         replayMessageProcessor.processFailure(message);
     }
     
@@ -129,46 +146,93 @@ public class ReplayMessageHandler {
      *
      * @param messages The replay messages to send
      * @param operation The operation type (e.g., "replay", "reindex")
+     * @throws ReplayMessageHandlerException if serialization or publishing fails
      */
-    public void sendReplayMessage(List<ReplayMessage> messages, String operation) {
+    public void sendReplayMessage(List<ReplayMessage> messages, String operation) throws ReplayMessageHandlerException {
+        if (messages == null || messages.isEmpty()) {
+            LOGGER.warning("No replay messages to send");
+            return;
+        }
+        
+        if (operation == null || operation.isEmpty()) {
+            LOGGER.warning("Operation type is null or empty, using default");
+            operation = "replay";
+        }
+
         try {
             for (ReplayMessage message : messages) {
+                if (message == null) {
+                    LOGGER.warning("Skipping null message in batch");
+                    continue;
+                }
+                
                 // Ensure the message has all current headers
                 updateMessageWithCurrentHeaders(message);
-                
-                String messageBody = objectMapper.writeValueAsString(message);
-
-                // Create message attributes for SNS
-                Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-                
-                // Add operation as a message attribute
-                messageAttributes.put("operation", new MessageAttributeValue()
-                    .withDataType("String")
-                    .withStringValue(operation));
-                
-                // Add all headers as message attributes for SNS
-                if (message.getHeaders() != null) {
-                    for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
-                        if (header.getValue() != null) {
-                            messageAttributes.put(header.getKey(), new MessageAttributeValue()
-                                .withDataType("String")
-                                .withStringValue(header.getValue()));
-                        }
-                    }
-                }
-
-                PublishRequest publishRequest = new PublishRequest()
-                    .withTopicArn(replayTopicArn)
-                    .withMessage(messageBody)
-                    .withMessageAttributes(messageAttributes);
-
-                snsClient.publish(publishRequest);
-                LOGGER.info("Published replay message to SNS topic for operation: " + operation + ", replayId: " + message.getBody().getReplayId());
+                publishMessageToSns(message, operation);
             }
         } catch (JsonProcessingException e) {
-            LOGGER.log(Level.SEVERE, "Failed to serialize replay message: " + e.getMessage(), e);
-            throw new RuntimeException("Failed to serialize replay message", e);
+            throw new ReplayMessageHandlerException("Failed to serialize replay message", e);
+        } catch (Exception e) {
+            throw new ReplayMessageHandlerException("Failed to publish replay message to SNS", e);
         }
+    }
+    
+    /**
+     * Publishes a single message to SNS
+     * 
+     * @param message The message to publish
+     * @param operation The operation type
+     * @throws JsonProcessingException if serialization fails
+     * @throws ReplayMessageHandlerException if publishing to SNS fails
+     */
+    private void publishMessageToSns(ReplayMessage message, String operation) throws JsonProcessingException, ReplayMessageHandlerException {
+        String messageBody = objectMapper.writeValueAsString(message);
+        Map<String, MessageAttributeValue> messageAttributes = createMessageAttributes(message, operation);
+
+        try {
+            PublishRequest publishRequest = new PublishRequest()
+                .withTopicArn(replayTopicArn)
+                .withMessage(messageBody)
+                .withMessageAttributes(messageAttributes);
+
+            snsClient.publish(publishRequest);
+            
+            if (message.getBody() != null) {
+                LOGGER.info(() -> String.format("Published replay message to SNS topic for operation: %s, replayId: %s", 
+                    operation, message.getBody().getReplayId()));
+            }
+        } catch (Exception e) {
+            throw new ReplayMessageHandlerException("Failed to publish message to SNS topic: " + replayTopicArn, e);
+        }
+    }
+    
+    /**
+     * Creates message attributes for SNS
+     * 
+     * @param message The replay message
+     * @param operation The operation type
+     * @return Map of message attributes
+     */
+    private Map<String, MessageAttributeValue> createMessageAttributes(ReplayMessage message, String operation) {
+        Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+        
+        // Add operation as a message attribute
+        messageAttributes.put(OPERATION_ATTRIBUTE, new MessageAttributeValue()
+            .withDataType(STRING_DATA_TYPE)
+            .withStringValue(operation));
+        
+        // Add all headers as message attributes for SNS
+        if (message.getHeaders() != null) {
+            for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
+                if (header.getKey() != null && header.getValue() != null) {
+                    messageAttributes.put(header.getKey(), new MessageAttributeValue()
+                        .withDataType(STRING_DATA_TYPE)
+                        .withStringValue(header.getValue()));
+                }
+            }
+        }
+        
+        return messageAttributes;
     }
     
     /**
@@ -178,6 +242,11 @@ public class ReplayMessageHandler {
      * @param message The replay message to update
      */
     private void updateMessageWithCurrentHeaders(ReplayMessage message) {
+        if (message == null) {
+            LOGGER.warning("Cannot update headers for null message");
+            return;
+        }
+        
         try {
             // Initialize headers if null
             if (message.getHeaders() == null) {
@@ -193,12 +262,12 @@ public class ReplayMessageHandler {
                     message.getHeaders().put(DpsHeaders.CORRELATION_ID, UUID.randomUUID().toString());
                 }
                 
-                LOGGER.info("Updated message with current headers: " + message.getHeaders());
+                LOGGER.fine(() -> String.format("Updated message with current headers: %s", message.getHeaders()));
             } else {
                 LOGGER.warning("DpsHeaders is null or empty, unable to update message headers");
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to update message with current headers: " + e.getMessage(), e);
+            LOGGER.log(Level.WARNING, String.format("Failed to update message with current headers: %s", e.getMessage()), e);
             // Continue without failing - we'll use the headers that were already in the message
         }
     }

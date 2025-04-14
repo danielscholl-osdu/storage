@@ -7,6 +7,7 @@ import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.enums.ReplayType;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
+import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayRequest;
@@ -133,7 +134,13 @@ public class ParallelReplayProcessor {
             // Create and send messages for this batch - must run after replay status table update,
             // since messages can be fully processed before table update resulting in incorrect status of QUEUED.
             List<ReplayMessage> messages = createReplayMessages(replayRequest, batch);
-            messageHandler.sendReplayMessage(messages, replayRequest.getOperation());
+            try {
+                messageHandler.sendReplayMessage(messages, replayRequest.getOperation());
+            } catch (ReplayMessageHandlerException e) {
+                LOGGER.log(Level.SEVERE, "Failed to send replay messages for batch", e);
+                // Update status to FAILED for all kinds in this batch
+                updateBatchStatusToFailed(batch, replayRequest.getReplayId(), e.getMessage());
+            }
         }
     }
     
@@ -228,9 +235,30 @@ public class ParallelReplayProcessor {
         return batches;
     }
 
+
+    /**
+     * Updates the status of all kinds in a batch to FAILED.
+     * 
+     * @param batch The batch of kinds to update
+     * @param replayId The replay ID
+     * @param errorMessage The error message
+     */
+    private void updateBatchStatusToFailed(List<String> batch, String replayId, String errorMessage) {
+        for (String kind : batch) {
+            try {
+                ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+                if (replayMetaData != null) {
+                    replayMetaData.setState(ReplayState.FAILED.name());
+                    replayRepository.save(replayMetaData);
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, String.format("Error updating failure status for kind %s: %s", kind, e.getMessage()), e);
+            }
+        }
+    }
     /**
      * Creates replay messages for a batch of kinds.
-     * 
+     *
      * @param replayRequest The replay request
      * @param kinds The batch of kinds
      * @return A list of replay messages

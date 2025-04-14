@@ -13,6 +13,7 @@ import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.enums.ReplayType;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
+import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayRequest;
@@ -122,7 +123,7 @@ public class ParallelReplayProcessorTest {
     }
 
     @Test
-    public void testProcessReplayInBackground_ShouldUpdateCountsAndProcessBatches() {
+    public void testProcessReplayInBackground_ShouldUpdateCountsAndProcessBatches() throws ReplayMessageHandlerException {
         // Arrange
         ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         
@@ -306,7 +307,15 @@ public class ParallelReplayProcessorTest {
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
                 "processBatches", ReplayRequest.class, List.class);
         method.setAccessible(true);
-        method.invoke(processor, testRequest, batches);
+        
+        try {
+            method.invoke(processor, testRequest, batches);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof ReplayMessageHandlerException) {
+                throw (ReplayMessageHandlerException) e.getCause();
+            }
+            throw e;
+        }
         
         // Assert
         // Verify status updates for all kinds
