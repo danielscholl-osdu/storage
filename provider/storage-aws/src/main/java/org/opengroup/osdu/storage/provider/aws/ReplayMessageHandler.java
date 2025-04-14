@@ -49,7 +49,7 @@ import java.util.logging.Logger;
 public class ReplayMessageHandler {
     // Use a standard Java logger for all logging
     // LOGGER is not final for unit testing
-    private static Logger LOGGER = Logger.getLogger(ReplayMessageHandler.class.getName());
+    private static Logger logger = Logger.getLogger(ReplayMessageHandler.class.getName());
     
     private static final String OPERATION_ATTRIBUTE = "operation";
     private static final String STRING_DATA_TYPE = "String";
@@ -84,10 +84,10 @@ public class ReplayMessageHandler {
             // In production, these would be retrieved from SSM parameters
             setReplayTopicArn();
 
-            LOGGER.info(() -> String.format("ReplayMessageHandler initialized with region: %s", region));
+            logger.info(() -> String.format("ReplayMessageHandler initialized with region: %s", region));
         } catch (Exception e) {
             // Use standard Java logger for errors during initialization
-            LOGGER.log(Level.SEVERE, String.format("Failed to initialize ReplayMessageHandler: %s", e.getMessage()), e);
+            logger.log(Level.SEVERE, String.format("Failed to initialize ReplayMessageHandler: %s", e.getMessage()), e);
         }
     }
 
@@ -95,10 +95,10 @@ public class ReplayMessageHandler {
         try {
             K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
             replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
-            LOGGER.info(() -> String.format("Retrieved SNS topic ARN from SSM parameter: %s", replayTopicArn));
+            logger.info(() -> String.format("Retrieved SNS topic ARN from SSM parameter: %s", replayTopicArn));
         } catch (K8sParameterNotFoundException e) {
             // Fallback to default ARN for development
-            LOGGER.warning(() -> String.format("Failed to retrieve SNS topic ARN from SSM, using default value: %s", e.getMessage()));
+            logger.warning(() -> String.format("Failed to retrieve SNS topic ARN from SSM, using default value: %s", e.getMessage()));
             replayTopicArn = "arn:aws:sns:" + region + ":123456789012:" + replayTopic;
         }
     }
@@ -110,12 +110,12 @@ public class ReplayMessageHandler {
      */
     public void handle(ReplayMessage message) {
         if (message == null || message.getBody() == null) {
-            LOGGER.severe("Cannot process null replay message or message with null body");
+            logger.severe("Cannot process null replay message or message with null body");
             return;
         }
 
         try {
-            LOGGER.info(() -> String.format("Processing replay message: %s for kind: %s",
+            logger.info(() -> String.format("Processing replay message: %s for kind: %s",
                 message.getBody().getReplayId(), message.getBody().getKind()));
             // Process the replay message using the dedicated processor
             replayMessageProcessor.processReplayMessage(message);
@@ -132,11 +132,11 @@ public class ReplayMessageHandler {
      */
     public void handleFailure(ReplayMessage message) {
         if (message == null || message.getBody() == null) {
-            LOGGER.severe("Cannot process failure for null replay message");
+            logger.severe("Cannot process failure for null replay message");
             return;
         }
         
-        LOGGER.log(Level.SEVERE, () -> String.format("Processing failure for replay message: %s for kind: %s", 
+        logger.log(Level.SEVERE, () -> String.format("Processing failure for replay message: %s for kind: %s",
             message.getBody().getReplayId(), message.getBody().getKind()));
         replayMessageProcessor.processFailure(message);
     }
@@ -152,19 +152,19 @@ public class ReplayMessageHandler {
      */
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) throws ReplayMessageHandlerException {
         if (messages == null || messages.isEmpty()) {
-            LOGGER.warning("No replay messages to send");
+            logger.warning("No replay messages to send");
             return;
         }
         
         if (operation == null || operation.isEmpty()) {
-            LOGGER.warning("Operation type is null or empty, using default");
+            logger.warning("Operation type is null or empty, using default");
             operation = "replay";
         }
 
         try {
             for (ReplayMessage message : messages) {
                 if (message == null) {
-                    LOGGER.warning("Skipping null message in batch");
+                    logger.warning("Skipping null message in batch");
                     continue;
                 }
                 
@@ -200,7 +200,7 @@ public class ReplayMessageHandler {
             snsClient.publish(publishRequest);
             
             if (message.getBody() != null) {
-                LOGGER.info(() -> String.format("Published replay message to SNS topic for operation: %s, replayId: %s", 
+                logger.info(() -> String.format("Published replay message to SNS topic for operation: %s, replayId: %s",
                     operation, message.getBody().getReplayId()));
             }
         } catch (Exception e) {
@@ -245,7 +245,7 @@ public class ReplayMessageHandler {
      */
     private void updateMessageWithCurrentHeaders(ReplayMessage message) {
         if (message == null) {
-            LOGGER.warning("Cannot update headers for null message");
+            logger.warning("Cannot update headers for null message");
             return;
         }
         
@@ -264,12 +264,12 @@ public class ReplayMessageHandler {
                     message.getHeaders().put(DpsHeaders.CORRELATION_ID, UUID.randomUUID().toString());
                 }
                 
-                LOGGER.fine(() -> String.format("Updated message with current headers: %s", message.getHeaders()));
+                logger.fine(() -> String.format("Updated message with current headers: %s", message.getHeaders()));
             } else {
-                LOGGER.warning("DpsHeaders is null or empty, unable to update message headers");
+                logger.warning("DpsHeaders is null or empty, unable to update message headers");
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, String.format("Failed to update message with current headers: %s", e.getMessage()), e);
+            logger.log(Level.WARNING, String.format("Failed to update message with current headers: %s", e.getMessage()), e);
             // Continue without failing - we'll use the headers that were already in the message
         }
     }

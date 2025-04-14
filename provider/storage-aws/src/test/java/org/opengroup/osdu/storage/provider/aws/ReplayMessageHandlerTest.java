@@ -72,7 +72,7 @@ public class ReplayMessageHandlerTest {
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopic", REPLAY_TOPIC);
         ReflectionTestUtils.setField(replayMessageHandler, "snsClient", snsClient);
         ReflectionTestUtils.setField(replayMessageHandler, "replayTopicArn", REPLAY_TOPIC_ARN);
-        ReflectionTestUtils.setField(replayMessageHandler, "LOGGER", mockLogger);
+        ReflectionTestUtils.setField(replayMessageHandler, "logger", mockLogger);
         
         // Mock headers behavior
         Map<String, String> headerMap = new HashMap<>();
