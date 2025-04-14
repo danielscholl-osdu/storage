@@ -22,12 +22,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 class GetRecordTask implements Callable<GetRecordTask> {
-    private S3RecordClient s3RecordClient;
-    private AtomicReference<Map<String, String>> map;
-    public RecordMetadata recordMetadata;
-    public AmazonServiceException exception;
-    public CallableResult result;
-    private String dataPartition;
+    private final S3RecordClient s3RecordClient;
+    private final AtomicReference<Map<String, String>> map;
+    private final RecordMetadata recordMetadata;
+    private AmazonServiceException exception;
+    private CallableResult result;
+    private final String dataPartition;
 
     public GetRecordTask(S3RecordClient s3RecordClient,
                          AtomicReference<Map<String, String>> map,
@@ -50,5 +50,29 @@ class GetRecordTask implements Callable<GetRecordTask> {
             exception = e;
         }
         return this;
+    }
+    
+    /**
+     * Get the record metadata
+     * @return the record metadata
+     */
+    public RecordMetadata getRecordMetadata() {
+        return recordMetadata;
+    }
+    
+    /**
+     * Get the exception if one occurred
+     * @return the exception or null if no exception occurred
+     */
+    public AmazonServiceException getException() {
+        return exception;
+    }
+    
+    /**
+     * Get the result of the callable operation
+     * @return the result
+     */
+    public CallableResult getResult() {
+        return result;
     }
 }

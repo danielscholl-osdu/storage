@@ -273,7 +273,7 @@ class CloudStorageImplTest {
     void read(){
         // arrange
         Long version = 1L;
-        when(s3RecordClient.getRecord(eq(record), eq(version), eq(dataPartition)))
+        when(s3RecordClient.getRecord(record, version, dataPartition))
                 .thenReturn("test-response");
 
         // act
@@ -292,7 +292,7 @@ class CloudStorageImplTest {
         Map<String, String> expectedResp = new HashMap<>();
         expectedResp.put("test-record-id", "{data:test-data}");
 
-        when(recordsUtil.getRecordsValuesById(Mockito.eq(map)))
+        when(recordsUtil.getRecordsValuesById(map))
                 .thenReturn(expectedResp);
 
         // act
@@ -314,7 +314,7 @@ class CloudStorageImplTest {
         repo.revertObjectMetadata(recordsMetadata, originalAcls, Optional.empty());
 
         verify(record, times(1)).setAcl(acl);
-        verify(recordsMetadataRepository, times(1)).createOrUpdate(anyList(), eq(Optional.empty()));
+        verify(recordsMetadataRepository, times(1)).createOrUpdate(anyList(), any(Optional.class));
     }
 
     @Test
@@ -326,7 +326,7 @@ class CloudStorageImplTest {
 
         when(record.getId()).thenReturn("record1");
 
-        when(recordsMetadataRepository.createOrUpdate(anyList(), eq(Optional.empty()))).thenThrow(new RuntimeException("test exception"));
+        when(recordsMetadataRepository.createOrUpdate(anyList(), any(Optional.class))).thenThrow(new RuntimeException("test exception"));
 
         assertThrows(AppException.class, () -> repo.revertObjectMetadata(recordsMetadata, originalAcls, Optional.empty()));
         

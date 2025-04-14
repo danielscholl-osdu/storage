@@ -33,6 +33,12 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **global.domain** | your domain for the external endpoint, ex `example.com` | string | - | yes
 **global.limitsEnabled** | whether CPU and memory limits are enabled | boolean | true | yes
 
+### Rosa flag
+
+| Name | Description | Type | Default |Required |
+|------|-------------|------|---------|---------|
+**rosa** | This flag enables configuration specific to ROSA environments | boolean | - | yes
+
 ### Configmap variables
 
 | Name | Description | Type | Default |Required |

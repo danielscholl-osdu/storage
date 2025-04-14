@@ -14,20 +14,24 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
+import org.apache.http.HttpStatus;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
-import org.apache.http.HttpStatus;
-
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.springframework.stereotype.Component;
 
 import jakarta.inject.Inject;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 @Component
 public class RecordsUtil {
@@ -62,7 +66,7 @@ public class RecordsUtil {
                 futures.add(future);
             }
 
-            CompletableFuture[] cfs = futures.toArray(new CompletableFuture[0]);
+            CompletableFuture<?>[] cfs = futures.toArray(CompletableFuture[]::new);
             CompletableFuture<List<GetRecordFromVersionTask>> results = CompletableFuture.allOf(cfs)
                     .thenApply(ignored -> futures.stream()
                             .map(CompletableFuture::join)
@@ -70,21 +74,21 @@ public class RecordsUtil {
 
             List<GetRecordFromVersionTask> getRecordFromVersionTasks = results.get();
             for (GetRecordFromVersionTask task : getRecordFromVersionTasks) {
-                if (task.exception != null
-                        || task.result == CallableResult.FAIL) {
-                    assert task.exception != null;
-                    logger.error(String.format("%s failed getting record from S3 with exception: %s"
-                            , task.recordId
-                            , task.exception.getMessage()
+                if (task.getException() != null
+                        || task.getResult() == CallableResult.FAIL) {
+
+                            logger.error(String.format("%s failed getting record from S3 with exception: %s"
+                            , task.getRecordId()
+                            , task.getException().getMessage()
                     ));
                 } else {
-                    map.put(task.recordId, task.recordContents);
+                    map.put(task.getRecordId(), task.getRecordContents());
                 }
             }
         } catch (Exception e) {
             Thread.currentThread().interrupt();
-            if (e.getCause() instanceof AppException) {
-                throw (AppException) e.getCause();
+            if (e.getCause() instanceof AppException appException) {
+                throw appException;
             } else {
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
                         e.getMessage(), e);
@@ -109,7 +113,7 @@ public class RecordsUtil {
                 futures.add(future);
             }
 
-            CompletableFuture[] cfs = futures.toArray(new CompletableFuture[0]);
+            CompletableFuture<?>[] cfs = futures.toArray(CompletableFuture[]::new);
             CompletableFuture<List<GetRecordTask>> results = CompletableFuture.allOf(cfs)
                     .thenApply(ignored -> futures.stream()
                             .map(CompletableFuture::join)
@@ -117,18 +121,18 @@ public class RecordsUtil {
 
             List<GetRecordTask> getRecordTasks = results.get();
             for (GetRecordTask task : getRecordTasks) {
-                if (task.exception != null
-                        || task.result == CallableResult.FAIL) {
+                if (task.getException() != null
+                        || task.getResult() == CallableResult.FAIL) {
                     logger.error(String.format("%s failed writing to S3 with exception: %s"
-                            , task.recordMetadata.getId()
-                            , task.exception.getErrorMessage()
+                            , task.getRecordMetadata().getId()
+                            , task.getException().getErrorMessage()
                     ));
                 }
             }
         } catch (Exception e) {
             Thread.currentThread().interrupt();
-            if (e.getCause() instanceof AppException) {
-                throw (AppException) e.getCause();
+            if (e.getCause() instanceof AppException appException) {
+                throw appException;
             } else {
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
                         e.getMessage(), e);

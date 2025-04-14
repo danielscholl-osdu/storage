@@ -14,15 +14,11 @@
 
 package org.opengroup.osdu.storage.provider.aws.security;
 
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import jakarta.inject.Inject;
-
-
 import org.apache.http.HttpStatus;
-
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
@@ -32,6 +28,8 @@ import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.stereotype.Service;
+
+import jakarta.inject.Inject;
 
 @Service
 public class UserAccessService {
@@ -59,35 +57,29 @@ public class UserAccessService {
     }
 
     /**
-     * Unideal way to check if user has access to record because a list is being compared
-     * for a match in a list. Future improvements include redesigning our dynamo schema to
-     * get around this and redesigning dynamo schema to stop parsing the acl out of
-     * recordmetadata
+     * Optimized method to check if user has access to record without comparing lists.
+     * This approach checks each user group directly against the ACL.
      *
-     * @param acl
-     * @return
+     * @param acl The access control list to check against
+     * @return true if the user has access, false otherwise
      */
-    // Optimize entitlements record ACL design to not compare list against list
     public boolean userHasAccessToRecord(Acl acl) {
+        // Get user's groups
         Groups groups = this.entitlementsExtensions.getGroups(dpsHeaders);
-        HashSet<String> allowedGroups = new HashSet<>();
-
-        for (String owner : acl.getOwners()) {
-            allowedGroups.add(owner);
+        
+        // Convert ACL lists to a set for O(1) lookup
+        Set<String> aclGroups = new HashSet<>();
+        aclGroups.addAll(Arrays.asList(acl.getOwners()));
+        aclGroups.addAll(Arrays.asList(acl.getViewers()));
+        
+        // Check each user group directly against the ACL set
+        for (GroupInfo group : groups.getGroups()) {
+            if (aclGroups.contains(group.getEmail())) {
+                return true; // Found a match, user has access
+            }
         }
-
-        for (String viewer : acl.getViewers()) {
-            allowedGroups.add(viewer);
-        }
-
-        List<GroupInfo> memberGroups = groups.getGroups();
-        HashSet<String> memberGroupsSet = new HashSet<>();
-
-        for (GroupInfo memberGroup : memberGroups) {
-            memberGroupsSet.add(memberGroup.getEmail());
-        }
-
-        return allowedGroups.stream().anyMatch(memberGroupsSet::contains);
+        
+        return false;
     }
 
     private void validateRecordAclsForServicePrincipal(RecordProcessing... records) throws InvalidACLException {

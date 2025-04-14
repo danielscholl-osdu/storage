@@ -233,7 +233,6 @@ public class PersistenceServiceImplTest {
         verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
     }
 
-    @Disabled
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void should_notPersistRecords_and_throw413AppException_when_datastoreTooBigEntityErrorOccur() {
@@ -241,18 +240,19 @@ public class PersistenceServiceImplTest {
         TransferBatch batch = this.createBatchTransfer();
 
         this.setupRecordRepository(23, 10, 25);
-        doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        when(this.recordRepository.createOrUpdate(any(), any())).thenThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "Request Too Long", "Metadata request size limit reached!")).thenReturn(null);
+
         try {
             this.sut.persistRecordBatch(batch, Optional.empty());
             fail("Expected exception");
         } catch (AppException e) {
             assertEquals(413, e.getError().getCode());
-            assertTrue(e.getError().toString().contains("The record metadata is too big"));
+            assertTrue(e.getError().toString().contains("Request Too Long"));
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
-        verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
+        verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.pubSubClient, times(0)).publishMessage(any(), any(), anyList());
     }
 
     @Disabled

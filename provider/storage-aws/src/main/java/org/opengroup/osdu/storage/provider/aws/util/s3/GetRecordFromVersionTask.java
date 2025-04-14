@@ -19,15 +19,15 @@ import java.util.concurrent.Callable;
 import com.amazonaws.AmazonServiceException;
 
 class GetRecordFromVersionTask implements Callable<GetRecordFromVersionTask> {
-    private S3RecordClient s3RecordClient;
-    private String versionPath;
-    public String recordId;
-    public String recordContents;
-    public Exception exception;
-    public CallableResult result;
-    private String dataPartition;
+    private final S3RecordClient s3RecordClient;
+    private final String versionPath;
+    private final String recordId;
+    private String recordContents;
+    private Exception exception;
+    private CallableResult result;
+    private final String dataPartition;
 
-    private final static String EMPTY_S3_MSG = "S3 returned empty record contents";
+    private static final String EMPTY_S3_MSG = "S3 returned empty record contents";
 
     public GetRecordFromVersionTask(S3RecordClient s3RecordClient,
                          String recordId,
@@ -56,5 +56,37 @@ class GetRecordFromVersionTask implements Callable<GetRecordFromVersionTask> {
             result = CallableResult.FAIL;
         }
         return this;
+    }
+    
+    /**
+     * Get the record ID
+     * @return the record ID
+     */
+    public String getRecordId() {
+        return recordId;
+    }
+    
+    /**
+     * Get the record contents
+     * @return the record contents
+     */
+    public String getRecordContents() {
+        return recordContents;
+    }
+    
+    /**
+     * Get the result of the callable operation
+     * @return the result
+     */
+    public CallableResult getResult() {
+        return result;
+    }
+    
+    /**
+     * Get the exception if one occurred
+     * @return the exception or null if no exception occurred
+     */
+    public Exception getException() {
+        return exception;
     }
 }
