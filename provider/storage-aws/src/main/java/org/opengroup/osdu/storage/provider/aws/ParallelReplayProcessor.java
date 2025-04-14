@@ -155,7 +155,7 @@ public class ParallelReplayProcessor {
             } catch (ReplayMessageHandlerException e) {
                 LOGGER.log(Level.SEVERE, "Failed to send replay messages for batch", e);
                 // Update status to FAILED for all kinds in this batch
-                updateBatchStatusToFailed(batch, replayRequest.getReplayId(), e.getMessage());
+                updateBatchStatusToFailed(batch, replayRequest.getReplayId());
             }
         }
     }
@@ -257,9 +257,8 @@ public class ParallelReplayProcessor {
      * 
      * @param batch The batch of kinds to update
      * @param replayId The replay ID
-     * @param errorMessage The error message
      */
-    private void updateBatchStatusToFailed(List<String> batch, String replayId, String errorMessage) {
+    private void updateBatchStatusToFailed(List<String> batch, String replayId) {
         for (String kind : batch) {
             try {
                 ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
