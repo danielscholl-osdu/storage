@@ -50,7 +50,7 @@ import java.util.logging.Logger;
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true")
 public class ReplaySubscriptionMessageHandler {
     public static final int MAX_DELIVERY_COUNT = 3;
-    private static final Logger LOGGER = Logger.getLogger(ReplaySubscriptionMessageHandler.class.getName());
+    private static final Logger logger = Logger.getLogger(ReplaySubscriptionMessageHandler.class.getName());
     
     private AmazonSQS sqsClient;
     
@@ -80,22 +80,26 @@ public class ReplaySubscriptionMessageHandler {
             // Initialize SQS client
             AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
             this.sqsClient = sqsConfig.AmazonSQS();
-            
-            // Try to get queue URL from SSM parameters
-            try {
-                K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-                replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
-                LOGGER.info(() -> String.format("Retrieved SQS queue URL from SSM: %s", replayQueueUrl));
-            } catch (K8sParameterNotFoundException e) {
-                // For development, use a default queue URL
-                LOGGER.warning("Failed to retrieve SQS queue URL from SSM, using default value: " + e.getMessage());
-                replayQueueUrl = "https://sqs." + region + ".amazonaws.com/123456789012/" + replayTopic;
-            }
+
+            setReplayQueueUrl();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, String.format("Failed to initialize ReplaySubscriptionMessageHandler: %s", e.getMessage()), e);
+            logger.log(Level.SEVERE, String.format("Failed to initialize ReplaySubscriptionMessageHandler: %s", e.getMessage()), e);
         }
     }
-    
+
+    private void setReplayQueueUrl() {
+        // Try to get queue URL from SSM parameters
+        try {
+            K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+            replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
+            logger.info(() -> String.format("Retrieved SQS queue URL from SSM: %s", replayQueueUrl));
+        } catch (K8sParameterNotFoundException e) {
+            // For development, use a default queue URL
+            logger.warning("Failed to retrieve SQS queue URL from SSM, using default value: " + e.getMessage());
+            replayQueueUrl = "https://sqs." + region + ".amazonaws.com/123456789012/" + replayTopic;
+        }
+    }
+
     /**
      * Polls the SQS queue for replay messages at a fixed interval.
      * The messages come from the consolidated SNS topic but are delivered to a single SQS queue.
@@ -103,7 +107,7 @@ public class ReplaySubscriptionMessageHandler {
     @Scheduled(fixedDelayString = "${aws.sqs.polling-interval-ms:1000}")
     public void pollMessages() {
         if (replayQueueUrl == null) {
-            LOGGER.warning("SQS queue URL is not initialized. Skipping message polling.");
+            logger.warning("SQS queue URL is not initialized. Skipping message polling.");
             return;
         }
         
@@ -142,20 +146,20 @@ public class ReplaySubscriptionMessageHandler {
 
             // Extract operation type from message attributes if available
             String operation = getOperation(message);
-            LOGGER.info(() -> String.format("Processing %s message from queue: %s", operation, replayMessage.getBody().getReplayId()));
+            logger.info(() -> String.format("Processing %s message from queue: %s", operation, replayMessage.getBody().getReplayId()));
 
             requestScopeUtil.executeInRequestScope(() -> {
                 try {
                     replayMessageHandler.handle(replayMessage);
                     sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
                 } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, String.format("Error processing replay message: %s",e.getMessage()), e);
+                    logger.log(Level.SEVERE, String.format("Error processing replay message: %s",e.getMessage()), e);
                     handleMessageError(message, unwrappedMessageBody);
                 }
             }, headers);
             
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, String.format("Error preparing replay message: %s", e.getMessage()), e);
+            logger.log(Level.SEVERE, String.format("Error preparing replay message: %s", e.getMessage()), e);
             // If we can't even parse the message, just delete it
             sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
         }
@@ -205,7 +209,7 @@ public class ReplaySubscriptionMessageHandler {
                 unwrappedMessageBody = node.get("Message").asText();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, String.format("Error parsing SNS message wrapper: %s", e.getMessage()), e);
+            logger.log(Level.SEVERE, String.format("Error parsing SNS message wrapper: %s", e.getMessage()), e);
         }
         return unwrappedMessageBody;
     }
@@ -223,18 +227,18 @@ public class ReplaySubscriptionMessageHandler {
 
             if (receiveCount >= MAX_DELIVERY_COUNT) {
                 // Dead letter the message after max retries
-                LOGGER.log(Level.SEVERE, () -> String.format("Max delivery attempts reached for message, sending to dead letter: %s", replayMessage.getBody().getReplayId()));
+                logger.log(Level.SEVERE, () -> String.format("Max delivery attempts reached for message, sending to dead letter: %s", replayMessage.getBody().getReplayId()));
                 replayMessageHandler.handleFailure(replayMessage);
                 sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
             } else {
                 // Return to queue for retry with backoff
                 int visibilityTimeout = 30 * (int)Math.pow(2, (double)receiveCount - 1); // Exponential backoff
-                LOGGER.info(() -> String.format("Returning message to queue for retry: %s with visibility timeout: %s", replayMessage.getBody().getReplayId(), visibilityTimeout));
+                logger.info(() -> String.format("Returning message to queue for retry: %s with visibility timeout: %s", replayMessage.getBody().getReplayId(), visibilityTimeout));
                 sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), visibilityTimeout);
             }
         } catch (Exception ex) {
             // If we can't even parse the message, just delete it
-            LOGGER.log(Level.SEVERE, String.format("Failed to process message error handling, deleting from queue: %s", ex.getMessage()), ex);
+            logger.log(Level.SEVERE, String.format("Failed to process message error handling, deleting from queue: %s", ex.getMessage()), ex);
             sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
         }
     }

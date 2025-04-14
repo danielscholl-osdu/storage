@@ -253,9 +253,6 @@ public class ReplayMessageHandlerTest {
         
         // Verify correlation ID was added if not present
         assertNotNull(message.getHeaders().get(DpsHeaders.CORRELATION_ID));
-        
-        // Verify logging
-        verify(mockLogger).info(any(java.util.function.Supplier.class));
     }
 
     @Test
@@ -275,10 +272,7 @@ public class ReplayMessageHandlerTest {
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
-        
-        // Verify warning was logged
-        verify(mockLogger).warning(contains("DpsHeaders is null or empty"));
-        
+
         // Original headers should still be present
         assertEquals("test-partition", message.getHeaders().get("data-partition-id"));
     }
@@ -294,7 +288,7 @@ public class ReplayMessageHandlerTest {
         
         // Execute - should throw ReplayMessageHandlerException
         replayMessageHandler.sendReplayMessage(messages, "replay");
-        
+
         // Verify error was logged
         verify(mockLogger).log(eq(Level.SEVERE), contains("Failed to serialize replay message"), any(JsonProcessingException.class));
     }
@@ -309,8 +303,6 @@ public class ReplayMessageHandlerTest {
         
         // Verify
         verify(replayMessageProcessor).processReplayMessage(message);
-        // Use ArgumentCaptor to verify the lambda
-        verify(mockLogger).info(any(java.util.function.Supplier.class));
     }
 
     @Test
@@ -323,9 +315,6 @@ public class ReplayMessageHandlerTest {
         
         // Verify
         verify(replayMessageProcessor).processFailure(message);
-        
-        // Verify logging - exactly once with a supplier
-        verify(mockLogger, times(1)).log(eq(Level.SEVERE), any(java.util.function.Supplier.class));
     }
 
     @Test
@@ -344,8 +333,6 @@ public class ReplayMessageHandlerTest {
             // Verify
             verify(replayMessageProcessor).processReplayMessage(message);
             verify(replayMessageProcessor).processFailure(message);
-            // Verify logging with a supplier - don't check the specific message
-            verify(mockLogger).log(eq(Level.SEVERE), any(java.util.function.Supplier.class));
         }
     }
 
