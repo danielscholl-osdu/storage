@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.aws;
+package org.opengroup.osdu.storage.provider.aws.replay;
 
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.PublishRequest;

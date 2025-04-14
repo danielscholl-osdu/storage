@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.aws;
+package org.opengroup.osdu.storage.provider.aws.replay;
 
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
@@ -28,6 +28,7 @@ import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.aws;
+package org.opengroup.osdu.storage.provider.aws.replay;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +28,7 @@ import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.enums.ReplayType;
+import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;

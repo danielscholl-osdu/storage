@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.aws;
+package org.opengroup.osdu.storage.provider.aws.service;
 
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.provider.aws.replay.ParallelReplayProcessor;
+import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
