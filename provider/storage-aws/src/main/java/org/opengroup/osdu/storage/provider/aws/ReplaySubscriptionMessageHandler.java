@@ -226,7 +226,7 @@ public class ReplaySubscriptionMessageHandler {
                 sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
             } else {
                 // Return to queue for retry with backoff
-                int visibilityTimeout = 30 * (int)Math.pow(2, receiveCount - 1); // Exponential backoff
+                int visibilityTimeout = 30 * (int)Math.pow(2, (double)receiveCount - 1); // Exponential backoff
                 LOGGER.info(() -> String.format("Returning message to queue for retry: %s with visibility timeout: %s", replayMessage.getBody().getReplayId(), visibilityTimeout));
                 sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), visibilityTimeout);
             }

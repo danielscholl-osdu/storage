@@ -15,7 +15,6 @@
 package org.opengroup.osdu.storage.provider.aws;
 
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;

@@ -48,22 +48,21 @@ import java.util.logging.Logger;
 public class ReplayMessageProcessorAWSImpl {
     
     private static final Logger LOGGER = Logger.getLogger(ReplayMessageProcessorAWSImpl.class.getName());
+    private static final int DEFAULT_BATCH_SIZE = 1000;
+    private static final int PUBLISH_BATCH_SIZE = 50;
+    private static final String RECORD_BLOCKS = "data metadata";
+    private static final String COLLABORATION_HEADER = "x-collaboration";
     
     private final IReplayRepository replayRepository;
-    
     private final QueryRepositoryImpl queryRepository;
-    
     private final IMessageBus messageBus;
-    
     private final DpsHeaders headers;
-    
     private final StorageAuditLogger auditLogger;
+    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
+    private final WorkerThreadPool workerThreadPool;
 
     @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
     private String recordMetadataTableParameterRelativePath;
-    
-    private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
-    private final WorkerThreadPool workerThreadPool;
 
     @Autowired
     public ReplayMessageProcessorAWSImpl(IReplayRepository replayRepository, 
@@ -88,11 +87,16 @@ public class ReplayMessageProcessorAWSImpl {
      * @param replayMessage The replay message to process
      */
     public void processReplayMessage(ReplayMessage replayMessage) {
+        if (replayMessage == null || replayMessage.getBody() == null) {
+            LOGGER.severe("Received null replay message or message body");
+            return;
+        }
+        
         String replayId = replayMessage.getBody().getReplayId();
         String kind = replayMessage.getBody().getKind();
         
         try {
-            LOGGER.info("Processing replay message for kind: " + kind + " and replayId: " + replayId);
+            LOGGER.info(() -> String.format("Processing replay message for kind: %s and replayId: %s", kind, replayId));
             
             // Update status to IN_PROGRESS
             ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
@@ -100,59 +104,80 @@ public class ReplayMessageProcessorAWSImpl {
                 replayMetaData.setState(ReplayState.IN_PROGRESS.name());
                 replayRepository.save(replayMetaData);
             } else {
-                LOGGER.warning("No replay metadata found for kind: " + kind + " and replayId: " + replayId);
+                LOGGER.warning(() -> String.format("No replay metadata found for kind: %s and replayId: %s", kind, replayId));
+                return;
             }
             
-            // Get record IDs for this kind using getAllRecordIdsFromKind
-            // This avoids the "No hash key condition" error by always using a specific kind
-            String cursor = null;
-            int batchSize = 1000; // Default batch size
-            long processedRecords = 0;
-            
-            do {
-                RecordInfoQueryResult<RecordId> recordIds = queryRepository.getAllRecordIdsFromKind(
-                    batchSize, 
-                    cursor, 
-                    kind);
-                
-                if (recordIds == null || recordIds.getResults() == null || recordIds.getResults().isEmpty()) {
-                    LOGGER.info("No more records found for kind: " + kind);
-                    break;
-                }
-                
-                // Process the batch of records
-                processRecordBatch(replayMessage, recordIds.getResults());
-                
-                // Update cursor for next batch
-                cursor = recordIds.getCursor();
-                
-                // Update processed records count
-                processedRecords += recordIds.getResults().size();
-                
-                // Update replay metadata with progress
-                if (replayMetaData != null) {
-                    replayMetaData.setProcessedRecords(processedRecords);
-                    replayRepository.save(replayMetaData);
-                }
-                
-                LOGGER.info("Processed " + processedRecords + " records for kind: " + kind);
-                
-            } while (cursor != null && !cursor.isEmpty());
+            processRecordsInBatches(replayMessage, replayMetaData);
             
             // Update status to COMPLETED
-            replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+            updateReplayStatusToCompleted(kind, replayId, replayMetaData.getProcessedRecords());
+            
+            LOGGER.info(() -> String.format("Completed processing replay message for kind: %s and replayId: %s", kind, replayId));
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error processing replay message: %s", e.getMessage()), e);
+            processFailure(replayMessage);
+        }
+    }
+    
+    /**
+     * Process records in batches for the given replay message
+     * 
+     * @param replayMessage The replay message
+     * @param replayMetaData The replay metadata for status updates
+     */
+    private void processRecordsInBatches(ReplayMessage replayMessage, ReplayMetaDataDTO replayMetaData) {
+        String kind = replayMessage.getBody().getKind();
+        String cursor = null;
+        long processedRecords = 0;
+        
+        do {
+            RecordInfoQueryResult<RecordId> recordIds = queryRepository.getAllRecordIdsFromKind(
+                DEFAULT_BATCH_SIZE, 
+                cursor, 
+                kind);
+            
+            if (recordIds == null || recordIds.getResults() == null || recordIds.getResults().isEmpty()) {
+                LOGGER.info(() -> String.format("No more records found for kind: %s", kind));
+                break;
+            }
+            
+            // Process the batch of records
+            processRecordBatch(replayMessage, recordIds.getResults());
+            
+            // Update cursor for next batch
+            cursor = recordIds.getCursor();
+            
+            // Update processed records count
+            processedRecords += recordIds.getResults().size();
+            
+            // Update replay metadata with progress
             if (replayMetaData != null) {
-                replayMetaData.setState(ReplayState.COMPLETED.name());
                 replayMetaData.setProcessedRecords(processedRecords);
                 replayRepository.save(replayMetaData);
             }
-            
-            LOGGER.info("Completed processing replay message for kind: " + kind + " and replayId: " + replayId);
-            
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error processing replay message: " + e.getMessage(), e);
-            processFailure(replayMessage);
-            throw e;
+
+            String message = String.format("Processed %s records for kind: %s", processedRecords, kind);
+            LOGGER.info(message);
+        } while (cursor != null && !cursor.isEmpty());
+    }
+    
+    /**
+     * Update replay status to completed
+     * 
+     * @param kind The record kind
+     * @param replayId The replay ID
+     * @param processedRecords The number of processed records
+     */
+    private void updateReplayStatusToCompleted(String kind, String replayId, long processedRecords) {
+        ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+        if (replayMetaData != null) {
+            replayMetaData.setState(ReplayState.COMPLETED.name());
+            replayMetaData.setProcessedRecords(processedRecords);
+            replayRepository.save(replayMetaData);
+        } else {
+            LOGGER.warning(() -> String.format("Could not update status to COMPLETED for kind: %s and replayId: %s", kind, replayId));
         }
     }
     
@@ -172,65 +197,76 @@ public class ReplayMessageProcessorAWSImpl {
             // Get the record metadata helper to fetch additional record information
             DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
             
-            for (RecordId record : records) {
+            for (RecordId recordId : records) {
                 // Fetch the complete record metadata to get additional attributes
                 RecordMetadataDoc recordMetadata = recordMetadataQueryHelper.loadByPrimaryKey(
                     RecordMetadataDoc.class, 
-                    record.getId());
+                    recordId.getId());
                 
                 if (recordMetadata == null) {
-                    LOGGER.warning("Record metadata not found for ID: " + record.getId());
+                    LOGGER.warning(() -> String.format("Record metadata not found for ID: %s", recordId.getId()));
                     continue;
                 }
                 
-                // Create the record changed message with all required attributes
-                RecordChangedV2 recordChanged = new RecordChangedV2();
-                recordChanged.setId(record.getId());
-                recordChanged.setKind(recordMetadata.getKind());
-                
-                // Set version and modifiedBy from metadata if available
-                if (recordMetadata.getMetadata() != null) {
-                    recordChanged.setVersion(recordMetadata.getMetadata().getLatestVersion());
-                    recordChanged.setModifiedBy(recordMetadata.getMetadata().getModifyUser());
-                }
-                
-                // Convert string operation to OperationType enum
-                OperationType opType = convertToOperationType(operation);
-                recordChanged.setOp(opType);
-                
-                // Set recordBlocks to indicate all blocks are included
-                recordChanged.setRecordBlocks("data metadata");
-                
+                RecordChangedV2 recordChanged = createRecordChangedMessage(recordMetadata, operation);
                 recordChangedMessages.add(recordChanged);
 
-                // Publish in batches of 50 to avoid exceeding SNS message size limits
-                if (recordChangedMessages.size() >= 50) {
-                    // Get collaboration context from the message headers if present
-                    Optional<CollaborationContext> collaborationContext = getCollaborationContext(replayMessage);
-                    
-                    // Always use the collaboration context method, with empty Optional if no context exists
-                    messageBus.publishMessage(collaborationContext, headers, 
-                        recordChangedMessages.toArray(new RecordChangedV2[0]));
-                    
-                    // Clear the batch
+                // Publish in batches to avoid exceeding SNS message size limits
+                if (recordChangedMessages.size() >= PUBLISH_BATCH_SIZE) {
+                    publishRecordChangedMessages(replayMessage, recordChangedMessages);
                     recordChangedMessages.clear();
                 }
             }
             
             // Publish any remaining records
             if (!recordChangedMessages.isEmpty()) {
-                // Get collaboration context from the message headers if present
-                Optional<CollaborationContext> collaborationContext = getCollaborationContext(replayMessage);
-                
-                // Always use the collaboration context method, with empty Optional if no context exists
-                messageBus.publishMessage(collaborationContext, headers, 
-                    recordChangedMessages.toArray(new RecordChangedV2[0]));
+                publishRecordChangedMessages(replayMessage, recordChangedMessages);
             }
             
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error publishing record change messages: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, String.format("Error publishing record change messages: %s", e.getMessage()), e);
             // Continue processing other records
         }
+    }
+    
+    /**
+     * Create a RecordChangedV2 message from record metadata
+     * 
+     * @param recordMetadata The record metadata
+     * @param operation The operation type
+     * @return A RecordChangedV2 message
+     */
+    private RecordChangedV2 createRecordChangedMessage(RecordMetadataDoc recordMetadata, String operation) {
+        RecordChangedV2 recordChanged = new RecordChangedV2();
+        recordChanged.setId(recordMetadata.getId());
+        recordChanged.setKind(recordMetadata.getKind());
+        
+        // Set version and modifiedBy from metadata if available
+        if (recordMetadata.getMetadata() != null) {
+            recordChanged.setVersion(recordMetadata.getMetadata().getLatestVersion());
+            recordChanged.setModifiedBy(recordMetadata.getMetadata().getModifyUser());
+        }
+        
+        // Convert string operation to OperationType enum
+        OperationType opType = convertToOperationType(operation);
+        recordChanged.setOp(opType);
+        
+        // Set recordBlocks to indicate all blocks are included
+        recordChanged.setRecordBlocks(RECORD_BLOCKS);
+        
+        return recordChanged;
+    }
+    
+    /**
+     * Publish record changed messages to the message bus
+     * 
+     * @param replayMessage The replay message
+     * @param recordChangedMessages The list of record changed messages to publish
+     */
+    private void publishRecordChangedMessages(ReplayMessage replayMessage, List<RecordChangedV2> recordChangedMessages) {
+        Optional<CollaborationContext> collaborationContext = getCollaborationContext(replayMessage);
+        messageBus.publishMessage(collaborationContext, headers, 
+            recordChangedMessages.toArray(new RecordChangedV2[0]));
     }
     
     /**
@@ -250,11 +286,11 @@ public class ReplayMessageProcessorAWSImpl {
      * @return Optional containing the collaboration context if present
      */
     private Optional<CollaborationContext> getCollaborationContext(ReplayMessage replayMessage) {
-        if (replayMessage.getHeaders() == null) {
+        if (replayMessage == null || replayMessage.getHeaders() == null) {
             return Optional.empty();
         }
         
-        String collaborationHeader = replayMessage.getHeaders().get("x-collaboration");
+        String collaborationHeader = replayMessage.getHeaders().get(COLLABORATION_HEADER);
         if (collaborationHeader == null || collaborationHeader.isEmpty()) {
             return Optional.empty();
         }
@@ -276,7 +312,7 @@ public class ReplayMessageProcessorAWSImpl {
             
             return Optional.of(context);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error parsing collaboration context: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, String.format("Error parsing collaboration context: %s", e.getMessage()), e);
             return Optional.empty();
         }
     }
@@ -287,10 +323,15 @@ public class ReplayMessageProcessorAWSImpl {
      * @param replayMessage The replay message that failed
      */
     public void processFailure(ReplayMessage replayMessage) {
+        if (replayMessage == null || replayMessage.getBody() == null) {
+            LOGGER.severe("Cannot process failure for null replay message");
+            return;
+        }
+        
         String replayId = replayMessage.getBody().getReplayId();
         String kind = replayMessage.getBody().getKind();
         
-        LOGGER.log(Level.SEVERE, "Processing failure for replay: " + replayId + " and kind: " + kind);
+        LOGGER.log(Level.SEVERE, () -> String.format("Processing failure for replay: %s and kind: %s", replayId, kind));
         
         try {
             // Update kind status to FAILED
@@ -298,14 +339,14 @@ public class ReplayMessageProcessorAWSImpl {
             if (kindStatus != null) {
                 kindStatus.setState(ReplayState.FAILED.name());
                 replayRepository.save(kindStatus);
+                
+                // Log the failure
+                auditLogger.createReplayRequestFail(Collections.singletonList(kindStatus.toString()));
             } else {
-                LOGGER.log(Level.SEVERE, "Failed to find replay metadata for kind: " + kind + " and replayId: " + replayId);
+                LOGGER.log(Level.SEVERE, () -> String.format("Failed to find replay metadata for kind: %s and replayId: %s", kind, replayId));
             }
-            
-            // Log the failure
-            auditLogger.createReplayRequestFail(Collections.singletonList(kindStatus != null ? kindStatus.toString() : "null"));
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error updating failure status: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, String.format("Error updating failure status: %s", e.getMessage()), e);
         }
     }
 
@@ -316,16 +357,16 @@ public class ReplayMessageProcessorAWSImpl {
      * @return The corresponding OperationType enum value
      */
     private OperationType convertToOperationType(String operation) {
+        if (operation == null) {
+            LOGGER.warning("Operation is null. Defaulting to update.");
+            return OperationType.update;
+        }
+        
         // Map the operation string to the appropriate OperationType enum value
         return switch (operation.toLowerCase()) {
-            case "reindex" ->
-                // For reindex operations, we typically want to use update
-                    OperationType.update;
-            case "replay" ->
-                // For replay operations, we typically want to use update
-                    OperationType.update;
+            case "reindex", "replay" -> OperationType.update;
             default -> {
-                LOGGER.warning("Unknown operation type: " + operation + ". Defaulting to update.");
+                LOGGER.warning(() -> String.format("Unknown operation type: %s. Defaulting to update.", operation));
                 yield OperationType.update;
             }
         };
