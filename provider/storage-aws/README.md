@@ -34,13 +34,16 @@ In order to run the service locally or remotely, you will need to have the follo
 | `LEGALTAG_BASE_URL`       | `http://localhost:8083` or `https://some-hosted-url` | yes      | Specify the base url for a legal service instance. Can be run locally or remote               | no         | 
 | `CRS_CONVERSION_BASE_URL` | `http://localhost:8084` or `https://some-hosted-url` | yes      | Specify the base url for a CRS Conversion service instance. Can be run locally or remote      | no         | 
 | `POLICY_BASE_URL`         | `http://localhost:8085` or `https://some-hosted-url` | yes      | Specify the base url for a Policy service instance. Can be run locally or remote              | no         | 
-| `SCHEMA_BASE_URL`         | `http://localhost:8085` or `https://some-hosted-url` | yes      | Specify the base url for a Schema service instance. Can be run locally or remote              | no         | 
+| `SCHEMA_BASE_URL`         | `http://localhost:8086` or `https://some-hosted-url` | yes      | Specify the base url for a Schema service instance. Can be run locally or remote              | no         | 
 | `OPA_URL`                 | `http://opa-agent`                                   | yes      | Specify the url for the OPA agent.                                                            | no         | 
 | `DISABLE_CACHE`           | `true`                                               | no       | Set to true to disable caching to redis. Either set this or configure cache config env vars   | no         | 
 | `CACHE_CLUSTER_ENDPOINT`  | `true`                                               | no       | Redis endpoint uri. Either set this or DISABLE_CACHE                                          | no         | 
 | `CACHE_CLUSTER_PORT`      | `6379`                                               | no       | Redis port. Either set this or DISABLE_CACHE                                                  | no         | 
 | `CACHE_CLUSTER_KEY`       | `xxxxxx`                                             | no       | Redis auth key. Either set this or DISABLE_CACHE                                              | no         | 
 | `storage-sns-topic-arn`   | `sns-topic-name`                                     | yes      | The SNS topic that storage events are published to                                            | no         |
+| `REPLAY_TOPIC`            | `replay-records`                                     | no       | The name of the SNS topic for replay operations (required for replay feature)                 | no         |
+| `replay-records-sns-topic-arn` | `arn:aws:sns:region:account:replay-records`     | no       | The ARN of the SNS topic for replay operations (required for replay feature)                  | no         |
+| `replay-records-sqs-queue-url` | `https://sqs.region.amazonaws.com/account/replay-records` | no | The URL of the SQS queue for replay operations (required for replay feature)            | no         |
 
 ### Run Locally
 Check that maven is installed:
@@ -78,6 +81,37 @@ NOTE: If not on osx/linux: Replace `*` with version numbers as defined in the pr
 ```bash
 java -jar provider/storage-aws/target/storage-aws-*.*.*-SNAPSHOT-spring-boot.jar
 ```
+
+## Replay Feature
+
+The AWS implementation of the Replay API provides a scalable and resilient solution for replaying records. This feature is essential for reindexing records and ensuring data consistency across the system. The replay feature currently does not support collaboration headers.
+
+### Architecture
+
+The AWS Replay implementation uses a consolidated messaging approach:
+
+```
+User Request → Storage API → Single SNS Topic → Single SQS Queue → Storage Message Processor -> Storage Indexing Queue
+                    ↕
+               DynamoDB (status tracking)
+```
+
+### Key Features
+
+1. **Schema Service Integration**: When performing a "replay all" operation with no specific kinds provided, the implementation queries the Schema Service to get a complete list of all registered kinds in the system. Scanning the existing records for unique kinds is not scalable with DynamoDB.
+
+2. **Asynchronous Processing**: The API returns immediately with a replay ID, while processing continues in the background. This ensures the API remains responsive even for large replay operations and avoids timeouts.
+
+3. **Batch Processing**: Records are processed in configurable batches to optimize performance and resource utilization:
+   - Kinds are processed in batches (default: 50 kinds per batch)
+   - Records are retrieved in pages (default: 1000 records per page)
+   - Messages are published in smaller batches (default: 50 records per batch)
+
+4. **Parallel Processing**: Multiple kinds can be processed in parallel using a configurable thread pool (default: 4 threads).
+
+5. **Status Tracking**: Detailed status information is stored in DynamoDB with per-kind granularity, allowing users to monitor the progress of replay operations.
+
+6. **Error Handling**: Robust error handling with exponential backoff retries and dead letter queue support ensures reliability.
 
 ## Testing
  
