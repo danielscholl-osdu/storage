@@ -167,55 +167,38 @@ public class ReplayServiceAWSImpl extends ReplayService {
     }
     
     private ReplayState calculateOverallState(List<ReplayMetaDataDTO> replayMetaDataList) {
-        if (replayMetaDataList == null || replayMetaDataList.isEmpty()) {
-            return ReplayState.QUEUED; // Default state if no data
-        }
-        
         // Filter out the system record for status calculation
-        List<ReplayMetaDataDTO> actualKindRecords = new ArrayList<>();
-        for (ReplayMetaDataDTO dto : replayMetaDataList) {
-            if (!SYSTEM_KIND.equals(dto.getKind())) {
-                actualKindRecords.add(dto);
-            }
-        }
-        
+        List<ReplayMetaDataDTO> actualKindRecords = replayMetaDataList.stream()
+                .filter(dto -> !SYSTEM_KIND.equals(dto.getKind()))
+                .toList();
+
         // If there are no actual kind records, use the system record status
         if (actualKindRecords.isEmpty()) {
-            String state = replayMetaDataList.get(0).getState();
-            return state != null ? ReplayState.valueOf(state) : ReplayState.QUEUED;
+            return ReplayState.valueOf(replayMetaDataList.get(0).getState());
         }
-        
+
         // If any kind is FAILED, the overall state is FAILED
-        for (ReplayMetaDataDTO dto : actualKindRecords) {
-            if (ReplayState.FAILED.name().equals(dto.getState())) {
-                return ReplayState.FAILED;
-            }
+        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.FAILED.name().equals(dto.getState()))) {
+            return ReplayState.FAILED;
         }
-        
+
         // If any kind is IN_PROGRESS, the overall state is IN_PROGRESS
-        for (ReplayMetaDataDTO dto : actualKindRecords) {
-            if (ReplayState.IN_PROGRESS.name().equals(dto.getState())) {
-                return ReplayState.IN_PROGRESS;
-            }
+        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.IN_PROGRESS.name().equals(dto.getState()))) {
+            return ReplayState.IN_PROGRESS;
         }
-        
+
         // If any kind is QUEUED, the overall state is QUEUED
-        for (ReplayMetaDataDTO dto : actualKindRecords) {
-            if (ReplayState.QUEUED.name().equals(dto.getState())) {
-                return ReplayState.QUEUED;
-            }
+        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.QUEUED.name().equals(dto.getState()))) {
+            return ReplayState.QUEUED;
         }
-        
+
         // If all kinds are COMPLETED, the overall state is COMPLETED
-        boolean allCompleted = true;
-        for (ReplayMetaDataDTO dto : actualKindRecords) {
-            if (!ReplayState.COMPLETED.name().equals(dto.getState())) {
-                allCompleted = false;
-                break;
-            }
+        if (actualKindRecords.stream().allMatch(dto -> ReplayState.COMPLETED.name().equals(dto.getState()))) {
+            return ReplayState.COMPLETED;
         }
-        
-        return allCompleted ? ReplayState.COMPLETED : ReplayState.QUEUED;
+
+        // Default to QUEUED
+        return ReplayState.QUEUED;
     }
     
     /**
@@ -227,6 +210,34 @@ public class ReplayServiceAWSImpl extends ReplayService {
      */
     @Override
     public ReplayResponse handleReplayRequest(ReplayRequest replayRequest) {
+        validateReplayRequest(replayRequest);
+        
+        String replayId = ensureReplayId(replayRequest);
+        
+        // Create an initial status record immediately so users can query status right away
+        createInitialStatusRecord(replayId, replayRequest.getOperation(), replayRequest.getFilter());
+        
+        // Process the replay request based on whether kinds are specified
+        if (hasSpecifiedKinds(replayRequest)) {
+            processReplayWithSpecifiedKinds(replayRequest, replayId);
+        } else {
+            processReplayWithAllKinds(replayRequest, replayId);
+        }
+        
+        // Log success
+        auditLogger.createReplayRequestSuccess(Collections.singletonList("Replay started for ID: " + replayId));
+        
+        // Return immediately with the replay ID
+        return new ReplayResponse(replayId);
+    }
+    
+    /**
+     * Validates that the replay request is valid.
+     * 
+     * @param replayRequest The replay request to validate
+     * @throws AppException if the request is invalid
+     */
+    private void validateReplayRequest(ReplayRequest replayRequest) {
         if (replayRequest == null) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_REQUEST, "Replay request cannot be null");
         }
@@ -243,81 +254,129 @@ public class ReplayServiceAWSImpl extends ReplayService {
             throw new AppException(HttpStatus.SC_BAD_REQUEST,
                     ERROR_MSG_VALIDATION_ERROR, ERROR_MSG_INVALID_OPERATION + validReplayOperation);
         }
-        
-        // Generate a unique replay ID if not provided
-        String replayId;
+    }
+    
+    /**
+     * Ensures that the replay request has a valid replay ID.
+     * If no ID is provided, generates a new UUID.
+     * 
+     * @param replayRequest The replay request
+     * @return The replay ID
+     */
+    private String ensureReplayId(ReplayRequest replayRequest) {
         if (replayRequest.getReplayId() == null || replayRequest.getReplayId().isEmpty()) {
-            replayId = UUID.randomUUID().toString();
+            String replayId = UUID.randomUUID().toString();
             replayRequest.setReplayId(replayId);
-        } else {
-            replayId = replayRequest.getReplayId();
+            return replayId;
         }
-
-        // Create an initial status record immediately so users can query status right away
-        createInitialStatusRecord(replayId, replayRequest.getOperation(), replayRequest.getFilter());
+        return replayRequest.getReplayId();
+    }
+    
+    /**
+     * Checks if the replay request has specified kinds in its filter.
+     * 
+     * @param replayRequest The replay request
+     * @return true if kinds are specified, false otherwise
+     */
+    private boolean hasSpecifiedKinds(ReplayRequest replayRequest) {
+        return replayRequest.getFilter() != null && 
+               replayRequest.getFilter().getKinds() != null && 
+               !replayRequest.getFilter().getKinds().isEmpty();
+    }
+    
+    /**
+     * Processes a replay request with specified kinds.
+     * 
+     * @param replayRequest The replay request
+     * @param replayId The replay ID
+     */
+    private void processReplayWithSpecifiedKinds(ReplayRequest replayRequest, String replayId) {
+        List<String> kinds = replayRequest.getFilter().getKinds();
         
-        // Get the list of kinds to replay
-        if (replayRequest.getFilter() != null && 
-            replayRequest.getFilter().getKinds() != null && 
-            !replayRequest.getFilter().getKinds().isEmpty()) {
-            
-            // If kinds are specified in the filter, use them immediately
-            List<String> kinds = replayRequest.getFilter().getKinds();
-            
-            // Validate that the specified kinds have active records
-            validateKindsHaveActiveRecords(kinds);
-            
-            // Create initial metadata records for these kinds
-            createInitialMetadataRecords(replayId, kinds, replayRequest.getOperation());
-            
-            // Start the asynchronous replay process
-            LOGGER.info(() -> String.format("Starting asynchronous replay process for ID: %s with specified kinds", replayId));
-            parallelReplayProcessor.processReplayAsync(replayRequest, kinds);
-        } else {
-            // If no kinds specified, we need to get all kinds asynchronously
-            LOGGER.info(() -> String.format("No kinds specified, will determine kinds asynchronously for replay ID: %s", replayId));
-            
-            // Capture the current request headers for use in the background thread
-            final Map<String, String> requestHeaders = new HashMap<>();
-            if (headers != null && headers.getHeaders() != null) {
-                requestHeaders.putAll(headers.getHeaders());
-            }
-            
-            // Start an async task to get all kinds and then process them
-            // Execute within the request scope using the captured headers
-            executorService.submit(() -> requestScopeUtil.executeInRequestScope(() -> {
-                    try {
-                        // Get all kinds - this is the expensive operation
-                        Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
-                        List<String> allKinds = new ArrayList<>(kindCounts.keySet());
-                        
-                        LOGGER.info("Found " + allKinds.size() + " kinds for replay ID: " + replayId);
-                        
-                        // Create metadata records for all kinds
-                        createInitialMetadataRecords(replayId, allKinds, replayRequest.getOperation());
-                        
-                        // Now start the actual replay processing
-                        parallelReplayProcessor.processReplayAsync(replayRequest, allKinds);
-                    } catch (Exception e) {
-                        LOGGER.log(Level.SEVERE, String.format("Error getting kinds for replay ID: %s", replayId), e);
-                        // Log the failure but don't throw - the API has already returned
-                        auditLogger.createReplayRequestFail(Collections.singletonList("Error getting kinds: " + e.getMessage()));
-                        
-                        // Update the system record to indicate failure
-                        try {
-                            updateSystemRecordToFailed(replayId);
-                        } catch (Exception updateEx) {
-                            LOGGER.log(Level.SEVERE, "Failed to update system record status", updateEx);
-                        }
-                    }
-                    }, requestHeaders));
+        // Validate that the specified kinds have active records
+        validateKindsHaveActiveRecords(kinds);
+        
+        // Create initial metadata records for these kinds
+        createInitialMetadataRecords(replayId, kinds, replayRequest.getOperation());
+        
+        // Start the asynchronous replay process
+        LOGGER.info(() -> String.format("Starting asynchronous replay process for ID: %s with specified kinds", replayId));
+        parallelReplayProcessor.processReplayAsync(replayRequest, kinds);
+    }
+    
+    /**
+     * Processes a replay request with all available kinds.
+     * This method runs asynchronously to avoid blocking the API response.
+     * 
+     * @param replayRequest The replay request
+     * @param replayId The replay ID
+     */
+    private void processReplayWithAllKinds(ReplayRequest replayRequest, String replayId) {
+        LOGGER.info(() -> String.format("No kinds specified, will determine kinds asynchronously for replay ID: %s", replayId));
+        
+        // Capture the current request headers for use in the background thread
+        final Map<String, String> requestHeaders = captureRequestHeaders();
+        
+        // Start an async task to get all kinds and then process them
+        executorService.submit(() -> requestScopeUtil.executeInRequestScope(
+            () -> processAllKindsAsync(replayRequest, replayId), requestHeaders));
+    }
+    
+    /**
+     * Captures the current request headers for use in background threads.
+     * 
+     * @return A map of request headers
+     */
+    private Map<String, String> captureRequestHeaders() {
+        final Map<String, String> requestHeaders = new HashMap<>();
+        if (headers != null && headers.getHeaders() != null) {
+            requestHeaders.putAll(headers.getHeaders());
         }
+        return requestHeaders;
+    }
+    
+    /**
+     * Processes all kinds asynchronously.
+     * This method is executed in a background thread.
+     * 
+     * @param replayRequest The replay request
+     * @param replayId The replay ID
+     */
+    private void processAllKindsAsync(ReplayRequest replayRequest, String replayId) {
+        try {
+            // Get all kinds - this is the expensive operation
+            Map<String, Long> kindCounts = queryRepository.getActiveRecordsCount();
+            List<String> allKinds = new ArrayList<>(kindCounts.keySet());
+            
+            LOGGER.info(() -> String.format("Found %s kinds for replay ID: %s", allKinds.size(), replayId));
+            
+            // Create metadata records for all kinds
+            createInitialMetadataRecords(replayId, allKinds, replayRequest.getOperation());
+            
+            // Now start the actual replay processing
+            parallelReplayProcessor.processReplayAsync(replayRequest, allKinds);
+        } catch (Exception e) {
+            handleAsyncProcessingError(e, replayId);
+        }
+    }
+    
+    /**
+     * Handles errors that occur during asynchronous processing.
+     * 
+     * @param e The exception that occurred
+     * @param replayId The replay ID
+     */
+    private void handleAsyncProcessingError(Exception e, String replayId) {
+        LOGGER.log(Level.SEVERE, String.format("Error getting kinds for replay ID: %s", replayId), e);
+        // Log the failure but don't throw - the API has already returned
+        auditLogger.createReplayRequestFail(Collections.singletonList("Error getting kinds: " + e.getMessage()));
         
-        // Log success
-        auditLogger.createReplayRequestSuccess(Collections.singletonList("Replay started for ID: " + replayId));
-        
-        // Return immediately with the replay ID
-        return new ReplayResponse(replayId);
+        // Update the system record to indicate failure
+        try {
+            updateSystemRecordToFailed(replayId);
+        } catch (Exception updateEx) {
+            LOGGER.log(Level.SEVERE, "Failed to update system record status", updateEx);
+        }
     }
     
     /**
