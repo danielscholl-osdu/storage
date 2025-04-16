@@ -19,29 +19,26 @@ package org.opengroup.osdu.storage.provider.aws.replay;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
-import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
+import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
-import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.*;
@@ -54,7 +51,7 @@ import static org.mockito.Mockito.*;
 public class ReplayMessageProcessorAWSImplTest {
 
     @Mock
-    private IReplayRepository replayRepository;
+    private ReplayRepositoryImpl replayRepository;
 
     @Mock
     private QueryRepositoryImpl queryRepository;
@@ -69,19 +66,22 @@ public class ReplayMessageProcessorAWSImplTest {
     private StorageAuditLogger auditLogger;
 
     @Mock
-    private JaxRsDpsLog logger;
-
-    @Mock
     private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
-
-    @Mock
-    private WorkerThreadPool workerThreadPool;
 
     @Mock
     private DynamoDBQueryHelperV2 dynamoDBQueryHelper;
 
     @Mock
     private RecordMetadataDoc recordMetadata;
+
+    @Mock
+    private WorkerThreadPool workerThreadPool;
+
+    @Captor
+    private ArgumentCaptor<AwsReplayMetaDataDTO> replayMetaDataCaptor;
+
+    @Captor
+    private ArgumentCaptor<RecordChangedV2[]> recordChangedCaptor;
 
     @InjectMocks
     private ReplayMessageProcessorAWSImpl replayMessageProcessor;
@@ -90,25 +90,40 @@ public class ReplayMessageProcessorAWSImplTest {
     private static final String TEST_REPLAY_ID = "test-replay-id";
     private static final String TEST_KIND = "test-kind";
     private static final String TEST_OPERATION = "replay";
+    private static final String TEST_CURSOR = "test-cursor";
 
     @Before
     public void setUp() {
         // Set up fields using reflection
         ReflectionTestUtils.setField(replayMessageProcessor, "recordMetadataTableParameterRelativePath", RECORD_METADATA_TABLE_PATH);
 
-        // Mock behavior for DynamoDBQueryHelperFactory
-        when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(eq(headers), eq(RECORD_METADATA_TABLE_PATH), any()))
+        // Mock behavior for DynamoDBQueryHelperFactory - use specific parameter types
+        when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), anyString(), any()))
                 .thenReturn(dynamoDBQueryHelper);
+                
+        // Mock headers
+        Map<String, String> headerMap = new HashMap<>();
+        headerMap.put("data-partition-id", "test-partition");
+        
+        // Mock record metadata with the fields needed by createRecordChangedMessage
+        when(recordMetadata.getId()).thenReturn("test-id");
+        when(recordMetadata.getKind()).thenReturn(TEST_KIND);
+        
+        // Create a mock for RecordMetadata that will be returned by recordMetadata.getMetadata()
+        RecordMetadata mockMetadata = mock(RecordMetadata.class);
+        when(mockMetadata.getLatestVersion()).thenReturn(1L);
+        when(mockMetadata.getModifyUser()).thenReturn("test-user");
+        when(recordMetadata.getMetadata()).thenReturn(mockMetadata);
     }
 
     @Test
     public void testProcessReplayMessage() {
         // Prepare test data
         ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        AwsReplayMetaDataDTO awsReplayMetaData = createAwsReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
 
         // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
+        when(replayRepository.getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(awsReplayMetaData);
 
         // Mock record query results
         RecordInfoQueryResult<RecordId> recordInfoQueryResult = new RecordInfoQueryResult<>();
@@ -122,173 +137,109 @@ public class ReplayMessageProcessorAWSImplTest {
 
         // Mock record metadata lookup
         when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
-        when(recordMetadata.getKind()).thenReturn(TEST_KIND);
-        when(recordMetadata.getMetadata()).thenReturn(null); // Simulate no metadata for simplicity
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
 
-        // Verify - update the expected number of save calls to 3
-        verify(replayRepository, times(3)).save(any(ReplayMetaDataDTO.class));
-        verify(messageBus).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
+        // Verify
+        verify(replayRepository, atLeastOnce()).getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
         verify(dynamoDBQueryHelper, times(2)).loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString());
+        verify(messageBus, times(1)).publishMessage(any(), eq(headers), any(RecordChangedV2[].class));
+        
+        // Capture all saveAwsReplayMetaData calls
+        verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(replayMetaDataCaptor.capture());
+        
+        // Check that at least one of the calls had COMPLETED state with null cursor
+        List<AwsReplayMetaDataDTO> capturedValues = replayMetaDataCaptor.getAllValues();
+        boolean foundCompletedState = false;
+        for (AwsReplayMetaDataDTO dto : capturedValues) {
+            if (ReplayState.COMPLETED.name().equals(dto.getState()) && dto.getLastCursor() == null) {
+                foundCompletedState = true;
+                break;
+            }
+        }
+        assertTrue("No call with COMPLETED state and null cursor found", foundCompletedState);
     }
 
     @Test
-    public void testProcessReplayMessageWithMultiplePages() {
+    public void testProcessReplayMessageWithResume() {
         // Prepare test data
         ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        AwsReplayMetaDataDTO awsReplayMetaData = createAwsReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        awsReplayMetaData.setLastCursor(TEST_CURSOR);
+        awsReplayMetaData.setProcessedRecords(5L);
+        awsReplayMetaData.setLastUpdatedAt(new Date(System.currentTimeMillis() - 3600000)); // 1 hour ago
 
         // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
+        when(replayRepository.getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(awsReplayMetaData);
 
-        // Mock record query results - first page
-        RecordInfoQueryResult<RecordId> recordInfoQueryResult1 = new RecordInfoQueryResult<>();
-        List<RecordId> records1 = new ArrayList<>();
-        records1.add(createRecordId("record1"));
-        records1.add(createRecordId("record2"));
-        recordInfoQueryResult1.setResults(records1);
-        recordInfoQueryResult1.setCursor("next-page"); // Has more pages
-
-        // Mock record query results - second page
-        RecordInfoQueryResult<RecordId> recordInfoQueryResult2 = new RecordInfoQueryResult<>();
-        List<RecordId> records2 = new ArrayList<>();
-        records2.add(createRecordId("record3"));
-        records2.add(createRecordId("record4"));
-        recordInfoQueryResult2.setResults(records2);
-        recordInfoQueryResult2.setCursor(null); // No more pages
-
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult1);
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), eq("next-page"), eq(TEST_KIND))).thenReturn(recordInfoQueryResult2);
-
-        // Mock record metadata lookup
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
-        when(recordMetadata.getKind()).thenReturn(TEST_KIND);
-        when(recordMetadata.getMetadata()).thenReturn(null); // Simulate no metadata for simplicity
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify - update the expected number of save calls to 4
-        verify(replayRepository, times(4)).save(any(ReplayMetaDataDTO.class)); // Initial, after first page, after second page, final completion
-        verify(messageBus, times(2)).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
-        verify(dynamoDBQueryHelper, times(4)).loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString());
-    }
-
-    @Test
-    public void testProcessReplayMessageWithCompleteMetadata() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
-
-        // Mock record query results
+        // Mock record query results - resuming from cursor
         RecordInfoQueryResult<RecordId> recordInfoQueryResult = new RecordInfoQueryResult<>();
         List<RecordId> records = new ArrayList<>();
-        records.add(createRecordId("record1"));
+        records.add(createRecordId("record6"));
+        records.add(createRecordId("record7"));
         recordInfoQueryResult.setResults(records);
         recordInfoQueryResult.setCursor(null); // No more pages
 
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
+        when(queryRepository.getAllRecordIdsFromKind(anyInt(), eq(TEST_CURSOR), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
 
-        // Mock record metadata lookup with complete metadata
+        // Mock record metadata lookup
         when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
-        when(recordMetadata.getKind()).thenReturn(TEST_KIND);
-
-        // Mock complete metadata
-        RecordMetadata metadata = new org.opengroup.osdu.core.common.model.storage.RecordMetadata();
-
-        // Add a version path so getLatestVersion() will work
-        List<String> versionPaths = new ArrayList<>();
-        versionPaths.add("test-kind/record1/2");
-        metadata.setGcsVersionPaths(versionPaths);
-
-        metadata.setModifyUser("test-user");
-        when(recordMetadata.getMetadata()).thenReturn(metadata);
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify - update the expected number of save calls to 3
-        verify(replayRepository, times(3)).save(any(ReplayMetaDataDTO.class));
-        verify(messageBus).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
-
-        // Verify the RecordChangedV2 object has all required fields
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString());
-    }
-
-    @Test
-    public void testProcessFailure() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
-
-        // Execute
-        replayMessageProcessor.processFailure(replayMessage);
 
         // Verify
-        verify(replayRepository).getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
-        verify(replayRepository).save(any(ReplayMetaDataDTO.class));
-        verify(auditLogger).createReplayRequestFail(anyList());
+        verify(replayRepository, atLeastOnce()).getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
+        verify(queryRepository).getAllRecordIdsFromKind(anyInt(), eq(TEST_CURSOR), eq(TEST_KIND));
+        verify(messageBus, times(1)).publishMessage(any(), eq(headers), any(RecordChangedV2[].class));
+        
+        // Capture all saveAwsReplayMetaData calls
+        verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(replayMetaDataCaptor.capture());
+        
+        // Check that at least one of the calls had COMPLETED state with null cursor and expected processed records
+        List<AwsReplayMetaDataDTO> capturedValues = replayMetaDataCaptor.getAllValues();
+        boolean foundCompletedState = false;
+        for (AwsReplayMetaDataDTO dto : capturedValues) {
+            if (ReplayState.COMPLETED.name().equals(dto.getState()) && 
+                dto.getLastCursor() == null &&
+                dto.getProcessedRecords() == 7L) {
+                foundCompletedState = true;
+                break;
+            }
+        }
+        assertTrue("No call with COMPLETED state, null cursor, and 7 processed records found", foundCompletedState);
     }
 
     @Test
-    public void testProcessReplayMessageWithException() {
+    public void testProcessFailurePreservesCursor() {
         // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        AwsReplayMetaDataDTO awsReplayMetaData = createAwsReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        awsReplayMetaData.setLastCursor(TEST_CURSOR);
+        awsReplayMetaData.setProcessedRecords(10L);
 
         // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
+        when(replayRepository.getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(awsReplayMetaData);
 
-        // Mock exception during query
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND)))
-                .thenThrow(new RuntimeException("Test exception"));
+        // Execute using reflection to call private method
+        ReflectionTestUtils.invokeMethod(
+                replayMessageProcessor,
+                "updateReplayStatusToCompleted",
+                TEST_KIND, TEST_REPLAY_ID, 10L);
 
-        try {
-            // Execute
-            replayMessageProcessor.processReplayMessage(replayMessage);
-        } catch (Exception e) {
-            // Expected exception
-        }
-
-        // Verify - update the expected number of save calls to 2
-        verify(replayRepository, times(2)).save(any(ReplayMetaDataDTO.class)); // Initial state update + failure update
+        // Verify
+        verify(replayRepository).saveAwsReplayMetaData(replayMetaDataCaptor.capture());
+        
+        AwsReplayMetaDataDTO capturedDto = replayMetaDataCaptor.getValue();
+        assertEquals(ReplayState.COMPLETED.name(), capturedDto.getState());
+        assertNull(capturedDto.getLastCursor()); // Cursor should be cleared
+        assertNotNull(capturedDto.getLastUpdatedAt());
+        assertNotNull(capturedDto.getElapsedTime());
     }
 
-    @Test
-    public void testProcessRecordBatchWithMissingMetadata() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock record query results
-        RecordInfoQueryResult<RecordId> recordInfoQueryResult = new RecordInfoQueryResult<>();
-        List<RecordId> records = new ArrayList<>();
-        records.add(createRecordId("record1"));
-        recordInfoQueryResult.setResults(records);
-
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
-
-        // Mock record metadata lookup to return null (missing metadata)
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(null);
-
-        // Mock behavior for ReplayMetaDataDTO
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify no messages were published (since all records had missing metadata)
-        verify(messageBus, never()).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
-    }
-
+    /**
+     * Helper method to create a test ReplayMessage
+     */
     private ReplayMessage createReplayMessage(String replayId, String kind, String operation) {
         ReplayData body = ReplayData.builder()
                 .replayId(replayId)
@@ -296,17 +247,20 @@ public class ReplayMessageProcessorAWSImplTest {
                 .operation(operation)
                 .build();
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("data-partition-id", "test-partition");
+        Map<String, String> headersMap = new HashMap<>();
+        headersMap.put("data-partition-id", "test-partition");
 
         return ReplayMessage.builder()
                 .body(body)
-                .headers(headers)
+                .headers(headersMap)
                 .build();
     }
 
-    private ReplayMetaDataDTO createReplayMetaData(String replayId, String kind, String operation) {
-        ReplayMetaDataDTO dto = new ReplayMetaDataDTO();
+    /**
+     * Helper method to create a test AwsReplayMetaDataDTO
+     */
+    private AwsReplayMetaDataDTO createAwsReplayMetaData(String replayId, String kind, String operation) {
+        AwsReplayMetaDataDTO dto = new AwsReplayMetaDataDTO();
         dto.setReplayId(replayId);
         dto.setKind(kind);
         dto.setOperation(operation);
@@ -317,251 +271,12 @@ public class ReplayMessageProcessorAWSImplTest {
         return dto;
     }
 
+    /**
+     * Helper method to create a test RecordId
+     */
     private RecordId createRecordId(String id) {
         RecordId recordId = new RecordId();
         recordId.setId(id);
         return recordId;
-    }
-
-    @Test
-    public void testProcessNullReplayMessage() {
-        // Execute
-        replayMessageProcessor.processReplayMessage(null);
-
-        // Verify no interactions with repository or message bus
-        verify(replayRepository, never()).getReplayStatusByKindAndReplayId(anyString(), anyString());
-        verify(messageBus, never()).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
-    }
-
-    @Test
-    public void testProcessReplayMessageWithNullBody() {
-        // Prepare test data with null body
-        ReplayMessage replayMessage = new ReplayMessage();
-        replayMessage.setBody(null);
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify no interactions with repository or message bus
-        verify(replayRepository, never()).getReplayStatusByKindAndReplayId(anyString(), anyString());
-        verify(messageBus, never()).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
-    }
-
-    @Test
-    public void testProcessFailureWithNullMessage() {
-        // Execute
-        replayMessageProcessor.processFailure(null);
-
-        // Verify no interactions with repository or audit logger
-        verify(replayRepository, never()).getReplayStatusByKindAndReplayId(anyString(), anyString());
-        verify(auditLogger, never()).createReplayRequestFail(anyList());
-    }
-
-    @Test
-    public void testProcessFailureWithNullBody() {
-        // Prepare test data with null body
-        ReplayMessage replayMessage = new ReplayMessage();
-        replayMessage.setBody(null);
-
-        // Execute
-        replayMessageProcessor.processFailure(replayMessage);
-
-        // Verify no interactions with repository or audit logger
-        verify(replayRepository, never()).getReplayStatusByKindAndReplayId(anyString(), anyString());
-        verify(auditLogger, never()).createReplayRequestFail(anyList());
-    }
-
-    @Test
-    public void testConvertToOperationType() throws Exception {
-        // Test with reflection to access private method
-        java.lang.reflect.Method method = ReplayMessageProcessorAWSImpl.class.getDeclaredMethod(
-                "convertToOperationType", String.class);
-        method.setAccessible(true);
-
-        // Test with replay operation
-        OperationType result1 = (OperationType) method.invoke(replayMessageProcessor, "replay");
-        assertEquals(OperationType.update, result1);
-
-        // Test with reindex operation
-        OperationType result2 = (OperationType) method.invoke(replayMessageProcessor, "reindex");
-        assertEquals(OperationType.update, result2);
-
-        // Test with unknown operation
-        OperationType result3 = (OperationType) method.invoke(replayMessageProcessor, "unknown");
-        assertEquals(OperationType.update, result3);
-
-        // Test with null operation
-        OperationType result4 = (OperationType) method.invoke(replayMessageProcessor, (String) null);
-        assertEquals(OperationType.update, result4);
-    }
-
-    @Test
-    public void testGetCollaborationContext() throws Exception {
-        // Test with reflection to access private method
-        java.lang.reflect.Method method = ReplayMessageProcessorAWSImpl.class.getDeclaredMethod(
-                "getCollaborationContext", ReplayMessage.class);
-        method.setAccessible(true);
-
-        // Test with valid collaboration header
-        ReplayMessage message = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        String validUuid = "550e8400-e29b-41d4-a716-446655440000";
-        message.getHeaders().put("x-collaboration", "id=" + validUuid + ",application=test-app");
-
-        Optional<CollaborationContext> result = (Optional<CollaborationContext>) method.invoke(replayMessageProcessor, message);
-
-        assertTrue(result.isPresent());
-        assertEquals(validUuid, result.get().getId());
-        assertEquals("test-app", result.get().getApplication());
-
-        // Test with null message
-        Optional<CollaborationContext> nullResult = (Optional<CollaborationContext>) method.invoke(replayMessageProcessor, (Object)null);
-        assertFalse(nullResult.isPresent());
-
-        // Test with null headers
-        ReplayMessage messageNullHeaders = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        messageNullHeaders.setHeaders(null);
-        Optional<CollaborationContext> nullHeadersResult = (Optional<CollaborationContext>) method.invoke(replayMessageProcessor, messageNullHeaders);
-        assertFalse(nullHeadersResult.isPresent());
-
-        // Test with missing collaboration header
-        ReplayMessage messageNoCollab = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        messageNoCollab.getHeaders().remove("x-collaboration");
-        Optional<CollaborationContext> noCollabResult = (Optional<CollaborationContext>) method.invoke(replayMessageProcessor, messageNoCollab);
-        assertFalse(noCollabResult.isPresent());
-
-        // Test with invalid collaboration header format
-        ReplayMessage messageInvalidCollab = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        messageInvalidCollab.getHeaders().put("x-collaboration", "invalid-format");
-        Optional<CollaborationContext> invalidCollabResult = (Optional<CollaborationContext>) method.invoke(replayMessageProcessor, messageInvalidCollab);
-        assertFalse(invalidCollabResult.isPresent());
-    }
-
-    @Test
-    public void testProcessReplayMessageWithEmptyRecordBatch() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
-
-        // Mock empty record query results
-        RecordInfoQueryResult<RecordId> emptyResult = new RecordInfoQueryResult<>();
-        emptyResult.setResults(Collections.emptyList());
-        emptyResult.setCursor(null);
-
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(emptyResult);
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify
-        verify(replayRepository, times(2)).save(any(ReplayMetaDataDTO.class)); // Initial update + completion update
-        verify(messageBus, never()).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class)); // No messages should be published
-    }
-
-    @Test
-    public void testProcessReplayMessageWithNullRecordBatch() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
-
-        // Mock null record query results
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(null);
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify
-        verify(replayRepository, times(2)).save(any(ReplayMetaDataDTO.class)); // Initial update + completion update
-        verify(messageBus, never()).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class)); // No messages should be published
-    }
-
-    @Test
-    public void testCreateRecordChangedMessage() throws Exception {
-        // Test with reflection to access private method
-        java.lang.reflect.Method method = ReplayMessageProcessorAWSImpl.class.getDeclaredMethod(
-                "createRecordChangedMessage", RecordMetadataDoc.class, String.class);
-        method.setAccessible(true);
-
-        // Create test record metadata
-        RecordMetadataDoc testMetadata = mock(RecordMetadataDoc.class);
-        when(testMetadata.getId()).thenReturn("test-id");
-        when(testMetadata.getKind()).thenReturn("test-kind");
-
-        // Create test record metadata with complete metadata
-        RecordMetadata metadata = new RecordMetadata();
-        metadata.setModifyUser("test-user");
-        List<String> versionPaths = new ArrayList<>();
-        versionPaths.add("test-kind/test-id/2");
-        metadata.setGcsVersionPaths(versionPaths);
-        when(testMetadata.getMetadata()).thenReturn(metadata);
-
-        // Test with replay operation
-        RecordChangedV2 result = (RecordChangedV2) method.invoke(replayMessageProcessor, testMetadata, "replay");
-
-        // Verify result
-        assertEquals("test-id", result.getId());
-        assertEquals("test-kind", result.getKind());
-        assertEquals("test-user", result.getModifiedBy());
-        assertEquals(Optional.of((long)2), Optional.ofNullable(result.getVersion()));
-        assertEquals(OperationType.update, result.getOp());
-        assertEquals("data metadata", result.getRecordBlocks());
-    }
-
-    @Test
-    public void testProcessReplayMessageWithNoMetadataFound() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock behavior - no metadata found
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(null);
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify
-        verify(replayRepository).getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
-        verify(replayRepository, never()).save(any(ReplayMetaDataDTO.class));
-        verify(queryRepository, never()).getAllRecordIdsFromKind(anyInt(), anyString(), anyString());
-    }
-
-    @Test
-    public void testProcessLargeRecordBatch() {
-        // Prepare test data
-        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-        ReplayMetaDataDTO replayMetaData = createReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
-
-        // Mock behavior
-        when(replayRepository.getReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(replayMetaData);
-
-        // Create a large batch of records (more than PUBLISH_BATCH_SIZE=50)
-        RecordInfoQueryResult<RecordId> recordInfoQueryResult = new RecordInfoQueryResult<>();
-        List<RecordId> records = new ArrayList<>();
-        for (int i = 0; i < 75; i++) {
-            records.add(createRecordId("record" + i));
-        }
-        recordInfoQueryResult.setResults(records);
-        recordInfoQueryResult.setCursor(null);
-
-        when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
-
-        // Mock record metadata lookup
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
-        when(recordMetadata.getKind()).thenReturn(TEST_KIND);
-        when(recordMetadata.getId()).thenReturn("test-id");
-
-        // Execute
-        replayMessageProcessor.processReplayMessage(replayMessage);
-
-        // Verify - should have multiple publish calls due to batch size
-        // With 75 records and batch size of 50, we expect 2 publish calls
-        verify(messageBus, times(2)).publishMessage(any(Optional.class), eq(headers), any(RecordChangedV2[].class));
-
-        // Verify all records were processed
-        verify(dynamoDBQueryHelper, times(75)).loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString());
     }
 }

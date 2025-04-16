@@ -16,13 +16,14 @@
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
+import lombok.Getter;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
+import java.util.Date;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordId;
@@ -101,22 +102,31 @@ public class ReplayMessageProcessorAWSImpl {
         try {
             LOGGER.info(() -> String.format("Processing replay message for kind: %s and replayId: %s", kind, replayId));
             
+            // Get AWS-specific replay metadata to check for resume information
+            ReplayRepositoryImpl awsReplayRepository = (ReplayRepositoryImpl) replayRepository;
+            AwsReplayMetaDataDTO awsReplayMetaData = awsReplayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
+            
             // Update status to IN_PROGRESS
-            ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
-            if (replayMetaData != null) {
-                replayMetaData.setState(ReplayState.IN_PROGRESS.name());
-                replayRepository.save(replayMetaData);
+            if (awsReplayMetaData != null) {
+                awsReplayMetaData.setState(ReplayState.IN_PROGRESS.name());
+                awsReplayRepository.saveAwsReplayMetaData(awsReplayMetaData);
+                
+                // Check if we're resuming a previous attempt
+                String lastCursor = awsReplayMetaData.getLastCursor();
+                if (lastCursor != null && !lastCursor.isEmpty()) {
+                    LOGGER.info(() -> String.format("Resuming replay from cursor: %s for kind: %s and replayId: %s", 
+                                                   lastCursor, kind, replayId));
+                }
+                
+                processRecordsInBatches(replayMessage, awsReplayMetaData);
+                
+                // Update status to COMPLETED
+                updateReplayStatusToCompleted(kind, replayId, awsReplayMetaData.getProcessedRecords());
+                
+                LOGGER.info(() -> String.format("Completed processing replay message for kind: %s and replayId: %s", kind, replayId));
             } else {
                 LOGGER.warning(() -> String.format("No replay metadata found for kind: %s and replayId: %s", kind, replayId));
-                return;
             }
-            
-            processRecordsInBatches(replayMessage, replayMetaData);
-            
-            // Update status to COMPLETED
-            updateReplayStatusToCompleted(kind, replayId, replayMetaData.getProcessedRecords());
-            
-            LOGGER.info(() -> String.format("Completed processing replay message for kind: %s and replayId: %s", kind, replayId));
             
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, String.format("Error processing replay message: %s", e.getMessage()), e);
@@ -130,40 +140,157 @@ public class ReplayMessageProcessorAWSImpl {
      * @param replayMessage The replay message
      * @param replayMetaData The replay metadata for status updates
      */
-    private void processRecordsInBatches(ReplayMessage replayMessage, ReplayMetaDataDTO replayMetaData) {
+    private void processRecordsInBatches(ReplayMessage replayMessage, AwsReplayMetaDataDTO replayMetaData) {
         String kind = replayMessage.getBody().getKind();
-        String cursor = null;
-        long processedRecords = 0;
+        String cursor = replayMetaData.getLastCursor(); // Start from the last cursor if available
+        long processedRecords = replayMetaData.getProcessedRecords() != null ? replayMetaData.getProcessedRecords() : 0;
         
-        do {
-            RecordInfoQueryResult<RecordId> recordIds = queryRepository.getAllRecordIdsFromKind(
-                DEFAULT_BATCH_SIZE, 
-                cursor, 
-                kind);
-            
-            if (recordIds == null || recordIds.getResults() == null || recordIds.getResults().isEmpty()) {
-                LOGGER.info(() -> String.format("No more records found for kind: %s", kind));
-                break;
+        // Get AWS-specific replay repository
+        ReplayRepositoryImpl awsReplayRepository = (ReplayRepositoryImpl) replayRepository;
+        
+        logResumeInfo(cursor, processedRecords);
+        
+        boolean hasMoreRecords = true;
+        
+        while (hasMoreRecords) {
+            try {
+                // Fetch records for this batch
+                RecordInfoQueryResult<RecordId> recordIds = fetchRecordBatch(kind, cursor);
+                
+                // Process batch and determine if we should continue
+                BatchProcessingResult batchResult = processBatchAndUpdateCursor(replayMessage, recordIds, processedRecords);
+                processedRecords = batchResult.processedRecords();
+                cursor = batchResult.cursor();
+                hasMoreRecords = batchResult.hasMoreRecords();
+                
+                // Update metadata with progress
+                updateReplayMetadata(replayMetaData, processedRecords, cursor, awsReplayRepository);
+                
+                logProcessingProgress(processedRecords, kind);
+                
+            } catch (Exception e) {
+                handleBatchProcessingError(kind, e);
             }
-            
+        }
+    }
+    
+    /**
+     * Log information about resuming from a previous cursor
+     */
+    private void logResumeInfo(String cursor, long processedRecords) {
+        if (cursor != null && !cursor.isEmpty()) {
+            String finalCursor = cursor;
+            long finalProcessedRecords = processedRecords;
+            LOGGER.info(() -> String.format("Resuming processing from cursor: %s with %d records already processed",
+                    finalCursor, finalProcessedRecords));
+        }
+    }
+
+    /**
+     * Fetch a batch of records for the given kind and cursor
+     */
+    private RecordInfoQueryResult<RecordId> fetchRecordBatch(String kind, String cursor) {
+        return queryRepository.getAllRecordIdsFromKind(DEFAULT_BATCH_SIZE, cursor, kind);
+    }
+    
+    /**
+     * Process a batch of records and determine if we should continue processing
+     * 
+     * @return BatchProcessingResult containing updated cursor, processed records count, and whether to continue
+     */
+    private BatchProcessingResult processBatchAndUpdateCursor(
+            ReplayMessage replayMessage, 
+            RecordInfoQueryResult<RecordId> recordIds, 
+            long processedRecords) {
+        
+        // Check if we have records to process in this batch
+        boolean hasRecordsInBatch = recordIds != null && 
+                                   recordIds.getResults() != null && 
+                                   !recordIds.getResults().isEmpty();
+        
+        String kind = replayMessage.getBody().getKind();
+        LOGGER.info(() -> String.format("Fetched %d records for kind: %s", 
+            hasRecordsInBatch ? recordIds.getResults().size() : 0, kind));
+        
+        // Check if we have more pages to fetch
+        boolean hasNextPage = recordIds != null && 
+                             recordIds.getCursor() != null && 
+                             !recordIds.getCursor().isEmpty();
+        
+        // If we have no records in this batch and no more pages, we're done
+        boolean hasMoreRecords = true;
+        if (!hasRecordsInBatch && !hasNextPage) {
+            LOGGER.info(() -> String.format("No more records found for kind: %s", kind));
+            hasMoreRecords = false;
+        }
+        
+        // Process records if we have any
+        if (hasRecordsInBatch) {
             // Process the batch of records
             processRecordBatch(replayMessage, recordIds.getResults());
             
-            // Update cursor for next batch
-            cursor = recordIds.getCursor();
-            
             // Update processed records count
             processedRecords += recordIds.getResults().size();
-            
-            // Update replay metadata with progress
-            if (replayMetaData != null) {
-                replayMetaData.setProcessedRecords(processedRecords);
-                replayRepository.save(replayMetaData);
-            }
+        }
+        
+        // Update cursor for next batch
+        String cursor = recordIds != null ? recordIds.getCursor() : null;
+        
+        // If we have no next cursor, we're done
+        if (cursor == null || cursor.isEmpty()) {
+            LOGGER.info(() -> String.format("Reached end of records for kind: %s", kind));
+            hasMoreRecords = false;
+        }
+        
+        return new BatchProcessingResult(cursor, processedRecords, hasMoreRecords);
+    }
+    
+    /**
+     * Update replay metadata with progress information
+     */
+    private void updateReplayMetadata(
+            AwsReplayMetaDataDTO replayMetaData, 
+            long processedRecords, 
+            String cursor,
+            ReplayRepositoryImpl awsReplayRepository) {
+        
+        // Update replay metadata with progress and save cursor for potential resume
+        replayMetaData.setProcessedRecords(processedRecords);
+        replayMetaData.setLastCursor(cursor);
+        replayMetaData.setLastUpdatedAt(new Date());
+        
+        // Calculate and update elapsed time
+        if (replayMetaData.getStartedAt() != null) {
+            long elapsedMillis = new Date().getTime() - replayMetaData.getStartedAt().getTime();
+            String elapsedTime = formatElapsedTime(elapsedMillis);
+            replayMetaData.setElapsedTime(elapsedTime);
+        }
+        
+        awsReplayRepository.saveAwsReplayMetaData(replayMetaData);
+    }
+    
+    /**
+     * Log the current processing progress
+     */
+    private void logProcessingProgress(long processedRecords, String kind) {
+        String message = String.format("Processed %s records for kind: %s", processedRecords, kind);
+        LOGGER.info(message);
+    }
+    
+    /**
+     * Handle errors during batch processing
+     */
+    private void handleBatchProcessingError(String kind, Exception e) {
+        // Log the error but don't rethrow - this will allow the message to be put back on the queue
+        // and the next job will resume from the last saved cursor
+        LOGGER.log(Level.SEVERE, String.format("Error processing batch for kind %s: %s", kind, e.getMessage()), e);
+        throw new RuntimeException(e); // Rethrow to trigger failure handling
+    }
 
-            String message = String.format("Processed %s records for kind: %s", processedRecords, kind);
-            LOGGER.info(message);
-        } while (cursor != null && !cursor.isEmpty());
+    /**
+         * Class to hold the result of processing a batch
+         */
+        private record BatchProcessingResult(@Getter String cursor, @Getter long processedRecords, boolean hasMoreRecords) {
     }
     
     /**
@@ -174,14 +301,53 @@ public class ReplayMessageProcessorAWSImpl {
      * @param processedRecords The number of processed records
      */
     private void updateReplayStatusToCompleted(String kind, String replayId, long processedRecords) {
-        ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+        ReplayRepositoryImpl awsReplayRepository = (ReplayRepositoryImpl) replayRepository;
+        AwsReplayMetaDataDTO replayMetaData = awsReplayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
+        
         if (replayMetaData != null) {
             replayMetaData.setState(ReplayState.COMPLETED.name());
             replayMetaData.setProcessedRecords(processedRecords);
-            replayRepository.save(replayMetaData);
+            // Clear the cursor since processing is complete
+            replayMetaData.setLastCursor(null);
+            replayMetaData.setLastUpdatedAt(new Date());
+            
+            // Calculate and set elapsed time
+            if (replayMetaData.getStartedAt() != null) {
+                long elapsedMillis = new Date().getTime() - replayMetaData.getStartedAt().getTime();
+                String elapsedTime = formatElapsedTime(elapsedMillis);
+                replayMetaData.setElapsedTime(elapsedTime);
+            }
+            
+            awsReplayRepository.saveAwsReplayMetaData(replayMetaData);
         } else {
             LOGGER.warning(() -> String.format("Could not update status to COMPLETED for kind: %s and replayId: %s", kind, replayId));
         }
+    }
+    
+    /**
+     * Format elapsed time in a human-readable format
+     * 
+     * @param millis Elapsed time in milliseconds
+     * @return Formatted elapsed time string (e.g., "2h 30m 45s")
+     */
+    private String formatElapsedTime(long millis) {
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        
+        seconds = seconds % 60;
+        minutes = minutes % 60;
+        
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append("h ");
+        }
+        if (minutes > 0 || hours > 0) {
+            sb.append(minutes).append("m ");
+        }
+        sb.append(seconds).append("s");
+        
+        return sb.toString();
     }
     
     /**
@@ -337,11 +503,24 @@ public class ReplayMessageProcessorAWSImpl {
         LOGGER.log(Level.SEVERE, () -> String.format("Processing failure for replay: %s and kind: %s", replayId, kind));
         
         try {
-            // Update kind status to FAILED
-            ReplayMetaDataDTO kindStatus = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+            // Update kind status to FAILED but preserve the cursor for resume
+            ReplayRepositoryImpl awsReplayRepository = (ReplayRepositoryImpl) replayRepository;
+            AwsReplayMetaDataDTO kindStatus = awsReplayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
+            
             if (kindStatus != null) {
                 kindStatus.setState(ReplayState.FAILED.name());
-                replayRepository.save(kindStatus);
+                
+                // Calculate and update elapsed time
+                if (kindStatus.getStartedAt() != null) {
+                    long elapsedMillis = new Date().getTime() - kindStatus.getStartedAt().getTime();
+                    String elapsedTime = formatElapsedTime(elapsedMillis);
+                    kindStatus.setElapsedTime(elapsedTime);
+                }
+                
+                // Update the timestamp but keep the cursor for resume
+                kindStatus.setLastUpdatedAt(new Date());
+                
+                awsReplayRepository.saveAwsReplayMetaData(kindStatus);
                 
                 // Log the failure
                 auditLogger.createReplayRequestFail(Collections.singletonList(kindStatus.toString()));

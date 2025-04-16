@@ -25,6 +25,8 @@ import org.opengroup.osdu.storage.enums.ReplayType;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
+import org.opengroup.osdu.storage.provider.aws.replay.AwsReplayMetaDataDTO;
+import org.opengroup.osdu.storage.provider.aws.replay.ReplayRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayRequest;
@@ -52,7 +54,7 @@ public class ParallelReplayProcessor {
 
     private final ExecutorService executorService;
     private final ReplayBatchConfig batchConfig;
-    private final IReplayRepository replayRepository;
+    private final ReplayRepositoryImpl replayRepository;
     private final ReplayMessageHandler messageHandler;
     private final DpsHeaders headers;
     private final QueryRepositoryImpl queryRepository;
@@ -73,7 +75,7 @@ public class ParallelReplayProcessor {
     public ParallelReplayProcessor(
             @Autowired(required = false) ExecutorService replayExecutorService,
             ReplayBatchConfig batchConfig,
-            IReplayRepository replayRepository,
+            ReplayRepositoryImpl replayRepository,
             ReplayMessageHandler messageHandler,
             DpsHeaders headers,
             QueryRepositoryImpl queryRepository,
@@ -170,10 +172,11 @@ public class ParallelReplayProcessor {
     private void updateBatchStatusToQueued(List<String> batch, String replayId) {
         for (String kind : batch) {
             try {
-                ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+                AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
                 if (replayMetaData != null) {
                     replayMetaData.setState(ReplayState.QUEUED.name());
-                    replayRepository.save(replayMetaData);
+                    replayMetaData.setLastUpdatedAt(new Date());
+                    replayRepository.saveAwsReplayMetaData(replayMetaData);
                 }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, String.format("Error updating status for kind %s: %s", kind, e.getMessage()), e);
@@ -227,10 +230,10 @@ public class ParallelReplayProcessor {
      */
     private void updateRecordCountForKind(String kind, String replayId, Long count) {
         try {
-            ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+            AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
             if (replayMetaData != null) {
                 replayMetaData.setTotalRecords(count);
-                replayRepository.save(replayMetaData);
+                replayRepository.saveAwsReplayMetaData(replayMetaData);
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, String.format("Error updating record count for kind %s: %s", kind, e.getMessage()), e);
@@ -262,10 +265,11 @@ public class ParallelReplayProcessor {
     private void updateBatchStatusToFailed(List<String> batch, String replayId) {
         for (String kind : batch) {
             try {
-                ReplayMetaDataDTO replayMetaData = replayRepository.getReplayStatusByKindAndReplayId(kind, replayId);
+                AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
                 if (replayMetaData != null) {
                     replayMetaData.setState(ReplayState.FAILED.name());
-                    replayRepository.save(replayMetaData);
+                    replayMetaData.setLastUpdatedAt(new Date());
+                    replayRepository.saveAwsReplayMetaData(replayMetaData);
                 }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, String.format("Error updating failure status for kind %s: %s", kind, e.getMessage()), e);

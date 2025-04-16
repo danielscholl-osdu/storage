@@ -25,14 +25,15 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
+import org.opengroup.osdu.storage.provider.aws.replay.AwsReplayMetaDataDTO;
 import org.opengroup.osdu.storage.provider.aws.replay.ParallelReplayProcessor;
+import org.opengroup.osdu.storage.provider.aws.replay.ReplayRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.enums.ReplayOperation;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayFilter;
 import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.opengroup.osdu.storage.response.ReplayResponse;
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.*;
 public class ReplayServiceAWSImplTest {
 
     @Mock
-    private IReplayRepository replayRepository;
+    private ReplayRepositoryImpl replayRepository;
 
     @Mock
     private QueryRepositoryImpl queryRepository;
@@ -112,7 +113,7 @@ public class ReplayServiceAWSImplTest {
         
         // Verify metadata records were created - 3 calls:
         // 1 for initial status record + 2 for the kinds
-        verify(replayRepository, times(3)).save(any(ReplayMetaDataDTO.class));
+        verify(replayRepository, times(3)).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
         
         // Verify parallel processing was started
         verify(parallelReplayProcessor).processReplayAsync(request, Arrays.asList("kind1", "kind2"));
@@ -193,7 +194,7 @@ public class ReplayServiceAWSImplTest {
         List<String> kinds = Arrays.asList("kind1", "kind2");
         String operation = "replay";
         
-        ArgumentCaptor<ReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(ReplayMetaDataDTO.class);
+        ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
         
         // Act
         // Call the private method using reflection
@@ -207,9 +208,9 @@ public class ReplayServiceAWSImplTest {
         }
         
         // Assert
-        verify(replayRepository, times(2)).save(metadataCaptor.capture());
+        verify(replayRepository, times(2)).saveAwsReplayMetaData(metadataCaptor.capture());
         
-        List<ReplayMetaDataDTO> capturedMetadata = metadataCaptor.getAllValues();
+        List<AwsReplayMetaDataDTO> capturedMetadata = metadataCaptor.getAllValues();
         assertEquals(2, capturedMetadata.size());
         
         for (ReplayMetaDataDTO metadata : capturedMetadata) {
@@ -511,7 +512,7 @@ public class ReplayServiceAWSImplTest {
         ReplayFilter filter = new ReplayFilter();
         filter.setKinds(Arrays.asList("kind1", "kind2"));
         
-        ArgumentCaptor<ReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(ReplayMetaDataDTO.class);
+        ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
         
         // Act
         // Call the private method using reflection
@@ -525,7 +526,7 @@ public class ReplayServiceAWSImplTest {
         }
         
         // Assert
-        verify(replayRepository).save(metadataCaptor.capture());
+        verify(replayRepository).saveAwsReplayMetaData(metadataCaptor.capture());
         
         ReplayMetaDataDTO capturedMetadata = metadataCaptor.getValue();
         assertEquals("system", capturedMetadata.getId());

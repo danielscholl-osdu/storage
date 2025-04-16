@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -120,6 +121,24 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     }
     
     /**
+     * Gets the AWS-specific replay metadata DTO for a given kind and replay ID.
+     * This method is similar to getReplayStatusByKindAndReplayId but returns the AWS-specific DTO
+     * that includes the lastCursor and lastUpdatedAt fields.
+     *
+     * @param kind The kind of records being replayed
+     * @param replayId The unique identifier for the replay operation
+     * @return The AwsReplayMetaDataDTO object, or null if not found
+     */
+    public AwsReplayMetaDataDTO getAwsReplayStatusByKindAndReplayId(String kind, String replayId) {
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        // Use the kind as the hash key and replayId as the range key
+        ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
+        
+        return item != null ? convertToAwsDTO(item) : null;
+    }
+    
+    /**
      * Saves a replay metadata item to DynamoDB.
      *
      * @param replayMetaData The ReplayMetaDataDTO to save
@@ -133,6 +152,39 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         queryHelper.save(item);
         
         return convertToDTO(item);
+    }
+    
+    /**
+     * Saves an AWS-specific replay metadata item to DynamoDB.
+     *
+     * @param awsReplayMetaData The AwsReplayMetaDataDTO to save
+     * @return The saved AwsReplayMetaDataDTO
+     */
+    public AwsReplayMetaDataDTO saveAwsReplayMetaData(AwsReplayMetaDataDTO awsReplayMetaData) {
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        ReplayMetadataItem item = convertAwsDtoToItem(awsReplayMetaData);
+        queryHelper.save(item);
+        
+        return convertToAwsDTO(item);
+    }
+    
+    /**
+     * Updates the lastCursor and lastUpdatedAt fields for a replay metadata item.
+     *
+     * @param kind The kind of records being replayed
+     * @param replayId The unique identifier for the replay operation
+     * @param cursor The current cursor position
+     * @return The updated AwsReplayMetaDataDTO
+     */
+    public AwsReplayMetaDataDTO updateCursor(String kind, String replayId, String cursor) {
+        AwsReplayMetaDataDTO awsDto = getAwsReplayStatusByKindAndReplayId(kind, replayId);
+        if (awsDto != null) {
+            awsDto.setLastCursor(cursor);
+            awsDto.setLastUpdatedAt(new Date());
+            return saveAwsReplayMetaData(awsDto);
+        }
+        return null;
     }
     
     /**
@@ -163,9 +215,25 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             }
         }
         
-        // Note: ReplayMetaDataDTO doesn't have a dataPartitionId field, so we don't set it
-        
         return dto;
+    }
+    
+    /**
+     * Converts a ReplayMetadataItem to an AWS-specific AwsReplayMetaDataDTO.
+     *
+     * @param item The ReplayMetadataItem to convert
+     * @return The converted AwsReplayMetaDataDTO
+     */
+    private AwsReplayMetaDataDTO convertToAwsDTO(ReplayMetadataItem item) {
+        // First convert to standard DTO
+        ReplayMetaDataDTO baseDto = convertToDTO(item);
+        
+        // Then convert to AWS-specific DTO and add AWS-specific fields
+        AwsReplayMetaDataDTO awsDto = AwsReplayMetaDataDTO.fromReplayMetaDataDTO(baseDto);
+        awsDto.setLastCursor(item.getLastCursor());
+        awsDto.setLastUpdatedAt(item.getLastUpdatedAt());
+        
+        return awsDto;
     }
 
     /**
@@ -206,6 +274,26 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         // Set the data partition ID from the headers
         item.setDataPartitionId(headers.getPartitionId());
         
+        // If this is an AWS-specific DTO, set the AWS-specific fields
+        if (dto instanceof AwsReplayMetaDataDTO) {
+            AwsReplayMetaDataDTO awsDto = (AwsReplayMetaDataDTO) dto;
+            item.setLastCursor(awsDto.getLastCursor());
+            item.setLastUpdatedAt(awsDto.getLastUpdatedAt());
+        }
+        
+        return item;
+    }
+    
+    /**
+     * Converts an AwsReplayMetaDataDTO to a ReplayMetadataItem.
+     *
+     * @param awsDto The AwsReplayMetaDataDTO to convert
+     * @return The converted ReplayMetadataItem
+     */
+    private ReplayMetadataItem convertAwsDtoToItem(AwsReplayMetaDataDTO awsDto) {
+        ReplayMetadataItem item = convertToItem(awsDto);
+        item.setLastCursor(awsDto.getLastCursor());
+        item.setLastUpdatedAt(awsDto.getLastUpdatedAt());
         return item;
     }
 }

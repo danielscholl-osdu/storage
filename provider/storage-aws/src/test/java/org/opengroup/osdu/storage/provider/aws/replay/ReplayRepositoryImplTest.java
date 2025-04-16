@@ -224,6 +224,141 @@ public class ReplayRepositoryImplTest {
         assertEquals(filter, result.getFilter());
         verify(objectMapper).readValue(serializedFilter, ReplayFilter.class);
     }
+    
+    // New tests for AWS-specific functionality
+    
+    @Test
+    public void testGetAwsReplayStatusByKindAndReplayId() {
+        // Prepare test data
+        ReplayMetadataItem item = createReplayMetadataItem(KIND, REPLAY_ID);
+        item.setLastCursor("test-cursor");
+        Date lastUpdated = new Date();
+        item.setLastUpdatedAt(lastUpdated);
+        
+        // Mock behavior
+        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID)).thenReturn(item);
+        
+        // Execute
+        AwsReplayMetaDataDTO result = replayRepository.getAwsReplayStatusByKindAndReplayId(KIND, REPLAY_ID);
+        
+        // Verify
+        assertNotNull(result);
+        assertEquals(KIND, result.getKind());
+        assertEquals(REPLAY_ID, result.getReplayId());
+        assertEquals("test-cursor", result.getLastCursor());
+        assertEquals(lastUpdated, result.getLastUpdatedAt());
+        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID);
+    }
+
+    @Test
+    public void testSaveAwsReplayMetaData() {
+        // Prepare test data
+        AwsReplayMetaDataDTO dto = new AwsReplayMetaDataDTO();
+        dto.setId(KIND);
+        dto.setReplayId(REPLAY_ID);
+        dto.setKind(KIND);
+        dto.setOperation("replay");
+        dto.setTotalRecords(100L);
+        dto.setProcessedRecords(50L);
+        dto.setState("IN_PROGRESS");
+        dto.setStartedAt(new Date());
+        dto.setElapsedTime("00:10:00");
+        dto.setLastCursor("test-cursor");
+        Date lastUpdated = new Date();
+        dto.setLastUpdatedAt(lastUpdated);
+
+        // Mock behavior
+        doNothing().when(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        
+        // Execute
+        AwsReplayMetaDataDTO result = replayRepository.saveAwsReplayMetaData(dto);
+        
+        // Verify
+        assertNotNull(result);
+        assertEquals(KIND, result.getKind());
+        assertEquals(REPLAY_ID, result.getReplayId());
+        assertEquals("test-cursor", result.getLastCursor());
+        assertEquals(lastUpdated, result.getLastUpdatedAt());
+        verify(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+    }
+
+    @Test
+    public void testUpdateCursor() {
+        // Prepare test data
+        ReplayMetadataItem item = createReplayMetadataItem(KIND, REPLAY_ID);
+        String newCursor = "new-cursor";
+        
+        // Mock behavior
+        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID)).thenReturn(item);
+        doNothing().when(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        
+        // Execute
+        AwsReplayMetaDataDTO result = replayRepository.updateCursor(KIND, REPLAY_ID, newCursor);
+        
+        // Verify
+        assertNotNull(result);
+        assertEquals(newCursor, result.getLastCursor());
+        assertNotNull(result.getLastUpdatedAt());
+        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID);
+        verify(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+    }
+
+    @Test
+    public void testConvertToAwsDTO() {
+        // Prepare test data
+        ReplayMetadataItem item = createReplayMetadataItem(KIND, REPLAY_ID);
+        String cursor = "test-cursor";
+        Date lastUpdated = new Date();
+        item.setLastCursor(cursor);
+        item.setLastUpdatedAt(lastUpdated);
+        
+        // Execute - we need to use reflection to test private method
+        AwsReplayMetaDataDTO result = (AwsReplayMetaDataDTO) ReflectionTestUtils.invokeMethod(
+                replayRepository, 
+                "convertToAwsDTO", 
+                item);
+        
+        // Verify
+        assertNotNull(result);
+        assertEquals(KIND, result.getKind());
+        assertEquals(REPLAY_ID, result.getReplayId());
+        assertEquals(cursor, result.getLastCursor());
+        assertEquals(lastUpdated, result.getLastUpdatedAt());
+    }
+
+    @Test
+    public void testConvertAwsDtoToItem() {
+        // Prepare test data
+        AwsReplayMetaDataDTO dto = new AwsReplayMetaDataDTO();
+        dto.setId(KIND);
+        dto.setReplayId(REPLAY_ID);
+        dto.setKind(KIND);
+        dto.setOperation("replay");
+        dto.setTotalRecords(100L);
+        dto.setProcessedRecords(50L);
+        dto.setState("IN_PROGRESS");
+        dto.setStartedAt(new Date());
+        dto.setElapsedTime("00:10:00");
+        
+        String cursor = "test-cursor";
+        Date lastUpdated = new Date();
+        dto.setLastCursor(cursor);
+        dto.setLastUpdatedAt(lastUpdated);
+        
+        // Execute - we need to use reflection to test private method
+        ReplayMetadataItem result = (ReplayMetadataItem) ReflectionTestUtils.invokeMethod(
+                replayRepository, 
+                "convertAwsDtoToItem", 
+                dto);
+        
+        // Verify
+        assertNotNull(result);
+        assertEquals(KIND, result.getKind());
+        assertEquals(REPLAY_ID, result.getReplayId());
+        assertEquals(cursor, result.getLastCursor());
+        assertEquals(lastUpdated, result.getLastUpdatedAt());
+        assertEquals(PARTITION_ID, result.getDataPartitionId());
+    }
 
     private ReplayMetadataItem createReplayMetadataItem(String kind, String replayId) {
         ReplayMetadataItem item = new ReplayMetadataItem();

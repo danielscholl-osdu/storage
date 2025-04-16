@@ -20,6 +20,8 @@ import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.provider.aws.replay.ParallelReplayProcessor;
+import org.opengroup.osdu.storage.provider.aws.replay.AwsReplayMetaDataDTO;
+import org.opengroup.osdu.storage.provider.aws.replay.ReplayRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
@@ -68,7 +70,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
     private static final String ERROR_MSG_INVALID_OPERATION = "Not a valid operation. The valid operations are: ";
     public static final String INVALID_REQUEST = "Invalid request";
 
-    private final IReplayRepository replayRepository;
+    private final ReplayRepositoryImpl replayRepository;
     private final QueryRepositoryImpl queryRepository;
     private final DpsHeaders headers;
     private final StorageAuditLogger auditLogger;
@@ -77,7 +79,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
     private final RequestScopeUtil requestScopeUtil;
 
     public ReplayServiceAWSImpl(
-            IReplayRepository replayRepository,
+            ReplayRepositoryImpl replayRepository,
             QueryRepositoryImpl queryRepository,
             DpsHeaders headers, 
             StorageAuditLogger auditLogger,
@@ -392,8 +394,11 @@ public class ReplayServiceAWSImpl extends ReplayService {
             if (systemRecords != null) {
                 for (ReplayMetaDataDTO dataDTO : systemRecords) {
                     if (SYSTEM_KIND.equals(dataDTO.getKind())) {
-                        dataDTO.setState(ReplayState.FAILED.name());
-                        replayRepository.save(dataDTO);
+                        // Convert to AWS DTO to preserve any AWS-specific fields
+                        AwsReplayMetaDataDTO awsDto = AwsReplayMetaDataDTO.fromReplayMetaDataDTO(dataDTO);
+                        awsDto.setState(ReplayState.FAILED.name());
+                        awsDto.setLastUpdatedAt(new Date());
+                        replayRepository.saveAwsReplayMetaData(awsDto);
                         break;
                     }
                 }
@@ -453,7 +458,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
             }
             
             try {
-                ReplayMetaDataDTO replayMetaData = new ReplayMetaDataDTO();
+                AwsReplayMetaDataDTO replayMetaData = new AwsReplayMetaDataDTO();
                 replayMetaData.setId(kind);  // Use kind as the ID (hash key)
                 replayMetaData.setReplayId(replayId);
                 replayMetaData.setKind(kind);
@@ -466,7 +471,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
                 replayMetaData.setProcessedRecords(0L);
                 
                 // Save the replay metadata for this kind
-                replayRepository.save(replayMetaData);
+                replayRepository.saveAwsReplayMetaData(replayMetaData);
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, String.format("Error creating replay metadata for kind %s: %s", kind, e.getMessage()), e);
                 // Continue with other kinds
@@ -491,7 +496,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
         try {
             LOGGER.info(() -> String.format("Creating initial status record for replay ID: %s", replayId));
             
-            ReplayMetaDataDTO initialStatus = new ReplayMetaDataDTO();
+            AwsReplayMetaDataDTO initialStatus = new AwsReplayMetaDataDTO();
             initialStatus.setId(SYSTEM_KIND);  // Special ID for the initial record
             initialStatus.setReplayId(replayId);
             initialStatus.setKind(SYSTEM_KIND);  // Special kind to indicate it's a system record
@@ -507,7 +512,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
             }
             
             // Save the initial status
-            replayRepository.save(initialStatus);
+            replayRepository.saveAwsReplayMetaData(initialStatus);
         } catch (Exception e) {
             // Log but don't fail - this is just to improve user experience
             LOGGER.log(Level.WARNING, String.format("Error creating initial status record: %s", e.getMessage()), e);

@@ -100,4 +100,18 @@ public class ReplayMetadataItem {
      */
     @DynamoDBAttribute(attributeName = "dataPartitionId")
     private String dataPartitionId;
+    
+    /**
+     * The cursor position for resuming processing if interrupted.
+     * This allows a new job to pick up where the previous one left off.
+     */
+    @DynamoDBAttribute(attributeName = "lastCursor")
+    private String lastCursor;
+    
+    /**
+     * The timestamp when the last batch was processed.
+     * Used to detect stalled jobs and for monitoring.
+     */
+    @DynamoDBAttribute(attributeName = "lastUpdatedAt")
+    private Date lastUpdatedAt;
 }
