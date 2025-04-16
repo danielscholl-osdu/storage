@@ -248,7 +248,6 @@ public class ReplayMessageHandler {
      * @param attributes The attributes map to add to
      */
     private void addRequiredHeadersToAttributes(ReplayMessage message, Map<String, MessageAttributeValue> attributes) {
-        // Skip if no headers
         if (message.getHeaders() == null) {
             return;
         }
@@ -259,14 +258,10 @@ public class ReplayMessageHandler {
             "correlation-id",
             "authorization"
         };
-        
-        // Process each header
+
         for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
-            if (header.getKey() != null && header.getValue() != null) {
-                // Add header if it's in the required list
-                if (isRequiredHeader(header.getKey(), requiredHeaders)) {
-                    attributes.put(header.getKey(), createStringAttribute(header.getValue()));
-                }
+            if (header.getKey() != null && header.getValue() != null && isRequiredHeader(header.getKey(), requiredHeaders)) {
+                attributes.put(header.getKey(), createStringAttribute(header.getValue()));
             }
         }
     }
