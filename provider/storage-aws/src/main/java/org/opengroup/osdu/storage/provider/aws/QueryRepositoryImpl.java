@@ -118,10 +118,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public DatastoreQueryResult getAllRecordIdsFromKind(String kind, Integer limit, String cursor, Optional<CollaborationContext> collaborationContext) {
-
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-        
-
         // Set the page size, or use the default constant
         int numRecords = PAGE_SIZE;
         if (limit != null) {
@@ -130,23 +126,14 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
         DatastoreQueryResult dqr = new DatastoreQueryResult();
 
-        // Set GSI hash key
-        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-        recordMetadataKey.setKind(kind);
-
         String idPrefix = collaborationContext
                 .map(context -> context.getId() + this.headers.getPartitionId())
                 .orElse(this.headers.getPartitionId());
 
         QueryPageResult<RecordMetadataDoc> scanPageResults;
         try {
-            scanPageResults = recordMetadataQueryHelper.queryPage(
-                RecordMetadataDoc.class,
-                recordMetadataKey,
-                STATUS,
-                    ACTIVE,
-                "Id",
-                ComparisonOperator.BEGINS_WITH,
+            scanPageResults = queryRecordMetadataByKind(
+                kind,
                 String.format("%s:", idPrefix),
                 numRecords,
                 cursor);
@@ -211,8 +198,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
 
     @Override
     public RecordInfoQueryResult<RecordId> getAllRecordIdsFromKind(Integer limit, String cursor, String kind) {
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-        
         // Set the page size or use the default constant
         int numRecords = PAGE_SIZE;
         if (limit != null) {
@@ -223,32 +208,27 @@ public class QueryRepositoryImpl implements IQueryRepository {
         List<RecordId> records = new ArrayList<>();
         
         try {
-            // Set GSI hash key
-            RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-            recordMetadataKey.setKind(kind);
-            
-            QueryPageResult<RecordMetadataDoc> scanPageResults = recordMetadataQueryHelper.queryPage(
-                RecordMetadataDoc.class,
-                recordMetadataKey,
-                STATUS,
-                    ACTIVE,
-                "Id",
-                ComparisonOperator.BEGINS_WITH,
+            QueryPageResult<RecordMetadataDoc> scanPageResults = queryRecordMetadataByKind(
+                kind,
                 String.format("%s:", headers.getPartitionId()),
                 numRecords,
                 cursor);
             
-            // Convert to RecordId objects
-            for (RecordMetadataDoc doc : scanPageResults.results) {
-                RecordId id = new RecordId();
-                id.setId(doc.getId());
-                // RecordId doesn't have setKind method, so we can't set it here
-                records.add(id);
-            }
-            
-            // Create a new result with the records and cursor
+            // Always initialize the results list, even if empty
             result.setResults(records);
+            
+            // Always set the cursor, even if null
             result.setCursor(scanPageResults.cursor);
+            
+            // Convert to RecordId objects if we have results
+            if (scanPageResults.results != null) {
+                for (RecordMetadataDoc doc : scanPageResults.results) {
+                    RecordId id = new RecordId();
+                    id.setId(doc.getId());
+                    // RecordId doesn't have setKind method, so we can't set it here
+                    records.add(id);
+                }
+            }
             
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
@@ -288,46 +268,21 @@ public class QueryRepositoryImpl implements IQueryRepository {
      * Filters by both active status and the current partition ID
      */
     private long getActiveRecordCountForKind(String kind) {
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-        
         try {
-            // Set GSI hash key for kind
-            RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
-            recordMetadataKey.setKind(kind);
-            
             // Count active records for this kind that belong to the current partition
             long count = 0;
-            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryPage(
-                RecordMetadataDoc.class,
-                recordMetadataKey,
-                STATUS,
-                    ACTIVE,
-                "Id",
-                ComparisonOperator.BEGINS_WITH,
-                String.format("%s:", headers.getPartitionId()),
-                1000,
-                null);
+            String cursor = null;
             
-            count += queryPageResult.results.size();
-            
-            // Process any additional pages
-            String cursor = queryPageResult.cursor;
-            while (cursor != null && !cursor.isEmpty()) {
-                queryPageResult = recordMetadataQueryHelper.queryPage(
-                    RecordMetadataDoc.class,
-                    recordMetadataKey,
-                    STATUS,
-                        ACTIVE,
-                    "Id",
-                    ComparisonOperator.BEGINS_WITH,
+            do {
+                QueryPageResult<RecordMetadataDoc> queryPageResult = queryRecordMetadataByKind(
+                    kind,
                     String.format("%s:", headers.getPartitionId()),
                     1000,
                     cursor);
                 
                 count += queryPageResult.results.size();
                 cursor = queryPageResult.cursor;
-            }
-            
+            } while (cursor != null && !cursor.isEmpty());
             return count;
         } catch (UnsupportedEncodingException e) {
             logger.error("Error counting records for kind " + kind + ": " + e.getMessage(), e);
@@ -351,5 +306,47 @@ public class QueryRepositoryImpl implements IQueryRepository {
         }
         
         return kindCounts;
+    }
+    
+    /**
+     * Helper method to query record metadata by kind with consistent parameters
+     * 
+     * @param kind The kind to filter by
+     * @param idPrefix The ID prefix to filter by
+     * @param limit The maximum number of records to return
+     * @param cursor The pagination cursor
+     * @return QueryPageResult containing the results and next cursor
+     * @throws UnsupportedEncodingException If there's an error encoding the cursor
+     */
+    private QueryPageResult<RecordMetadataDoc> queryRecordMetadataByKind(
+            String kind,
+            String idPrefix,
+            int limit,
+            String cursor) throws UnsupportedEncodingException {
+
+        logger.info("Input arguments: kind=" + kind + ", idPrefix=" + idPrefix + ", limit=" + limit + ", cursor=" + cursor);
+
+        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        // Set GSI hash key
+        RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
+        recordMetadataKey.setKind(kind);
+
+        QueryPageResult<RecordMetadataDoc> result = recordMetadataQueryHelper.queryPage(
+            RecordMetadataDoc.class,
+            recordMetadataKey,
+            STATUS,
+            ACTIVE,
+            "Id",
+            ComparisonOperator.BEGINS_WITH,
+            idPrefix,
+            limit,
+            cursor);
+            
+        // Ensure we always have a valid results list, even if empty
+        if (result.results == null) {
+            result.results = new ArrayList<>();
+        }
+        
+        return result;
     }
 }
