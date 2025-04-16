@@ -161,6 +161,9 @@ public class ReplayMessageHandlerTest {
     public void testSendReplayMessageWithHeaders() throws JsonProcessingException, ReplayMessageHandlerException {
         // Prepare test data
         ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        // Add a required header with custom value
+        message.getHeaders().put("authorization", "Bearer custom-token");
+        // Add a non-required header that should be filtered out
         message.getHeaders().put("custom-header", "custom-value");
         List<ReplayMessage> messages = Arrays.asList(message);
         
@@ -168,8 +171,13 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        
         when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Override the default headers behavior for this test to prevent overwriting our custom authorization
+        Map<String, String> customHeaderMap = new HashMap<>();
+        customHeaderMap.put(DpsHeaders.DATA_PARTITION_ID, "test-partition");
+        // Don't include authorization in the DpsHeaders to avoid overriding our custom one
+        when(headers.getHeaders()).thenReturn(customHeaderMap);
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -184,14 +192,19 @@ public class ReplayMessageHandlerTest {
         
         PublishRequest capturedRequest = requestCaptor.getValue();
         
-        // Verify headers were included as message attributes
+        // Verify message attributes
         Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
-        assertEquals("String", attributes.get("custom-header").getDataType());
-        assertEquals("custom-value", attributes.get("custom-header").getStringValue());
         
-        // Verify DPS headers were added
-        assertTrue(message.getHeaders().containsKey(DpsHeaders.DATA_PARTITION_ID));
-        assertTrue(message.getHeaders().containsKey(DpsHeaders.AUTHORIZATION));
+        // Required header should be included with our custom value
+        assertEquals("String", attributes.get("authorization").getDataType());
+        assertEquals("Bearer custom-token", attributes.get("authorization").getStringValue());
+        
+        // Non-required header should NOT be included
+        assertNull("Non-required header should not be included", attributes.get("custom-header"));
+        
+        // Verify operation attribute is included
+        assertEquals("String", attributes.get("operation").getDataType());
+        assertEquals("replay", attributes.get("operation").getStringValue());
     }
 
     @Test
@@ -504,8 +517,95 @@ public class ReplayMessageHandlerTest {
         // Verify
         assertEquals("String", attributes.get("operation").getDataType());
         assertEquals("replay", attributes.get("operation").getStringValue());
-        assertEquals("String", attributes.get("custom-header").getDataType());
-        assertEquals("custom-value", attributes.get("custom-header").getStringValue());
+        
+        // Verify only required headers are included
+        // Note: The implementation now only includes required headers, so custom-header should not be present
+        assertNull("Non-required header should not be included", attributes.get("custom-header"));
+    }
+    
+    @Test
+    public void testCreateMessageAttributesOnlyIncludesRequiredHeaders() throws Exception {
+        // Prepare test data with many headers
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        
+        // Add required headers with different cases to test case insensitivity
+        message.getHeaders().put("data-partition-id", "test-partition");
+        message.getHeaders().put("User", "test-user");
+        message.getHeaders().put("CORRELATION-ID", "test-correlation");
+        message.getHeaders().put("Authorization", "Bearer token");
+        
+        // Add many non-required headers
+        message.getHeaders().put("custom-header-1", "value1");
+        message.getHeaders().put("custom-header-2", "value2");
+        message.getHeaders().put("custom-header-3", "value3");
+        message.getHeaders().put("custom-header-4", "value4");
+        message.getHeaders().put("custom-header-5", "value5");
+        message.getHeaders().put("custom-header-6", "value6");
+        message.getHeaders().put("custom-header-7", "value7");
+        message.getHeaders().put("custom-header-8", "value8");
+        message.getHeaders().put("custom-header-9", "value9");
+        message.getHeaders().put("custom-header-10", "value10");
+        
+        // Call the private method using reflection
+        java.lang.reflect.Method method = ReplayMessageHandler.class.getDeclaredMethod(
+                "createMessageAttributes", ReplayMessage.class, String.class);
+        method.setAccessible(true);
+        
+        @SuppressWarnings("unchecked")
+        Map<String, MessageAttributeValue> attributes = 
+                (Map<String, MessageAttributeValue>) method.invoke(replayMessageHandler, message, "replay");
+        
+        // Verify only required headers and operation are included (5 total attributes)
+        assertEquals("Should only have 5 attributes (operation + 4 required headers)", 5, attributes.size());
+        
+        // Verify operation attribute
+        assertEquals("String", attributes.get("operation").getDataType());
+        assertEquals("replay", attributes.get("operation").getStringValue());
+        
+        // Verify required headers are included (with original case preserved)
+        assertNotNull("data-partition-id header should be included", attributes.get("data-partition-id"));
+        assertNotNull("User header should be included", attributes.get("User"));
+        assertNotNull("CORRELATION-ID header should be included", attributes.get("CORRELATION-ID"));
+        assertNotNull("Authorization header should be included", attributes.get("Authorization"));
+        
+        // Verify non-required headers are not included
+        for (int i = 1; i <= 10; i++) {
+            assertNull("Non-required header should not be included", 
+                    attributes.get("custom-header-" + i));
+        }
+    }
+    
+    @Test
+    public void testMessageAttributesDoNotExceedSNSLimit() throws Exception {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        
+        // Add required headers
+        message.getHeaders().put("data-partition-id", "test-partition");
+        message.getHeaders().put("user", "test-user");
+        message.getHeaders().put("correlation-id", "test-correlation");
+        message.getHeaders().put("authorization", "Bearer token");
+        
+        // Add many non-required headers (more than the SNS limit of 10)
+        for (int i = 1; i <= 15; i++) {
+            message.getHeaders().put("custom-header-" + i, "value" + i);
+        }
+        
+        // Call the private method using reflection
+        java.lang.reflect.Method method = ReplayMessageHandler.class.getDeclaredMethod(
+                "createMessageAttributes", ReplayMessage.class, String.class);
+        method.setAccessible(true);
+        
+        @SuppressWarnings("unchecked")
+        Map<String, MessageAttributeValue> attributes = 
+                (Map<String, MessageAttributeValue>) method.invoke(replayMessageHandler, message, "replay");
+        
+        // Verify the number of attributes doesn't exceed the SNS limit of 10
+        assertTrue("Number of message attributes should not exceed SNS limit of 10", 
+                attributes.size() <= 10);
+        
+        // Verify we have exactly 5 attributes (operation + 4 required headers)
+        assertEquals("Should have exactly 5 attributes", 5, attributes.size());
     }
 
     private ReplayMessage createReplayMessage(String replayId, String kind, String operation) {

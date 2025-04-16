@@ -210,6 +210,8 @@ public class ReplayMessageHandler {
     
     /**
      * Creates message attributes for SNS
+     * Only includes required headers: data-partition-id, user, correlation-id, authorization
+     * Headers are matched case-insensitively
      * 
      * @param message The replay message
      * @param operation The operation type
@@ -219,22 +221,70 @@ public class ReplayMessageHandler {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
         
         // Add operation as a message attribute
-        messageAttributes.put(OPERATION_ATTRIBUTE, new MessageAttributeValue()
-            .withDataType(STRING_DATA_TYPE)
-            .withStringValue(operation));
+        messageAttributes.put(OPERATION_ATTRIBUTE, createStringAttribute(operation));
         
-        // Add all headers as message attributes for SNS
-        if (message.getHeaders() != null) {
-            for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
-                if (header.getKey() != null && header.getValue() != null) {
-                    messageAttributes.put(header.getKey(), new MessageAttributeValue()
-                        .withDataType(STRING_DATA_TYPE)
-                        .withStringValue(header.getValue()));
+        // Add required headers if present
+        addRequiredHeadersToAttributes(message, messageAttributes);
+        
+        return messageAttributes;
+    }
+    
+    /**
+     * Creates a String message attribute value
+     * 
+     * @param value The string value
+     * @return MessageAttributeValue with String data type
+     */
+    private MessageAttributeValue createStringAttribute(String value) {
+        return new MessageAttributeValue()
+            .withDataType(STRING_DATA_TYPE)
+            .withStringValue(value);
+    }
+    
+    /**
+     * Adds only the required headers from the message to the attributes map
+     * 
+     * @param message The message containing headers
+     * @param attributes The attributes map to add to
+     */
+    private void addRequiredHeadersToAttributes(ReplayMessage message, Map<String, MessageAttributeValue> attributes) {
+        // Skip if no headers
+        if (message.getHeaders() == null) {
+            return;
+        }
+
+        final String[] requiredHeaders = {
+            "data-partition-id",
+            "user",
+            "correlation-id",
+            "authorization"
+        };
+        
+        // Process each header
+        for (Map.Entry<String, String> header : message.getHeaders().entrySet()) {
+            if (header.getKey() != null && header.getValue() != null) {
+                // Add header if it's in the required list
+                if (isRequiredHeader(header.getKey(), requiredHeaders)) {
+                    attributes.put(header.getKey(), createStringAttribute(header.getValue()));
                 }
             }
         }
-        
-        return messageAttributes;
+    }
+    
+    /**
+     * Checks if a header is in the required headers list (case insensitive)
+     * 
+     * @param headerName The header name to check
+     * @param requiredHeaders Array of required header names
+     * @return true if the header is required
+     */
+    private boolean isRequiredHeader(String headerName, String[] requiredHeaders) {
+        for (String required : requiredHeaders) {
+            if (required.equalsIgnoreCase(headerName)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

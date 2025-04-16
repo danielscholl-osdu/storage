@@ -67,6 +67,14 @@ public class MessageBusImpl implements IMessageBus {
         this.objectMapper = objectMapper;
     }
 
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
+        amazonSNSTopicV2 = provider.getParameterAsString("storage-v2-sns-topic-arn");
+        snsClient = new AmazonSNSConfig(currentRegion).AmazonSNS();
+    }
+
     private <T> void doPublishMessage(boolean v2Message, Optional<CollaborationContext> collaborationContext, DpsHeaders headers, T... messages) {
         final int BATCH_SIZE = 50;
         PublishRequestBuilder<T> publishRequestBuilder = new PublishRequestBuilder<>();
@@ -98,14 +106,6 @@ public class MessageBusImpl implements IMessageBus {
         return new MessageAttributeValue().withDataType("String").withStringValue("id=" + collaborationContext.getId() + ",application=" + collaborationContext.getApplication());
     }
 
-    @PostConstruct
-    public void init() throws K8sParameterNotFoundException {
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
-        amazonSNSTopicV2 = provider.getParameterAsString("storage-v2-sns-topic-arn");
-        snsClient = new AmazonSNSConfig(currentRegion).AmazonSNS();
-    }
-
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
         doPublishMessage(false,Optional.empty(), headers, messages);
@@ -118,7 +118,6 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
-        // This method is used by the replay feature to publish record change messages
         // Get topic ARN from routing info
         String topicArn = routingInfo.get("topic");
         if (topicArn == null || topicArn.isEmpty()) {
