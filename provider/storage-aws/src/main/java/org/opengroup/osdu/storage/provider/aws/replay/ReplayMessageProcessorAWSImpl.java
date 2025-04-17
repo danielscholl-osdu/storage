@@ -169,7 +169,7 @@ public class ReplayMessageProcessorAWSImpl {
                 logProcessingProgress(processedRecords, kind);
                 
             } catch (Exception e) {
-                handleBatchProcessingError(kind, e);
+                LOGGER.log(Level.SEVERE, String.format("Error processing batch for kind %s: %s", kind, e.getMessage()), e);
             }
         }
     }
@@ -275,16 +275,6 @@ public class ReplayMessageProcessorAWSImpl {
     private void logProcessingProgress(long processedRecords, String kind) {
         String message = String.format("Processed %s records for kind: %s", processedRecords, kind);
         LOGGER.info(message);
-    }
-    
-    /**
-     * Handle errors during batch processing
-     */
-    private void handleBatchProcessingError(String kind, Exception e) {
-        // Log the error but don't rethrow - this will allow the message to be put back on the queue
-        // and the next job will resume from the last saved cursor
-        LOGGER.log(Level.SEVERE, String.format("Error processing batch for kind %s: %s", kind, e.getMessage()), e);
-        throw new RuntimeException(e); // Rethrow to trigger failure handling
     }
 
     /**

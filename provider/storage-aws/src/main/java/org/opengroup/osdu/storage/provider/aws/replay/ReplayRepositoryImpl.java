@@ -275,8 +275,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         item.setDataPartitionId(headers.getPartitionId());
         
         // If this is an AWS-specific DTO, set the AWS-specific fields
-        if (dto instanceof AwsReplayMetaDataDTO) {
-            AwsReplayMetaDataDTO awsDto = (AwsReplayMetaDataDTO) dto;
+        if (dto instanceof AwsReplayMetaDataDTO awsDto) {
             item.setLastCursor(awsDto.getLastCursor());
             item.setLastUpdatedAt(awsDto.getLastUpdatedAt());
         }
