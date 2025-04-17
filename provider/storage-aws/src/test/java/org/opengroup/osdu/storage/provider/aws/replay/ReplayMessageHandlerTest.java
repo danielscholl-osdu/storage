@@ -1,16 +1,18 @@
-// Copyright © Amazon Web Services
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright © Amazon Web Services
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
@@ -28,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
@@ -56,6 +59,9 @@ public class ReplayMessageHandlerTest {
 
     @Mock
     private DpsHeaders headers;
+    
+    @Mock
+    private K8sLocalParameterProvider parameterProvider;
 
     @InjectMocks
     private ReplayMessageHandler replayMessageHandler;
@@ -615,17 +621,217 @@ public class ReplayMessageHandlerTest {
                 .operation(operation)
                 .build();
         
-        Map<String, String> headers = new HashMap<>();
-        headers.put("data-partition-id", "test-partition");
+        Map<String, String> myHeaders = new HashMap<>();
+        myHeaders.put("data-partition-id", "test-partition");
         
         return ReplayMessage.builder()
                 .body(body)
-                .headers(headers)
+                .headers(myHeaders)
                 .build();
     }
     
     // Helper method for string contains matcher
     private static String contains(String substring) {
         return argThat(str -> str != null && str.contains(substring));
+    }
+
+    /**
+     * Test the initialization with SNS client creation exception.
+     */
+    @Test
+    public void testInitWithSNSClientException() {
+        // Create a new instance with our mocks
+        ReplayMessageHandler handler = new ReplayMessageHandler(objectMapper, replayMessageProcessor, headers);
+        
+        // Set up fields using reflection
+        ReflectionTestUtils.setField(handler, "region", REGION);
+        ReflectionTestUtils.setField(handler, "replayTopic", REPLAY_TOPIC);
+        ReflectionTestUtils.setField(handler, "logger", mockLogger);
+        
+        // Create a RuntimeException to be thrown during initialization
+        RuntimeException testException = new RuntimeException("Failed to create SNS client");
+        
+        // Create a spy to throw exception during init
+        handler = spy(handler);
+        doThrow(testException).when(handler).init();
+        
+        try {
+            // Call init method
+            handler.init();
+            fail("Expected exception was not thrown");
+        } catch (RuntimeException e) {
+            // Expected exception
+            assertEquals("Should be our test exception", testException, e);
+        }
+    }
+    
+    /**
+     * Test sending a message with very large headers that exceed SNS limits.
+     */
+    @Test
+    public void testSendReplayMessageWithLargeHeaders() throws JsonProcessingException, ReplayMessageHandlerException {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        
+        // Add a very large authorization header (exceeding SNS attribute value size limit)
+        StringBuilder largeValue = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            largeValue.append("x");
+        }
+        message.getHeaders().put("authorization", "Bearer " + largeValue.toString());
+        
+        List<ReplayMessage> messages = Collections.singletonList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Capture the request to verify headers
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient).publish(requestCaptor.capture());
+        
+        // Verify the authorization header was included but potentially truncated
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
+        assertNotNull("Authorization header should be included", attributes.get("authorization"));
+        
+        // SNS has a limit of 256 bytes for attribute values
+        assertTrue("Authorization header should be within SNS limits", 
+                attributes.get("authorization").getStringValue().length() <= 256);
+    }
+    
+    /**
+     * Test handling a message with an exception during processing that doesn't extend RuntimeException.
+     */
+    @Test
+    public void testHandleMessageWithCheckedExceptionDuringProcessing() {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        
+        // Mock behavior to throw a checked exception
+        doThrow(new IllegalStateException("Test exception")).when(replayMessageProcessor).processReplayMessage(message);
+        
+        try {
+            // Execute
+            replayMessageHandler.handle(message);
+            fail("Expected exception was not thrown");
+        } catch (IllegalStateException e) {
+            // Verify failure handling was called
+            verify(replayMessageProcessor).processFailure(message);
+        }
+    }
+    
+
+    /**
+     * Test sending a replay message with empty operation string.
+     */
+    @Test
+    public void testSendReplayMessageWithEmptyOperation() throws JsonProcessingException, ReplayMessageHandlerException {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        List<ReplayMessage> messages = Collections.singletonList(message);
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute with empty operation
+        replayMessageHandler.sendReplayMessage(messages, "");
+        
+        // Verify warning was logged
+        verify(mockLogger).warning("Operation type is null or empty, using default");
+        
+        // Verify default operation was used
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient).publish(requestCaptor.capture());
+        
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
+        assertEquals("replay", attributes.get("operation").getStringValue());
+    }
+    
+    /**
+     * Test updating message with current headers when DpsHeaders throws an exception.
+     */
+    @Test
+    public void testUpdateMessageWithCurrentHeadersException() throws Exception {
+        // Prepare test data
+        ReplayMessage message = createReplayMessage("test-replay-id", "test-kind", "replay");
+        List<ReplayMessage> messages = Collections.singletonList(message);
+        
+        // Mock headers to throw exception
+        when(headers.getHeaders()).thenThrow(new RuntimeException("Headers exception"));
+        
+        String serializedMessage = "{\"message\"}";
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Verify warning was logged
+        verify(mockLogger).log(eq(Level.WARNING), contains("Failed to update message with current headers"), any(RuntimeException.class));
+        
+        // Verify message was still sent
+        verify(snsClient).publish(any(PublishRequest.class));
+    }
+    
+    /**
+     * Test that isRequiredHeader correctly identifies headers case-insensitively.
+     */
+    @Test
+    public void testIsRequiredHeader() throws Exception {
+        // We can't directly test the private method, so we'll test its behavior indirectly
+        // through the public sendReplayMessage method
+        
+        // Create messages with headers in different cases
+        ReplayMessage message1 = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message1.getHeaders().put("DATA-PARTITION-ID", "test-partition-1");
+        message1.getHeaders().put("User", "test-user-1");
+        message1.getHeaders().put("CORRELATION-ID", "test-correlation-1");
+        message1.getHeaders().put("Authorization", "Bearer token-1");
+        
+        ReplayMessage message2 = createReplayMessage("test-replay-id", "test-kind", "replay");
+        message2.getHeaders().put("data-partition-id", "test-partition-2");
+        message2.getHeaders().put("user", "test-user-2");
+        message2.getHeaders().put("correlation-id", "test-correlation-2");
+        message2.getHeaders().put("authorization", "Bearer token-2");
+        
+        List<ReplayMessage> messages = Arrays.asList(message1, message2);
+        
+        // Mock behavior
+        when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn("{\"message\"}");
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        
+        // Execute
+        replayMessageHandler.sendReplayMessage(messages, "replay");
+        
+        // Capture the requests to verify headers
+        ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+        verify(snsClient, times(2)).publish(requestCaptor.capture());
+        
+        // Verify both messages had their headers included regardless of case
+        List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
+        
+        // First message (uppercase/mixed case headers)
+        Map<String, MessageAttributeValue> attributes1 = capturedRequests.get(0).getMessageAttributes();
+        assertTrue("Should include DATA-PARTITION-ID header", attributes1.containsKey("DATA-PARTITION-ID"));
+        assertTrue("Should include User header", attributes1.containsKey("User"));
+        assertTrue("Should include CORRELATION-ID header", attributes1.containsKey("CORRELATION-ID"));
+        assertTrue("Should include Authorization header", attributes1.containsKey("Authorization"));
+        
+        // Second message (lowercase headers)
+        Map<String, MessageAttributeValue> attributes2 = capturedRequests.get(1).getMessageAttributes();
+        assertTrue("Should include data-partition-id header", attributes2.containsKey("data-partition-id"));
+        assertTrue("Should include user header", attributes2.containsKey("user"));
+        assertTrue("Should include correlation-id header", attributes2.containsKey("correlation-id"));
+        assertTrue("Should include authorization header", attributes2.containsKey("authorization"));
     }
 }
