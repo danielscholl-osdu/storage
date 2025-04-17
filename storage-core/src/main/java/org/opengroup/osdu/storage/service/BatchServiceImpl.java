@@ -80,6 +80,8 @@ public abstract class BatchServiceImpl implements BatchService {
     @Autowired
     private IFeatureFlag featureFlag;
 
+    public final Gson gson = new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
+
     @Override
     public MultiRecordInfo getMultipleRecords(MultiRecordIds ids, Optional<CollaborationContext> collaborationContext) {
 
@@ -145,7 +147,6 @@ public abstract class BatchServiceImpl implements BatchService {
                 RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
                 JsonObject recordObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
 
-                Gson gson = new Gson();
                 Record record = gson.fromJson(recordObject, Record.class);
 
                 recordObjects.add(record);
