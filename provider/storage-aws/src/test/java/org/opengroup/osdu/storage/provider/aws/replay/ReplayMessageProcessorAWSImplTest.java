@@ -313,8 +313,8 @@ public class ReplayMessageProcessorAWSImplTest {
         when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
 
         // Mock record metadata lookup to return null for one record
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), eq("record1"))).thenReturn(recordMetadata);
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), eq("record2"))).thenReturn(null);
+        when(dynamoDBQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, "record1")).thenReturn(recordMetadata);
+        when(dynamoDBQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, "record2")).thenReturn(null);
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
