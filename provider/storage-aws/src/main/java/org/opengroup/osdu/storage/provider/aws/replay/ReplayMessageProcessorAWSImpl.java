@@ -106,6 +106,13 @@ public class ReplayMessageProcessorAWSImpl {
             ReplayRepositoryImpl awsReplayRepository = (ReplayRepositoryImpl) replayRepository;
             AwsReplayMetaDataDTO awsReplayMetaData = awsReplayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
             
+            // Check if this kind is already completed for this replay ID
+            if (awsReplayMetaData != null && ReplayState.COMPLETED.name().equals(awsReplayMetaData.getState())) {
+                LOGGER.info(() -> String.format("Skipping already completed replay for kind: %s and replayId: %s", 
+                                               kind, replayId));
+                return;
+            }
+            
             // Update status to IN_PROGRESS
             if (awsReplayMetaData != null) {
                 awsReplayMetaData.setState(ReplayState.IN_PROGRESS.name());

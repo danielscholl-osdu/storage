@@ -30,7 +30,6 @@ import org.opengroup.osdu.storage.dto.ReplayStatus;
 import org.opengroup.osdu.storage.enums.ReplayOperation;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
-import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayFilter;
 import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.opengroup.osdu.storage.response.ReplayResponse;

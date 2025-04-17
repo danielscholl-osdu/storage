@@ -66,6 +66,9 @@ public class ReplaySubscriptionMessageHandler {
     @Value("${REPLAY_TOPIC:replay-records}")
     private String replayTopic;
     
+    @Value("${replay.visibility-timeout-seconds:300}")
+    private int visibilityTimeoutSeconds;
+    
     private String replayQueueUrl;
 
     public ReplaySubscriptionMessageHandler(ReplayMessageHandler replayMessageHandler, ObjectMapper objectMapper, RequestScopeUtil requestScopeUtil) {
@@ -116,6 +119,7 @@ public class ReplaySubscriptionMessageHandler {
             .withQueueUrl(replayQueueUrl)
             .withMaxNumberOfMessages(10)
             .withWaitTimeSeconds(5)
+            .withVisibilityTimeout(visibilityTimeoutSeconds)
             .withAttributeNames("ApproximateReceiveCount")
             .withMessageAttributeNames("All"); // Request all message attributes
             
@@ -232,9 +236,10 @@ public class ReplaySubscriptionMessageHandler {
                 sqsClient.deleteMessage(replayQueueUrl, message.getReceiptHandle());
             } else {
                 // Return to queue for retry with backoff
-                int visibilityTimeout = 30 * (int)Math.pow(2, (double)receiveCount - 1); // Exponential backoff
-                logger.info(() -> String.format("Returning message to queue for retry: %s with visibility timeout: %s", replayMessage.getBody().getReplayId(), visibilityTimeout));
-                sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), visibilityTimeout);
+                int backoffMultiplier = (int)Math.pow(2, (double)receiveCount - 1);
+                int retryVisibilityTimeout = Math.max(visibilityTimeoutSeconds, 30 * backoffMultiplier); // Use configured timeout or backoff, whichever is greater
+                logger.info(() -> String.format("Returning message to queue for retry: %s with visibility timeout: %s", replayMessage.getBody().getReplayId(), retryVisibilityTimeout));
+                sqsClient.changeMessageVisibility(replayQueueUrl, message.getReceiptHandle(), retryVisibilityTimeout);
             }
         } catch (Exception ex) {
             // If we can't even parse the message, just delete it

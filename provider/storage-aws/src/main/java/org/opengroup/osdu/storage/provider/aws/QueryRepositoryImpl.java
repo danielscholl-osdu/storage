@@ -324,8 +324,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
             int limit,
             String cursor) throws UnsupportedEncodingException {
 
-        logger.info("Input arguments: kind=" + kind + ", idPrefix=" + idPrefix + ", limit=" + limit + ", cursor=" + cursor);
-
         DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         // Set GSI hash key
         RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();

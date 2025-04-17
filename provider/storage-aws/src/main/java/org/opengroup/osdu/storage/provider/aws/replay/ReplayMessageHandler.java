@@ -115,8 +115,6 @@ public class ReplayMessageHandler {
         }
 
         try {
-            logger.info(() -> String.format("Processing replay message: %s for kind: %s",
-                message.getBody().getReplayId(), message.getBody().getKind()));
             // Process the replay message using the dedicated processor
             replayMessageProcessor.processReplayMessage(message);
         } catch (Exception e) {

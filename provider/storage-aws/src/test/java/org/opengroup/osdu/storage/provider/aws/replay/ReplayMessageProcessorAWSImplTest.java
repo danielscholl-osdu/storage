@@ -236,6 +236,28 @@ public class ReplayMessageProcessorAWSImplTest {
         assertNotNull(capturedDto.getLastUpdatedAt());
         assertNotNull(capturedDto.getElapsedTime());
     }
+    
+    @Test
+    public void testProcessReplayMessage_AlreadyCompleted() {
+        // Prepare test data
+        ReplayMessage replayMessage = createReplayMessage(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        AwsReplayMetaDataDTO awsReplayMetaData = createAwsReplayMetaData(TEST_REPLAY_ID, TEST_KIND, TEST_OPERATION);
+        awsReplayMetaData.setState(ReplayState.COMPLETED.name());
+
+        // Mock behavior
+        when(replayRepository.getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID)).thenReturn(awsReplayMetaData);
+
+        // Execute
+        replayMessageProcessor.processReplayMessage(replayMessage);
+
+        // Verify that no further processing occurred
+        verify(replayRepository).getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
+        verify(queryRepository, never()).getAllRecordIdsFromKind(anyInt(), any(), eq(TEST_KIND));
+        verify(messageBus, never()).publishMessage(any(), any(), any(RecordChangedV2[].class));
+        
+        // Verify that the status was not updated
+        verify(replayRepository, never()).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
+    }
 
     /**
      * Helper method to create a test ReplayMessage
