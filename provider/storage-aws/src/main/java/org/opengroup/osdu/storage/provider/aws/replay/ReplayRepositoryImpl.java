@@ -80,6 +80,18 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     @Override
     public List<ReplayMetaDataDTO> getReplayStatusByReplayId(String replayId) {
+        List<AwsReplayMetaDataDTO> awsDtos = getAwsReplayStatusByReplayId(replayId);
+        // Convert to List<ReplayMetaDataDTO> to satisfy interface
+        return new ArrayList<>(awsDtos);
+    }
+    
+    /**
+     * Retrieves all replay metadata items for a given replay ID as AWS DTOs.
+     *
+     * @param replayId The unique identifier for the replay operation
+     * @return A list of AwsReplayMetaDataDTO objects
+     */
+    public List<AwsReplayMetaDataDTO> getAwsReplayStatusByReplayId(String replayId) {
         DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
 
         try {
@@ -95,8 +107,8 @@ public class ReplayRepositoryImpl implements IReplayRepository {
                     null); // Start with no cursor
             
             return queryPageResult.results.stream()
-                    .map(this::convertToDTO)
-                    .toList();
+                    .map(this::convertToAwsDTO)
+                    .collect(java.util.stream.Collectors.toList());
         } catch (Exception e) {
             logger.error("Error querying replay status: " + e.getMessage(), e);
             return new ArrayList<>();

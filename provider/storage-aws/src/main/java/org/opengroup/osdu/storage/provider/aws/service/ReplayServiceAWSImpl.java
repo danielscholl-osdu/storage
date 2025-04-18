@@ -106,7 +106,7 @@ public class ReplayServiceAWSImpl extends ReplayService {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_REQUEST, "Replay ID cannot be null or empty");
         }
         
-        List<ReplayMetaDataDTO> replayMetaDataList = replayRepository.getReplayStatusByReplayId(replayId);
+        List<AwsReplayMetaDataDTO> replayMetaDataList = replayRepository.getAwsReplayStatusByReplayId(replayId);
         
         if (replayMetaDataList == null || replayMetaDataList.isEmpty()) {
             throw new AppException(HttpStatus.SC_NOT_FOUND, ERROR_MSG_REPLAY_NOT_FOUND, 
@@ -134,22 +134,28 @@ public class ReplayServiceAWSImpl extends ReplayService {
                     .sum();
         
         // Get the first record to extract common fields
-        ReplayMetaDataDTO firstRecord = replayMetaDataList.get(0);
+        AwsReplayMetaDataDTO firstRecord = replayMetaDataList.get(0);
+        
+        // Calculate the start time (earliest start time across all records)
+        Date startedAt = calculateEarliestStartTime(replayMetaDataList);
+        
+        // Calculate elapsed time based on completion status
+        String elapsedTime = calculateElapsedTime(replayMetaDataList, overallState);
         
         // Create the response
         ReplayStatusResponse response = new ReplayStatusResponse();
         response.setReplayId(replayId);
         response.setOperation(firstRecord.getOperation());
         response.setOverallState(overallState.name());
-        response.setStartedAt(firstRecord.getStartedAt());
-        response.setElapsedTime(firstRecord.getElapsedTime());
+        response.setStartedAt(startedAt);
+        response.setElapsedTime(elapsedTime);
         response.setTotalRecords(totalRecords);
         response.setProcessedRecords(processedRecords);
         response.setFilter(firstRecord.getFilter());
         
         // Convert ReplayMetaDataDTO objects to ReplayStatus objects
         List<ReplayStatus> statusList = new ArrayList<>();
-        for (ReplayMetaDataDTO dto : replayMetaDataList) {
+        for (AwsReplayMetaDataDTO dto : replayMetaDataList) {
             // Skip the system record in the detailed status list
             if (SYSTEM_KIND.equals(dto.getKind())) {
                 continue;
@@ -169,9 +175,9 @@ public class ReplayServiceAWSImpl extends ReplayService {
         return response;
     }
     
-    private ReplayState calculateOverallState(List<ReplayMetaDataDTO> replayMetaDataList) {
+    private ReplayState calculateOverallState(List<? extends ReplayMetaDataDTO> replayMetaDataList) {
         // Filter out the system record for status calculation
-        List<ReplayMetaDataDTO> actualKindRecords = replayMetaDataList.stream()
+        List<? extends ReplayMetaDataDTO> actualKindRecords = replayMetaDataList.stream()
                 .filter(dto -> !SYSTEM_KIND.equals(dto.getKind()))
                 .toList();
 
@@ -516,6 +522,75 @@ public class ReplayServiceAWSImpl extends ReplayService {
             // Log but don't fail - this is just to improve user experience
             LOGGER.log(Level.WARNING, String.format("Error creating initial status record: %s", e.getMessage()), e);
         }
+    }
+    
+    /**
+     * Calculates the earliest start time across all replay records.
+     * 
+     * @param replayMetaDataList List of replay metadata records
+     * @return The earliest start time
+     */
+    private Date calculateEarliestStartTime(List<? extends ReplayMetaDataDTO> replayMetaDataList) {
+        Date earliestStartTime = null;
+        
+        for (ReplayMetaDataDTO dto : replayMetaDataList) {
+            if (dto.getStartedAt() != null && (earliestStartTime == null || dto.getStartedAt().before(earliestStartTime))) {
+                earliestStartTime = dto.getStartedAt();
+            }
+        }
+        
+        // If no valid start time found, use current time
+        return earliestStartTime != null ? earliestStartTime : new Date();
+    }
+    
+    /**
+     * Calculates the elapsed time based on the completion status.
+     * If the replay is completed, use the latest completion time.
+     * If the replay is still in progress, calculate from current time.
+     * 
+     * @param replayMetaDataList List of replay metadata records
+     * @param overallState The overall state of the replay
+     * @return The elapsed time as a formatted string
+     */
+    String calculateElapsedTime(List<AwsReplayMetaDataDTO> replayMetaDataList, ReplayState overallState) {
+        Date earliestStartTime = calculateEarliestStartTime(replayMetaDataList);
+        long endTimeMillis;
+        
+        // For completed or failed replays, use the latest completion time
+        if ((overallState == ReplayState.COMPLETED || overallState == ReplayState.FAILED)) {
+            endTimeMillis = replayMetaDataList.stream()
+                .filter(dto -> (ReplayState.COMPLETED.name().equals(dto.getState()) || 
+                               ReplayState.FAILED.name().equals(dto.getState())) && 
+                              dto.getLastUpdatedAt() != null)
+                .map(dto -> dto.getLastUpdatedAt().getTime())
+                .max(Long::compare)
+                .orElse(System.currentTimeMillis()); // Fallback to current time if no completion time found
+        } else {
+            // For in-progress or queued replays, use current time
+            endTimeMillis = System.currentTimeMillis();
+        }
+        
+        return formatElapsedTime(endTimeMillis - earliestStartTime.getTime());
+    }
+    
+    /**
+     * Formats elapsed time in milliseconds to a human-readable string.
+     * 
+     * @param elapsedMillis Elapsed time in milliseconds
+     * @return Formatted elapsed time string
+     */
+    private String formatElapsedTime(long elapsedMillis) {
+        // Ensure elapsed time is non-negative
+        elapsedMillis = Math.max(0, elapsedMillis);
+        
+        long seconds = elapsedMillis / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        
+        seconds = seconds % 60;
+        minutes = minutes % 60;
+        
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
     
     /**
