@@ -108,7 +108,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             
             return queryPageResult.results.stream()
                     .map(this::convertToAwsDTO)
-                    .collect(java.util.stream.Collectors.toList());
+                    .toList();
         } catch (Exception e) {
             logger.error("Error querying replay status: " + e.getMessage(), e);
             return new ArrayList<>();
