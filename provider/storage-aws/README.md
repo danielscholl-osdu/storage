@@ -98,7 +98,6 @@ User Request → Storage API → Single SNS Topic → Single SQS Queue → Stora
 
 ### Key Features
 
-- **Resume-on-Failure**: DynamoDB tracks the current cursor for each batch retrieval, allowing any pod to resume processing from the last saved position if the original pod fails.
 
 1. **Schema Service Integration**: When performing a "replay all" operation with no specific kinds provided, the implementation queries the Schema Service to get a complete list of all registered kinds in the system. Scanning the existing records for unique kinds is not scalable with DynamoDB.
 
@@ -114,6 +113,9 @@ User Request → Storage API → Single SNS Topic → Single SQS Queue → Stora
 5. **Status Tracking**: Detailed status information is stored in DynamoDB with per-kind granularity, allowing users to monitor the progress of replay operations.
 
 6. **Error Handling**: Robust error handling with exponential backoff retries and dead letter queue support ensures reliability.
+
+7. **Resume-on-Failure**: DynamoDB tracks the current cursor for each batch retrieval, allowing any pod to resume processing from the last saved position if the original pod fails.
+
 
 ## Testing
  
