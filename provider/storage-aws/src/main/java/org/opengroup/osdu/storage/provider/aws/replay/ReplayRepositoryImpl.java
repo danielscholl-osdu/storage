@@ -165,7 +165,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         
         return convertToDTO(item);
     }
-    
+
     /**
      * Saves an AWS-specific replay metadata item to DynamoDB.
      *

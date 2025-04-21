@@ -55,7 +55,6 @@ public class ReplayMessageProcessorAWSImpl {
     private static final int DEFAULT_BATCH_SIZE = 1000;
     private static final int PUBLISH_BATCH_SIZE = 50;
     private static final String RECORD_BLOCKS = "data metadata";
-    private static final String COLLABORATION_HEADER = "x-collaboration";
     
     private final IReplayRepository replayRepository;
     private final QueryRepositoryImpl queryRepository;
@@ -456,7 +455,7 @@ public class ReplayMessageProcessorAWSImpl {
             return Optional.empty();
         }
         
-        String collaborationHeader = replayMessage.getHeaders().get(COLLABORATION_HEADER);
+        String collaborationHeader = replayMessage.getHeaders().get(DpsHeaders.COLLABORATION);
         if (collaborationHeader == null || collaborationHeader.isEmpty()) {
             return Optional.empty();
         }
