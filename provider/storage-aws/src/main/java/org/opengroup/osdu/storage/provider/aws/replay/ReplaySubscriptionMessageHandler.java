@@ -20,6 +20,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
+import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
@@ -174,7 +175,7 @@ public class ReplaySubscriptionMessageHandler {
 
         // First check for headers in the message attributes (SNS message attributes)
         if (message.getMessageAttributes() != null && !message.getMessageAttributes().isEmpty()) {
-            for (Map.Entry<String, com.amazonaws.services.sqs.model.MessageAttributeValue> entry :
+            for (Map.Entry<String, MessageAttributeValue> entry :
                  message.getMessageAttributes().entrySet()) {
                 if (entry.getValue() != null && entry.getValue().getStringValue() != null) {
                     headers.put(entry.getKey(), entry.getValue().getStringValue());
