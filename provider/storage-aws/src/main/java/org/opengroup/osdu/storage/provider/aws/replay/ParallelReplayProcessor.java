@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 /**
  * Handles parallel processing of replay operations.
@@ -280,18 +281,16 @@ public class ParallelReplayProcessor {
      * @return A list of replay messages
      */
     private List<ReplayMessage> createReplayMessages(ReplayRequest replayRequest, List<String> kinds) {
-        List<ReplayMessage> messages = new ArrayList<>();
         String replayId = replayRequest.getReplayId();
         String operation = replayRequest.getOperation();
-        int kindCounter = 0;
 
-        for (String kind : kinds) {
-            ReplayMessage message = createReplayMessage(kind, replayId, operation, kindCounter);
-            messages.add(message);
-            kindCounter++;
-        }
-        
-        return messages;
+        return IntStream.range(0, kinds.size())
+                .mapToObj(kindCounter -> createReplayMessage(
+                        kinds.get(kindCounter),
+                        replayId,
+                        operation,
+                        kindCounter))
+                .toList();
     }
     
     /**
