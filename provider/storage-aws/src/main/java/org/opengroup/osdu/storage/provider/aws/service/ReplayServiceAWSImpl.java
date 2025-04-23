@@ -186,27 +186,36 @@ public class ReplayServiceAWSImpl extends ReplayService {
             return ReplayState.valueOf(replayMetaDataList.get(0).getState());
         }
 
-        // If any kind is FAILED, the overall state is FAILED
-        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.FAILED.name().equals(dto.getState()))) {
-            return ReplayState.FAILED;
+        // Priority order: FAILED > IN_PROGRESS > QUEUED > COMPLETED
+        boolean hasInProgressState = false;
+        boolean hasQueuedState = false;
+        boolean allCompleted = true;
+
+        for (ReplayMetaDataDTO dto : actualKindRecords) {
+            String state = dto.getState();
+            
+            if (ReplayState.FAILED.name().equals(state)) {
+                return ReplayState.FAILED;
+            } else if (ReplayState.IN_PROGRESS.name().equals(state)) {
+                hasInProgressState = true;
+                allCompleted = false;
+            } else if (ReplayState.QUEUED.name().equals(state)) {
+                hasQueuedState = true;
+                allCompleted = false;
+            } else if (!ReplayState.COMPLETED.name().equals(state)) {
+                allCompleted = false;
+            }
         }
 
-        // If any kind is IN_PROGRESS, the overall state is IN_PROGRESS
-        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.IN_PROGRESS.name().equals(dto.getState()))) {
+        if (hasInProgressState) {
             return ReplayState.IN_PROGRESS;
-        }
-
-        // If any kind is QUEUED, the overall state is QUEUED
-        if (actualKindRecords.stream().anyMatch(dto -> ReplayState.QUEUED.name().equals(dto.getState()))) {
+        } else if (hasQueuedState) {
             return ReplayState.QUEUED;
-        }
-
-        // If all kinds are COMPLETED, the overall state is COMPLETED
-        if (actualKindRecords.stream().allMatch(dto -> ReplayState.COMPLETED.name().equals(dto.getState()))) {
+        } else if (allCompleted) {
             return ReplayState.COMPLETED;
         }
 
-        // Default to QUEUED
+        // Default to QUEUED if we can't determine the state
         return ReplayState.QUEUED;
     }
     
