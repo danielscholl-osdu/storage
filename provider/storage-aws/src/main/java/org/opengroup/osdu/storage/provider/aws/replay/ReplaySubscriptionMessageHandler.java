@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sqs.AmazonSQSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
@@ -85,22 +84,10 @@ public class ReplaySubscriptionMessageHandler {
             AmazonSQSConfig sqsConfig = new AmazonSQSConfig(region);
             this.sqsClient = sqsConfig.AmazonSQS();
 
-            setReplayQueueUrl();
+            K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+            replayQueueUrl = provider.getParameterAsStringOrDefault(replayTopic + "-sqs-queue-url", "dummy-topic-to-prevent-runtime-failure");
         } catch (Exception e) {
             logger.log(Level.SEVERE, String.format("Failed to initialize ReplaySubscriptionMessageHandler: %s", e.getMessage()), e);
-        }
-    }
-
-    private void setReplayQueueUrl() {
-        // Try to get queue URL from SSM parameters
-        try {
-            K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-            replayQueueUrl = provider.getParameterAsString(replayTopic + "-sqs-queue-url");
-            logger.info(() -> String.format("Retrieved SQS queue URL from SSM: %s", replayQueueUrl));
-        } catch (K8sParameterNotFoundException e) {
-            // For development, use a default queue URL
-            logger.warning("Failed to retrieve SQS queue URL from SSM, using default value: " + e.getMessage());
-            replayQueueUrl = "https://sqs." + region + ".amazonaws.com/123456789012/" + replayTopic;
         }
     }
 

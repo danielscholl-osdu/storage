@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
@@ -82,24 +81,11 @@ public class ReplayMessageHandler {
             
             // For development, use simple topic ARNs
             // In production, these would be retrieved from SSM parameters
-            setReplayTopicArn();
-
-            logger.info(() -> String.format("ReplayMessageHandler initialized with region: %s", region));
+            K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+            replayTopicArn = provider.getParameterAsStringOrDefault(replayTopic + "-sns-topic-arn", "dummy-topic-to-prevent-runtime-failure");
         } catch (Exception e) {
             // Use standard Java logger for errors during initialization
             logger.log(Level.SEVERE, String.format("Failed to initialize ReplayMessageHandler: %s", e.getMessage()), e);
-        }
-    }
-
-    private void setReplayTopicArn() {
-        try {
-            K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-            replayTopicArn = provider.getParameterAsString(replayTopic + "-sns-topic-arn");
-            logger.info(() -> String.format("Retrieved SNS topic ARN from SSM parameter: %s", replayTopicArn));
-        } catch (K8sParameterNotFoundException e) {
-            // Fallback to default ARN for development
-            logger.warning(() -> String.format("Failed to retrieve SNS topic ARN from SSM, using default value: %s", e.getMessage()));
-            replayTopicArn = "arn:aws:sns:" + region + ":123456789012:" + replayTopic;
         }
     }
 
@@ -149,11 +135,6 @@ public class ReplayMessageHandler {
      * @throws ReplayMessageHandlerException if serialization or publishing fails
      */
     public void sendReplayMessage(List<ReplayMessage> messages, String operation) throws ReplayMessageHandlerException {
-        if (messages == null || messages.isEmpty()) {
-            logger.warning("No replay messages to send");
-            return;
-        }
-        
         if (operation == null || operation.isEmpty()) {
             logger.warning("Operation type is null or empty, using default");
             operation = "replay";
