@@ -19,6 +19,8 @@ package org.opengroup.osdu.storage.provider.aws.model.schema;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
+
+// Move to core common
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SchemaIdentity {

@@ -19,6 +19,7 @@ package org.opengroup.osdu.storage.provider.aws.model.schema;
 import lombok.Data;
 import lombok.ToString;
 
+// Move to core common
 @Data
 @ToString
 public class SchemaInfo {

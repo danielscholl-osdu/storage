@@ -21,6 +21,7 @@ import lombok.ToString;
 
 import java.util.List;
 
+// Move to core common
 @Data
 @ToString
 public class SchemaInfoResponse {
