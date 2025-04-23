@@ -29,6 +29,7 @@ import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 
+// To be deprecated
 @Repository
 public class SchemaRepositoryImpl implements ISchemaRepository {
 

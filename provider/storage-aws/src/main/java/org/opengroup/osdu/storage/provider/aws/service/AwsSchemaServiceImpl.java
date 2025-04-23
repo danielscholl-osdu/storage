@@ -40,6 +40,7 @@ import java.util.Objects;
 
 /**
  * AWS implementation of the Schema Service.
+ * Named AWS Schema service because old Storage Schema Service code still exists. Can be renamed in the future.
  */
 @Service
 public class AwsSchemaServiceImpl implements SchemaService {
