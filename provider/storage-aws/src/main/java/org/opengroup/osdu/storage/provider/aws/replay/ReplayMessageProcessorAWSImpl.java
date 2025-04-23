@@ -52,8 +52,13 @@ import java.util.logging.Logger;
 public class ReplayMessageProcessorAWSImpl {
     
     private static final Logger LOGGER = Logger.getLogger(ReplayMessageProcessorAWSImpl.class.getName());
-    private static final int DEFAULT_BATCH_SIZE = 1000;
-    private static final int PUBLISH_BATCH_SIZE = 50;
+    
+    @Value("${replay.message.default-batch-size:1000}")
+    private int defaultBatchSize;
+    
+    @Value("${replay.message.publish-batch-size:50}")
+    private int publishBatchSize;
+    
     private static final String RECORD_BLOCKS = "data metadata";
     
     private final IReplayRepository replayRepository;
@@ -196,7 +201,7 @@ public class ReplayMessageProcessorAWSImpl {
      * Fetch a batch of records for the given kind and cursor
      */
     private RecordInfoQueryResult<RecordId> fetchRecordBatch(String kind, String cursor) {
-        return queryRepository.getAllRecordIdsFromKind(DEFAULT_BATCH_SIZE, cursor, kind);
+        return queryRepository.getAllRecordIdsFromKind(defaultBatchSize, cursor, kind);
     }
     
     /**
@@ -377,7 +382,7 @@ public class ReplayMessageProcessorAWSImpl {
                 recordChangedMessages.add(recordChanged);
 
                 // Publish in batches to avoid exceeding SNS message size limits
-                if (recordChangedMessages.size() >= PUBLISH_BATCH_SIZE) {
+                if (recordChangedMessages.size() >= publishBatchSize) {
                     publishRecordChangedMessages(replayMessage, recordChangedMessages);
                     recordChangedMessages.clear();
                 }

@@ -97,6 +97,10 @@ public class ReplayMessageProcessorAWSImplTest {
     public void setUp() {
         // Set up fields using reflection
         ReflectionTestUtils.setField(replayMessageProcessor, "recordMetadataTableParameterRelativePath", RECORD_METADATA_TABLE_PATH);
+        
+        // Set the batch sizes to ensure consistent test behavior
+        ReflectionTestUtils.setField(replayMessageProcessor, "defaultBatchSize", 1000);
+        ReflectionTestUtils.setField(replayMessageProcessor, "publishBatchSize", 100); // Set higher than test data to ensure single batch
 
         // Mock behavior for DynamoDBQueryHelperFactory - use specific parameter types
         when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), anyString(), any()))
