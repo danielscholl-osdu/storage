@@ -145,7 +145,7 @@ public class ParallelReplayProcessor {
     private void processBatches(ReplayRequest replayRequest, List<List<String>> batches) {
         for (List<String> batch : batches) {
             // Update status to QUEUED for all kinds in this batch
-            updateBatchStatusToQueued(batch, replayRequest.getReplayId());
+            updateBatchStatus(batch, replayRequest.getReplayId(), ReplayState.QUEUED);
 
             // Create and send messages for this batch - must run after replay status table update,
             // since messages can be fully processed before table update resulting in incorrect status of QUEUED.
@@ -155,28 +155,29 @@ public class ParallelReplayProcessor {
             } catch (ReplayMessageHandlerException e) {
                 LOGGER.log(Level.SEVERE, "Failed to send replay messages for batch", e);
                 // Update status to FAILED for all kinds in this batch
-                updateBatchStatusToFailed(batch, replayRequest.getReplayId());
+                updateBatchStatus(batch, replayRequest.getReplayId(), ReplayState.FAILED);
             }
         }
     }
     
     /**
-     * Updates the status of all kinds in a batch.
+     * Updates the status of all kinds in a batch to the specified state.
      * 
      * @param batch The batch of kinds to update
      * @param replayId The replay ID
+     * @param state The ReplayState to set
      */
-    private void updateBatchStatusToQueued(List<String> batch, String replayId) {
+    private void updateBatchStatus(List<String> batch, String replayId, ReplayState state) {
         for (String kind : batch) {
             try {
                 AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
                 if (replayMetaData != null) {
-                    replayMetaData.setState(ReplayState.QUEUED.name());
+                    replayMetaData.setState(state.name());
                     replayMetaData.setLastUpdatedAt(new Date());
                     replayRepository.saveAwsReplayMetaData(replayMetaData);
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, String.format("Error updating status for kind %s: %s", kind, e.getMessage()), e);
+                LOGGER.log(Level.SEVERE, String.format("Error updating status to %s for kind %s: %s", state.name(), kind, e.getMessage()), e);
             }
         }
     }
@@ -253,26 +254,7 @@ public class ParallelReplayProcessor {
     }
 
 
-    /**
-     * Updates the status of all kinds in a batch to FAILED.
-     * 
-     * @param batch The batch of kinds to update
-     * @param replayId The replay ID
-     */
-    private void updateBatchStatusToFailed(List<String> batch, String replayId) {
-        for (String kind : batch) {
-            try {
-                AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
-                if (replayMetaData != null) {
-                    replayMetaData.setState(ReplayState.FAILED.name());
-                    replayMetaData.setLastUpdatedAt(new Date());
-                    replayRepository.saveAwsReplayMetaData(replayMetaData);
-                }
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, String.format("Error updating failure status for kind %s: %s", kind, e.getMessage()), e);
-            }
-        }
-    }
+
     /**
      * Creates replay messages for a batch of kinds.
      *

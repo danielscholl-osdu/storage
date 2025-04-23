@@ -264,7 +264,7 @@ public class ParallelReplayProcessorTest {
     }
     
     @Test
-    public void testUpdateBatchStatusToQueued_UpdatesStatusCorrectly() throws Exception {
+    public void testUpdateBatchStatus_UpdatesStatusToQueuedCorrectly() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
@@ -272,9 +272,9 @@ public class ParallelReplayProcessorTest {
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
-                "updateBatchStatusToQueued", List.class, String.class);
+                "updateBatchStatus", List.class, String.class, ReplayState.class);
         method.setAccessible(true);
-        method.invoke(processor, testKinds, replayId);
+        method.invoke(processor, testKinds, replayId, ReplayState.QUEUED);
         
         // Assert
         ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
@@ -288,7 +288,7 @@ public class ParallelReplayProcessorTest {
     }
     
     @Test
-    public void testUpdateBatchStatusToQueued_HandlesExceptions() throws Exception {
+    public void testUpdateBatchStatus_HandlesExceptions() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
@@ -303,9 +303,9 @@ public class ParallelReplayProcessorTest {
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
-                "updateBatchStatusToQueued", List.class, String.class);
+                "updateBatchStatus", List.class, String.class, ReplayState.class);
         method.setAccessible(true);
-        method.invoke(processor, testKinds, replayId);
+        method.invoke(processor, testKinds, replayId, ReplayState.QUEUED);
         
         // Assert - should still save the second kind
         verify(replayRepository).saveAwsReplayMetaData(metadata2);
@@ -374,7 +374,7 @@ public class ParallelReplayProcessorTest {
         // Verify status updates for all kinds - first to QUEUED, then to FAILED
         verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
         
-        // Verify updateBatchStatusToFailed was called
+        // Verify updateBatchStatus was called with FAILED state
         ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
         verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(metadataCaptor.capture());
         
@@ -390,7 +390,7 @@ public class ParallelReplayProcessorTest {
     }
 
     @Test
-    public void testUpdateBatchStatusToFailed_UpdatesStatusCorrectly() throws Exception {
+    public void testUpdateBatchStatus_UpdatesStatusToFailedCorrectly() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
@@ -398,9 +398,9 @@ public class ParallelReplayProcessorTest {
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
-                "updateBatchStatusToFailed", List.class, String.class);
+                "updateBatchStatus", List.class, String.class, ReplayState.class);
         method.setAccessible(true);
-        method.invoke(processor, testKinds, replayId);
+        method.invoke(processor, testKinds, replayId, ReplayState.FAILED);
         
         // Assert
         ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
@@ -413,29 +413,7 @@ public class ParallelReplayProcessorTest {
         }
     }
 
-    @Test
-    public void testUpdateBatchStatusToFailed_HandlesExceptions() throws Exception {
-        // Arrange
-        String replayId = "test-replay-id";
-        
-        // Setup exception for the first kind
-        when(replayRepository.getAwsReplayStatusByKindAndReplayId("kind1", replayId))
-            .thenThrow(new RuntimeException("Test exception"));
-        
-        // Setup normal behavior for other kinds
-        AwsReplayMetaDataDTO metadata2 = new AwsReplayMetaDataDTO();
-        metadata2.setKind("kind2");
-        when(replayRepository.getAwsReplayStatusByKindAndReplayId("kind2", replayId)).thenReturn(metadata2);
-        
-        // Act
-        Method method = ParallelReplayProcessor.class.getDeclaredMethod(
-                "updateBatchStatusToFailed", List.class, String.class);
-        method.setAccessible(true);
-        method.invoke(processor, testKinds, replayId);
-        
-        // Assert - should still save the second kind
-        verify(replayRepository).saveAwsReplayMetaData(metadata2);
-    }
+
 
     @Test
     public void testCreateReplayMessages_ShouldCreateCorrectMessages() throws Exception {
