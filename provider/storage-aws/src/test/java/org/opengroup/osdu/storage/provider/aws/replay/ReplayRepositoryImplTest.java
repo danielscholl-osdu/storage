@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -388,4 +389,121 @@ public class ReplayRepositoryImplTest {
         dto.setElapsedTime("00:10:00");
         return dto;
     }
+
+    @Test
+    public void testBatchSaveAwsReplayMetaData() {
+        // Prepare test data
+        List<AwsReplayMetaDataDTO> dtoList = new ArrayList<>();
+
+        AwsReplayMetaDataDTO dto1 = new AwsReplayMetaDataDTO();
+        dto1.setId("kind1");
+        dto1.setReplayId(REPLAY_ID);
+        dto1.setKind("kind1");
+        dto1.setState("QUEUED");
+        dtoList.add(dto1);
+
+        AwsReplayMetaDataDTO dto2 = new AwsReplayMetaDataDTO();
+        dto2.setId("kind2");
+        dto2.setReplayId(REPLAY_ID);
+        dto2.setKind("kind2");
+        dto2.setState("QUEUED");
+        dtoList.add(dto2);
+
+        // Mock behavior
+        when(dynamoDBQueryHelper.batchSave(anyList())).thenReturn(Collections.emptyList());
+
+        // Execute
+        List<com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch> result =
+                replayRepository.batchSaveAwsReplayMetaData(dtoList);
+
+        // Verify
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // Verify the batch save was called with the correct number of items
+        ArgumentCaptor<List<ReplayMetadataItem>> itemsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(dynamoDBQueryHelper).batchSave(itemsCaptor.capture());
+
+        List<ReplayMetadataItem> capturedItems = itemsCaptor.getValue();
+        assertEquals(2, capturedItems.size());
+        assertEquals("kind1", capturedItems.get(0).getKind());
+        assertEquals("kind2", capturedItems.get(1).getKind());
+    }
+
+    @Test
+    public void testBatchSaveAwsReplayMetaData_HandlesEmptyList() {
+        // Execute
+        List<com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch> result =
+                replayRepository.batchSaveAwsReplayMetaData(Collections.emptyList());
+
+        // Verify
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // Verify batch save was not called
+        verify(dynamoDBQueryHelper, never()).batchSave(anyList());
+    }
+
+    @Test
+    public void testBatchSaveAwsReplayMetaData_HandlesFailures() {
+        // Prepare test data
+        List<AwsReplayMetaDataDTO> dtoList = new ArrayList<>();
+
+        AwsReplayMetaDataDTO dto = new AwsReplayMetaDataDTO();
+        dto.setId("kind1");
+        dto.setReplayId(REPLAY_ID);
+        dto.setKind("kind1");
+        dto.setState("QUEUED");
+        dtoList.add(dto);
+
+        // Create a failed batch
+        com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch failedBatch =
+                new com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch();
+        failedBatch.setException(new RuntimeException("Test batch failure"));
+        failedBatch.setUnprocessedItems(Map.of("test", List.of()));
+
+        // Mock behavior
+        when(dynamoDBQueryHelper.batchSave(anyList())).thenReturn(List.of(failedBatch));
+
+        // Execute
+        List<com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch> result =
+                replayRepository.batchSaveAwsReplayMetaData(dtoList);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0).getException());
+        assertEquals("Test batch failure", result.get(0).getException().getMessage());
+
+        // Verify error was logged
+        verify(logger).error("Failed to save 1 batches during batch save operation");
+    }
+
+    @Test
+    public void testBatchSaveAwsReplayMetaData_HandlesExceptions() {
+        // Prepare test data
+        List<AwsReplayMetaDataDTO> dtoList = new ArrayList<>();
+
+        AwsReplayMetaDataDTO dto = new AwsReplayMetaDataDTO();
+        dto.setId("kind1");
+        dto.setReplayId(REPLAY_ID);
+        dto.setKind("kind1");
+        dto.setState("QUEUED");
+        dtoList.add(dto);
+
+        // Mock behavior to throw exception
+        when(dynamoDBQueryHelper.batchSave(anyList())).thenThrow(new RuntimeException("Test exception"));
+
+        // Execute - should throw the exception
+        try {
+            replayRepository.batchSaveAwsReplayMetaData(dtoList);
+            fail("Expected exception was not thrown");
+        } catch (RuntimeException e) {
+            assertEquals("Test exception", e.getMessage());
+        }
+
+        // Verify error was logged
+        verify(logger).error(contains("Error during batch save"), any(RuntimeException.class));
+    }
+
 }

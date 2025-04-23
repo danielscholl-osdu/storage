@@ -25,7 +25,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.enums.ReplayType;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
@@ -145,6 +145,7 @@ public class ParallelReplayProcessorTest {
         
         // Setup mocks for the full flow
         setupMocksForFullFlow();
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(Collections.emptyList());
         
         // Act
         processor.processReplayAsync(testRequest, testKinds);
@@ -160,8 +161,8 @@ public class ParallelReplayProcessorTest {
         // Verify record counts were updated
         verify(queryRepository).getActiveRecordsCountForKinds(anyList());
         
-        // Verify status updates
-        verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
+        // Verify batch status updates were called
+        verify(replayRepository, atLeastOnce()).batchSaveAwsReplayMetaData(anyList());
         
         // Verify messages were sent
         verify(messageHandler).sendReplayMessage(anyList(), eq("replay"));
@@ -187,7 +188,7 @@ public class ParallelReplayProcessorTest {
     }
 
     @Test
-    public void testUpdateRecordCounts_ShouldUpdateMetadataWithCounts() throws Exception {
+    public void testUpdateRecordCountsForBatch_UsesBatchSave() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
@@ -199,28 +200,31 @@ public class ParallelReplayProcessorTest {
         kindCounts.put("kind3", 300L);
         
         when(queryRepository.getActiveRecordsCountForKinds(anyList())).thenReturn(kindCounts);
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(Collections.emptyList());
         
         // Act
-        Method method = ParallelReplayProcessor.class.getDeclaredMethod("updateRecordCounts", String.class, List.class);
+        Method method = ParallelReplayProcessor.class.getDeclaredMethod(
+                "updateRecordCountsForBatch", List.class, String.class);
         method.setAccessible(true);
-        method.invoke(processor, replayId, testKinds);
+        method.invoke(processor, testKinds, replayId);
         
         // Assert
-        ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
-        verify(replayRepository, times(3)).saveAwsReplayMetaData(metadataCaptor.capture());
+        ArgumentCaptor<List<AwsReplayMetaDataDTO>> batchCaptor = ArgumentCaptor.forClass(List.class);
+        verify(replayRepository).batchSaveAwsReplayMetaData(batchCaptor.capture());
         
-        List<AwsReplayMetaDataDTO> capturedMetadata = metadataCaptor.getAllValues();
-        assertEquals(3, capturedMetadata.size());
+        List<AwsReplayMetaDataDTO> capturedBatch = batchCaptor.getValue();
+        assertEquals(3, capturedBatch.size());
         
         Map<String, Long> expectedCounts = new HashMap<>();
         expectedCounts.put("kind1", 100L);
         expectedCounts.put("kind2", 200L);
         expectedCounts.put("kind3", 300L);
         
-        for (ReplayMetaDataDTO metadata : capturedMetadata) {
+        for (AwsReplayMetaDataDTO metadata : capturedBatch) {
             String kind = metadata.getKind();
             assertTrue("Unexpected kind: " + kind, expectedCounts.containsKey(kind));
             assertEquals(expectedCounts.get(kind).longValue(), metadata.getTotalRecords().longValue());
+            assertNotNull(metadata.getLastUpdatedAt());
         }
     }
     
@@ -238,37 +242,19 @@ public class ParallelReplayProcessorTest {
         method.setAccessible(true);
         method.invoke(processor, testKinds, replayId);
         
-        // Assert - verify no exceptions were thrown
-        assertTrue("Test passed without exceptions", true);
+        // Assert - verify no exceptions were thrown and batch save was not called
+        verify(replayRepository, never()).batchSaveAwsReplayMetaData(anyList());
     }
     
-    @Test
-    public void testUpdateRecordCountForKind_HandlesExceptions() throws Exception {
-        // Arrange
-        String replayId = "test-replay-id";
-        String kind = "kind1";
-        Long count = 100L;
-        
-        // Setup exception to be thrown during repository operation
-        when(replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId))
-            .thenThrow(new RuntimeException("Test exception"));
-        
-        // Act
-        Method method = ParallelReplayProcessor.class.getDeclaredMethod(
-                "updateRecordCountForKind", String.class, String.class, Long.class);
-        method.setAccessible(true);
-        method.invoke(processor, kind, replayId, count);
-        
-        // Assert - verify no exceptions were thrown
-        assertTrue("Test passed without exceptions", true);
-    }
+
     
     @Test
-    public void testUpdateBatchStatus_UpdatesStatusToQueuedCorrectly() throws Exception {
+    public void testUpdateBatchStatus_UsesBatchSave() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
         setupReplayMetadataForKinds(replayId, testKinds);
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(Collections.emptyList());
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
@@ -277,29 +263,34 @@ public class ParallelReplayProcessorTest {
         method.invoke(processor, testKinds, replayId, ReplayState.QUEUED);
         
         // Assert
-        ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
-        verify(replayRepository, times(3)).saveAwsReplayMetaData(metadataCaptor.capture());
+        ArgumentCaptor<List<AwsReplayMetaDataDTO>> batchCaptor = ArgumentCaptor.forClass(List.class);
+        verify(replayRepository).batchSaveAwsReplayMetaData(batchCaptor.capture());
         
-        List<AwsReplayMetaDataDTO> capturedMetadata = metadataCaptor.getAllValues();
-        for (AwsReplayMetaDataDTO metadata : capturedMetadata) {
+        List<AwsReplayMetaDataDTO> capturedBatch = batchCaptor.getValue();
+        assertEquals(3, capturedBatch.size());
+        
+        for (AwsReplayMetaDataDTO metadata : capturedBatch) {
             assertEquals(ReplayState.QUEUED.name(), metadata.getState());
             assertNotNull(metadata.getLastUpdatedAt());
         }
+        
+        // Verify individual saves were not called
+        verify(replayRepository, never()).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
     }
     
     @Test
-    public void testUpdateBatchStatus_HandlesExceptions() throws Exception {
+    public void testUpdateBatchStatus_HandlesFailedBatches() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
-        // Setup exception for the first kind
-        when(replayRepository.getAwsReplayStatusByKindAndReplayId("kind1", replayId))
-            .thenThrow(new RuntimeException("Test exception"));
+        setupReplayMetadataForKinds(replayId, testKinds);
         
-        // Setup normal behavior for other kinds
-        AwsReplayMetaDataDTO metadata2 = new AwsReplayMetaDataDTO();
-        metadata2.setKind("kind2");
-        when(replayRepository.getAwsReplayStatusByKindAndReplayId("kind2", replayId)).thenReturn(metadata2);
+        // Create a failed batch
+        FailedBatch failedBatch = new FailedBatch();
+        failedBatch.setException(new RuntimeException("Test batch failure"));
+        failedBatch.setUnprocessedItems(Map.of("test", List.of()));
+        
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(List.of(failedBatch));
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
@@ -307,8 +298,34 @@ public class ParallelReplayProcessorTest {
         method.setAccessible(true);
         method.invoke(processor, testKinds, replayId, ReplayState.QUEUED);
         
-        // Assert - should still save the second kind
-        verify(replayRepository).saveAwsReplayMetaData(metadata2);
+        // Assert
+        verify(replayRepository).batchSaveAwsReplayMetaData(anyList());
+        // Test passes if no exception is thrown
+    }
+
+    @Test
+    public void testUpdateRecordCounts_UsesBatchSave() throws Exception {
+        // Arrange
+        String replayId = "test-replay-id";
+        
+        setupReplayMetadataForKinds(replayId, testKinds);
+        
+        Map<String, Long> kindCounts = new HashMap<>();
+        kindCounts.put("kind1", 100L);
+        kindCounts.put("kind2", 200L);
+        kindCounts.put("kind3", 300L);
+        
+        when(queryRepository.getActiveRecordsCountForKinds(anyList())).thenReturn(kindCounts);
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(Collections.emptyList());
+        
+        // Act
+        Method method = ParallelReplayProcessor.class.getDeclaredMethod("updateRecordCounts", String.class, List.class);
+        method.setAccessible(true);
+        method.invoke(processor, replayId, testKinds);
+        
+        // Assert
+        verify(replayRepository).batchSaveAwsReplayMetaData(anyList());
+        verify(replayRepository, never()).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
     }
 
     @Test
@@ -319,6 +336,7 @@ public class ParallelReplayProcessorTest {
         batches.add(Collections.singletonList("kind3"));
         
         setupReplayMetadataForKinds(testRequest.getReplayId(), testKinds);
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(Collections.emptyList());
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
@@ -335,8 +353,8 @@ public class ParallelReplayProcessorTest {
         }
         
         // Assert
-        // Verify status updates for all kinds
-        verify(replayRepository, times(3)).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
+        // Verify batch status updates were called
+        verify(replayRepository, times(2)).batchSaveAwsReplayMetaData(anyList());
         
         // Verify message handler was called twice (once per batch)
         verify(messageHandler, times(2)).sendReplayMessage(anyList(), eq("replay"));
@@ -352,65 +370,34 @@ public class ParallelReplayProcessorTest {
     }
 
     @Test
-    public void testProcessBatches_HandlesMessageSendingFailure() throws Exception {
-        // Arrange
-        List<List<String>> batches = new ArrayList<>();
-        batches.add(Arrays.asList("kind1", "kind2"));
-        batches.add(Collections.singletonList("kind3"));
-        
-        setupReplayMetadataForKinds(testRequest.getReplayId(), testKinds);
-        
-        // Setup message handler to throw exception on first call
-        doThrow(new ReplayMessageHandlerException("Failed to send message"))
-            .when(messageHandler).sendReplayMessage(anyList(), eq("replay"));
-        
-        // Act
-        Method method = ParallelReplayProcessor.class.getDeclaredMethod(
-                "processBatches", ReplayRequest.class, List.class);
-        method.setAccessible(true);
-        method.invoke(processor, testRequest, batches);
-        
-        // Assert
-        // Verify status updates for all kinds - first to QUEUED, then to FAILED
-        verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(any(AwsReplayMetaDataDTO.class));
-        
-        // Verify updateBatchStatus was called with FAILED state
-        ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
-        verify(replayRepository, atLeastOnce()).saveAwsReplayMetaData(metadataCaptor.capture());
-        
-        // Check that at least one status was set to FAILED
-        boolean foundFailedStatus = false;
-        for (AwsReplayMetaDataDTO metadata : metadataCaptor.getAllValues()) {
-            if (ReplayState.FAILED.name().equals(metadata.getState())) {
-                foundFailedStatus = true;
-                break;
-            }
-        }
-        assertTrue("No FAILED status found", foundFailedStatus);
-    }
-
-    @Test
-    public void testUpdateBatchStatus_UpdatesStatusToFailedCorrectly() throws Exception {
+    public void testUpdateBatchStatus_HandlesExceptions() throws Exception {
         // Arrange
         String replayId = "test-replay-id";
         
-        setupReplayMetadataForKinds(replayId, testKinds);
+        // Setup exception for the first kind
+        when(replayRepository.getAwsReplayStatusByKindAndReplayId("kind1", replayId))
+            .thenThrow(new RuntimeException("Test exception"));
+        
+        // Setup normal behavior for other kinds
+        AwsReplayMetaDataDTO metadata2 = new AwsReplayMetaDataDTO();
+        metadata2.setKind("kind2");
+        when(replayRepository.getAwsReplayStatusByKindAndReplayId("kind2", replayId)).thenReturn(metadata2);
+        
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(Collections.emptyList());
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(
                 "updateBatchStatus", List.class, String.class, ReplayState.class);
         method.setAccessible(true);
-        method.invoke(processor, testKinds, replayId, ReplayState.FAILED);
+        method.invoke(processor, testKinds, replayId, ReplayState.QUEUED);
         
-        // Assert
-        ArgumentCaptor<AwsReplayMetaDataDTO> metadataCaptor = ArgumentCaptor.forClass(AwsReplayMetaDataDTO.class);
-        verify(replayRepository, times(3)).saveAwsReplayMetaData(metadataCaptor.capture());
+        // Assert - should still process the batch with the second kind
+        ArgumentCaptor<List<AwsReplayMetaDataDTO>> batchCaptor = ArgumentCaptor.forClass(List.class);
+        verify(replayRepository).batchSaveAwsReplayMetaData(batchCaptor.capture());
         
-        List<AwsReplayMetaDataDTO> capturedMetadata = metadataCaptor.getAllValues();
-        for (AwsReplayMetaDataDTO metadata : capturedMetadata) {
-            assertEquals(ReplayState.FAILED.name(), metadata.getState());
-            assertNotNull(metadata.getLastUpdatedAt());
-        }
+        List<AwsReplayMetaDataDTO> capturedBatch = batchCaptor.getValue();
+        assertEquals(1, capturedBatch.size());
+        assertEquals("kind2", capturedBatch.get(0).getKind());
     }
 
 

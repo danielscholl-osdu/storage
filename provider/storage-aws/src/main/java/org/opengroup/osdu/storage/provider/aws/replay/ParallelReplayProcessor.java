@@ -31,8 +31,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PreDestroy;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import java.util.*;
+import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -162,26 +163,59 @@ public class ParallelReplayProcessor {
     
     /**
      * Updates the status of all kinds in a batch to the specified state.
+     * Uses batch save to reduce the number of DynamoDB API calls.
      * 
      * @param batch The batch of kinds to update
      * @param replayId The replay ID
      * @param state The ReplayState to set
      */
     private void updateBatchStatus(List<String> batch, String replayId, ReplayState state) {
+        if (batch == null || batch.isEmpty()) {
+            return;
+        }
+        
+        LOGGER.info(() -> String.format("Updating status to %s for %d kinds in batch for replay ID: %s", 
+                state.name(), batch.size(), replayId));
+        
+        try {
+            List<AwsReplayMetaDataDTO> metadataList = retrieveMetadataWithState(batch, replayId, state);
+
+            if (!metadataList.isEmpty()) {
+                List<DynamoDBMapper.FailedBatch> failedBatches = replayRepository.batchSaveAwsReplayMetaData(metadataList);
+                
+                if (!failedBatches.isEmpty()) {
+                    LOGGER.log(Level.SEVERE, () -> String.format("Failed to update status for %d batches", failedBatches.size()));
+                    
+                    // Log details of failed items
+                    for (DynamoDBMapper.FailedBatch failedBatch : failedBatches) {
+                        LOGGER.log(Level.SEVERE, () -> String.format("Batch failure: %s, Exception: %s", 
+                                failedBatch.getUnprocessedItems(), failedBatch.getException().getMessage()));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error during batch update of status to %s: %s", state.name(), e.getMessage()), e);
+        }
+    }
+
+    private List<AwsReplayMetaDataDTO> retrieveMetadataWithState(List<String> batch, String replayId, ReplayState state) {
+        List<AwsReplayMetaDataDTO> metadataList = new ArrayList<>();
+
         for (String kind : batch) {
             try {
                 AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
                 if (replayMetaData != null) {
                     replayMetaData.setState(state.name());
                     replayMetaData.setLastUpdatedAt(new Date());
-                    replayRepository.saveAwsReplayMetaData(replayMetaData);
+                    metadataList.add(replayMetaData);
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, String.format("Error updating status to %s for kind %s: %s", state.name(), kind, e.getMessage()), e);
+                LOGGER.log(Level.SEVERE, String.format("Error retrieving metadata for kind %s: %s", kind, e.getMessage()), e);
             }
         }
+        return metadataList;
     }
-    
+
     /**
      * Updates record counts for each kind.
      * 
@@ -201,6 +235,7 @@ public class ParallelReplayProcessor {
     
     /**
      * Updates record counts for a batch of kinds.
+     * Uses batch save to reduce the number of DynamoDB API calls.
      * 
      * @param batch The batch of kinds to update
      * @param replayId The replay ID
@@ -210,32 +245,38 @@ public class ParallelReplayProcessor {
             // Get counts for this batch of kinds
             Map<String, Long> kindCounts = queryRepository.getActiveRecordsCountForKinds(batch);
             
-            // Update metadata records with the counts
-            for (String kind : batch) {
-                updateRecordCountForKind(kind, replayId, kindCounts.getOrDefault(kind, 0L));
+            // Prepare a list of metadata records to update
+            List<AwsReplayMetaDataDTO> metadataToUpdate = retrieveMetadataRecordsWithCounts(batch, replayId, kindCounts);
+
+            // Save all updated records in a single batch operation
+            if (!metadataToUpdate.isEmpty()) {
+                List<DynamoDBMapper.FailedBatch> failedBatches = replayRepository.batchSaveAwsReplayMetaData(metadataToUpdate);
+
+                if (!failedBatches.isEmpty()) {
+                    LOGGER.log(Level.SEVERE, ()-> String.format("Failed to update record counts for %d batches", failedBatches.size()));
+                }
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, String.format("Error getting record counts for batch: %s", e.getMessage()), e);
         }
     }
-    
-    /**
-     * Updates the record count for a single kind.
-     * 
-     * @param kind The kind to update
-     * @param replayId The replay ID
-     * @param count The record count
-     */
-    private void updateRecordCountForKind(String kind, String replayId, Long count) {
-        try {
-            AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
-            if (replayMetaData != null) {
-                replayMetaData.setTotalRecords(count);
-                replayRepository.saveAwsReplayMetaData(replayMetaData);
+
+    private List<AwsReplayMetaDataDTO> retrieveMetadataRecordsWithCounts(List<String> batch, String replayId, Map<String, Long> kindCounts) {
+        List<AwsReplayMetaDataDTO> metadataToUpdate = new ArrayList<>();
+        for (String kind : batch) {
+            try {
+                AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
+                if (replayMetaData != null) {
+                    replayMetaData.setTotalRecords(kindCounts.getOrDefault(kind, 0L));
+                    replayMetaData.setLastUpdatedAt(new Date());
+                    metadataToUpdate.add(replayMetaData);
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, String.format("Error retrieving metadata for kind %s: %s", kind, e.getMessage()), e);
             }
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, String.format("Error updating record count for kind %s: %s", kind, e.getMessage()), e);
         }
+
+        return metadataToUpdate;
     }
 
     /**

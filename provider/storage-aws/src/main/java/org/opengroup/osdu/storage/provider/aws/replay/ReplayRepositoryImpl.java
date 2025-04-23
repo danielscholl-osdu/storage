@@ -16,6 +16,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
@@ -166,6 +167,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         return convertToDTO(item);
     }
 
+
     /**
      * Saves an AWS-specific replay metadata item to DynamoDB.
      *
@@ -174,11 +176,48 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     public AwsReplayMetaDataDTO saveAwsReplayMetaData(AwsReplayMetaDataDTO awsReplayMetaData) {
         DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
-        
+
         ReplayMetadataItem item = convertAwsDtoToItem(awsReplayMetaData);
         queryHelper.save(item);
-        
+
         return convertToAwsDTO(item);
+    }
+
+    /**
+     * Saves a batch of AWS-specific replay metadata items to DynamoDB.
+     * This method uses the DynamoDB batch write functionality to reduce the number of API calls.
+     *
+     * @param awsReplayMetaDataList The list of AwsReplayMetaDataDTO objects to save
+     * @return A list of any failed batch operations
+     */
+    public List<DynamoDBMapper.FailedBatch> batchSaveAwsReplayMetaData(List<AwsReplayMetaDataDTO> awsReplayMetaDataList) {
+        if (awsReplayMetaDataList == null || awsReplayMetaDataList.isEmpty()) {
+            logger.info("No replay metadata items to save in batch");
+            return List.of();
+        }
+        
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        // Convert all DTOs to DynamoDB items
+        List<ReplayMetadataItem> items = awsReplayMetaDataList.stream()
+                .map(this::convertAwsDtoToItem)
+                .toList();
+        
+        logger.info(String.format("Batch saving %d replay metadata items", items.size()));
+        
+        try {
+            // Use the batch save functionality
+            List<DynamoDBMapper.FailedBatch> failedBatches = queryHelper.batchSave(items);
+            
+            if (!failedBatches.isEmpty()) {
+                logger.error(String.format("Failed to save %d batches during batch save operation", failedBatches.size()));
+            }
+            
+            return failedBatches;
+        } catch (Exception e) {
+            logger.error("Error during batch save of replay metadata: " + e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -308,3 +347,4 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         return item;
     }
 }
+
