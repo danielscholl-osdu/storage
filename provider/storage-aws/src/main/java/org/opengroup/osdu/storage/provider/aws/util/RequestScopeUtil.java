@@ -30,8 +30,6 @@ import java.util.logging.Logger;
  */
 @Component
 public class RequestScopeUtil {
-    private static final Logger LOGGER = Logger.getLogger(RequestScopeUtil.class.getName());
-
     /**
      * Executes the given task within a simulated request context with custom headers.
      * This allows request-scoped beans to be used in non-request contexts like scheduled tasks.
