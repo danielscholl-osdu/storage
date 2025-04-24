@@ -242,6 +242,8 @@ public class DpsConversionService {
                 String unitOfMeasureID = unitOfMeasureIDElement.getAsString().replaceAll(":$", "");
                 String persistableReference = this.getPersistableReferenceByUnitOfMeasureID(unitOfMeasureID);
                 if (persistableReference.equals("")) {
+                    this.logger.warning("Persistable reference was not obtained for record %s by unit of measure %s"
+                            .formatted(recordObj.get(Constants.ID), unitOfMeasureID));
                     return;
                 }
                 // update persistableReference to corresponding to unitOfMeasureID

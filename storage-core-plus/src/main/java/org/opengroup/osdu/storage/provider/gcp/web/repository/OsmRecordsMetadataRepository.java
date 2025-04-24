@@ -80,7 +80,15 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
         context.deleteById(RecordMetadata.class, getDestination(), id);
     }
 
-    @Override
+  @Override
+  public void batchDelete(List<String> ids, Optional<CollaborationContext> collaborationContext) {
+    String id = ids.get(0);
+    //TODO update the OSM API to pass just a list of IDs instead of 1 ID and varargs
+    List<String> subList = ids.subList(1, ids.size());
+    context.deleteById(RecordMetadata.class, getDestination(), id, subList.toArray(new String[0]));
+  }
+
+  @Override
     public RecordMetadata get(String id, Optional<CollaborationContext> collaborationContext) {
         GetQuery<RecordMetadata> osmQuery = new GetQuery<>(RecordMetadata.class, getDestination(), eq("id", id));
         return context.getResultsAsList(osmQuery).stream()

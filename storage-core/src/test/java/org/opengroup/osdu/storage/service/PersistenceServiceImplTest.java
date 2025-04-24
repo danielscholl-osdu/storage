@@ -17,7 +17,6 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -229,8 +228,10 @@ public class PersistenceServiceImplTest {
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture(), any());
         verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.recordRepository, times(1)).batchDelete(any(), any());
+        verify(this.cloudStorage, times(48)).deleteVersion(any(), any());
     }
 
     @Test
@@ -251,33 +252,39 @@ public class PersistenceServiceImplTest {
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
-        verify(this.recordRepository, times(2)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
+        verify(this.recordRepository, times(1)).batchDelete(any(), any());
         verify(this.pubSubClient, times(0)).publishMessage(any(), any(), anyList());
+        verify(this.cloudStorage, times(48)).deleteVersion(any(), any());
     }
 
-    @Disabled
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void should_notPersistRecords_and_throw500AppException_when_datastoreOtherErrorOccur() {
+    public void should_notPersistRecords_andRollBackStorage_and_throw500AppException_when_datastoreOtherErrorOccur() {
 
         TransferBatch batch = this.createBatchTransfer();
 
         this.setupRecordRepository(23, 10, 25);
-        doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        AppException firstException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error");
+        AppException secondException = new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "another error", "error");
+        doThrow(firstException).when(this.recordRepository).createOrUpdate(any(), any());
+        doThrow(secondException).when(this.recordRepository).batchDelete(any(), any());
+
         try {
             this.sut.persistRecordBatch(batch, Optional.empty());
             fail("Expected exception");
         } catch (AppException e) {
             assertEquals(500, e.getError().getCode());
-            assertTrue(e.getError().getMessage().contains("The server could not write metadata to Datastore at the moment"));
+            assertEquals(Arrays.stream(e.getSuppressed()).findFirst().get(), secondException);
         }
 
         ArgumentCaptor<List> datastoreCaptor = ArgumentCaptor.forClass(List.class);
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
-        verify(this.pubSubClient, times(0)).publishMessage(Optional.empty(), any());
+        verify(this.recordRepository, times(1)).batchDelete(any(), any());
+        verify(this.pubSubClient, times(0)).publishMessage(any(), any());
+        verify(this.cloudStorage, times(48)).deleteVersion(any(), any());
     }
 
-    @Disabled
     @Test
     public void should_LogError_AndThrowException_whenDataStoreTooBigEntityErrorOccur() {
         List<RecordMetadata> recordMetadataList = this.createListOfRecordMetadata();
@@ -291,16 +298,20 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
         doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any(), any());
-        when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
             this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
             assertEquals(413, e.getError().getCode());
-            assertTrue(e.getError().toString().contains("The record metadata is too big"));
+            assertTrue(e.getError().toString().contains("entity is too big"));
             verify(this.logger, times(1)).warning("Reverting meta data changes");
         }
+
+        verify(this.recordRepository, times(1)).createOrUpdate(any(), any());
+        verify(this.pubSubClient, times(0)).publishMessage(any(), any());
+        verify(this.cloudStorage, times(1)).updateObjectMetadata(any(), any(), any(), any(), any(), any());
+        verify(this.cloudStorage, times(1)).revertObjectMetadata(any(), any(), any());
     }
 
     @Test
