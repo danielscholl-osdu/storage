@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
+import java.util.Set;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
@@ -109,14 +110,17 @@ public class PersistenceServiceImpl implements PersistenceService {
             this.commitCloudStorageTransaction(recordsProcessing);
             this.commitDatastoreTransaction(recordsMetadata, collaborationContext);
         } catch (AppException e) {
+            //try deleting the latest version of the record from blob storage and Datastore
             try {
-                //try deleting the latest version of the record from blob storage and Datastore
-                this.tryCleanupCloudStorage(recordsProcessing);
                 this.tryCleanupDatastore(recordsMetadata, collaborationContext);
-            } catch (AppException innerException) {
-                e.addSuppressed(innerException);
+            } catch (AppException cleanUpDatastoreException) {
+                e.addSuppressed(cleanUpDatastoreException);
             }
-
+            try {
+                this.tryCleanupCloudStorage(recordsProcessing);
+            } catch (AppException cleanUpStorageException) {
+                e.addSuppressed(cleanUpStorageException);
+            }
             throw e;
         }
     }
@@ -239,14 +243,24 @@ public class PersistenceServiceImpl implements PersistenceService {
 
     private void tryCleanupDatastore(List<RecordMetadata> recordsMetadata, Optional<CollaborationContext> collaborationContext) {
         List<RecordMetadata> updatedRecordsMetadata = new ArrayList();
+        List<RecordMetadata> orphanedMetadata = new ArrayList<>();
         for (RecordMetadata recordMetadata : recordsMetadata) {
-            List<String> gcsVersionPathsWithoutLatestVersion = new ArrayList<>(recordMetadata.getGcsVersionPaths());
+            List<String> gcsVersionPaths = recordMetadata.getGcsVersionPaths();
+            List<String> gcsVersionPathsWithoutLatestVersion = new ArrayList<>(gcsVersionPaths);
             gcsVersionPathsWithoutLatestVersion.remove(recordMetadata.getVersionPath(recordMetadata.getLatestVersion()));
             recordMetadata.setGcsVersionPaths(gcsVersionPathsWithoutLatestVersion);
-            updatedRecordsMetadata.add(recordMetadata);
+            if (gcsVersionPathsWithoutLatestVersion.isEmpty()) {
+                orphanedMetadata.add(recordMetadata);
+            } else {
+                updatedRecordsMetadata.add(recordMetadata);
+            }
         }
         if (!updatedRecordsMetadata.isEmpty()) {
             this.commitDatastoreTransaction(updatedRecordsMetadata, collaborationContext);
+        }
+        if (!orphanedMetadata.isEmpty()) {
+            List<String> ids = recordsMetadata.stream().map(RecordMetadata::getId).toList();
+            this.batchDeleteMetadata(ids, collaborationContext);
         }
     }
 
@@ -271,6 +285,17 @@ public class PersistenceServiceImpl implements PersistenceService {
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error patching records.",
                     "The server could not process your request at the moment.", e);
+        }
+    }
+
+    private void batchDeleteMetadata(List<String> ids, Optional<CollaborationContext> collaborationContext) {
+        try {
+            this.recordRepository.batchDelete(ids, collaborationContext);
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error deleting record metadata.",
+                "The server could not process your request at the moment.", e);
         }
     }
 }

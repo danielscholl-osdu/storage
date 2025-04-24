@@ -112,11 +112,10 @@ public class ObmStorage implements ICloudStorage {
                 future.get();
             }
 
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof AppException) {
-                throw (AppException) e.getCause();
+            if (e.getCause() instanceof AppException appException) {
+                throw appException;
             } else {
                 throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error during record ingestion",
                     ERROR_ON_WRITING_THE_RECORD_HAS_OCCURRED_MSG, e);
