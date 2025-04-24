@@ -505,5 +505,89 @@ public class ReplayRepositoryImplTest {
         // Verify error was logged
         verify(logger).error(contains("Error during batch save"), any(RuntimeException.class));
     }
+    
+    @Test
+    public void testBatchGetAwsReplayStatusByKindsAndReplayId() {
+        // Prepare test data
+        List<String> kinds = Arrays.asList("kind1", "kind2", "kind3");
+        Set<String> kindSet = new HashSet<>(kinds);
+        
+        // Create test items
+        ReplayMetadataItem item1 = createReplayMetadataItem("kind1", REPLAY_ID);
+        ReplayMetadataItem item2 = createReplayMetadataItem("kind2", REPLAY_ID);
+        ReplayMetadataItem item3 = createReplayMetadataItem("kind3", REPLAY_ID);
+        List<ReplayMetadataItem> items = Arrays.asList(item1, item2, item3);
+        
+        // Mock behavior
+        when(dynamoDBQueryHelper.batchLoadByCompositeKey(
+                ReplayMetadataItem.class,
+                kindSet,
+                REPLAY_ID)).thenReturn(items);
+        
+        // Execute
+        List<AwsReplayMetaDataDTO> results = replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(kinds, REPLAY_ID);
+        
+        // Verify
+        assertNotNull(results);
+        assertEquals(3, results.size());
+        assertEquals("kind1", results.get(0).getKind());
+        assertEquals("kind2", results.get(1).getKind());
+        assertEquals("kind3", results.get(2).getKind());
+        
+        // Verify the batch load was called with the correct parameters
+        verify(dynamoDBQueryHelper).batchLoadByCompositeKey(
+                ReplayMetadataItem.class,
+                kindSet,
+                REPLAY_ID);
+    }
+    
+    @Test
+    public void testBatchGetAwsReplayStatusByKindsAndReplayId_HandlesEmptyList() {
+        // Execute with empty list
+        List<AwsReplayMetaDataDTO> results = replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(Collections.emptyList(), REPLAY_ID);
+        
+        // Verify
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+        
+        // Verify batch load was not called
+        verify(dynamoDBQueryHelper, never()).batchLoadByCompositeKey(any(), any(), any());
+    }
+    
+    @Test
+    public void testBatchGetAwsReplayStatusByKindsAndReplayId_HandlesException() {
+        // Prepare test data
+        List<String> kinds = Arrays.asList("kind1", "kind2");
+        Set<String> kindSet = new HashSet<>(kinds);
+        
+        // Mock behavior to throw exception
+        when(dynamoDBQueryHelper.batchLoadByCompositeKey(
+                ReplayMetadataItem.class,
+                kindSet,
+                REPLAY_ID)).thenThrow(new RuntimeException("Test exception"));
+        
+        // Mock individual retrievals for fallback
+        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, "kind1", REPLAY_ID))
+            .thenReturn(createReplayMetadataItem("kind1", REPLAY_ID));
+        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, "kind2", REPLAY_ID))
+            .thenReturn(createReplayMetadataItem("kind2", REPLAY_ID));
+        
+        // Execute
+        List<AwsReplayMetaDataDTO> results = replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(kinds, REPLAY_ID);
+        
+        // Verify
+        assertNotNull(results);
+        assertEquals(2, results.size());
+        assertEquals("kind1", results.get(0).getKind());
+        assertEquals("kind2", results.get(1).getKind());
+        
+        // Verify error was logged
+        verify(logger).error(contains("Error during batch retrieval"), any(RuntimeException.class));
+        verify(logger).info("Falling back to individual retrievals");
+        
+        // Verify individual retrievals were made
+        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, "kind1", REPLAY_ID);
+        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, "kind2", REPLAY_ID);
+    }
 
 }

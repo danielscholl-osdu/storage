@@ -34,9 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * AWS implementation of the IReplayRepository interface.
@@ -149,6 +147,48 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
         
         return item != null ? convertToAwsDTO(item) : null;
+    }
+    
+    /**
+     * Batch retrieves AWS-specific replay metadata DTOs for multiple kinds and a single replay ID.
+     * This method uses DynamoDB's batch load functionality to efficiently retrieve multiple items
+     * in a single API call.
+     *
+     * @param kinds List of kinds to retrieve metadata for
+     * @param replayId The unique identifier for the replay operation
+     * @return A list of AwsReplayMetaDataDTO objects for the given kinds and replay ID
+     */
+    public List<AwsReplayMetaDataDTO> batchGetAwsReplayStatusByKindsAndReplayId(List<String> kinds, String replayId) {
+        if (kinds == null || kinds.isEmpty()) {
+            logger.info("No kinds provided for batch retrieval");
+            return List.of();
+        }
+        
+        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        
+        try {
+            // Use the new batchLoadByCompositeKey method to efficiently retrieve all items in a single API call
+            // This handles the composite key (kind as hash key + replayId as range key)
+            Set<String> kindSet = new HashSet<>(kinds);
+            List<ReplayMetadataItem> items = queryHelper.batchLoadByCompositeKey(
+                    ReplayMetadataItem.class, kindSet, replayId);
+            
+            logger.info(String.format("Batch retrieved %d/%d replay metadata items", items.size(), kinds.size()));
+            
+            // Convert items to DTOs
+            return items.stream()
+                    .map(this::convertToAwsDTO)
+                    .toList();
+        } catch (Exception e) {
+            logger.error("Error during batch retrieval of replay metadata: " + e.getMessage(), e);
+            
+            // Fall back to individual retrievals if batch fails
+            logger.info("Falling back to individual retrievals");
+            return kinds.stream()
+                    .map(kind -> getAwsReplayStatusByKindAndReplayId(kind, replayId))
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
     }
     
     /**
