@@ -177,11 +177,6 @@ public class ReplayMessageHandler {
                 .withMessageAttributes(messageAttributes);
 
             snsClient.publish(publishRequest);
-            
-            if (message.getBody() != null) {
-                logger.info(() -> String.format("Published replay message to SNS topic for operation: %s, replayId: %s",
-                    operation, message.getBody().getReplayId()));
-            }
         } catch (Exception e) {
             throw new ReplayMessageHandlerException("Failed to publish message to SNS topic: " + replayTopicArn, e);
         }

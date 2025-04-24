@@ -40,18 +40,12 @@ public class RequestScopeUtil {
      * @param headers Map of headers to add to the request
      */
     public void executeInRequestScope(Runnable task, Map<String, String> headers) {
-        LOGGER.info("Creating simulated request context for background task");
         MockHttpServletRequest request = new MockHttpServletRequest();
 
         if (headers == null || headers.isEmpty()) {
             throw new IllegalArgumentException("Headers cannot be null or empty");
         } else {
-            headers.forEach((key, value) -> {
-                if (!key.equalsIgnoreCase("authorization")) {
-                    LOGGER.info("Adding header to simulated request: " + key + "=" + value);
-                }
-                request.addHeader(key, value);
-            });
+            headers.forEach(request::addHeader);
         }
         
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
@@ -59,7 +53,6 @@ public class RequestScopeUtil {
             task.run();
         } finally {
             RequestContextHolder.resetRequestAttributes();
-            LOGGER.info("Cleaned up simulated request context");
         }
     }
 }

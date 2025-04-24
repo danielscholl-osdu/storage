@@ -172,9 +172,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             Set<String> kindSet = new HashSet<>(kinds);
             List<ReplayMetadataItem> items = queryHelper.batchLoadByCompositeKey(
                     ReplayMetadataItem.class, kindSet, replayId);
-            
-            logger.info(String.format("Batch retrieved %d/%d replay metadata items", items.size(), kinds.size()));
-            
+
             // Convert items to DTOs
             return items.stream()
                     .map(this::convertToAwsDTO)
@@ -242,9 +240,7 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         List<ReplayMetadataItem> items = awsReplayMetaDataList.stream()
                 .map(this::convertAwsDtoToItem)
                 .toList();
-        
-        logger.info(String.format("Batch saving %d replay metadata items", items.size()));
-        
+
         try {
             // Use the batch save functionality
             List<DynamoDBMapper.FailedBatch> failedBatches = queryHelper.batchSave(items);

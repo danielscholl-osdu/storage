@@ -249,7 +249,6 @@ public class ReplayMessageProcessorAWSImpl {
         
         // If we have no next cursor, we're done
         if (cursor == null || cursor.isEmpty()) {
-            LOGGER.info(() -> String.format("Reached end of records for kind: %s", kind));
             hasMoreRecords = false;
         }
         
