@@ -22,7 +22,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * Utility class to execute code within a simulated request context.
