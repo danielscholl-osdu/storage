@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import java.util.*;
+import java.util.stream.Collectors;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
@@ -200,18 +201,54 @@ public class ParallelReplayProcessor {
     private List<AwsReplayMetaDataDTO> retrieveMetadataWithState(List<String> batch, String replayId, ReplayState state) {
         List<AwsReplayMetaDataDTO> metadataList = new ArrayList<>();
 
-        for (String kind : batch) {
-            try {
-                AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
-                if (replayMetaData != null) {
-                    replayMetaData.setState(state.name());
-                    replayMetaData.setLastUpdatedAt(new Date());
-                    metadataList.add(replayMetaData);
+        try {
+            // Use batch load to efficiently retrieve all metadata in a single API call
+            List<AwsReplayMetaDataDTO> batchResults = replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(batch, replayId);
+            
+            // Update state and lastUpdatedAt for all retrieved items
+            for (AwsReplayMetaDataDTO replayMetaData : batchResults) {
+                replayMetaData.setState(state.name());
+                replayMetaData.setLastUpdatedAt(new Date());
+                metadataList.add(replayMetaData);
+            }
+            
+            // Log any kinds that weren't found in the batch retrieval
+            if (batchResults.size() < batch.size()) {
+                Set<String> retrievedKinds = batchResults.stream()
+                        .map(AwsReplayMetaDataDTO::getKind)
+                        .collect(Collectors.toSet());
+                
+                List<String> missingKinds = batch.stream()
+                        .filter(kind -> !retrievedKinds.contains(kind))
+                        .toList();
+                
+                if (!missingKinds.isEmpty()) {
+                    LOGGER.warning(() -> String.format("Could not find metadata for %d kinds: %s", 
+                            missingKinds.size(), String.join(", ", missingKinds)));
                 }
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, String.format("Error retrieving metadata for kind %s: %s", kind, e.getMessage()), e);
+            }
+            
+            // Note: We don't save here anymore - the caller will handle the batch save
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error batch retrieving metadata for replay ID %s: %s", 
+                    replayId, e.getMessage()), e);
+            
+            // Fall back to individual retrievals if batch fails
+            LOGGER.info("Falling back to individual retrievals");
+            for (String kind : batch) {
+                try {
+                    AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
+                    if (replayMetaData != null) {
+                        replayMetaData.setState(state.name());
+                        replayMetaData.setLastUpdatedAt(new Date());
+                        metadataList.add(replayMetaData);
+                    }
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, String.format("Error retrieving metadata for kind %s: %s", kind, ex.getMessage()), ex);
+                }
             }
         }
+        
         return metadataList;
     }
 
@@ -262,19 +299,52 @@ public class ParallelReplayProcessor {
 
     private List<AwsReplayMetaDataDTO> retrieveMetadataRecordsWithCounts(List<String> batch, String replayId, Map<String, Long> kindCounts) {
         List<AwsReplayMetaDataDTO> metadataToUpdate = new ArrayList<>();
-        for (String kind : batch) {
-            try {
-                AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
-                if (replayMetaData != null) {
-                    replayMetaData.setTotalRecords(kindCounts.getOrDefault(kind, 0L));
-                    replayMetaData.setLastUpdatedAt(new Date());
-                    metadataToUpdate.add(replayMetaData);
+        
+        try {
+            // Use batch load to efficiently retrieve all metadata in a single API call
+            List<AwsReplayMetaDataDTO> batchResults = replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(batch, replayId);
+            
+            // Update record counts for all retrieved items
+            for (AwsReplayMetaDataDTO replayMetaData : batchResults) {
+                replayMetaData.setTotalRecords(kindCounts.getOrDefault(replayMetaData.getKind(), 0L));
+                replayMetaData.setLastUpdatedAt(new Date());
+                metadataToUpdate.add(replayMetaData);
+            }
+            
+            // Log any kinds that weren't found in the batch retrieval
+            if (batchResults.size() < batch.size()) {
+                Set<String> retrievedKinds = batchResults.stream()
+                        .map(AwsReplayMetaDataDTO::getKind)
+                        .collect(Collectors.toSet());
+                
+                List<String> missingKinds = batch.stream()
+                        .filter(kind -> !retrievedKinds.contains(kind))
+                        .toList();
+                
+                if (!missingKinds.isEmpty()) {
+                    LOGGER.warning(() -> String.format("Could not find metadata for %d kinds when updating counts: %s", 
+                            missingKinds.size(), String.join(", ", missingKinds)));
                 }
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, String.format("Error retrieving metadata for kind %s: %s", kind, e.getMessage()), e);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, String.format("Error batch retrieving metadata for record counts: %s", e.getMessage()), e);
+            
+            // Fall back to individual retrievals if batch fails
+            LOGGER.info("Falling back to individual retrievals for record counts");
+            for (String kind : batch) {
+                try {
+                    AwsReplayMetaDataDTO replayMetaData = replayRepository.getAwsReplayStatusByKindAndReplayId(kind, replayId);
+                    if (replayMetaData != null) {
+                        replayMetaData.setTotalRecords(kindCounts.getOrDefault(kind, 0L));
+                        replayMetaData.setLastUpdatedAt(new Date());
+                        metadataToUpdate.add(replayMetaData);
+                    }
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, String.format("Error retrieving metadata for kind %s: %s", kind, ex.getMessage()), ex);
+                }
             }
         }
-
+        
         return metadataToUpdate;
     }
 
