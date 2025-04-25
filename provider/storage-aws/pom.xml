@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.opengroup.osdu.core.aws</groupId>
             <artifactId>os-core-lib-aws</artifactId>
-            <version>4.0.0</version>
+            <version>4.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.minidev</groupId>
@@ -130,6 +130,16 @@
             <version>${spring-framework-version}</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring-framework-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring-framework-version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
             <version>${netty.version}</version>
@@ -203,7 +213,7 @@
                         </goals>
                         <configuration>
                             <classifier>spring-boot</classifier>
-                            <mainClass>org.opengroup.osdu.storage.StorageApplication</mainClass>
+                            <mainClass>org.opengroup.osdu.storage.StorageAwsApplication</mainClass>
                         </configuration>
                     </execution>
                 </executions>

@@ -14,11 +14,13 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import com.amazonaws.services.sns.AmazonSNS;
 import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -33,8 +35,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
@@ -56,8 +58,22 @@ public class MessageBusImpl implements IMessageBus {
     @Value("${OSDU_TOPIC_V2}")
     private String osduStorageTopicV2;
 
-    @Inject
-    private JaxRsDpsLog logger;
+    private final JaxRsDpsLog logger;
+    
+    private final ObjectMapper objectMapper;
+
+    public MessageBusImpl(JaxRsDpsLog logger, ObjectMapper objectMapper) {
+        this.logger = logger;
+        this.objectMapper = objectMapper;
+    }
+
+    @PostConstruct
+    public void init() throws K8sParameterNotFoundException {
+        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
+        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
+        amazonSNSTopicV2 = provider.getParameterAsString("storage-v2-sns-topic-arn");
+        snsClient = new AmazonSNSConfig(currentRegion).AmazonSNS();
+    }
 
     private <T> void doPublishMessage(boolean v2Message, Optional<CollaborationContext> collaborationContext, DpsHeaders headers, T... messages) {
         final int BATCH_SIZE = 50;
@@ -73,9 +89,7 @@ public class MessageBusImpl implements IMessageBus {
             String messageOsduTopic;
 
             if (v2Message) {
-                if (collaborationContext.isPresent()) {
-                    additionalAttrs.put(DpsHeaders.COLLABORATION, getAttrValForContext(collaborationContext.get()));
-                }
+                collaborationContext.ifPresent(context -> additionalAttrs.put(DpsHeaders.COLLABORATION, getAttrValForContext(context)));
                 messageOsduTopic = osduStorageTopicV2; //records-changed-v2
                 messageSNSTopic = amazonSNSTopicV2;
             } else {
@@ -92,14 +106,6 @@ public class MessageBusImpl implements IMessageBus {
         return new MessageAttributeValue().withDataType("String").withStringValue("id=" + collaborationContext.getId() + ",application=" + collaborationContext.getApplication());
     }
 
-    @PostConstruct
-    public void init() throws K8sParameterNotFoundException {
-        K8sLocalParameterProvider provider = new K8sLocalParameterProvider();
-        amazonSNSTopic = provider.getParameterAsString("storage-sns-topic-arn");
-        amazonSNSTopicV2 = provider.getParameterAsString("storage-v2-sns-topic-arn");
-        snsClient = new AmazonSNSConfig(currentRegion).AmazonSNS();
-    }
-
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
         doPublishMessage(false,Optional.empty(), headers, messages);
@@ -112,11 +118,42 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, List<?> messageList) {
-        throw new NotImplementedException();
+        // Get topic ARN from routing info
+        String topicArn = routingInfo.get("topic");
+        if (topicArn == null || topicArn.isEmpty()) {
+            logger.error("No SNS topic ARN provided in routing info");
+            return;
+        }
+
+        // Publish messages to SNS topic
+        for (Object message : messageList) {
+            try {
+                String messageBody = objectMapper.writeValueAsString(message);
+                PublishRequest publishRequest = new PublishRequest()
+                    .withTopicArn(topicArn)
+                    .withMessage(messageBody);
+                
+                snsClient.publish(publishRequest);
+                logger.debug("Published message to SNS topic: " + topicArn);
+                
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to serialize message: " + e.getMessage(), e);
+                throw new MessagePublishException("Failed to serialize message", e);
+            }
+        }
     }
 
     @Override
     public void publishMessage(DpsHeaders headers, Map<String, String> routingInfo, PubSubInfo... messages) {
         throw new NotImplementedException();
+    }
+
+    public static class MessagePublishException extends RuntimeException {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        public MessagePublishException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

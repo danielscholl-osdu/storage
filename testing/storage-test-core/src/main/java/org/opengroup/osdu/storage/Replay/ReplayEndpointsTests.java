@@ -258,7 +258,7 @@ public abstract class ReplayEndpointsTests extends TestBase {
         System.out.println("The end time for performValidationBeforeOrAfterReplay for KindType " + kindType + "is " + (System.currentTimeMillis() - startTime));
     }
 
-    private ReplayStatusResponseHelper performReplay(String requestBody) throws Exception {
+    protected ReplayStatusResponseHelper performReplay(String requestBody) throws Exception {
 
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
 
