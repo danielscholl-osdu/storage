@@ -165,6 +165,7 @@ The following software have components provided under the terms of this license:
 - Lettuce (from http://github.com/lettuce-io/lettuce-core, http://github.com/mp911de/lettuce/wiki, https://github.com/lettuce-io/lettuce-core/wiki, https://github.com/redis/lettuce)
 - Metrics Core (from https://repo1.maven.org/maven2/io/dropwizard/metrics/metrics-core)
 - Microsoft Azure Java Core Library (from https://github.com/Azure/azure-sdk-for-java)
+- Microsoft Azure Java XML Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure Netty HTTP Client Library (from https://github.com/Azure/azure-sdk-for-java)
 - Microsoft Azure SDK for SQL API of Azure Cosmos DB Service (from https://github.com/Azure/azure-sdk-for-java)
 - Mockito (from http://mockito.org, http://www.mockito.org, https://github.com/mockito/mockito)
@@ -525,6 +526,13 @@ ISC
 The following software have components provided under the terms of this license:
 
 - Spring Security - Core (from http://spring.io/spring-security, https://repo1.maven.org/maven2/org/springframework/security/spring-security-core, https://spring.io/projects/spring-security, https://spring.io/spring-security)
+
+========================================================================
+ImageMagick
+========================================================================
+The following software have components provided under the terms of this license:
+
+- Microsoft Azure Java XML Library (from https://github.com/Azure/azure-sdk-for-java)
 
 ========================================================================
 LGPL-2.1-only
