@@ -250,11 +250,15 @@ public class BulkUpdateRecordServiceImplTest {
         Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
         when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
         when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        lenient().when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), param.getOps(), TEST_USER,
+                CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
 
         List<OpaError> errors = new ArrayList<>();
         ValidationOutputRecord validationOutputRecord1 = ValidationOutputRecord.builder().id(TEST_ID).errors(errors).build();
         List<ValidationOutputRecord> validationOutputRecords = new ArrayList<>();
         validationOutputRecords.add(validationOutputRecord1);
+        lenient().when(this.opaService.validateUserAccessToRecords(any(), any())).thenReturn(validationOutputRecords);
+
 
         BulkUpdateRecordsResponse actualResponse = service.bulkUpdateRecords(param, TEST_USER, COLLABORATION_CONTEXT);
 
@@ -482,13 +486,14 @@ public class BulkUpdateRecordServiceImplTest {
                              List<PatchOperation> patchOperations,
                              boolean hasOwnerAccess,
                              boolean isLockedRecord) {
-        when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
-        lenient().when(persistenceService.updateMetadataWithBlobSync(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
+        lenient().when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
+        lenient().when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
                 .thenReturn(isLockedRecord ? new ArrayList<>(singletonList(TEST_ID)) : emptyList());
-        when(clock.millis()).thenReturn(CURRENT_MILLIS);
+        lenient().when(clock.millis()).thenReturn(CURRENT_MILLIS);
         lenient().when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);
         lenient().when(recordUtil.updateRecordMetaDataForPatchOperations(recordMetadataMap.get(TEST_ID), patchOperations, TEST_USER,
                 CURRENT_MILLIS)).thenReturn(recordMetadataMap.get(TEST_ID));
+        lenient().when(dataAuthorizationService.policyEnabled()).thenReturn(false);
     }
 
     private void commonVerify(List<String> ids, List<PatchOperation> ops) {

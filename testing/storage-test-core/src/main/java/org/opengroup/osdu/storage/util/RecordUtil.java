@@ -23,6 +23,24 @@ import org.opengroup.osdu.core.common.Constants;
 public class RecordUtil {
 	private static final String UNIT_OF_MEASURE_ID = "unitOfMeasureID";
 
+	public static String createDefaultJsonRecordWithInvalidAcl(String id, String kind, String legalTag) {
+		JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
+
+		JsonArray acls = new JsonArray();
+		acls.add(TestUtils.getInvalidAcl());
+
+		// Override acls
+		JsonObject acl = new JsonObject();
+		acl.add("viewers", acls);
+		acl.add("owners", acls);
+
+		record.add("acl", acl);
+
+		JsonArray records = new JsonArray();
+		records.add(record);
+		return records.toString();
+	}
+
     public static String createDefaultJsonRecord(String id, String kind, String legalTag) {
         JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
         JsonArray records = new JsonArray();

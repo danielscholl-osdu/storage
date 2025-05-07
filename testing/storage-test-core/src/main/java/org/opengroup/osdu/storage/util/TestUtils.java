@@ -17,6 +17,8 @@ package org.opengroup.osdu.storage.util;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.github.resilience4j.core.functions.CheckedSupplier;
+import io.github.resilience4j.retry.Retry;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -49,8 +51,13 @@ public abstract class TestUtils {
     protected static String noDataAccesstoken = null;
     protected static String dataRootToken = null;
     private static Gson gson = new Gson();
+    private static Retry retry = Retry.of("httpRetry", RetryPolicy.httpRetryConfig(3, 500, 2));
 
     protected static String domain = System.getProperty("DOMAIN", System.getenv("DOMAIN"));
+
+    static {
+        RetryPolicy.logRetryEvents(retry);
+    }
 
     public static final String getDomain() {
         return domain;
@@ -68,7 +75,11 @@ public abstract class TestUtils {
     }
 
     public static final String getAcl() {
-        return String.format("data.test1@%s", getAclSuffix());
+        return String.format("data.default.owners@%s", getAclSuffix());
+    }
+
+    public static final String getInvalidAcl() {
+        return String.format("data.default.invalid@%s", getAclSuffix());
     }
 
     public static final String getEntV2OnlyAcl() {
@@ -76,7 +87,7 @@ public abstract class TestUtils {
     }
 
     public static final String getIntegrationTesterAcl() {
-        return String.format("data.integration.test@%s", getAclSuffix());
+        return String.format("data.default.viewers@%s", getAclSuffix());
     }
 
     public static final String getPubsubToken() {
@@ -140,13 +151,10 @@ public abstract class TestUtils {
                                                                 String query) throws Exception {
 
         log(httpMethod, TestUtils.getApiPath(path + query), headers, requestBody);
-        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
-        headers.put("Content-Type", contentType);
-        ClassicHttpRequest httpRequest = createHttpRequest(TestUtils.getApiPath(path + query), httpMethod, requestBody, headers);
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build()) {
-            return httpClient.execute(httpRequest, new CustomHttpClientResponseHandler());
-        }
+        headers.put("Content-Type", contentType);
+
+        return makeHttpRequest(TestUtils.getApiPath(path + query), httpMethod, requestBody, headers);
     }
 
     public static CloseableHttpResponse send(String path, String httpMethod, Map<String, String> headers, String requestBody,
@@ -154,14 +162,10 @@ public abstract class TestUtils {
 
         log(httpMethod, TestUtils.getApiPath(path + query), headers, requestBody);
 
-        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
         headers.put("Content-Type", MediaType.APPLICATION_JSON);
         headers.put("Accept-Charset","utf-8");
-        ClassicHttpRequest httpRequest = createHttpRequest(TestUtils.getApiPath(path + query), httpMethod, requestBody, headers);
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build()) {
-            return httpClient.execute(httpRequest, new CustomHttpClientResponseHandler());
-        }
+        return makeHttpRequest(TestUtils.getApiPath(path + query), httpMethod, requestBody, headers);
     }
 
     public static CloseableHttpResponse send(String url, String path, String httpMethod, Map<String, String> headers,
@@ -169,12 +173,24 @@ public abstract class TestUtils {
 
         log(httpMethod, url + path, headers, requestBody);
 
-        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
         headers.put("Content-Type", MediaType.APPLICATION_JSON);
-        ClassicHttpRequest httpRequest = createHttpRequest(url + path, httpMethod, requestBody, headers);
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build()) {
-            return httpClient.execute(httpRequest, new CustomHttpClientResponseHandler());
+        return makeHttpRequest(url + path, httpMethod, requestBody, headers);
+    }
+
+    private static CloseableHttpResponse makeHttpRequest(String path, String httpMethod, String requestBody,
+                                                         Map<String, String> headers) throws Exception {
+        BasicHttpClientConnectionManager cm = createBasicHttpClientConnectionManager();
+        CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build();
+        ClassicHttpRequest httpRequest = createHttpRequest(path, httpMethod, requestBody, headers);
+
+        RetryPolicy.logRetryEvents(retry);
+        CheckedSupplier<CloseableHttpResponse> retryingHttpCall = Retry.decorateCheckedSupplier(retry, () -> httpClient.execute(httpRequest, new CustomHttpClientResponseHandler()));
+
+        try {
+            return retryingHttpCall.get();
+        } catch (Throwable e) {
+            throw new Exception(e);
         }
     }
 
