@@ -34,6 +34,7 @@ import org.opengroup.osdu.oqm.core.model.*;
 import org.opengroup.osdu.storage.provider.gcp.messaging.config.MessagingConfigurationProperties;
 import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadDpsHeaders;
 import org.opengroup.osdu.storage.provider.gcp.messaging.thread.ThreadScopeContextHolder;
+import org.opengroup.osdu.storage.provider.gcp.messaging.util.OqmMessageValidator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
@@ -97,7 +98,7 @@ public class OqmSubscriberManager {
             OqmSubscription subscription = driver.listSubscriptions(topic, query, getDestination(tenantInfo)).stream().findAny().orElse(null);
 
             if (subscription == null) {
-                log.error("* * OqmSubscriberManager on check for subscription {} existence: ABSENT. Will create.", legalTagsChangedSubscriptionName);
+                log.error("* * OqmSubscriberManager on check for subscription {} existence: ABSENT.", legalTagsChangedSubscriptionName);
                 throw new AppException(
                     HttpStatus.INTERNAL_SERVER_ERROR.value(),
                     "Required subscription not exists.",
@@ -130,7 +131,6 @@ public class OqmSubscriberManager {
         OqmDestination destination = getDestination(tenantInfo);
 
         OqmMessageReceiver receiver = (oqmMessage, oqmAckReplier) -> {
-
             String pubsubMessage = oqmMessage.getData();
             Map<String, String> headerAttributes = oqmMessage.getAttributes();
             log.debug(pubsubMessage + " " + headerAttributes + " " + oqmMessage.getId());
@@ -161,7 +161,7 @@ public class OqmSubscriberManager {
                 );
             } finally {
                 if (!ackedNacked) {
-                    oqmAckReplier.nack();
+                    oqmAckReplier.nack(false);
                 }
                 ThreadScopeContextHolder.currentThreadScopeAttributes().clear();
             }
