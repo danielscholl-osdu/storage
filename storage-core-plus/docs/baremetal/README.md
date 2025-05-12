@@ -64,6 +64,7 @@ Defined in default application property file but possible to override:
 | `POLICY_ID`                                | ex `search`                                   | policeId from ex `http://localhost:8080/api/policy/v1/policies`. Look at `POLICY_API` | no         | -                                   |
 | `PARTITION_API`                            | ex `http://localhost:8081/api/partition/v1`   | Partition service endpoint                                                            | no         | -                                   |
 | `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                   |
+| `feature.replay.enabled`                   | ex `true` or `false`                          | `Replay API` feature flag                                                             | no         |                                     |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.
@@ -231,8 +232,17 @@ CREATE TABLE opendes."StorageSchema"(
 );
 CREATE INDEX StorageSchema_datagin ON opendes."StorageSchema" USING GIN (data);
 
-
+-----------------
+--DROP TABLE opendes."ReplayStatus";
+CREATE TABLE opendes."ReplayStatus"(
+    id text COLLATE pg_catalog."default" NOT NULL,
+    pk bigint NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    data jsonb NOT NULL,
+    CONSTRAINT ReplayStatus_id UNIQUE (id)
+);
+CREATE INDEX ReplayStatus_datagin ON opendes."ReplayStatus" USING GIN (data);
 ```
+
 
 Example of filling tables
 
@@ -416,11 +426,16 @@ curl -L -X PATCH 'https://api/partition/v1/partitions/opendes' -H 'data-partitio
 
 At RabbitMq should be created set of exchanges and queues.
 
-| topic name                               | subscription name               | description                                                | sensitive? | env var to override                                                     |
-|------------------------------------------|---------------------------------|------------------------------------------------------------|------------|-------------------------------------------------------------------------|
-| `records-changed`                        | -                               | Search topic for pushing                                   | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
-| `legaltags-changed`                      | `storage-oqm-legaltags-changed` | Legaltags topic for consuming                              | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
-| `storage-oqm-legaltags-changed-exchange` | -                               | Service topic for delaying failed legal tag changed events | -          | -                                                                       |
+| topic name                                    | subscription name                    | description                                                | sensitive? | env var to override                                                     |
+|-----------------------------------------------|--------------------------------------|------------------------------------------------------------|------------|-------------------------------------------------------------------------|
+| `records-changed`                             | -                                    | Search topic for pushing                                   | yes        | `PUBSUB_SEARCH_TOPIC`                                                   |
+| `legaltags-changed`                           | `storage-oqm-legaltags-changed`      | Legaltags topic for consuming                              | yes        | `LEGAL_TAGS_CHANGED_TOPIC_NAME`, `LEGAL_TAGS_CHANGED_SUBSCRIPTION_NAME` |
+| `storage-oqm-legaltags-changed-exchange`      | -                                    | Service topic for delaying failed legal tag changed events | -          | -                                                                       |
+| `storage-oqm-legaltags-changed-exchange`      | -                                    | Service topic for delaying failed legal tag changed events | -          | -                                                                       |
+| `reindex`                                     | -                                    | "reindex" topic for pushing                                | yes        | map `REPLAY_OPERATION_ROUTING_PROPERTIES`                               |
+| `replaytopic`                                 | `replaytopicsubscription`            | "Replay" topic for consuming                               | yes        | map `REPLAY.ROUTING_PROPERTIES`                                         |
+| `replaytopicsubscription-exchange`            | `dead-lettering-replay-subscription` | Service topic for delaying failed 'replay' events          | yes        | `REPLAY_DEAD_LETTER_TOPIC_NAME`, `REPLAY_DEAD_LETTER_SUBSCRIPTION_NAME` |
+| `dead-lettering-replay-subscription-exchange` | -                                    | Service topic for delaying failed 'replay' events          | yes        | `REPLAY_DEAD_LETTER_TOPIC_NAME`, `REPLAY_DEAD_LETTER_SUBSCRIPTION_NAME` |
 
 ![Screenshot](pics/rabbit.PNG)
 

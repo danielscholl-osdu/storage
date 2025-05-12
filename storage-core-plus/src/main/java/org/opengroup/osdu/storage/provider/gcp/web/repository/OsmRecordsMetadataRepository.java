@@ -1,6 +1,6 @@
 /*
- *  Copyright 2020-2023 Google LLC
- *  Copyright 2020-2023 EPAM Systems, Inc
+ *  Copyright 2020-2025 Google LLC
+ *  Copyright 2020-2025 EPAM Systems, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.opengroup.osdu.core.osm.core.model.Kind;
 import org.opengroup.osdu.core.osm.core.model.Namespace;
 import org.opengroup.osdu.core.osm.core.model.query.GetQuery;
 import org.opengroup.osdu.core.osm.core.service.Context;
-import org.opengroup.osdu.core.osm.core.service.Transaction;
 import org.opengroup.osdu.core.osm.core.translate.Outcome;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.provider.interfaces.ISchemaRepository;
@@ -61,6 +60,7 @@ public class OsmRecordsMetadataRepository implements IRecordsMetadataRepository<
     public static final Kind SCHEMA_KIND = new Kind(ISchemaRepository.SCHEMA_KIND);
 
     public static final String KIND = "kind";
+    public static final String ID = "id";
     public static final String LEGAL_TAGS = "legal.legaltags";
     public static final String LEGAL_COMPLIANCE = "legal.status";
     public static final String STATUS = "status";

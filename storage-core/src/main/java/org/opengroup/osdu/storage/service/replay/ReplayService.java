@@ -57,7 +57,6 @@ import java.util.UUID;
 
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 @Service
-@Configuration
 public class ReplayService implements IReplayService {
     @Autowired
     private IReplayRepository replayRepository;
