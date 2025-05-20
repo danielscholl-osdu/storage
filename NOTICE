@@ -96,7 +96,7 @@ The following software have components provided under the terms of this license:
 - AutoValue Annotations (from https://github.com/google/auto/tree/main/value, https://github.com/google/auto/tree/master/value, https://repo1.maven.org/maven2/com/google/auto/value/auto-value-annotations)
 - Awaitility (from http://awaitility.org)
 - BSON (from http://bsonspec.org, https://bsonspec.org)
-- BSON Record Codec (from <https://www.mongodb.com/>, https://www.mongodb.com/)
+- BSON Record Codec (from <https://www.mongodb.com/>, https://bsonspec.org, https://www.mongodb.com/)
 - Byte Buddy (without dependencies) (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy)
 - Byte Buddy Java agent (from https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent)
 - ClassMate (from http://github.com/cowtowncoder/java-classmate)
@@ -526,13 +526,6 @@ ISC
 The following software have components provided under the terms of this license:
 
 - Spring Security - Core (from http://spring.io/spring-security, https://repo1.maven.org/maven2/org/springframework/security/spring-security-core, https://spring.io/projects/spring-security, https://spring.io/spring-security)
-
-========================================================================
-ImageMagick
-========================================================================
-The following software have components provided under the terms of this license:
-
-- Microsoft Azure Java XML Library (from https://github.com/Azure/azure-sdk-for-java)
 
 ========================================================================
 LGPL-2.1-only
