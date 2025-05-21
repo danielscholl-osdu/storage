@@ -231,7 +231,7 @@ public class PersistenceServiceImplTest {
         verify(this.pubSubClient, times(0)).publishMessage(eq(Optional.empty()), any());
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
         verify(this.recordRepository, times(1)).batchDelete(any(), any());
-        verify(this.cloudStorage, times(48)).deleteVersion(any(), any());
+        assertSameMetaPassedToCloudStorageDelete(batch);
     }
 
     @Test
@@ -255,7 +255,7 @@ public class PersistenceServiceImplTest {
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
         verify(this.recordRepository, times(1)).batchDelete(any(), any());
         verify(this.pubSubClient, times(0)).publishMessage(any(), any(), anyList());
-        verify(this.cloudStorage, times(48)).deleteVersion(any(), any());
+        assertSameMetaPassedToCloudStorageDelete(batch);
     }
 
     @Test
@@ -282,7 +282,7 @@ public class PersistenceServiceImplTest {
         verify(this.recordRepository, times(1)).createOrUpdate(datastoreCaptor.capture(), any());
         verify(this.recordRepository, times(1)).batchDelete(any(), any());
         verify(this.pubSubClient, times(0)).publishMessage(any(), any());
-        verify(this.cloudStorage, times(48)).deleteVersion(any(), any());
+        assertSameMetaPassedToCloudStorageDelete(batch);
     }
 
     @Test
@@ -584,5 +584,22 @@ public class PersistenceServiceImplTest {
         recordMetadataList.add(record2);
 
         return recordMetadataList;
+    }
+
+    private void assertSameMetaPassedToCloudStorageDelete(TransferBatch batch) {
+        ArgumentCaptor<RecordMetadata> metadataArgumentCaptor = ArgumentCaptor.forClass(RecordMetadata.class);
+        ArgumentCaptor<Long> versionArgumentCaptor = ArgumentCaptor.forClass(Long.class);
+
+        verify(this.cloudStorage, times(48)).deleteVersion(metadataArgumentCaptor.capture(), versionArgumentCaptor.capture());
+
+        List<RecordMetadata> expectedMeta = batch.getRecords().stream()
+            .map(RecordProcessing::getRecordMetadata)
+            .toList();
+        List<Long> expectedVersions = expectedMeta.stream()
+            .map(RecordMetadata::getLatestVersion)
+            .toList();
+
+        assertEquals(expectedMeta, metadataArgumentCaptor.getAllValues());
+        assertEquals(expectedVersions, versionArgumentCaptor.getAllValues());
     }
 }

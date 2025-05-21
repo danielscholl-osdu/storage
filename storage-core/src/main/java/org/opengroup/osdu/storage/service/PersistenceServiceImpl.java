@@ -110,15 +110,18 @@ public class PersistenceServiceImpl implements PersistenceService {
             this.commitCloudStorageTransaction(recordsProcessing);
             this.commitDatastoreTransaction(recordsMetadata, collaborationContext);
         } catch (AppException e) {
+
             //try deleting the latest version of the record from blob storage and Datastore
             try {
-                this.tryCleanupDatastore(recordsMetadata, collaborationContext);
-            } catch (AppException cleanUpDatastoreException) {
+                //We need to use a copy to avoid issues with deletion of blobs, as tryCleanupDatastore() modifies the collection used later in the tryCleanupCloudStorage()
+                List<RecordMetadata> metadataCopy = this.copyMetadata(recordsMetadata);
+                this.tryCleanupDatastore(metadataCopy, collaborationContext);
+            } catch (Exception cleanUpDatastoreException) {
                 e.addSuppressed(cleanUpDatastoreException);
             }
             try {
                 this.tryCleanupCloudStorage(recordsProcessing);
-            } catch (AppException cleanUpStorageException) {
+            } catch (Exception cleanUpStorageException) {
                 e.addSuppressed(cleanUpStorageException);
             }
             throw e;
@@ -297,5 +300,9 @@ public class PersistenceServiceImpl implements PersistenceService {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error deleting record metadata.",
                 "The server could not process your request at the moment.", e);
         }
+    }
+
+    private List<RecordMetadata> copyMetadata(List<RecordMetadata> sourceMetadata) {
+        return sourceMetadata.stream().map(recordMetadata -> recordMetadata.toBuilder().build()).toList();
     }
 }
