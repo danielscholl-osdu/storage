@@ -2,17 +2,16 @@ variables:
   GC_SERVICE: storage
   GC_VENDOR: gc
   NO_DATA_ACCESS_TESTER: $GC_NO_DATA_ACCESS_TESTER_FILE
+  # Variables for acceptance tests
   OPA_INTEGRATION_ENABLED: "true"
+  TENANT_NAME: $GC_TENANT
+  LEGAL_URL: $GC_LEGAL_EXTERNAL_URL
+  STORAGE_URL: $GC_STORAGE_EXTERNAL_URL
+  ENTITLEMENTS_URL: $ENTITLEMENTS_HOST
 
 gc-dev2-test:
   variables:
     DATA_ROOT_TESTER: $GC_DEV2_DATA_ROOT_CLIENT_ID_FILE
-
-
-gc-test:
-  variables:
-    OPA_INTEGRATION_ENABLED: "true"
-
 
 download_gc_plugins:
   image: maven:3.8.3-openjdk-17-slim
