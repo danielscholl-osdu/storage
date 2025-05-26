@@ -18,7 +18,7 @@ download_gc_plugins:
   stage: build
   variables:
     GC_OSM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1476/packages/maven"
-    GC_OSM_VERSION: "0.27.2"
+    GC_OSM_VERSION: "0.27.3"
     GC_OBM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1475/packages/maven"
     GC_OBM_VERSION: "0.27.2"
     GC_OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1477/packages/maven"

@@ -38,6 +38,8 @@ import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.osm.core.model.Destination;
 import org.opengroup.osdu.core.osm.core.model.Namespace;
+import org.opengroup.osdu.core.osm.core.model.aggregation.Aggregation;
+import org.opengroup.osdu.core.osm.core.model.aggregation.Count;
 import org.opengroup.osdu.core.osm.core.model.order.OrderBy;
 import org.opengroup.osdu.core.osm.core.model.query.GetQuery;
 import org.opengroup.osdu.core.osm.core.service.Context;
@@ -168,13 +170,12 @@ public class OsmQueryRepository implements IQueryRepository {
     try {
       List<String> kinds = getAllKinds(null, null).getResults();
       for (String kind : kinds) {
-        long count = getActiveRecordCountForKind(kind);
-        if (count > 0) {
+        Long count = getActiveRecordCountForKind(kind);
+        if (count != null && count > 0 ) {
           kindCounts.put(kind, count);
         }
       }
       return kindCounts;
-
     } catch (Exception e) {
       throw new AppException(
           HttpStatus.SC_INTERNAL_SERVER_ERROR,
@@ -200,27 +201,16 @@ public class OsmQueryRepository implements IQueryRepository {
     return kindCounts;
   }
 
-  // TODO: The OSM driver currently doesn't support COUNT operations, although underlying databases
-  // do. Extend OSM logic to handle COUNT.
-  protected long getActiveRecordCountForKind(String kind) {
-    GetQuery<RecordMetadata> q =
+  public Long getActiveRecordCountForKind(String kind) {
+    GetQuery<Long> q =
         new GetQuery<>(
-            RecordMetadata.class,
+            Long.class,
             getDestination(),
-            and(eq(KIND, kind), eq(STATUS, RecordState.active)));
+            and(eq(KIND, kind), eq(STATUS, RecordState.active)), Count.countAll());
 
-    List<RecordMetadata> resultsAsList = context.getResultsAsList(q);
-    List<RecordId> records =
-        resultsAsList.stream()
-            .map(
-                recordMetadata -> {
-                  RecordId result = new RecordId();
-                  result.setId(recordMetadata.getId());
-                  return result;
-                })
-            .toList();
+    List<Long> resultsAsList = context.getResultsAsList(q);
 
-    return records.size();
+    return resultsAsList.get(0);
   }
 
   private int getLimitTuned(Integer limit) {
