@@ -200,7 +200,11 @@ public class OqmDeadLetteringSubscriberManager {
         };
 
     OqmSubscriber subscriber =
-        OqmSubscriber.builder().subscription(subscription).messageReceiver(receiver).build();
+        OqmSubscriber.builder()
+            .subscription(subscription)
+            .messageReceiver(receiver)
+            .deadLetteringRequired(false)
+            .build();
     driver.subscribe(subscriber, destination);
     log.debug(
         "Just subscribed at topic {} subscription {} for tenant {}.",
