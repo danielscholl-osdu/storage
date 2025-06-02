@@ -487,7 +487,7 @@ public class BulkUpdateRecordServiceImplTest {
                              boolean hasOwnerAccess,
                              boolean isLockedRecord) {
         lenient().when(recordRepository.get(TEST_IDS, Optional.empty())).thenReturn(recordMetadataMap);
-        lenient().when(persistenceService.updateMetadata(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
+        lenient().when(persistenceService.updateMetadataWithBlobSync(singletonList(recordMetadataMap.get(TEST_ID)), TEST_IDS, IDS_VERSION_MAP, Optional.empty()))
                 .thenReturn(isLockedRecord ? new ArrayList<>(singletonList(TEST_ID)) : emptyList());
         lenient().when(clock.millis()).thenReturn(CURRENT_MILLIS);
         lenient().when(entitlementsAndCacheService.hasOwnerAccess(headers, OWNERS)).thenReturn(hasOwnerAccess);

@@ -301,13 +301,8 @@ public class PersistenceServiceImpl implements PersistenceService {
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            if ((e instanceof AppException) && ((AppException)e).getError().getCode() == HttpStatus.SC_TOO_MANY_REQUESTS) {
-                AppException exception = (AppException) e;
-                throw exception;
-            } else {
-                throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
-                        "The server could not process your request at the moment.", e);
-            }
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
+                "The server could not process your request at the moment.", e);
         }
     }
 
