@@ -1,0 +1,41 @@
+##
+# Needed to run the service
+##
+export LOG_PREFIX=
+export AUTHORIZE_API=
+export AUTHORIZE_API_KEY=
+export LEGALTAG_API=
+export azure.application-insights.instrumentation-key=
+export azure.activedirectory.client-id=
+export azure.activedirectory.AppIdUri=
+export azure.activedirectory.session-stateless=
+export cosmosdb_account=
+export cosmosdb_key=
+export cosmosdb_database=
+export azure.storage.account-name=
+export azure.storage.enable-https=
+export servicebus_topic_name=
+export servicebus_namespace_name=
+export KEYVAULT_URI=
+export AZURE_CLIENT_ID=
+export AZURE_TENANT_ID=
+export AZURE_CLIENT_SECRET=
+export search_service_endpoint=
+
+
+##
+# Needed to run the integration tests
+##
+export AZURE_AD_APP_RESOURCE_ID=
+export AZURE_AD_TENANT_ID=
+export DEPLOY_ENV=
+export DOMAIN=
+export INTEGRATION_TESTER=
+export LEGAL_URL=
+export NO_DATA_ACCESS_TESTER=
+export NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET=
+export PUBSUB_TOKEN=
+export STORAGE_URL=
+export TENANT_NAME=
+export TESTER_SERVICEPRINCIPAL_SECRET=
+
