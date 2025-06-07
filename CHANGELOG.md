@@ -1,0 +1,55 @@
+# Changelog
+
+## 1.0.0 (2025-06-07)
+
+
+### Features
+
+* adding resume functionality allowing another storage pod to resume on last cursor in cases where an existing pod gets killed while in the middle of processing a replay message. Also, fixed an issue when retrieving records where the no matching records exist in the batch but not at the end of the table causing the processor to exit early before viewing all records ([295e84c](https://github.com/danielscholl-osdu/storage/commit/295e84cfaa9ed8f6cc34750b07e204eefb3032e9))
+* aws implementation of replay feature ([decd639](https://github.com/danielscholl-osdu/storage/commit/decd6392e60f454edae565b03b81994c8eccca16))
+* creating system record to report on status before background process is incomplete ([89f6083](https://github.com/danielscholl-osdu/storage/commit/89f60839dbf27e63f4f049a266d40213b7091c32))
+* handling replay requests in an async parallel batch process to avoid request timeouts ([e9a0610](https://github.com/danielscholl-osdu/storage/commit/e9a06103f19eec4fc8aeed00c292207404688145))
+* using core-lib-aws library for replay implementation ([c7492fe](https://github.com/danielscholl-osdu/storage/commit/c7492feb34694267205927487c2d665b1371022b))
+* using sns-sqs pub-sub pattern instead ([6afc232](https://github.com/danielscholl-osdu/storage/commit/6afc232b6ca47ad2bc833d47060f814f58391b23))
+
+
+### Bug Fixes
+
+* adding content to replay message ([d0aaa35](https://github.com/danielscholl-osdu/storage/commit/d0aaa35c54653d4c57fb8f63975015089b7eac80))
+* adding record metadata to SNS record to fix indexer not knowing kind; adding all metadata that would be included with a normal storage update request ([679ddea](https://github.com/danielscholl-osdu/storage/commit/679ddea003facd640d3921c8d9e56f8c2d1a5055))
+* better handling of duplicate messages - exit early if state is already completed and extending timeout and allowing to be configurable in cases of large record counts ([eb9c1e7](https://github.com/danielscholl-osdu/storage/commit/eb9c1e7d7cf0a4196d4888d3a1c9ecffe07d3966))
+* changing implementation to use Schema service to retrieve unique kinds since there is no efficient way of querying the record metadata table to retrieve unique kinds ([cebba84](https://github.com/danielscholl-osdu/storage/commit/cebba84c1aa49ef5d46c0e1f3d4cbb198adabaff))
+* creating GSI for kind and replayId for status lookup and fixing GET status endpoint ([cad9fec](https://github.com/danielscholl-osdu/storage/commit/cad9fec0cb5b9f77de33f88693463b0ed969696f))
+* enabling scheduling annotation by creating AWS main application ([7081ffb](https://github.com/danielscholl-osdu/storage/commit/7081ffb5ffbf97b2692f85c8fc19f193de9227ac))
+* failing replay unit tests ([4de64df](https://github.com/danielscholl-osdu/storage/commit/4de64df1513a1ce70167263068f578dc0e50bacc))
+* fix assertion not matching response structure ([cec3028](https://github.com/danielscholl-osdu/storage/commit/cec3028bbae5555d9761bf07c0af39fcc1500c3d))
+* fixing unit tests after pub-sub update ([97f580b](https://github.com/danielscholl-osdu/storage/commit/97f580b2969aec6dd59dbc75b5da2d7bb6891bad))
+* fixing validation and errors to match expected integration test behavior ([6984692](https://github.com/danielscholl-osdu/storage/commit/6984692dbdfe2fa045e07a4f2e5c52f86cd44aea))
+* implementing batch retrieval method to improve processing performance ([6d1cb28](https://github.com/danielscholl-osdu/storage/commit/6d1cb284723460a2090fae7d45f2d923c43fce07))
+* issue where all records for all partitions regardless of status were being counted in totalRecords. Using existing getAllRecordsFromKind class to handle totalRecords count to ensure consistency ([2c7ebc6](https://github.com/danielscholl-osdu/storage/commit/2c7ebc6884863133cc67492eee292082e0c51d0c))
+* issue where replay status is QUEUED for fully processed kinds ([207add1](https://github.com/danielscholl-osdu/storage/commit/207add152643a410b9fcd17b225e9a12499e221a))
+* logger scoping issue and removing unused records changed topic ([85fb20a](https://github.com/danielscholl-osdu/storage/commit/85fb20a6ae2b30441bf303bbb7458201bd0fe265))
+* logging auth token ([31d7d6b](https://github.com/danielscholl-osdu/storage/commit/31d7d6b89ccfc4543fe508de29d415e84fed102d))
+* passing headers to replay queue message attributes so they are consumable by replay message processor ([2552ddf](https://github.com/danielscholl-osdu/storage/commit/2552ddfa0721fd60a8271b6ca127be2290a24fe7))
+* reducing default replay batch size and allowing setting to be configured from deployment ([a407a21](https://github.com/danielscholl-osdu/storage/commit/a407a21179a2c59518ba3a726df9a28510eca0f8))
+* removing circular dependency with replay service and replay message handler after replay service split. Now overriding default replay service behavior so individual items for each kind are created in the dynamo table for better traceability and performance ([6267a5c](https://github.com/danielscholl-osdu/storage/commit/6267a5c7380b5dbb5609ac582cce9b4e74c4d28f))
+* replay all to use actual kind record since records created with invalid kind will not be replayed ([771469d](https://github.com/danielscholl-osdu/storage/commit/771469d2aab43f5dbb65b611cd49c419c7c8f762))
+* returning id instead of entity type as kind ([f5127e9](https://github.com/danielscholl-osdu/storage/commit/f5127e947f7948d7e8c016d92670053251b66ade))
+* reverting batch retrieve since it adds complexity and also slower ([8250795](https://github.com/danielscholl-osdu/storage/commit/8250795e80619e667a189dce4b4a9168476a442d))
+* several issues with handling of collaboration context, publishing record change messages, and handling of messages from SQS queue. Still having an issue with REPLAY ALL operation always trying to retrieve all kinds despite each SQS message containing the kind; this is controlled in common code and need to find an elegant solution to this ([7a9a146](https://github.com/danielscholl-osdu/storage/commit/7a9a14609a05e4f4a3fa2a87a4a567339ec037d6))
+* sns topic arn naming convention ([fa14162](https://github.com/danielscholl-osdu/storage/commit/fa141629dc7eab01873f6900d56c9cbd487568b1))
+* sonar finding .toList() ([68b0e15](https://github.com/danielscholl-osdu/storage/commit/68b0e154422e29777624ca30f72d21dcb58592cb))
+* spring cves ([2ac867c](https://github.com/danielscholl-osdu/storage/commit/2ac867c3d2981797676ab96952c7cd58997df8e3))
+* spring cves ([24c3287](https://github.com/danielscholl-osdu/storage/commit/24c3287115793191cf1e39d98af66b09f089d764))
+* start time and elapsed time calculation. Replaced all instances with AWS DTO as common DTO does not support elapsed time calculations. ([a8093db](https://github.com/danielscholl-osdu/storage/commit/a8093dbda4a050ccba80867e5fd2098c903c92c8))
+* tomcat-core netty-common json-smart cve ([909c298](https://github.com/danielscholl-osdu/storage/commit/909c298b4002f44ff784d230b51c052da78b83cd))
+* tomcat-core netty-common json-smart cve ([728a296](https://github.com/danielscholl-osdu/storage/commit/728a296d52f3e03dd0998d22c2518dc3130e8483))
+* too many headers are added to SNS message attributes causing the publishing to silently fail ([a47fec7](https://github.com/danielscholl-osdu/storage/commit/a47fec70ad7f5d2c1d4abd3be25a97985b3bc0d1))
+* typo in search url resulting in failed request ([0d116ad](https://github.com/danielscholl-osdu/storage/commit/0d116ad63715aa1420a516f152c47f66965f267d))
+* unable to reolve unused routing propety variables ([332032d](https://github.com/danielscholl-osdu/storage/commit/332032d697ed3cd2bc710904f3ccd30d4b2bee7a))
+* unit tests after removing records changed topic and replay config ([35c80a2](https://github.com/danielscholl-osdu/storage/commit/35c80a21a04d9a1786173a31aafb4e316a355402))
+* using batch save on update of replay metadata to reduce calls to Dynamo ([ea3c35a](https://github.com/danielscholl-osdu/storage/commit/ea3c35ad1074419553bb273b2d853d973b869f27))
+* using existing record sns topic ([a9ed277](https://github.com/danielscholl-osdu/storage/commit/a9ed277a2971b0d5211e5dd47ba687244168bb23))
+* using getActiveRecordsCountForKinds which is more performant than getActiveRecords ([1801c63](https://github.com/danielscholl-osdu/storage/commit/1801c632ead90d13c229946bd0ecc5eb02ea9a85))
+* using record metadata to retrieve all kinds instead of empty schema repository table which has long been deprecated ([8a54d98](https://github.com/danielscholl-osdu/storage/commit/8a54d98faf65f871f2505f055a8ded1ec0a46982))
+* wrapping scheduled poll in a request scope to handle replay messages from SQS ([2267b1a](https://github.com/danielscholl-osdu/storage/commit/2267b1a3864f31d6a1e1f21be7bcffe5c1c6c87e))
