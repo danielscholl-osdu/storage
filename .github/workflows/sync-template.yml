@@ -1,0 +1,362 @@
+name: Sync Template
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Run weekly on Monday at 8 AM
+  workflow_dispatch:      # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add template remote
+        env:
+          TEMPLATE_REPO_URL: ${{ vars.TEMPLATE_REPO_URL || 'https://github.com/danielscholl-osdu/osdu-fork-template.git' }}
+        run: |
+          # Add template remote if it doesn't exist
+          if ! git remote get-url template >/dev/null 2>&1; then
+            git remote add template "$TEMPLATE_REPO_URL"
+          fi
+          
+          # Fetch latest from template
+          git fetch template --prune
+
+      - name: Check for template updates
+        id: check-updates
+        run: |
+          # Get the latest commit from template main branch
+          TEMPLATE_COMMIT=$(git rev-parse template/main)
+          echo "Template latest commit: $TEMPLATE_COMMIT"
+          
+          # Check if we have a record of the last synced template commit
+          LAST_SYNC_FILE=".github/.template-sync-commit"
+          if [ -f "$LAST_SYNC_FILE" ]; then
+            LAST_SYNC_COMMIT=$(cat "$LAST_SYNC_FILE" 2>/dev/null || echo "")
+            if [ -n "$LAST_SYNC_COMMIT" ]; then
+              echo "Last synced commit: $LAST_SYNC_COMMIT"
+            else
+              echo "⚠️ Template sync tracking file exists but is empty - auto-bootstrapping"
+              NEEDS_BOOTSTRAP=true
+            fi
+          else
+            echo "⚠️ Template sync tracking file missing - auto-bootstrapping"
+            NEEDS_BOOTSTRAP=true
+          fi
+          
+          if [ "${NEEDS_BOOTSTRAP:-false}" = "true" ]; then            
+            # Try to find a reasonable baseline - use the first commit that has .github files
+            BASELINE_COMMIT=$(git log template/main --reverse --oneline -- .github/ | head -1 | cut -d' ' -f1)
+            
+            if [ -z "$BASELINE_COMMIT" ]; then
+              # Fallback: use first commit in template repository
+              BASELINE_COMMIT=$(git log template/main --reverse --oneline | head -1 | cut -d' ' -f1)
+              echo "Using first template commit as baseline: $BASELINE_COMMIT"
+            else
+              echo "Using first .github commit as baseline: $BASELINE_COMMIT"
+            fi
+            
+            LAST_SYNC_COMMIT="$BASELINE_COMMIT"
+            
+            # Create the tracking file immediately to avoid future bootstrap issues
+            mkdir -p "$(dirname "$LAST_SYNC_FILE")"
+            echo "$BASELINE_COMMIT" > "$LAST_SYNC_FILE"
+            echo "Created tracking file with baseline commit"
+          fi
+          
+          # Ensure we have a valid LAST_SYNC_COMMIT
+          if [ -z "$LAST_SYNC_COMMIT" ]; then
+            echo "ERROR: Failed to determine last sync commit"
+            exit 1
+          fi
+          
+          # Check if there are new commits in template
+          if [ "$TEMPLATE_COMMIT" = "$LAST_SYNC_COMMIT" ]; then
+            echo "No template updates found"
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Get sync configuration to know what files to check
+          SYNC_CONFIG_EXISTS=$(git show template/main:.github/sync-config.json >/dev/null 2>&1 && echo "true" || echo "false")
+          
+          if [ "$SYNC_CONFIG_EXISTS" = "true" ]; then
+            # Extract paths from sync configuration
+            git show template/main:.github/sync-config.json > temp-sync-config.json
+            
+            # Build list of paths to check for changes
+            SYNC_PATHS=""
+            # Add directories
+            DIRECTORIES=$(jq -r '.sync_rules.directories[] | .path' temp-sync-config.json 2>/dev/null || echo "")
+            for dir in $DIRECTORIES; do
+              SYNC_PATHS="$SYNC_PATHS $dir"
+            done
+            
+            # Add files  
+            FILES=$(jq -r '.sync_rules.files[] | .path' temp-sync-config.json 2>/dev/null || echo "")
+            for file in $FILES; do
+              SYNC_PATHS="$SYNC_PATHS $file"
+            done
+            
+            # Add workflows (checking both possible config formats)
+            # Check for template_workflows format (current)
+            TEMPLATE_WORKFLOWS=$(jq -r '.sync_rules.workflows.template_workflows[]? | .path' temp-sync-config.json 2>/dev/null || echo "")
+            for workflow in $TEMPLATE_WORKFLOWS; do
+              [ -n "$workflow" ] && SYNC_PATHS="$SYNC_PATHS $workflow"
+            done
+            # Check for essential format (legacy/alternative)
+            ESSENTIAL_WORKFLOWS=$(jq -r '.sync_rules.workflows.essential[]? | .path' temp-sync-config.json 2>/dev/null || echo "")
+            for workflow in $ESSENTIAL_WORKFLOWS; do
+              [ -n "$workflow" ] && SYNC_PATHS="$SYNC_PATHS $workflow"
+            done
+            
+            # Add sync config itself
+            SYNC_PATHS="$SYNC_PATHS .github/sync-config.json"
+            
+            rm -f temp-sync-config.json
+            
+            echo "Checking for changes in configured sync paths: $SYNC_PATHS"
+          else
+            # Fallback to checking all .github files
+            SYNC_PATHS=".github/"
+            echo "No sync config found, checking all .github files"
+          fi
+          
+          # Check for changes in the configured paths
+          GITHUB_CHANGES=""
+          for path in $SYNC_PATHS; do
+            CHANGES=$(git diff --name-only $LAST_SYNC_COMMIT..$TEMPLATE_COMMIT template/main -- "$path" 2>/dev/null || echo "")
+            if [ -n "$CHANGES" ]; then
+              GITHUB_CHANGES="$GITHUB_CHANGES$CHANGES"$'\n'
+            fi
+          done
+          
+          if [ -z "$GITHUB_CHANGES" ]; then
+            echo "No syncable file changes found"
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found syncable changes:"
+            echo "$GITHUB_CHANGES"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "template_commit=$TEMPLATE_COMMIT" >> $GITHUB_OUTPUT
+            echo "last_sync_commit=$LAST_SYNC_COMMIT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create template sync branch
+        if: steps.check-updates.outputs.has_updates == 'true'
+        run: |
+          # Create sync branch with timestamp
+          DATE_SUFFIX=$(date +%Y%m%d-%H%M%S)
+          SYNC_BRANCH="template-sync/${DATE_SUFFIX}"
+          echo "SYNC_BRANCH=$SYNC_BRANCH" >> $GITHUB_ENV
+          
+          # Create and checkout sync branch from main
+          git checkout -b $SYNC_BRANCH main
+
+      - name: Sync template files
+        if: steps.check-updates.outputs.has_updates == 'true'
+        run: |
+          TEMPLATE_COMMIT="${{ steps.check-updates.outputs.template_commit }}"
+          LAST_SYNC_COMMIT="${{ steps.check-updates.outputs.last_sync_commit }}"
+          
+          # Get sync configuration from template
+          git show template/main:.github/sync-config.json > temp-sync-config.json
+          
+          echo "Syncing template files using configuration..."
+          
+          # Check if sync configuration itself has changed
+          CONFIG_CHANGED=false
+          if git diff --name-only $LAST_SYNC_COMMIT..$TEMPLATE_COMMIT template/main -- ".github/sync-config.json" | grep -q .; then
+            echo "⚠️ Sync configuration has changed - will sync all configured items to catch new templates"
+            CONFIG_CHANGED=true
+          fi
+          
+          # Sync directories
+          DIRECTORIES=$(jq -r '.sync_rules.directories[] | .path' temp-sync-config.json 2>/dev/null || echo "")
+          for dir in $DIRECTORIES; do
+            SHOULD_SYNC=false
+            
+            # Always sync if config changed (to catch newly added templates)
+            if [ "$CONFIG_CHANGED" = "true" ]; then
+              echo "Syncing directory (config changed): $dir"
+              SHOULD_SYNC=true
+            # Otherwise only sync if directory contents changed
+            elif git diff --name-only $LAST_SYNC_COMMIT..$TEMPLATE_COMMIT template/main -- "$dir/" | grep -q .; then
+              echo "Syncing directory (content changed): $dir"
+              SHOULD_SYNC=true
+            fi
+            
+            if [ "$SHOULD_SYNC" = "true" ]; then
+              # Remove existing directory and copy fresh from template
+              rm -rf "$dir"
+              mkdir -p "$(dirname "$dir")"
+              
+              # Copy directory from template (if it exists)
+              if git show template/main:"$dir" >/dev/null 2>&1; then
+                git archive template/main "$dir" | tar -x || echo "Failed to sync directory $dir"
+              fi
+              
+              git add "$dir" || true
+            fi
+          done
+          
+          # Sync individual files
+          FILES=$(jq -r '.sync_rules.files[] | .path' temp-sync-config.json 2>/dev/null || echo "")
+          for file in $FILES; do
+            SHOULD_SYNC=false
+            
+            # Always sync if config changed (to catch newly added templates)
+            if [ "$CONFIG_CHANGED" = "true" ]; then
+              echo "Syncing file (config changed): $file"
+              SHOULD_SYNC=true
+            # Otherwise only sync if file changed
+            elif git diff --name-only $LAST_SYNC_COMMIT..$TEMPLATE_COMMIT template/main -- "$file" | grep -q .; then
+              echo "Syncing file (content changed): $file"
+              SHOULD_SYNC=true
+            fi
+            
+            if [ "$SHOULD_SYNC" = "true" ]; then
+              # Create directory if it doesn't exist
+              mkdir -p "$(dirname "$file")"
+              
+              # Copy file from template
+              if git show template/main:"$file" > "$file" 2>/dev/null; then
+                git add "$file"
+              else
+                echo "File $file not found in template, skipping"
+              fi
+            fi
+          done
+          
+          # Sync essential workflows (checking both possible config formats)
+          WORKFLOWS=""
+          # Check for template_workflows format (current)
+          TEMPLATE_WORKFLOWS=$(jq -r '.sync_rules.workflows.template_workflows[]? | .path' temp-sync-config.json 2>/dev/null || echo "")
+          # Check for essential format (legacy/alternative)
+          ESSENTIAL_WORKFLOWS=$(jq -r '.sync_rules.workflows.essential[]? | .path' temp-sync-config.json 2>/dev/null || echo "")
+          WORKFLOWS="$TEMPLATE_WORKFLOWS $ESSENTIAL_WORKFLOWS"
+          
+          for workflow in $WORKFLOWS; do
+            # Skip empty entries
+            [ -z "$workflow" ] && continue
+            
+            SHOULD_SYNC=false
+            
+            # Always sync if config changed (to catch newly added templates)
+            if [ "$CONFIG_CHANGED" = "true" ]; then
+              echo "Syncing workflow (config changed): $workflow"
+              SHOULD_SYNC=true
+            # Otherwise only sync if workflow changed
+            elif git diff --name-only $LAST_SYNC_COMMIT..$TEMPLATE_COMMIT template/main -- "$workflow" | grep -q .; then
+              echo "Syncing workflow (content changed): $workflow"
+              SHOULD_SYNC=true
+            fi
+            
+            if [ "$SHOULD_SYNC" = "true" ]; then
+              # Create directory if it doesn't exist
+              mkdir -p "$(dirname "$workflow")"
+              
+              # Copy workflow from template
+              if git show template/main:"$workflow" > "$workflow" 2>/dev/null; then
+                git add "$workflow"
+              else
+                echo "Workflow $workflow not found in template, skipping"
+              fi
+            fi
+          done
+          
+          # Always sync the configuration file itself
+          echo "Syncing sync configuration file"
+          git show template/main:.github/sync-config.json > .github/sync-config.json
+          git add .github/sync-config.json
+          
+          rm -f temp-sync-config.json
+          
+          # Update the sync commit tracking file
+          echo "$TEMPLATE_COMMIT" > .github/.template-sync-commit
+          git add .github/.template-sync-commit
+          
+          # Check if there are any changes to commit
+          if git diff --staged --quiet; then
+            echo "No actual file changes detected"
+            echo "has_changes=false" >> $GITHUB_ENV
+          else
+            echo "has_changes=true" >> $GITHUB_ENV
+            
+            # Commit changes
+            git commit -m "chore: sync template updates"$'\n\n'"Updated .github files from template repository."$'\n\n'"Template commit: $TEMPLATE_COMMIT"$'\n'"Previous sync: $LAST_SYNC_COMMIT"
+          fi
+
+      - name: Push sync branch
+        if: steps.check-updates.outputs.has_updates == 'true' && env.has_changes == 'true'
+        run: |
+          # Push the sync branch
+          git push origin $SYNC_BRANCH
+
+      - name: Prepare template sync PR description
+        if: steps.check-updates.outputs.has_updates == 'true' && env.has_changes == 'true'
+        run: |
+          # Get the changes for PR description
+          TEMPLATE_COMMIT="${{ steps.check-updates.outputs.template_commit }}"
+          LAST_SYNC_COMMIT="${{ steps.check-updates.outputs.last_sync_commit }}"
+          
+          # Generate change summary
+          CHANGES=$(git log --oneline $LAST_SYNC_COMMIT..$TEMPLATE_COMMIT template/main -- .github/ | head -10)
+          CHANGED_FILES=$(git diff --name-only main...$SYNC_BRANCH)
+          
+          # Create fallback description
+          FALLBACK_DESCRIPTION="## Template Updates"$'\n\n'"This PR syncs the latest changes from the template repository to keep our workflows and GitHub configuration up to date."$'\n\n'"### Changed Files"$'\n'"$CHANGED_FILES"$'\n\n'"### Template Changes"$'\n'"$CHANGES"$'\n\n'"### Details"$'\n'"- Template commit: \`$TEMPLATE_COMMIT\`"$'\n'"- Previous sync: \`$LAST_SYNC_COMMIT\`"$'\n\n'"These changes help maintain consistency with the latest template improvements and bug fixes."
+          
+          echo "FALLBACK_DESCRIPTION<<EOF" >> $GITHUB_ENV
+          echo "$FALLBACK_DESCRIPTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create enhanced template sync PR
+        if: steps.check-updates.outputs.has_updates == 'true' && env.has_changes == 'true'
+        id: create-pr
+        uses: ./.github/actions/create-enhanced-pr
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          base-branch: main
+          head-branch: ${{ env.SYNC_BRANCH }}
+          pr-title: "🔄 Sync template updates $(date +%Y-%m-%d)"
+          fallback-description: ${{ env.FALLBACK_DESCRIPTION }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          azure-api-key: ${{ secrets.AZURE_API_KEY }}
+          azure-api-base: ${{ secrets.AZURE_API_BASE }}
+          azure-api-version: ${{ secrets.AZURE_API_VERSION }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          target-branch-for-aipr: main
+          use-vulns-flag: 'false'
+
+      - name: Log template sync completion
+        if: steps.check-updates.outputs.has_updates == 'true' && env.has_changes == 'true'
+        run: |
+          echo "Template sync PR created: ${{ steps.create-pr.outputs.pr-url }}"
+
+      - name: Create issue on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          ISSUE_BODY="The template sync workflow failed. Please check the workflow logs for details."$'\n\n'"Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"$'\n\n'"@${{ github.repository_owner }}"
+          
+          gh issue create \
+            --title "🔄 Template Sync Failed $(date +%Y-%m-%d)" \
+            --body "$ISSUE_BODY" \
+            --label "template-sync-failed"
