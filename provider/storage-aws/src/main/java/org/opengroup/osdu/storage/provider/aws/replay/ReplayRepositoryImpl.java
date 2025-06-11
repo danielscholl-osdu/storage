@@ -16,12 +16,13 @@
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.GsiQueryRequest;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.util.RequestBuilderUtil;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
@@ -33,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 
 import java.util.*;
 
@@ -43,7 +45,8 @@ import java.util.*;
 @Component
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplayRepositoryImpl implements IReplayRepository {
-    
+
+    private static final String GSI_REPLAY_ID_INDEX_NAME = "ReplayIdIndex";
     private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
     private final WorkerThreadPool workerThreadPool;
     private final DpsHeaders headers;
@@ -66,9 +69,8 @@ public class ReplayRepositoryImpl implements IReplayRepository {
         this.objectMapper = objectMapper;
     }
     
-    private DynamoDBQueryHelperV2 getReplayStatusQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, replayStatusTableParameterRelativePath,
-                workerThreadPool.getClientConfiguration());
+    private DynamoDBQueryHelper<ReplayMetadataItem> getReplayStatusQueryHelper() {
+        return dynamoDBQueryHelperFactory.createQueryHelper(headers, replayStatusTableParameterRelativePath, ReplayMetadataItem.class);
     }
     
     /**
@@ -91,21 +93,22 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      * @return A list of AwsReplayMetaDataDTO objects
      */
     public List<AwsReplayMetaDataDTO> getAwsReplayStatusByReplayId(String replayId) {
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
 
         try {
             // Create a query object with replayId as the hash key for the GSI
             ReplayMetadataItem queryObject = new ReplayMetadataItem();
             queryObject.setReplayId(replayId);
 
+            GsiQueryRequest<ReplayMetadataItem> queryRequest =
+                    RequestBuilderUtil.QueryRequestBuilder.forQuery(queryObject, GSI_REPLAY_ID_INDEX_NAME, ReplayMetadataItem.class)
+                            .limit(1000) // Use a reasonable page size
+                            .cursor(null) // Start with no cursor
+                            .buildGsiRequest();
             // Use queryByGSI to query the GSI directly
-            QueryPageResult<ReplayMetadataItem> queryPageResult = queryHelper.queryByGSI(
-                    ReplayMetadataItem.class,
-                    queryObject,
-                    1000,  // Use a reasonable page size
-                    null); // Start with no cursor
+            QueryPageResult<ReplayMetadataItem> queryPageResult = queryHelper.queryByGSI(queryRequest, true);
             
-            return queryPageResult.results.stream()
+            return queryPageResult.getItems().stream()
                     .map(this::convertToAwsDTO)
                     .toList();
         } catch (Exception e) {
@@ -123,12 +126,12 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     @Override
     public ReplayMetaDataDTO getReplayStatusByKindAndReplayId(String kind, String replayId) {
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
         
         // Use the kind as the hash key and replayId as the range key
-        ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
+        Optional<ReplayMetadataItem> itemOptional = queryHelper.getItem(kind, replayId);
         
-        return item != null ? convertToDTO(item) : null;
+        return itemOptional.isPresent()  ? convertToDTO(itemOptional.get()) : null;
     }
     
     /**
@@ -141,12 +144,12 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      * @return The AwsReplayMetaDataDTO object, or null if not found
      */
     public AwsReplayMetaDataDTO getAwsReplayStatusByKindAndReplayId(String kind, String replayId) {
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
         
         // Use the kind as the hash key and replayId as the range key
-        ReplayMetadataItem item = queryHelper.loadByPrimaryKey(ReplayMetadataItem.class, kind, replayId);
+        Optional<ReplayMetadataItem> itemOptional = queryHelper.getItem(kind, replayId);
         
-        return item != null ? convertToAwsDTO(item) : null;
+        return itemOptional.isPresent() ? convertToAwsDTO(itemOptional.get()) : null;
     }
     
     /**
@@ -164,14 +167,13 @@ public class ReplayRepositoryImpl implements IReplayRepository {
             return List.of();
         }
         
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
         
         try {
             // Use the new batchLoadByCompositeKey method to efficiently retrieve all items in a single API call
             // This handles the composite key (kind as hash key + replayId as range key)
             Set<String> kindSet = new HashSet<>(kinds);
-            List<ReplayMetadataItem> items = queryHelper.batchLoadByCompositeKey(
-                    ReplayMetadataItem.class, kindSet, replayId);
+            List<ReplayMetadataItem> items = queryHelper.batchLoadByCompositePrimaryKey(kindSet, replayId);
 
             // Convert items to DTOs
             return items.stream()
@@ -197,10 +199,10 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      */
     @Override
     public ReplayMetaDataDTO save(ReplayMetaDataDTO replayMetaData) {
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
         
         ReplayMetadataItem item = convertToItem(replayMetaData);
-        queryHelper.save(item);
+        queryHelper.putItem(item);
         
         return convertToDTO(item);
     }
@@ -213,10 +215,10 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      * @return The saved AwsReplayMetaDataDTO
      */
     public AwsReplayMetaDataDTO saveAwsReplayMetaData(AwsReplayMetaDataDTO awsReplayMetaData) {
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
 
         ReplayMetadataItem item = convertAwsDtoToItem(awsReplayMetaData);
-        queryHelper.save(item);
+        queryHelper.putItem(item);
 
         return convertToAwsDTO(item);
     }
@@ -228,13 +230,13 @@ public class ReplayRepositoryImpl implements IReplayRepository {
      * @param awsReplayMetaDataList The list of AwsReplayMetaDataDTO objects to save
      * @return A list of any failed batch operations
      */
-    public List<DynamoDBMapper.FailedBatch> batchSaveAwsReplayMetaData(List<AwsReplayMetaDataDTO> awsReplayMetaDataList) {
+    public List<ReplayMetadataItem> batchSaveAwsReplayMetaData(List<AwsReplayMetaDataDTO> awsReplayMetaDataList) {
         if (awsReplayMetaDataList == null || awsReplayMetaDataList.isEmpty()) {
             logger.info("No replay metadata items to save in batch");
             return List.of();
         }
         
-        DynamoDBQueryHelperV2 queryHelper = getReplayStatusQueryHelper();
+        DynamoDBQueryHelper<ReplayMetadataItem> queryHelper = getReplayStatusQueryHelper();
         
         // Convert all DTOs to DynamoDB items
         List<ReplayMetadataItem> items = awsReplayMetaDataList.stream()
@@ -243,8 +245,8 @@ public class ReplayRepositoryImpl implements IReplayRepository {
 
         try {
             // Use the batch save functionality
-            List<DynamoDBMapper.FailedBatch> failedBatches = queryHelper.batchSave(items);
-            
+            BatchWriteResult result = queryHelper.batchSave(items);
+            List<ReplayMetadataItem> failedBatches = result.unprocessedPutItemsForTable(queryHelper.getTable());
             if (!failedBatches.isEmpty()) {
                 logger.error(String.format("Failed to save %d batches during batch save operation", failedBatches.size()));
             }

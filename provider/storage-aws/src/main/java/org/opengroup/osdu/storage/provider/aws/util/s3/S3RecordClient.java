@@ -16,10 +16,11 @@ package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.aws.s3.IS3ClientFactory;
-import org.opengroup.osdu.core.aws.s3.S3ClientWithBucket;
+import org.opengroup.osdu.core.aws.v2.s3.IS3ClientFactory;
+import org.opengroup.osdu.core.aws.v2.s3.S3ClientWithBucket;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.storage.RecordData;
@@ -29,16 +30,25 @@ import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import org.springframework.beans.factory.annotation.Qualifier;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import jakarta.inject.Inject;
 
 @Component
+@Qualifier("S3ClientFactorySDKV2")
 public class S3RecordClient {
 
     @Inject
@@ -60,7 +70,7 @@ public class S3RecordClient {
     private static final String RECORD_GET_ERROR_MSG = "Error getting record";
 
     private S3ClientWithBucket getS3ClientWithBucket(String dataPartition) {
-        s3ClientFactory.setConfig(workerThreadPool.getClientConfiguration());
+        s3ClientFactory.setConfig(workerThreadPool.getClientConfiguration(), workerThreadPool.getThreadNumber());
         return s3ClientFactory.getS3ClientForPartition(dataPartition, s3RecordsBucketParameterRelativePath);
     } 
 
@@ -72,7 +82,7 @@ public class S3RecordClient {
     public void saveRecord(RecordProcessing recordProcessing, String dataPartition) {        
 
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
-        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        S3Client s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
 
 
@@ -81,7 +91,13 @@ public class S3RecordClient {
         RecordData recordData = recordProcessing.getRecordData();
         String content = gson.toJson(recordData);
         String keyName = getKeyNameForLatestVersion(recordMetadata);
-        s3.putObject(recordsBucketName, keyName, content);
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(recordsBucketName)
+                .key(keyName)
+                .build();
+
+        s3.putObject(putObjectRequest, RequestBody.fromString(content));
+
     }
 
     public String getRecord(RecordMetadata recordMetadata, Long version, String dataPartition) {
@@ -109,25 +125,25 @@ public class S3RecordClient {
     public void deleteRecord(String keyName, String dataPartition) {
 
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
-        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        S3Client s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
         
         try {
-            s3.deleteObject(new DeleteObjectRequest(recordsBucketName, keyName));
+            s3.deleteObject(DeleteObjectRequest.builder().bucket(recordsBucketName).key(keyName).build());
         } catch (SdkClientException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_DELETE_ERROR_MSG, e.getMessage(), e);
         }
     }
 
     public void deleteRecordVersion(RecordMetadata recordMetadata, Long version, String dataPartition) {
-        
+
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
-        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        S3Client s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
 
         String keyName = getKeyNameForVersion(recordMetadata, version);
         try {
-            s3.deleteObject(new DeleteObjectRequest(recordsBucketName, keyName));
+            s3.deleteObject(DeleteObjectRequest.builder().bucket(recordsBucketName).key(keyName).build());
         } catch (SdkClientException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_DELETE_ERROR_MSG, e.getMessage(), e);
         }
@@ -136,10 +152,10 @@ public class S3RecordClient {
     public void deleteRecordVersion(String versionPath, String dataPartition) {
 
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
-        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        S3Client s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
         try {
-            s3.deleteObject(new DeleteObjectRequest(recordsBucketName, versionPath));
+            s3.deleteObject(DeleteObjectRequest.builder().bucket(recordsBucketName).key(versionPath).build());
         } catch (SdkClientException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_DELETE_ERROR_MSG, e.getMessage(), e);
         }
@@ -148,14 +164,14 @@ public class S3RecordClient {
     public boolean checkIfRecordExists(RecordMetadata recordMetadata, String dataPartition) {
         
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
-        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        S3Client s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
         
         String keyName = getKeyNameForAllVersions(recordMetadata);
         boolean exists = false;
         try {
-            ListObjectsV2Result result = s3.listObjectsV2(recordsBucketName, keyName);
-            exists = result.getKeyCount() > 0;
+            ListObjectsV2Response result = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(recordsBucketName).prefix(keyName).build());
+            exists = result.keyCount() > 0;
         } catch (SdkClientException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_FIND_ERROR_MSG, e.getMessage(), e);
         }
@@ -165,12 +181,14 @@ public class S3RecordClient {
     public String getRecord(String keyName, String dataPartition) {
 
         S3ClientWithBucket s3ClientWithBucket = getS3ClientWithBucket(dataPartition);
-        AmazonS3 s3 = s3ClientWithBucket.getS3Client();
+        S3Client s3 = s3ClientWithBucket.getS3Client();
         String recordsBucketName = s3ClientWithBucket.getBucketName();
 
         String recordStr = "";
         try {
-            recordStr = s3.getObjectAsString(recordsBucketName, keyName);
+            ResponseBytes<GetObjectResponse> response = s3.getObjectAsBytes(GetObjectRequest.builder().bucket(recordsBucketName).key(keyName).build());
+            byte[] data = response.asByteArray();
+            recordStr = new String(data, StandardCharsets.UTF_8);
         } catch (SdkClientException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, RECORD_GET_ERROR_MSG, e.getMessage(), e);
         }

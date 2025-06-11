@@ -16,23 +16,23 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.GsiQueryRequest;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.QueryPageResult;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.model.RecordId;
-import org.opengroup.osdu.storage.model.RecordIdAndKind;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.aws.service.AwsSchemaServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -43,9 +43,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,7 +57,7 @@ class QueryRepositoryImplTest {
     private QueryRepositoryImpl repo;
 
     @Mock
-    private DynamoDBQueryHelperV2 queryHelper;
+    private DynamoDBQueryHelper queryHelper;
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
@@ -77,7 +74,7 @@ class QueryRepositoryImplTest {
     @BeforeEach
     void setUp() {
         openMocks(this);
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
+        Mockito.when(queryHelperFactory.createQueryHelper(any(DpsHeaders.class), any(), any()))
             .thenReturn(queryHelper);
         
         // Manually set the schemaService field in the repo
@@ -85,8 +82,8 @@ class QueryRepositoryImplTest {
     }
 
     @Test
-    void getAllRecordIdAndKind() throws UnsupportedEncodingException {
-        // Arrange
+    void getAllRecordIdAndKind() {
+        /*// Arrange
         String cursor = "abc123";
         String recordId1 = "tenant:source:type1:1.0.0.1212";
         String recordId2 = "tenant:source:type2:1.0.0.3434";
@@ -105,14 +102,10 @@ class QueryRepositoryImplTest {
         doc2.setStatus("active");
         
         List<RecordMetadataDoc> docList = Arrays.asList(doc1, doc2);
-        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(cursor, docList);
+        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(docList, null, null);
         
         // Mock the query helper
-        when(queryHelper.queryByGSI(
-                eq(RecordMetadataDoc.class),
-                any(),
-                anyInt(),
-                anyString()))
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class),any()))
                 .thenReturn(queryResult);
         
         // Act
@@ -130,37 +123,26 @@ class QueryRepositoryImplTest {
         assertEquals(recordId2, record2.getId());
         assertEquals(kind2, record2.getKind());
         
-        verify(queryHelper, times(1)).queryByGSI(
-                eq(RecordMetadataDoc.class),
-                any(),
-                eq(50),
-                eq(cursor));
+        verify(queryHelper, times(1)).queryByGSI(any(GsiQueryRequest.class), any());*/
     }
     
     @Test
-    void getAllRecordIdAndKindThrowsException() throws UnsupportedEncodingException {
+    void getAllRecordIdAndKindThrowsException() {
         // Arrange
         String cursor = "abc123";
         Integer limit = 50;
-        
-        when(queryHelper.queryByGSI(
-                eq(RecordMetadataDoc.class),
-                any(),
-                anyInt(),
-                anyString()))
-                .thenThrow(UnsupportedEncodingException.class);
-        
-        // Act & Assert
-        assertThrows(AppException.class, () -> {
+
+        // Act & Assert This function is disabled
+        assertThrows(UnsupportedOperationException.class, () -> {
             repo.getAllRecordIdAndKind(limit, cursor);
         });
     }
     
     @Test
-    void getAllRecordIdsFromKindWithRecordId() throws UnsupportedEncodingException {
+    void getAllRecordIdsFromKindWithRecordId() {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
-        String cursor = "abc123";
+        String cursor = null;
         String recordId1 = "tenant:source:type:1.0.0.1212";
         String recordId2 = "tenant:source:type:1.0.0.3434";
         String partitionId = "tenant";
@@ -177,20 +159,11 @@ class QueryRepositoryImplTest {
         doc2.setStatus("active");
         
         List<RecordMetadataDoc> docList = Arrays.asList(doc1, doc2);
-        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(cursor, docList);
+        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(docList, null, null);
         
         // Mock the query helper and headers
         when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                anyString(),
-                anyString(),
-                anyString(),
-                eq(ComparisonOperator.BEGINS_WITH),
-                anyString(),
-                anyInt(),
-                anyString()))
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class)))
                 .thenReturn(queryResult);
         
         // Act
@@ -206,36 +179,19 @@ class QueryRepositoryImplTest {
         RecordId record2 = result.getResults().get(1);
         assertEquals(recordId2, record2.getId());
         
-        verify(queryHelper, times(1)).queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                anyString(),
-                eq(50),
-                eq(cursor));
+        verify(queryHelper, times(1)).queryByGSI(any(GsiQueryRequest.class));
     }
     
     @Test
-    void getAllRecordIdsFromKindWithRecordIdThrowsException() throws UnsupportedEncodingException {
+    void getAllRecordIdsFromKindWithRecordIdThrowsException() {
         // Arrange
         String kind = "tenant:source:type:1.0.0";
-        String cursor = "abc123";
+        String cursor = null;
         Integer limit = 50;
         
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                anyString(),
-                anyString(),
-                anyString(),
-                eq(ComparisonOperator.BEGINS_WITH),
-                anyString(),
-                anyInt(),
-                anyString()))
-                .thenThrow(UnsupportedEncodingException.class);
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class)))
+                .thenThrow(IllegalArgumentException.class);
+
         
         // Act & Assert
         assertThrows(AppException.class, () -> {
@@ -244,7 +200,7 @@ class QueryRepositoryImplTest {
     }
     
     @Test
-    void getActiveRecordsCount() throws UnsupportedEncodingException {
+    void getActiveRecordsCount() {
         // Arrange
         String partitionId = "tenant";
         String kind1 = "tenant:source:type1:1.0.0";
@@ -263,7 +219,7 @@ class QueryRepositoryImplTest {
         doc2.setStatus("active");
         
         List<RecordMetadataDoc> docList1 = Arrays.asList(doc1, doc2);
-        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(null, docList1);
+        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(docList1, null, null);
         
         // Create test data for kind2
         RecordMetadataDoc doc3 = new RecordMetadataDoc();
@@ -272,37 +228,16 @@ class QueryRepositoryImplTest {
         doc3.setStatus("active");
         
         List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
-        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(docList2, null, null);
         
         // Mock the schema service and query helper
         when(schemaService.getAllKinds()).thenReturn(kinds);
         when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
         
-        // Mock for kind1
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                Mockito.argThat(arg -> arg != null && kind1.equals(arg.getKind())),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenReturn(queryResult1);
-        
-        // Mock for kind2
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                Mockito.argThat(arg -> arg != null && kind2.equals(arg.getKind())),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenReturn(queryResult2);
+        // Mock for returning result1 when first called then return result2 when 2nd call
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class)))
+                .thenReturn(queryResult1).thenReturn(queryResult2);
+
         
         // Act
         HashMap<String, Long> result = repo.getActiveRecordsCount();
@@ -314,12 +249,12 @@ class QueryRepositoryImplTest {
     }
     
     @Test
-    void getActiveRecordsCountWithPagination() throws UnsupportedEncodingException {
+    void getActiveRecordsCountWithPagination() {
         // Arrange
         String partitionId = "tenant";
         String kind = "tenant:source:type:1.0.0";
         List<String> kinds = Arrays.asList(kind);
-        String cursor = "abc123";
+        String cursor = "{}";
         
         // Create test data for first page
         RecordMetadataDoc doc1 = new RecordMetadataDoc();
@@ -333,7 +268,7 @@ class QueryRepositoryImplTest {
         doc2.setStatus("active");
         
         List<RecordMetadataDoc> docList1 = Arrays.asList(doc1, doc2);
-        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(cursor, docList1);
+        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(docList1, null, cursor);
         
         // Create test data for second page
         RecordMetadataDoc doc3 = new RecordMetadataDoc();
@@ -342,37 +277,15 @@ class QueryRepositoryImplTest {
         doc3.setStatus("active");
         
         List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
-        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(docList2, null, null);
         
         // Mock the schema service and query helper
         when(schemaService.getAllKinds()).thenReturn(kinds);
         when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
         
-        // Mock for first page
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenReturn(queryResult1);
-        
-        // Mock for second page
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(cursor)))
-                .thenReturn(queryResult2);
+        // Mock for query
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class)))
+                .thenReturn(queryResult1, queryResult2);
         
         // Act
         HashMap<String, Long> result = repo.getActiveRecordsCount();
@@ -382,27 +295,9 @@ class QueryRepositoryImplTest {
         assertEquals(Long.valueOf(3), result.get(kind));
         
         // Verify that both pages were queried
-        verify(queryHelper, times(1)).queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null));
+        verify(queryHelper, times(1)).queryByGSI(Mockito.argThat(arg -> arg != null && arg.getRequest().exclusiveStartKey() == null));
         
-        verify(queryHelper, times(1)).queryPage(
-                eq(RecordMetadataDoc.class),
-                any(),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(cursor));
+        verify(queryHelper, times(1)).queryByGSI(Mockito.argThat(arg -> arg != null && arg.getRequest().exclusiveStartKey() != null));
     }
     
     @Test
@@ -436,7 +331,7 @@ class QueryRepositoryImplTest {
         doc2.setStatus("active");
         
         List<RecordMetadataDoc> docList1 = Arrays.asList(doc1, doc2);
-        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(null, docList1);
+        QueryPageResult<RecordMetadataDoc> queryResult1 = new QueryPageResult<>(docList1, null, null);
         
         // Create test data for kind2
         RecordMetadataDoc doc3 = new RecordMetadataDoc();
@@ -445,36 +340,14 @@ class QueryRepositoryImplTest {
         doc3.setStatus("active");
         
         List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
-        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(docList2, null, null);
         
         // Mock the query helper
         when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
-        
-        // Mock for kind1
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                Mockito.argThat(arg -> arg != null && kind1.equals(arg.getKind())),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenReturn(queryResult1);
-        
-        // Mock for kind2
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                Mockito.argThat(arg -> arg != null && kind2.equals(arg.getKind())),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenReturn(queryResult2);
+
+        // Return result1 when 1st called, return result2 when 2nd called
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class)))
+                .thenReturn(queryResult1, queryResult2);
         
         // Act
         Map<String, Long> result = repo.getActiveRecordsCountForKinds(kinds);
@@ -486,7 +359,7 @@ class QueryRepositoryImplTest {
     }
     
     @Test
-    void getActiveRecordsCountForKindsWithException() throws UnsupportedEncodingException {
+    void getActiveRecordsCountForKindsWithException() {
         // Arrange
         String partitionId = "tenant";
         String kind1 = "tenant:source:type1:1.0.0";
@@ -494,19 +367,7 @@ class QueryRepositoryImplTest {
         List<String> kinds = Arrays.asList(kind1, kind2);
         
         when(dpsHeaders.getPartitionId()).thenReturn(partitionId);
-        
-        // Mock for kind1 to throw exception
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                Mockito.argThat(arg -> arg != null && kind1.equals(arg.getKind())),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenThrow(UnsupportedEncodingException.class);
+
         
         // Create test data for kind2
         RecordMetadataDoc doc3 = new RecordMetadataDoc();
@@ -515,21 +376,12 @@ class QueryRepositoryImplTest {
         doc3.setStatus("active");
         
         List<RecordMetadataDoc> docList2 = Arrays.asList(doc3);
-        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(null, docList2);
-        
-        // Mock for kind2 to succeed
-        when(queryHelper.queryPage(
-                eq(RecordMetadataDoc.class),
-                Mockito.argThat(arg -> arg != null && kind2.equals(arg.getKind())),
-                eq("Status"),
-                eq("active"),
-                eq("Id"),
-                eq(ComparisonOperator.BEGINS_WITH),
-                eq(partitionId + ":"),
-                eq(1000),
-                eq(null)))
-                .thenReturn(queryResult2);
-        
+        QueryPageResult<RecordMetadataDoc> queryResult2 = new QueryPageResult<>(docList2, null, null);
+
+        // Mock to throw exception when 1st call, then return value at 2nd call.
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class)))
+                .thenThrow(DynamoDbException.class).thenReturn(queryResult2);
+
         // Act
         Map<String, Long> result = repo.getActiveRecordsCountForKinds(kinds);
         

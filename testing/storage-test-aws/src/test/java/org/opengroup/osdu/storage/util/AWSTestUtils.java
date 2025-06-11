@@ -16,7 +16,7 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
-import org.opengroup.osdu.core.aws.cognito.AWSCognitoClient;
+import org.opengroup.osdu.core.aws.v2.cognito.AWSCognitoClient;
 
 public class AWSTestUtils extends TestUtils {
 	private static String token;

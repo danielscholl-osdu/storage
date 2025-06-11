@@ -39,6 +39,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 class SchemaItemTypeConverterTest {
     @InjectMocks
@@ -64,16 +65,16 @@ class SchemaItemTypeConverterTest {
     void convert_shouldReturnJsonString_whenListIsValid() throws JsonProcessingException {
         when(objectMapper.writeValueAsString(schemaItems)).thenReturn(jsonString);
 
-        String result = converter.convert(schemaItems);
+        AttributeValue result = converter.transformFrom(schemaItems);
 
-        assertEquals(jsonString, result);
+        assertEquals(jsonString, result.s());
     }
 
     @Test
     void convert_shouldLogErrorAndReturnNull_whenExceptionOccurs() throws JsonProcessingException {
         when(objectMapper.writeValueAsString(schemaItems)).thenThrow(new JsonProcessingException("test"){});
 
-        String result = converter.convert(schemaItems);
+        AttributeValue result = converter.transformFrom(schemaItems);
 
         assertEquals(null, result);
     }
@@ -82,7 +83,7 @@ class SchemaItemTypeConverterTest {
     void unconvert_shouldReturnSchemaItems_whenJsonStringIsValid() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenReturn(schemaItems);
 
-        List<SchemaItem> result = converter.unconvert(jsonString);
+        List<SchemaItem> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());
 
         assertEquals(schemaItems, result);
     }
@@ -91,7 +92,7 @@ class SchemaItemTypeConverterTest {
     void unconvert_shouldLogErrorAndReturnNull_whenIOExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(new UncheckedIOException(new IOException("Test IOException")));
 
-        List<SchemaItem> result = converter.unconvert(jsonString);
+        List<SchemaItem> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());
         verify(logger).error(anyString());
         assertEquals(null, result);
     }
@@ -100,7 +101,7 @@ class SchemaItemTypeConverterTest {
     void unconvert_shouldLogErrorAndReturnNull_whenJsonParseExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(JsonParseException.class);
 
-        List<SchemaItem> result = converter.unconvert(jsonString);
+        List<SchemaItem> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());
         verify(logger).error(anyString());
         assertEquals(null, result);
     }
@@ -109,7 +110,7 @@ class SchemaItemTypeConverterTest {
     void unconvert_shouldLogErrorAndReturnNull_whenJsonMappingExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(JsonMappingException.class);
 
-        List<SchemaItem> result = converter.unconvert(jsonString);
+        List<SchemaItem> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());
         verify(logger).error(anyString());
         assertEquals(null, result);
     }
@@ -118,7 +119,7 @@ class SchemaItemTypeConverterTest {
     void unconvert_shouldLogErrorAndReturnNull_whenExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(RuntimeException.class);
 
-        List<SchemaItem> result = converter.unconvert(jsonString);
+        List<SchemaItem> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());
         verify(logger).error(anyString());
         assertEquals(null, result);
     }

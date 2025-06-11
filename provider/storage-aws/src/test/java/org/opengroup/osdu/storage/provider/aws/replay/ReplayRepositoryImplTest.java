@@ -25,9 +25,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.GsiQueryRequest;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
@@ -35,6 +36,7 @@ import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.ReplayMetadataItem;
 import org.opengroup.osdu.storage.request.ReplayFilter;
 import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -50,7 +52,7 @@ public class ReplayRepositoryImplTest {
     private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
     @Mock
-    private DynamoDBQueryHelperV2 dynamoDBQueryHelper;
+    private DynamoDBQueryHelper dynamoDBQueryHelper;
 
     @Mock
     private WorkerThreadPool workerThreadPool;
@@ -64,6 +66,9 @@ public class ReplayRepositoryImplTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private BatchWriteResult batchWriteResult;
+
     @InjectMocks
     private ReplayRepositoryImpl replayRepository;
 
@@ -76,8 +81,7 @@ public class ReplayRepositoryImplTest {
     public void setUp() {
         ReflectionTestUtils.setField(replayRepository, "replayStatusTableParameterRelativePath", REPLAY_TABLE_PATH);
         when(headers.getPartitionId()).thenReturn(PARTITION_ID);
-        when(workerThreadPool.getClientConfiguration()).thenReturn(null);
-        when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(eq(headers), eq(REPLAY_TABLE_PATH), any())).thenReturn(dynamoDBQueryHelper);
+        when(dynamoDBQueryHelperFactory.createQueryHelper(eq(headers), eq(REPLAY_TABLE_PATH), any())).thenReturn(dynamoDBQueryHelper);
     }
 
     @Test
@@ -87,35 +91,23 @@ public class ReplayRepositoryImplTest {
         ReplayMetadataItem item2 = createReplayMetadataItem("another-kind", REPLAY_ID);
         List<ReplayMetadataItem> items = Arrays.asList(item1, item2);
         
-        QueryPageResult<ReplayMetadataItem> queryResult = new QueryPageResult<>(null, items);
+        QueryPageResult<ReplayMetadataItem> queryResult = new QueryPageResult<>(items, null, null);
         
         // Mock behavior for queryByGSI
-        when(dynamoDBQueryHelper.queryByGSI(
-                eq(ReplayMetadataItem.class),
-                any(ReplayMetadataItem.class),
-                eq(1000),
-                isNull())).thenReturn(queryResult);
+        when(dynamoDBQueryHelper.queryByGSI(any(GsiQueryRequest.class), anyBoolean())).thenReturn(queryResult);
         
         // Execute
         List<ReplayMetaDataDTO> result = replayRepository.getReplayStatusByReplayId(REPLAY_ID);
         
         // Verify
         assertEquals(2, result.size());
-        verify(dynamoDBQueryHelper).queryByGSI(
-                eq(ReplayMetadataItem.class),
-                any(ReplayMetadataItem.class),
-                eq(1000),
-                isNull());
+        verify(dynamoDBQueryHelper).queryByGSI(any(GsiQueryRequest.class), anyBoolean());
     }
 
     @Test
     public void testGetReplayStatusByReplayIdHandlesException() throws UnsupportedEncodingException {
         // Mock behavior to throw exception
-        when(dynamoDBQueryHelper.queryByGSI(
-                eq(ReplayMetadataItem.class),
-                any(ReplayMetadataItem.class),
-                eq(1000),
-                isNull())).thenThrow(new UnsupportedEncodingException("Test exception"));
+        when(dynamoDBQueryHelper.queryByGSI(any(GsiQueryRequest.class), anyBoolean())).thenThrow(new IllegalArgumentException("Test exception"));
         
         // Execute
         List<ReplayMetaDataDTO> result = replayRepository.getReplayStatusByReplayId(REPLAY_ID);
@@ -123,7 +115,7 @@ public class ReplayRepositoryImplTest {
         // Verify
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(logger).error(contains("Error querying replay status"), any(UnsupportedEncodingException.class));
+        verify(logger).error(contains("Error querying replay status"), any(IllegalArgumentException.class));
     }
 
     @Test
@@ -132,7 +124,7 @@ public class ReplayRepositoryImplTest {
         ReplayMetadataItem item = createReplayMetadataItem(KIND, REPLAY_ID);
         
         // Mock behavior
-        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID)).thenReturn(item);
+        when(dynamoDBQueryHelper.getItem(KIND, REPLAY_ID)).thenReturn(Optional.of(item));
         
         // Execute
         ReplayMetaDataDTO result = replayRepository.getReplayStatusByKindAndReplayId(KIND, REPLAY_ID);
@@ -141,20 +133,20 @@ public class ReplayRepositoryImplTest {
         assertNotNull(result);
         assertEquals(KIND, result.getKind());
         assertEquals(REPLAY_ID, result.getReplayId());
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID);
+        verify(dynamoDBQueryHelper).getItem(KIND, REPLAY_ID);
     }
 
     @Test
     public void testGetReplayStatusByKindAndReplayIdReturnsNullWhenNotFound() {
         // Mock behavior
-        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID)).thenReturn(null);
+        when(dynamoDBQueryHelper.getItem(KIND, REPLAY_ID)).thenReturn(Optional.empty());
         
         // Execute
         ReplayMetaDataDTO result = replayRepository.getReplayStatusByKindAndReplayId(KIND, REPLAY_ID);
         
         // Verify
         assertNull(result);
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID);
+        verify(dynamoDBQueryHelper).getItem(KIND, REPLAY_ID);
     }
 
     @Test
@@ -163,7 +155,7 @@ public class ReplayRepositoryImplTest {
         ReplayMetaDataDTO dto = createReplayMetaDataDTO(KIND, REPLAY_ID);
 
         // Mock behavior
-        doNothing().when(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        doNothing().when(dynamoDBQueryHelper).putItem(any(ReplayMetadataItem.class));
         
         // Execute
         ReplayMetaDataDTO result = replayRepository.save(dto);
@@ -172,7 +164,7 @@ public class ReplayRepositoryImplTest {
         assertNotNull(result);
         assertEquals(KIND, result.getKind());
         assertEquals(REPLAY_ID, result.getReplayId());
-        verify(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        verify(dynamoDBQueryHelper).putItem(any(ReplayMetadataItem.class));
     }
 
     @Test
@@ -237,7 +229,7 @@ public class ReplayRepositoryImplTest {
         item.setLastUpdatedAt(lastUpdated);
         
         // Mock behavior
-        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID)).thenReturn(item);
+        when(dynamoDBQueryHelper.getItem(KIND, REPLAY_ID)).thenReturn(Optional.of(item));
         
         // Execute
         AwsReplayMetaDataDTO result = replayRepository.getAwsReplayStatusByKindAndReplayId(KIND, REPLAY_ID);
@@ -248,7 +240,7 @@ public class ReplayRepositoryImplTest {
         assertEquals(REPLAY_ID, result.getReplayId());
         assertEquals("test-cursor", result.getLastCursor());
         assertEquals(lastUpdated, result.getLastUpdatedAt());
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID);
+        verify(dynamoDBQueryHelper).getItem(KIND, REPLAY_ID);
     }
 
     @Test
@@ -269,7 +261,7 @@ public class ReplayRepositoryImplTest {
         dto.setLastUpdatedAt(lastUpdated);
 
         // Mock behavior
-        doNothing().when(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        doNothing().when(dynamoDBQueryHelper).putItem(any(ReplayMetadataItem.class));
         
         // Execute
         AwsReplayMetaDataDTO result = replayRepository.saveAwsReplayMetaData(dto);
@@ -280,7 +272,7 @@ public class ReplayRepositoryImplTest {
         assertEquals(REPLAY_ID, result.getReplayId());
         assertEquals("test-cursor", result.getLastCursor());
         assertEquals(lastUpdated, result.getLastUpdatedAt());
-        verify(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        verify(dynamoDBQueryHelper).putItem(any(ReplayMetadataItem.class));
     }
 
     @Test
@@ -290,8 +282,8 @@ public class ReplayRepositoryImplTest {
         String newCursor = "new-cursor";
         
         // Mock behavior
-        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID)).thenReturn(item);
-        doNothing().when(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        when(dynamoDBQueryHelper.getItem(KIND, REPLAY_ID)).thenReturn(Optional.of(item));
+        doNothing().when(dynamoDBQueryHelper).putItem(any(ReplayMetadataItem.class));
         
         // Execute
         AwsReplayMetaDataDTO result = replayRepository.updateCursor(KIND, REPLAY_ID, newCursor);
@@ -300,8 +292,8 @@ public class ReplayRepositoryImplTest {
         assertNotNull(result);
         assertEquals(newCursor, result.getLastCursor());
         assertNotNull(result.getLastUpdatedAt());
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, KIND, REPLAY_ID);
-        verify(dynamoDBQueryHelper).save(any(ReplayMetadataItem.class));
+        verify(dynamoDBQueryHelper).getItem(KIND, REPLAY_ID);
+        verify(dynamoDBQueryHelper).putItem(any(ReplayMetadataItem.class));
     }
 
     @Test
@@ -410,10 +402,11 @@ public class ReplayRepositoryImplTest {
         dtoList.add(dto2);
 
         // Mock behavior
-        when(dynamoDBQueryHelper.batchSave(anyList())).thenReturn(Collections.emptyList());
+        when(batchWriteResult.unprocessedPutItemsForTable(any())).thenReturn(Collections.emptyList());
+        when(dynamoDBQueryHelper.batchSave(anyList())).thenReturn(batchWriteResult);
 
         // Execute
-        List<com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch> result =
+        List<ReplayMetadataItem> result =
                 replayRepository.batchSaveAwsReplayMetaData(dtoList);
 
         // Verify
@@ -433,7 +426,7 @@ public class ReplayRepositoryImplTest {
     @Test
     public void testBatchSaveAwsReplayMetaData_HandlesEmptyList() {
         // Execute
-        List<com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch> result =
+        List<ReplayMetadataItem> result =
                 replayRepository.batchSaveAwsReplayMetaData(Collections.emptyList());
 
         // Verify
@@ -457,23 +450,19 @@ public class ReplayRepositoryImplTest {
         dtoList.add(dto);
 
         // Create a failed batch
-        com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch failedBatch =
-                new com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch();
-        failedBatch.setException(new RuntimeException("Test batch failure"));
-        failedBatch.setUnprocessedItems(Map.of("test", List.of()));
+        ReplayMetadataItem failedItem = new ReplayMetadataItem();
+        when(batchWriteResult.unprocessedPutItemsForTable(any())).thenReturn(List.of(failedItem));
 
         // Mock behavior
-        when(dynamoDBQueryHelper.batchSave(anyList())).thenReturn(List.of(failedBatch));
+        when(dynamoDBQueryHelper.batchSave(anyList())).thenReturn(batchWriteResult);
 
         // Execute
-        List<com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch> result =
+        List<ReplayMetadataItem> unprocessedItem =
                 replayRepository.batchSaveAwsReplayMetaData(dtoList);
 
         // Verify
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertNotNull(result.get(0).getException());
-        assertEquals("Test batch failure", result.get(0).getException().getMessage());
+        assertNotNull(unprocessedItem);
+        assertEquals(1, unprocessedItem.size());
 
         // Verify error was logged
         verify(logger).error("Failed to save 1 batches during batch save operation");
@@ -519,8 +508,7 @@ public class ReplayRepositoryImplTest {
         List<ReplayMetadataItem> items = Arrays.asList(item1, item2, item3);
         
         // Mock behavior
-        when(dynamoDBQueryHelper.batchLoadByCompositeKey(
-                ReplayMetadataItem.class,
+        when(dynamoDBQueryHelper.batchLoadByCompositePrimaryKey(
                 kindSet,
                 REPLAY_ID)).thenReturn(items);
         
@@ -535,8 +523,7 @@ public class ReplayRepositoryImplTest {
         assertEquals("kind3", results.get(2).getKind());
         
         // Verify the batch load was called with the correct parameters
-        verify(dynamoDBQueryHelper).batchLoadByCompositeKey(
-                ReplayMetadataItem.class,
+        verify(dynamoDBQueryHelper).batchLoadByCompositePrimaryKey(
                 kindSet,
                 REPLAY_ID);
     }
@@ -551,7 +538,7 @@ public class ReplayRepositoryImplTest {
         assertTrue(results.isEmpty());
         
         // Verify batch load was not called
-        verify(dynamoDBQueryHelper, never()).batchLoadByCompositeKey(any(), any(), any());
+        verify(dynamoDBQueryHelper, never()).batchLoadByCompositePrimaryKey( any(), any());
     }
     
     @Test
@@ -561,16 +548,15 @@ public class ReplayRepositoryImplTest {
         Set<String> kindSet = new HashSet<>(kinds);
         
         // Mock behavior to throw exception
-        when(dynamoDBQueryHelper.batchLoadByCompositeKey(
-                ReplayMetadataItem.class,
+        when(dynamoDBQueryHelper.batchLoadByCompositePrimaryKey(
                 kindSet,
                 REPLAY_ID)).thenThrow(new RuntimeException("Test exception"));
         
         // Mock individual retrievals for fallback
-        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, "kind1", REPLAY_ID))
-            .thenReturn(createReplayMetadataItem("kind1", REPLAY_ID));
-        when(dynamoDBQueryHelper.loadByPrimaryKey(ReplayMetadataItem.class, "kind2", REPLAY_ID))
-            .thenReturn(createReplayMetadataItem("kind2", REPLAY_ID));
+        when(dynamoDBQueryHelper.getItem("kind1", REPLAY_ID))
+            .thenReturn(Optional.of(createReplayMetadataItem("kind1", REPLAY_ID)));
+        when(dynamoDBQueryHelper.getItem("kind2", REPLAY_ID))
+            .thenReturn(Optional.of(createReplayMetadataItem("kind2", REPLAY_ID)));
         
         // Execute
         List<AwsReplayMetaDataDTO> results = replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(kinds, REPLAY_ID);
@@ -586,8 +572,8 @@ public class ReplayRepositoryImplTest {
         verify(logger).info("Falling back to individual retrievals");
         
         // Verify individual retrievals were made
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, "kind1", REPLAY_ID);
-        verify(dynamoDBQueryHelper).loadByPrimaryKey(ReplayMetadataItem.class, "kind2", REPLAY_ID);
+        verify(dynamoDBQueryHelper).getItem("kind1", REPLAY_ID);
+        verify(dynamoDBQueryHelper).getItem("kind2", REPLAY_ID);
     }
 
 }

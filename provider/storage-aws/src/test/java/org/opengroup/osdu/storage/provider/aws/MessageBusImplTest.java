@@ -14,10 +14,10 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
-import com.amazonaws.services.sns.model.PublishRequest;
-import com.amazonaws.services.sns.model.PublishResult;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.*;
 public class MessageBusImplTest {
 
     @Mock
-    private AmazonSNS snsClient;
+    private SnsClient snsClient;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -77,7 +77,7 @@ public class MessageBusImplTest {
         ReflectionTestUtils.setField(messageBus, "osduStorageTopicV2", osduTopicV2);
         
         when(headers.getCorrelationId()).thenReturn("test-correlation-id");
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("message-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("message-id").build());
     }
 
     @Test
@@ -96,10 +96,10 @@ public class MessageBusImplTest {
         verify(snsClient, times(1)).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(topicArn, capturedRequest.getTopicArn());
+        assertEquals(topicArn, capturedRequest.topicArn());
         
         // Verify message attributes
-        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
         assertTrue(attributes.containsKey("data-partition-id"));
         assertTrue(attributes.containsKey("correlation-id"));
     }
@@ -122,10 +122,10 @@ public class MessageBusImplTest {
         verify(snsClient, times(1)).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(topicArnV2, capturedRequest.getTopicArn());
+        assertEquals(topicArnV2, capturedRequest.topicArn());
         
         // Verify message attributes
-        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
         assertTrue(attributes.containsKey("data-partition-id"));
         assertTrue(attributes.containsKey("correlation-id"));
         // No collaboration attribute should be present
@@ -151,17 +151,17 @@ public class MessageBusImplTest {
         verify(snsClient, times(1)).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(topicArnV2, capturedRequest.getTopicArn());
+        assertEquals(topicArnV2, capturedRequest.topicArn());
         
         // Verify message attributes
-        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
 
         assertTrue(attributes.containsKey("data-partition-id"));
         assertTrue(attributes.containsKey("correlation-id"));
         assertTrue(attributes.containsKey("x-collaboration"));
-        assertEquals("String", attributes.get("x-collaboration").getDataType());
-        assertTrue(attributes.get("x-collaboration").getStringValue().contains("id="));
-        assertTrue(attributes.get("x-collaboration").getStringValue().contains("application=test-app"));
+        assertEquals("String", attributes.get("x-collaboration").dataType());
+        assertTrue(attributes.get("x-collaboration").stringValue().contains("id="));
+        assertTrue(attributes.get("x-collaboration").stringValue().contains("application=test-app"));
     }
 
     @Test
@@ -185,10 +185,10 @@ public class MessageBusImplTest {
         verify(snsClient, times(2)).publish(requestCaptor.capture());
         
         List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
-        assertEquals(topicArn, capturedRequests.get(0).getTopicArn());
-        assertEquals("{\"content\":\"test1\"}", capturedRequests.get(0).getMessage());
-        assertEquals(topicArn, capturedRequests.get(1).getTopicArn());
-        assertEquals("{\"content\":\"test2\"}", capturedRequests.get(1).getMessage());
+        assertEquals(topicArn, capturedRequests.get(0).topicArn());
+        assertEquals("{\"content\":\"test1\"}", capturedRequests.get(0).message());
+        assertEquals(topicArn, capturedRequests.get(1).topicArn());
+        assertEquals("{\"content\":\"test2\"}", capturedRequests.get(1).message());
     }
 
     @Test

@@ -125,7 +125,7 @@ public class RecordsUtil {
                         || task.getResult() == CallableResult.FAIL) {
                     logger.error(String.format("%s failed writing to S3 with exception: %s"
                             , task.getRecordMetadata().getId()
-                            , task.getException().getErrorMessage()
+                            , task.getException().getMessage()
                     ));
                 }
             }

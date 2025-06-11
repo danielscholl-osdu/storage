@@ -24,8 +24,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -70,7 +70,7 @@ public class ReplayMessageProcessorAWSImplTest {
     private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
     @Mock
-    private DynamoDBQueryHelperV2 dynamoDBQueryHelper;
+    private DynamoDBQueryHelper dynamoDBQueryHelper;
 
     @Mock
     private RecordMetadataDoc recordMetadata;
@@ -103,7 +103,7 @@ public class ReplayMessageProcessorAWSImplTest {
         ReflectionTestUtils.setField(replayMessageProcessor, "publishBatchSize", 100); // Set higher than test data to ensure single batch
 
         // Mock behavior for DynamoDBQueryHelperFactory - use specific parameter types
-        when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), anyString(), any()))
+        when(dynamoDBQueryHelperFactory.createQueryHelper(any(DpsHeaders.class), anyString(), any()))
                 .thenReturn(dynamoDBQueryHelper);
                 
         // Mock headers
@@ -141,14 +141,14 @@ public class ReplayMessageProcessorAWSImplTest {
         when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
 
         // Mock record metadata lookup
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
+        when(dynamoDBQueryHelper.getItem(anyString())).thenReturn(Optional.of(recordMetadata));
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
 
         // Verify
         verify(replayRepository, atLeastOnce()).getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
-        verify(dynamoDBQueryHelper, times(2)).loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString());
+        verify(dynamoDBQueryHelper, times(2)).getItem(anyString());
         verify(messageBus, times(1)).publishMessage(any(), eq(headers), any(RecordChangedV2[].class));
         
         // Capture all saveAwsReplayMetaData calls
@@ -189,7 +189,7 @@ public class ReplayMessageProcessorAWSImplTest {
         when(queryRepository.getAllRecordIdsFromKind(anyInt(), eq(TEST_CURSOR), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
 
         // Mock record metadata lookup
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
+        when(dynamoDBQueryHelper.getItem(anyString())).thenReturn(Optional.of(recordMetadata));
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
@@ -270,7 +270,7 @@ public class ReplayMessageProcessorAWSImplTest {
         when(queryRepository.getAllRecordIdsFromKind(anyInt(), eq("next-cursor"), eq(TEST_KIND))).thenReturn(secondBatch);
 
         // Mock record metadata lookup
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
+        when(dynamoDBQueryHelper.getItem(anyString())).thenReturn(Optional.of(recordMetadata));
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
@@ -317,15 +317,15 @@ public class ReplayMessageProcessorAWSImplTest {
         when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
 
         // Mock record metadata lookup to return null for one record
-        when(dynamoDBQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, "record1")).thenReturn(recordMetadata);
-        when(dynamoDBQueryHelper.loadByPrimaryKey(RecordMetadataDoc.class, "record2")).thenReturn(null);
+        when(dynamoDBQueryHelper.getItem("record1")).thenReturn(Optional.of(recordMetadata));
+        when(dynamoDBQueryHelper.getItem("record2")).thenReturn(Optional.empty());
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);
 
         // Verify
         verify(replayRepository, atLeastOnce()).getAwsReplayStatusByKindAndReplayId(TEST_KIND, TEST_REPLAY_ID);
-        verify(dynamoDBQueryHelper, times(2)).loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString());
+        verify(dynamoDBQueryHelper, times(2)).getItem(anyString());
         
         // Verify that messages were still published for the valid record
         verify(messageBus, times(1)).publishMessage(any(), eq(headers), recordChangedCaptor.capture());
@@ -365,7 +365,7 @@ public class ReplayMessageProcessorAWSImplTest {
         when(queryRepository.getAllRecordIdsFromKind(anyInt(), isNull(), eq(TEST_KIND))).thenReturn(recordInfoQueryResult);
 
         // Mock record metadata lookup
-        when(dynamoDBQueryHelper.loadByPrimaryKey(eq(RecordMetadataDoc.class), anyString())).thenReturn(recordMetadata);
+        when(dynamoDBQueryHelper.getItem(anyString())).thenReturn(Optional.of(recordMetadata));
 
         // Execute
         replayMessageProcessor.processReplayMessage(replayMessage);

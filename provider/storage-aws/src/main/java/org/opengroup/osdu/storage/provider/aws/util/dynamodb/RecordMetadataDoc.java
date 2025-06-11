@@ -14,7 +14,12 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,26 +32,78 @@ import java.util.Set;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@DynamoDBTable(tableName = "RecordMetadataRepository") // DynamoDB table name (without environment prefix)
+@DynamoDbBean
 public class RecordMetadataDoc {
 
-    @DynamoDBHashKey(attributeName = "Id")
     private String id;
 
-    @DynamoDBIndexHashKey(attributeName = "Kind", globalSecondaryIndexName = "KindStatusIndex")
     private String kind;
 
-    @DynamoDBIndexRangeKey(attributeName = "Status", globalSecondaryIndexName = "KindStatusIndex")
     private String status;
 
-    @DynamoDBIndexHashKey(attributeName = "User", globalSecondaryIndexName = "UserIndex")
     private String user;
 
-    @DynamoDBTypeConverted(converter = RecordMetadataTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "metadata")
     private RecordMetadata metadata;
 
-    @DynamoDBTypeConverted(converter = LegalTagsTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "LegalTags")
     private Set<String> legaltags;
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("Id")
+    public String getId() {
+        return id;
+    }
+
+    public void setKId(String id) {
+        this.id = id;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"KindStatusIndex"})
+    @DynamoDbAttribute("Kind")
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
+    }
+
+    @DynamoDbSecondarySortKey(indexNames = {"KindStatusIndex"})
+    @DynamoDbAttribute("Status")
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"UserIndex"})
+    @DynamoDbAttribute("User")
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    @DynamoDbConvertedBy(RecordMetadataTypeConverter.class)
+    @DynamoDbAttribute("metadata")
+    public RecordMetadata getMetadata() {
+        return this.metadata;
+    }
+
+    public void setMetadata(RecordMetadata metadata) {
+        this.metadata = metadata;
+    }
+
+    @DynamoDbConvertedBy(LegalTagsTypeConverter.class)
+    @DynamoDbAttribute("LegalTags")
+    public Set<String> getLegaltags() {
+        return this.legaltags;
+    }
+
+    public void setLegaltags(Set<String> legaltags) {
+        this.legaltags = legaltags;
+    }
 }

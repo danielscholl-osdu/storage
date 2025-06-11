@@ -15,14 +15,14 @@
 
 package org.opengroup.osdu.storage.provider.aws.util;
 
-import com.amazonaws.ClientConfiguration;
-import org.opengroup.osdu.core.aws.configurationsetup.ConfigSetup;
+import org.opengroup.osdu.core.aws.v2.configurationsetup.ConfigSetup;
 import org.opengroup.osdu.core.common.logging.DefaultLogger;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,22 +32,26 @@ public class WorkerThreadPool {
 
     private static final JaxRsDpsLog logger = new JaxRsDpsLog(new DefaultLogger(), new DpsHeaders());
     private static final int DEFAULT_THREADS = 1000;
+    private final int threadNumber;
     @Autowired
     public WorkerThreadPool(@Value("${aws.worker-threads}") int numberOfThreads) {
         if (numberOfThreads <= 0) {
             logger.error(String.format("Illegal `aws.worker-threads` value: %d. Using default %d threads instead.", numberOfThreads, DEFAULT_THREADS));
             numberOfThreads = DEFAULT_THREADS;
         }
+        this.threadNumber = numberOfThreads;
         threadPool = Executors.newFixedThreadPool(numberOfThreads);
         logger.info(String.format("Created the Worker Thread Pool with %d threads", numberOfThreads));
-        clientConfiguration = ConfigSetup.setUpConfig().withMaxConnections(numberOfThreads);
+        clientConfiguration = ConfigSetup.setUpConfig();
     }
 
-    private final ClientConfiguration clientConfiguration;
+    private final ClientOverrideConfiguration clientConfiguration;
 
-    public ClientConfiguration getClientConfiguration() {
+    public ClientOverrideConfiguration getClientConfiguration() {
         return clientConfiguration;
     }
+
+    public int getThreadNumber() { return this.threadNumber; }
 
     private final ExecutorService threadPool;
 

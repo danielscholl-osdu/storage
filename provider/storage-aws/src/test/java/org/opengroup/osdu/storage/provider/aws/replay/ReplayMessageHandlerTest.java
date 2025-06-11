@@ -16,10 +16,10 @@
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
-import com.amazonaws.services.sns.model.PublishRequest;
-import com.amazonaws.services.sns.model.PublishResult;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.*;
 public class ReplayMessageHandlerTest {
 
     @Mock
-    private AmazonSNS snsClient;
+    private SnsClient snsClient;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -104,7 +104,7 @@ public class ReplayMessageHandlerTest {
         when(objectMapper.writeValueAsString(message1)).thenReturn(serializedMessage1);
         when(objectMapper.writeValueAsString(message2)).thenReturn(serializedMessage2);
         
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -120,13 +120,13 @@ public class ReplayMessageHandlerTest {
         
         // Verify the first request
         PublishRequest capturedRequest = requestCaptor.getAllValues().get(0);
-        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.getTopicArn());
-        assertEquals(serializedMessage1, capturedRequest.getMessage());
+        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.topicArn());
+        assertEquals(serializedMessage1, capturedRequest.message());
         
         // Verify operation attribute
-        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
-        assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
+        assertEquals("String", attributes.get("operation").dataType());
+        assertEquals("replay", attributes.get("operation").stringValue());
     }
 
     @Test
@@ -140,7 +140,7 @@ public class ReplayMessageHandlerTest {
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
         
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "reindex");
@@ -154,13 +154,13 @@ public class ReplayMessageHandlerTest {
         verify(snsClient).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.getTopicArn());
-        assertEquals(serializedMessage, capturedRequest.getMessage());
+        assertEquals(REPLAY_TOPIC_ARN, capturedRequest.topicArn());
+        assertEquals(serializedMessage, capturedRequest.message());
         
         // Verify operation attribute
-        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
-        assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("reindex", attributes.get("operation").getStringValue());
+        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
+        assertEquals("String", attributes.get("operation").dataType());
+        assertEquals("reindex", attributes.get("operation").stringValue());
     }
 
     @Test
@@ -177,7 +177,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Override the default headers behavior for this test to prevent overwriting our custom authorization
         Map<String, String> customHeaderMap = new HashMap<>();
@@ -199,18 +199,18 @@ public class ReplayMessageHandlerTest {
         PublishRequest capturedRequest = requestCaptor.getValue();
         
         // Verify message attributes
-        Map<String, MessageAttributeValue> attributes = capturedRequest.getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
         
         // Required header should be included with our custom value
-        assertEquals("String", attributes.get("authorization").getDataType());
-        assertEquals("Bearer custom-token", attributes.get("authorization").getStringValue());
+        assertEquals("String", attributes.get("authorization").dataType());
+        assertEquals("Bearer custom-token", attributes.get("authorization").stringValue());
         
         // Non-required header should NOT be included
         assertNull("Non-required header should not be included", attributes.get("custom-header"));
         
         // Verify operation attribute is included
-        assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        assertEquals("String", attributes.get("operation").dataType());
+        assertEquals("replay", attributes.get("operation").stringValue());
     }
 
     @Test
@@ -225,7 +225,7 @@ public class ReplayMessageHandlerTest {
         // Mock behavior
         when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn(serializedMessage);
         
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -245,9 +245,9 @@ public class ReplayMessageHandlerTest {
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
         verify(snsClient).publish(requestCaptor.capture());
         
-        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
-        assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().messageAttributes();
+        assertEquals("String", attributes.get("operation").dataType());
+        assertEquals("replay", attributes.get("operation").stringValue());
     }
 
     @Test
@@ -261,7 +261,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -287,7 +287,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -379,7 +379,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -450,7 +450,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute with null operation
         replayMessageHandler.sendReplayMessage(messages, null);
@@ -462,8 +462,8 @@ public class ReplayMessageHandlerTest {
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
         verify(snsClient).publish(requestCaptor.capture());
         
-        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().messageAttributes();
+        assertEquals("replay", attributes.get("operation").stringValue());
     }
 
     @Test
@@ -476,7 +476,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message1)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -521,8 +521,8 @@ public class ReplayMessageHandlerTest {
                 (Map<String, MessageAttributeValue>) method.invoke(replayMessageHandler, message, "replay");
         
         // Verify
-        assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        assertEquals("String", attributes.get("operation").dataType());
+        assertEquals("replay", attributes.get("operation").stringValue());
         
         // Verify only required headers are included
         // Note: The implementation now only includes required headers, so custom-header should not be present
@@ -565,8 +565,8 @@ public class ReplayMessageHandlerTest {
         assertEquals("Should only have 5 attributes (operation + 4 required headers)", 5, attributes.size());
         
         // Verify operation attribute
-        assertEquals("String", attributes.get("operation").getDataType());
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        assertEquals("String", attributes.get("operation").dataType());
+        assertEquals("replay", attributes.get("operation").stringValue());
         
         // Verify required headers are included (with original case preserved)
         assertNotNull("data-partition-id header should be included", attributes.get("data-partition-id"));
@@ -686,7 +686,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -696,12 +696,12 @@ public class ReplayMessageHandlerTest {
         verify(snsClient).publish(requestCaptor.capture());
         
         // Verify the authorization header was included but potentially truncated
-        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().messageAttributes();
         assertNotNull("Authorization header should be included", attributes.get("authorization"));
         
         // SNS has a limit of 256 bytes for attribute values
         assertTrue("Authorization header should be within SNS limits", 
-                attributes.get("authorization").getStringValue().length() <= 256);
+                attributes.get("authorization").stringValue().length() <= 256);
     }
     
     /**
@@ -739,7 +739,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute with empty operation
         replayMessageHandler.sendReplayMessage(messages, "");
@@ -751,8 +751,8 @@ public class ReplayMessageHandlerTest {
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
         verify(snsClient).publish(requestCaptor.capture());
         
-        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().getMessageAttributes();
-        assertEquals("replay", attributes.get("operation").getStringValue());
+        Map<String, MessageAttributeValue> attributes = requestCaptor.getValue().messageAttributes();
+        assertEquals("replay", attributes.get("operation").stringValue());
     }
     
     /**
@@ -771,7 +771,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(message)).thenReturn(serializedMessage);
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -808,7 +808,7 @@ public class ReplayMessageHandlerTest {
         
         // Mock behavior
         when(objectMapper.writeValueAsString(any(ReplayMessage.class))).thenReturn("{\"message\"}");
-        when(snsClient.publish(any(PublishRequest.class))).thenReturn(new PublishResult().withMessageId("msg-id"));
+        when(snsClient.publish(any(PublishRequest.class))).thenReturn(PublishResponse.builder().messageId("msg-id").build());
         
         // Execute
         replayMessageHandler.sendReplayMessage(messages, "replay");
@@ -821,14 +821,14 @@ public class ReplayMessageHandlerTest {
         List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
         
         // First message (uppercase/mixed case headers)
-        Map<String, MessageAttributeValue> attributes1 = capturedRequests.get(0).getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes1 = capturedRequests.get(0).messageAttributes();
         assertTrue("Should include DATA-PARTITION-ID header", attributes1.containsKey("DATA-PARTITION-ID"));
         assertTrue("Should include User header", attributes1.containsKey("User"));
         assertTrue("Should include CORRELATION-ID header", attributes1.containsKey("CORRELATION-ID"));
         assertTrue("Should include Authorization header", attributes1.containsKey("Authorization"));
         
         // Second message (lowercase headers)
-        Map<String, MessageAttributeValue> attributes2 = capturedRequests.get(1).getMessageAttributes();
+        Map<String, MessageAttributeValue> attributes2 = capturedRequests.get(1).messageAttributes();
         assertTrue("Should include data-partition-id header", attributes2.containsKey("data-partition-id"));
         assertTrue("Should include user header", attributes2.containsKey("user"));
         assertTrue("Should include correlation-id header", attributes2.containsKey("correlation-id"));

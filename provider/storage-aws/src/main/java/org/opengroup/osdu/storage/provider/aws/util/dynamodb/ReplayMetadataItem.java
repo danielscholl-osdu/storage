@@ -16,11 +16,13 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.converters.DateTypeConverter;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import lombok.Data;
 
 import java.util.Date;
@@ -29,89 +31,197 @@ import java.util.Date;
  * DynamoDB model for storing replay status information.
  */
 @Data
-@DynamoDBTable(tableName = "ReplayStatus")
+@DynamoDbBean
 public class ReplayMetadataItem {
     
     /**
      * The ID of the replay item. For overall status, this is "overall".
      * For kind-specific status, this is the kind name.
      */
-    @DynamoDBHashKey(attributeName = "id")
     private String id;
     
     /**
      * The unique identifier for the replay operation.
      */
-    @DynamoDBRangeKey(attributeName = "replayId")
-    @DynamoDBIndexHashKey(globalSecondaryIndexName = "ReplayIdIndex")
     private String replayId;
     
     /**
      * The kind of records being replayed. Only present for kind-specific status items.
      */
-    @DynamoDBAttribute(attributeName = "kind")
-    @DynamoDBIndexHashKey(globalSecondaryIndexName = "KindIndex")
     private String kind;
     
     /**
      * The operation being performed (e.g., "replay", "reindex").
      */
-    @DynamoDBAttribute(attributeName = "operation")
     private String operation;
     
     /**
      * The total number of records to be processed.
      */
-    @DynamoDBAttribute(attributeName = "totalRecords")
     private Long totalRecords;
     
     /**
      * The number of records that have been processed so far.
      */
-    @DynamoDBAttribute(attributeName = "processedRecords")
     private Long processedRecords;
     
     /**
      * The current state of the replay operation (e.g., "QUEUED", "IN_PROGRESS", "COMPLETED", "FAILED").
      */
-    @DynamoDBAttribute(attributeName = "state")
     private String state;
     
     /**
      * The timestamp when the replay operation started.
      */
-    @DynamoDBAttribute(attributeName = "startedAt")
     private Date startedAt;
     
     /**
      * The elapsed time since the replay operation started.
      */
-    @DynamoDBAttribute(attributeName = "elapsedTime")
     private String elapsedTime;
     
     /**
      * JSON serialized filter for the replay operation.
      */
-    @DynamoDBAttribute(attributeName = "filter")
     private String filter;
     
     /**
      * The data partition ID for the replay operation.
      */
-    @DynamoDBAttribute(attributeName = "dataPartitionId")
     private String dataPartitionId;
     
     /**
      * The cursor position for resuming processing if interrupted.
      * This allows a new job to pick up where the previous one left off.
      */
-    @DynamoDBAttribute(attributeName = "lastCursor")
     private String lastCursor;
     
     /**
      * The timestamp when the last batch was processed.
      * Used to detect stalled jobs and for monitoring.
      */
-    @DynamoDBAttribute(attributeName = "lastUpdatedAt")
     private Date lastUpdatedAt;
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("id")
+    public String getId() {
+        return id;
+    }
+
+    public void setKId(String id) {
+        this.id = id;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"ReplayIdIndex"})
+    @DynamoDbSortKey
+    @DynamoDbAttribute("replayId")
+    public String getReplayId() {
+        return replayId;
+    }
+
+    public void setReplayId(String replayId) {
+        this.replayId = replayId;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"KindIndex"})
+    @DynamoDbAttribute("kind")
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
+    }
+
+    @DynamoDbAttribute("operation")
+    public String getOperation() {
+        return operation;
+    }
+
+    public void setOperation(String operation) {
+        this.operation = operation;
+    }
+
+    @DynamoDbAttribute("totalRecords")
+    public Long getTotalRecords() {
+        return totalRecords;
+    }
+
+    public void setTotalRecords(Long totalRecords) {
+        this.totalRecords = totalRecords;
+    }
+
+    @DynamoDbAttribute("processedRecords")
+    public Long getProcessedRecords() {
+        return processedRecords;
+    }
+
+    public void setProcessedRecords(Long processedRecords) {
+        this.processedRecords = processedRecords;
+    }
+
+    @DynamoDbAttribute("state")
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    @DynamoDbConvertedBy(DateTypeConverter.class)
+    @DynamoDbAttribute("startedAt")
+    public Date getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(Date startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    @DynamoDbAttribute("elapsedTime")
+    public String getElapsedTime() {
+        return elapsedTime;
+    }
+
+    public void setElapsedTime(String elapsedTime) {
+        this.elapsedTime = elapsedTime;
+    }
+
+    @DynamoDbAttribute("filter")
+    public String getFilter() {
+        return filter;
+    }
+
+    public void setFilter(String filter) {
+        this.filter = filter;
+    }
+
+    @DynamoDbAttribute("dataPartitionId")
+    public String getDataPartitionId() {
+        return dataPartitionId;
+    }
+
+    public void setDataPartitionId(String dataPartitionId) {
+        this.dataPartitionId = dataPartitionId;
+    }
+
+    @DynamoDbAttribute("lastCursor")
+    public String getLastCursor() {
+        return lastCursor;
+    }
+
+    public void setLastCursor(String lastCursor) {
+        this.lastCursor = lastCursor;
+    }
+
+    @DynamoDbConvertedBy(DateTypeConverter.class)
+    @DynamoDbAttribute("lastUpdatedAt")
+    public Date getLastUpdatedAt() {
+        return lastUpdatedAt;
+    }
+
+    public void setLastUpdatedAt(Date lastUpdatedAt) {
+        this.lastUpdatedAt = lastUpdatedAt;
+    }
 }

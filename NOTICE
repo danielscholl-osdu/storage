@@ -30,13 +30,16 @@ The following software have components provided under the terms of this license:
 - AWS Cryptographic Material Providers Library (from https://github.com/aws/aws-cryptographic-material-providers-library)
 - AWS Database Encryption SDK for DynamoDB (from https://github.com/aws/aws-database-encryption-sdk-dynamodb)
 - AWS Event Stream (from https://github.com/awslabs/aws-eventstream-java)
+- AWS Java SDK :: AWS CRT Core (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: AWS Core (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Annotations (from https://repo1.maven.org/maven2/software/amazon/awssdk/annotations)
+- AWS Java SDK :: Arns (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Auth (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Checksums (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Checksums SPI (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Core :: Protocols :: AWS Json Protocol (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Core :: Protocols :: AWS Query Protocol (from https://aws.amazon.com/sdkforjava)
+- AWS Java SDK :: Core :: Protocols :: AWS Xml Protocol (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Core :: Protocols :: Json Utils (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Core :: Protocols :: Protocol Core (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: DynamoDB :: Enhanced Client (from https://aws.amazon.com/sdkforjava)
@@ -59,8 +62,12 @@ The following software have components provided under the terms of this license:
 - AWS Java SDK :: Services :: AWS STS (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Services :: AWS Secrets Manager (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Services :: AWS Simple Systems Management (SSM) (from https://aws.amazon.com/sdkforjava)
+- AWS Java SDK :: Services :: Amazon CloudWatch Logs (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Services :: Amazon Cognito Identity Provider Service (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Services :: Amazon DynamoDB (from https://aws.amazon.com/sdkforjava)
+- AWS Java SDK :: Services :: Amazon S3 (from https://aws.amazon.com/sdkforjava)
+- AWS Java SDK :: Services :: Amazon SNS (from https://aws.amazon.com/sdkforjava)
+- AWS Java SDK :: Services :: Amazon SQS (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Third Party :: Jackson-core (from https://aws.amazon.com/sdkforjava)
 - AWS Java SDK :: Utilities (from https://repo1.maven.org/maven2/software/amazon/awssdk/utils)
 - AWS Java SDK for AWS KMS (from https://aws.amazon.com/sdkforjava)
@@ -634,6 +641,13 @@ MPL-2.0
 The following software have components provided under the terms of this license:
 
 - RabbitMQ Java Client (from http://www.rabbitmq.com, https://www.rabbitmq.com)
+
+========================================================================
+RSA-MD
+========================================================================
+The following software have components provided under the terms of this license:
+
+- AWS Java SDK :: Services :: Amazon SQS (from https://aws.amazon.com/sdkforjava)
 
 ========================================================================
 SAX-PD

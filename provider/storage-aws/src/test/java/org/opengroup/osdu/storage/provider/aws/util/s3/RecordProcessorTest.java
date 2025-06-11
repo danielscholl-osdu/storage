@@ -15,7 +15,6 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,14 +23,11 @@ import static org.mockito.MockitoAnnotations.openMocks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.amazonaws.AmazonServiceException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 
@@ -43,7 +39,7 @@ class RecordProcessorTest {
     @Mock
     private S3RecordClient s3Client;
     @Mock
-    private  AmazonServiceException exception;
+    private  AwsServiceException exception;
     public CallableResult result;
     private static final String DATA_PARTITION = "some-partition";
     private static final String RECORD_ID = "some-record-id";

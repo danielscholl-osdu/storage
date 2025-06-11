@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
-import com.amazonaws.AmazonServiceException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
 import java.util.Map;
@@ -25,7 +25,7 @@ class GetRecordTask implements Callable<GetRecordTask> {
     private final S3RecordClient s3RecordClient;
     private final AtomicReference<Map<String, String>> map;
     private final RecordMetadata recordMetadata;
-    private AmazonServiceException exception;
+    private AwsServiceException exception;
     private CallableResult result;
     private final String dataPartition;
 
@@ -45,7 +45,7 @@ class GetRecordTask implements Callable<GetRecordTask> {
             s3RecordClient.getRecord(recordMetadata, map, dataPartition);
             result = CallableResult.PASS;
         }
-         catch(AmazonServiceException e) {
+         catch(AwsServiceException e) {
             result = CallableResult.FAIL;
             exception = e;
         }
@@ -64,7 +64,7 @@ class GetRecordTask implements Callable<GetRecordTask> {
      * Get the exception if one occurred
      * @return the exception or null if no exception occurred
      */
-    public AmazonServiceException getException() {
+    public AwsServiceException getException() {
         return exception;
     }
     

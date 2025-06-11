@@ -17,15 +17,7 @@ package org.opengroup.osdu.storage.provider.aws;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -41,22 +33,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
+
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.openMocks;
-import org.mockito.internal.stubbing.defaultanswers.ForwardsInvocations;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.GsiQueryRequest;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.QueryPageResult;
 import org.opengroup.osdu.core.aws.exceptions.InvalidCursorException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -74,15 +62,10 @@ import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociation
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.util.JsonPatchUtil;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.PutRequest;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 
 class RecordsMetadataRepositoryTest {
 
@@ -92,16 +75,13 @@ class RecordsMetadataRepositoryTest {
     private RecordsMetadataRepositoryImpl repo;
 
     @Mock
-    private PaginatedQueryList<Object> paginatedQueryList;
-
-    @Mock
-    private PaginatedQueryList<LegalTagAssociationDoc> legalTagPaginatedQueryList;
+    private QueryPageResult<Object> queryPageResult;
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
 
     @Mock
-    private DynamoDBQueryHelperV2 queryHelper;
+    private DynamoDBQueryHelper queryHelper;
 
     @Mock
     private WorkerThreadPool workerThreadPool;
@@ -111,6 +91,12 @@ class RecordsMetadataRepositoryTest {
 
     @Mock
     private JaxRsDpsLog logger;
+
+    @Mock
+    private BatchWriteResult batchSaveResult;
+
+    @Mock
+    private BatchWriteResult batchDeleteResult;
 
     @Captor
     ArgumentCaptor<List<Object>> batchSaveCaptor;
@@ -130,7 +116,7 @@ class RecordsMetadataRepositoryTest {
     @BeforeEach
     public void setUp() {
         openMocks(this);
-        when(queryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), any(), any()))
+        when(queryHelperFactory.createQueryHelper(any(DpsHeaders.class), any(), any()))
                 .thenReturn(queryHelper);
         when(workerThreadPool.getThreadPool()).thenReturn(threadPool);
     }
@@ -139,29 +125,28 @@ class RecordsMetadataRepositoryTest {
     void testQueryByLegalTagName() throws InvalidCursorException, UnsupportedEncodingException {
         String legalTagName = "legalTagName";
         int limit = 500;
-        String cursor = "cursor";
+        String cursor = null;
         LegalTagAssociationDoc doc = mock(LegalTagAssociationDoc.class);
         when(doc.getRecordId()).thenReturn("id");
         List<LegalTagAssociationDoc> docs = new ArrayList<>();
         docs.add(doc);
-        QueryPageResult<LegalTagAssociationDoc> result = mock(QueryPageResult.class);
-        result.results = docs;
-        when(queryHelper.queryPage(eq(LegalTagAssociationDoc.class), any(), eq(limit), eq(cursor))).thenReturn(result);
-        repo.queryByLegalTagName(legalTagName, limit, cursor);
+        QueryPageResult<LegalTagAssociationDoc> response = new QueryPageResult<>(docs, null, "nextCursor");
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class), anyBoolean())).thenReturn(response);
+        AbstractMap.SimpleEntry<String, List<RecordMetadata>> result = repo.queryByLegalTagName(legalTagName, limit, cursor);
 
         assertNotNull(result);
 
     }
 
     @Test
-    void testPatch() throws JsonMappingException, JsonProcessingException, IOException {
+    void testPatch() throws IOException {
         String recordId = "recordId";
-        when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
-        when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
+        when(queryHelper.batchDelete(any())).thenReturn(BatchWriteResult.builder().build());
+        when(queryHelper.queryByGSI(any(), anyBoolean())).thenReturn(queryPageResult);
         List<Object> ltas = new ArrayList<>();
         ltas.add(LegalTagAssociationDoc.createLegalTagDoc(PRIMARY_LEGAL_TAG_NAME, recordId));
         ltas.add(LegalTagAssociationDoc.createLegalTagDoc(OLD_LEGAL_TAG_NAME, recordId));
-        when(paginatedQueryList.stream()).thenReturn(ltas.stream());
+        when(queryPageResult.getItems()).thenReturn(ltas);
 
         Map<RecordMetadata, JsonPatch> jsonPatchPerRecord = new HashMap<>();
         JsonPatch patch = JsonPatch.fromJson(
@@ -183,6 +168,9 @@ class RecordsMetadataRepositoryTest {
         newRecordMetadata.setLegal(legal);
         newRecordMetadata.setStatus(RecordState.active);
         newRecordMetadata.setUser("newRecordUser");
+
+        when(queryHelper.batchSave(any())).thenReturn(batchSaveResult);
+        when(queryHelper.batchDelete(any())).thenReturn(batchSaveResult);
 
         MockedStatic<JsonPatchUtil> mocked = Mockito.mockStatic(JsonPatchUtil.class);
         try {
@@ -224,11 +212,11 @@ class RecordsMetadataRepositoryTest {
     }
 
     @Test
-    void testQueryByLegalTagNameThrowsException() throws InvalidCursorException, UnsupportedEncodingException {
+    void testQueryByLegalTagNameThrowsException() throws InvalidCursorException {
         String legalTagName = "legalTagName";
         int limit = 500;
-        String cursor = "cursor";
-        when(queryHelper.queryPage(any(), any(), eq(limit), eq(cursor))).thenThrow(UnsupportedEncodingException.class);
+        String cursor = null;
+        when(queryHelper.queryByGSI(any(), anyBoolean())).thenThrow(IllegalArgumentException.class);
         assertThrows(AppException.class, () -> repo.queryByLegalTagName(legalTagName, limit, cursor));
     }
 
@@ -292,13 +280,13 @@ class RecordsMetadataRepositoryTest {
     void createRecordMetadata() {
         List<RecordMetadata> recordsMetadata = generateRecordsMetadata();
 
-        when(queryHelper.batchSave(any())).thenReturn(new ArrayList<>());
+        when(queryHelper.batchSave(any())).thenReturn(batchSaveResult);
         List<Object> ltas = new ArrayList<>();
         ltas.add(LegalTagAssociationDoc.createLegalTagDoc(PRIMARY_LEGAL_TAG_NAME, RECORD_ID));
         ltas.add(LegalTagAssociationDoc.createLegalTagDoc(OLD_LEGAL_TAG_NAME, RECORD_ID));
-        when(paginatedQueryList.stream()).thenReturn(ltas.stream());
-        when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
-        when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
+        when(queryPageResult.getItems()).thenReturn(ltas);
+        when(queryHelper.batchDelete(any())).thenReturn(batchDeleteResult);
+        when(queryHelper.queryByGSI(any(), anyBoolean())).thenReturn(queryPageResult);
 
         // Act
         repo.createOrUpdate(recordsMetadata, Optional.empty());
@@ -333,15 +321,15 @@ class RecordsMetadataRepositoryTest {
     @Test
     void shouldThrowAppException_whenSavingRecordMetadataFails() {
         List<RecordMetadata> recordsMetadata = generateRecordsMetadata();
-        DynamoDBMapper.FailedBatch failedBatch = new DynamoDBMapper.FailedBatch();
-        failedBatch.setException(new Exception());
-        failedBatch.setUnprocessedItems(Collections.singletonMap("SomeTable",
-                Collections.singletonList(new WriteRequest().withPutRequest(new PutRequest()
-                        .addItemEntry("some-key",
-                                new AttributeValue().withS("some-value"))))));
-        when(queryHelper.batchSave(any())).thenReturn(Collections.singletonList(failedBatch));
-        when(queryHelper.batchDelete(any())).thenReturn(new ArrayList<>());
-        when(queryHelper.queryByGSI(any(), any())).thenReturn(paginatedQueryList);
+
+        when(batchSaveResult.unprocessedPutItemsForTable(any())).thenReturn(List.of(new RecordMetadataDoc()),  List.of(new LegalTagAssociationDoc()),
+                List.of(new RecordMetadataDoc()),  List.of(new LegalTagAssociationDoc()));
+        DynamoDbTable<RecordMetadataDoc> table = Mockito.mock(DynamoDbTable.class);
+        when(table.tableName()).thenReturn("tablename");
+        when(queryHelper.getTable()).thenReturn(table);
+        when(queryHelper.batchSave(any())).thenReturn(batchSaveResult);
+        when(queryHelper.batchDelete(any())).thenReturn(batchDeleteResult);
+        when(queryHelper.queryByGSI(any(), anyBoolean())).thenReturn(queryPageResult);
         Optional<CollaborationContext> collaborationContext = Optional.empty();
 
         assertThrows(AppException.class, () -> repo.createOrUpdate(recordsMetadata, collaborationContext));
@@ -394,14 +382,14 @@ class RecordsMetadataRepositoryTest {
         groupInfos.add(groupInfo);
         groups.setGroups(groupInfos);
 
-        Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.anyString()))
-                .thenReturn(expectedRmd);
+        Mockito.when(queryHelper.getItem(Mockito.anyString()))
+                .thenReturn(Optional.of(expectedRmd));
 
         // Act
         RecordMetadata recordMetadata = repo.get(id, Optional.empty());
 
         // Assert
-        Assert.assertEquals(recordMetadata, expectedRecordMetadata);
+        Assert.assertEquals(expectedRecordMetadata, recordMetadata);
     }
 
     @Test
@@ -451,7 +439,7 @@ class RecordsMetadataRepositoryTest {
         expectedRmd.setUser(expectedRecordMetadata.getUser());
         expectedRmd.setMetadata(expectedRecordMetadata);
 
-        Mockito.when(queryHelper.batchLoadByPrimaryKey(Mockito.eq(RecordMetadataDoc.class), Mockito.any()))
+        Mockito.when(queryHelper.batchLoadByPrimaryKey(Mockito.any()))
                 .thenReturn(Collections.singletonList(expectedRmd));
 
         Groups groups = new Groups();
@@ -468,7 +456,7 @@ class RecordsMetadataRepositoryTest {
         // Assert
         Assertions.assertEquals(recordsMetadata, expectedRecordsMetadata);
 
-        verify(queryHelper, times(2)).batchLoadByPrimaryKey(eq(RecordMetadataDoc.class), idsCaptor.capture());
+        verify(queryHelper, times(2)).batchLoadByPrimaryKey(idsCaptor.capture());
 
         Set<String> allIdsCalled = idsCaptor.getAllValues().stream().flatMap(Set::stream).collect(Collectors.toSet());
         assertEquals(ids.size(), allIdsCalled.size());
@@ -515,15 +503,18 @@ class RecordsMetadataRepositoryTest {
         List<LegalTagAssociationDoc> ltaDocs = new ArrayList<>();
         ltaDocs.add(LegalTagAssociationDoc.createLegalTagDoc(legalTag1, id));
         ltaDocs.add(LegalTagAssociationDoc.createLegalTagDoc(legalTag2, id));
-        when(queryHelper.queryByGSI(eq(LegalTagAssociationDoc.class), any(LegalTagAssociationDoc.class)))
-                .thenReturn(
-                        mock(PaginatedQueryList.class, withSettings().defaultAnswer(new ForwardsInvocations(ltaDocs))));
+
+        QueryPageResult<LegalTagAssociationDoc> queryPageResult = Mockito.mock(QueryPageResult.class);
+        when(queryPageResult.getItems()).thenReturn(ltaDocs);
+        when(queryHelper.queryByGSI(any(GsiQueryRequest.class), anyBoolean()))
+                .thenReturn(queryPageResult);
+        when(queryHelper.batchDelete(any())).thenReturn(batchSaveResult);
 
         // Act
         repo.delete(id, Optional.empty());
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).deleteByObject(deleteObjectCaptor.capture());
+        Mockito.verify(queryHelper, Mockito.times(1)).deleteItem(deleteObjectCaptor.capture());
 
         if (deleteObjectCaptor.getValue() instanceof RecordMetadataDoc actualRmd) {
             assertEquals(id, actualRmd.getId());

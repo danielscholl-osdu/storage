@@ -17,8 +17,8 @@
 package org.opengroup.osdu.storage.provider.aws.replay;
 
 import lombok.Getter;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
@@ -364,20 +364,18 @@ public class ReplayMessageProcessorAWSImpl {
             List<RecordChangedV2> recordChangedMessages = new ArrayList<>();
             
             // Get the record metadata helper to fetch additional record information
-            DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+            DynamoDBQueryHelper<RecordMetadataDoc> recordMetadataQueryHelper = getRecordMetadataQueryHelper();
             
             for (RecordId recordId : records) {
                 // Fetch the complete record metadata to get additional attributes
-                RecordMetadataDoc recordMetadata = recordMetadataQueryHelper.loadByPrimaryKey(
-                    RecordMetadataDoc.class, 
-                    recordId.getId());
+                Optional<RecordMetadataDoc> recordMetadataOptional = recordMetadataQueryHelper.getItem(recordId.getId());
                 
-                if (recordMetadata == null) {
+                if (recordMetadataOptional.isEmpty()) {
                     LOGGER.warning(() -> String.format("Record metadata not found for ID: %s", recordId.getId()));
                     continue;
                 }
                 
-                RecordChangedV2 recordChanged = createRecordChangedMessage(recordMetadata, operation);
+                RecordChangedV2 recordChanged = createRecordChangedMessage(recordMetadataOptional.get(), operation);
                 recordChangedMessages.add(recordChanged);
 
                 // Publish in batches to avoid exceeding SNS message size limits
@@ -443,9 +441,8 @@ public class ReplayMessageProcessorAWSImpl {
      * 
      * @return DynamoDBQueryHelperV2 for record metadata
      */
-    private DynamoDBQueryHelperV2 getRecordMetadataQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath,
-                workerThreadPool.getClientConfiguration());
+    private DynamoDBQueryHelper<RecordMetadataDoc> getRecordMetadataQueryHelper() {
+        return dynamoDBQueryHelperFactory.createQueryHelper(headers, recordMetadataTableParameterRelativePath, RecordMetadataDoc.class);
     }
     
     /**

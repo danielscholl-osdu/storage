@@ -16,13 +16,13 @@
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.PublishRequest;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.v2.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
@@ -53,7 +53,7 @@ public class ReplayMessageHandler {
     private static final String OPERATION_ATTRIBUTE = "operation";
     private static final String STRING_DATA_TYPE = "String";
     
-    private AmazonSNS snsClient;
+    private SnsClient snsClient;
     
     private final ObjectMapper objectMapper;
     private final ReplayMessageProcessorAWSImpl replayMessageProcessor;
@@ -171,10 +171,11 @@ public class ReplayMessageHandler {
         Map<String, MessageAttributeValue> messageAttributes = createMessageAttributes(message, operation);
 
         try {
-            PublishRequest publishRequest = new PublishRequest()
-                .withTopicArn(replayTopicArn)
-                .withMessage(messageBody)
-                .withMessageAttributes(messageAttributes);
+            PublishRequest publishRequest = PublishRequest.builder()
+                    .topicArn(replayTopicArn)
+                    .message(messageBody)
+                    .messageAttributes(messageAttributes)
+                    .build();
 
             snsClient.publish(publishRequest);
         } catch (Exception e) {
@@ -210,9 +211,10 @@ public class ReplayMessageHandler {
      * @return MessageAttributeValue with String data type
      */
     private MessageAttributeValue createStringAttribute(String value) {
-        return new MessageAttributeValue()
-            .withDataType(STRING_DATA_TYPE)
-            .withStringValue(value);
+        return MessageAttributeValue.builder()
+                .dataType(STRING_DATA_TYPE)
+                .stringValue(value)
+                .build();
     }
     
     /**

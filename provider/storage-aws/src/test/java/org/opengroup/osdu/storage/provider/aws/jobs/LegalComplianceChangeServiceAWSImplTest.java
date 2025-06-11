@@ -14,8 +14,6 @@
 
 package org.opengroup.osdu.storage.provider.aws.jobs;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedList;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,17 +23,16 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
-import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
@@ -49,8 +46,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,7 +75,7 @@ class LegalComplianceChangeServiceAWSImplTest {
     private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
 
     @Mock
-    private DynamoDBQueryHelperV2 legalTagAssociationHelper;
+    private DynamoDBQueryHelper legalTagAssociationHelper;
 
     @Mock
     private IRecordsMetadataRepository<String> recordsMetadataRepository;
@@ -111,7 +106,7 @@ class LegalComplianceChangeServiceAWSImplTest {
         String compliantRecordId = "compliant-record";
 
         when(collaborationContextFactory.create(anyString())).thenReturn(Optional.empty());
-        when(dynamoDBQueryHelperFactory.getQueryHelperForPartition(any(DpsHeaders.class), eq(null), any())).thenReturn(legalTagAssociationHelper);
+        when(dynamoDBQueryHelperFactory.createQueryHelper(any(DpsHeaders.class), eq(null), any())).thenReturn(legalTagAssociationHelper);
 
         // create parameters
         LegalTagChangedCollection legalTagsChanged = new LegalTagChangedCollection();
