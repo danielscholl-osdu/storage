@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -41,7 +41,6 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.aws.cache.LegalTagCache;
-import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.LegalTagAssociationDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -64,9 +63,6 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
 
     @Value("${aws.dynamodb.legalTagTable.ssm.relativePath}")
     String legalTagTableParameterRelativePath;
-
-    @Inject
-    private WorkerThreadPool workerThreadPool;
 
     @Inject
     private DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
@@ -92,7 +88,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
         Map<String, LegalCompliance> output = new HashMap<>();
 
         Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(headers.getCollaboration());
-        DynamoDBQueryHelperV2 legalTagQueryHelper = dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, legalTagTableParameterRelativePath, workerThreadPool.getClientConfiguration());
+        DynamoDBQueryHelper<LegalTagAssociationDoc> legalTagQueryHelper = dynamoDBQueryHelperFactory.createQueryHelper(headers, legalTagTableParameterRelativePath, LegalTagAssociationDoc.class);
 
         for (LegalTagChanged lt : legalTagsChanged.getStatusChangedTags()) {
             updateComplianceGivenLegalTag(lt, headers, output, collaborationContext, legalTagQueryHelper);
@@ -102,7 +98,7 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
     }
 
     private void updateComplianceGivenLegalTag(LegalTagChanged lt, DpsHeaders headers, Map<String, LegalCompliance> output, Optional<CollaborationContext> context,
-                                               DynamoDBQueryHelperV2 legalTagQueryHelper) {
+                                               DynamoDBQueryHelper<LegalTagAssociationDoc> legalTagQueryHelper) {
         ComplianceChangeInfo complianceChangeInfo = this.getComplianceChangeInfo(lt);
         if (complianceChangeInfo == null) {
             return;
@@ -129,7 +125,9 @@ public class LegalComplianceChangeServiceAWSImpl implements ILegalComplianceChan
                 singletonList("[" + recordsId.toString() + "]"));
 
             List<LegalTagAssociationDoc> legalTagRecordAssociation = recordLegalTagsToDelete.stream().map(recordId -> LegalTagAssociationDoc.createLegalTagDoc(lt.getChangedTagName(), recordId)).collect(Collectors.toList());
-            legalTagQueryHelper.batchDelete(legalTagRecordAssociation);
+            if (!legalTagRecordAssociation.isEmpty()) {
+                legalTagQueryHelper.batchDelete(legalTagRecordAssociation);
+            }
             this.storageMessageBus.publishMessage(headers, pubsubInfos.toArray(new PubSubInfo[0]));
             recordLegalTagsToDelete.clear();
             modifiedRecords.clear();

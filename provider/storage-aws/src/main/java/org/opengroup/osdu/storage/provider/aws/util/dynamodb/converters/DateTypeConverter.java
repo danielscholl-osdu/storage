@@ -14,69 +14,69 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb.converters;
 
-import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
-
-
 import jakarta.inject.Inject;
+import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Date;
 
-// Converts the complex type of an array of legaltag strings to a string and vice-versa.
-public class LegalTagsTypeConverter implements AttributeConverter<Set<String>> {
+// Converts Date Object to a string and vice-versa.
+public class DateTypeConverter implements AttributeConverter<Date> {
 
     @Inject
     private JaxRsDpsLog logger;
 
     @Inject
     private ObjectMapper objectMapper;
-
+    
     {
         if (objectMapper == null) {
             objectMapper = new ObjectMapper();
         }
     }
 
-    // Converts an array of legaltag strings to a JSON string (In form of AttributeValue) for DynamoDB
+    // Converts Date to a JSON string (In form of AttributeValue) for DynamoDB
     @Override
-    public AttributeValue transformFrom(Set<String> legaltags) {
+    public AttributeValue transformFrom(Date date) {
         try {
-            return AttributeValue.fromS(objectMapper.writeValueAsString(legaltags));
+            return AttributeValue.fromS(objectMapper.writeValueAsString(date));
         } catch (JsonProcessingException e) {
-            logger.error(String.format("There was an error converting the schema to a JSON string. %s", e.getMessage()));
+            logger.error(String.format("There was an error converting the date to a JSON string. %s", e.getMessage()));
         }
         return null;
     }
 
-    // Converts a JSON string (In form of AttributeValue) of an array of legaltag strings to a list of legaltag strings
+    // Converts a JSON string (In form of AttributeValue) into a Date object
     @Override
-    public Set<String> transformTo(AttributeValue legaltagsString) {
+    public Date transformTo(AttributeValue dateString) {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
-            return objectMapper.readValue(legaltagsString.s(), new TypeReference<Set<String>>(){});
+            return objectMapper.readValue(dateString.s(), new TypeReference<Date>(){});
         } catch (JsonParseException e) {
-            logger.error(String.format("There was an error parsing the legaltags JSON string. %s", e.getMessage()));
+            logger.error(String.format("There was an error parsing the date JSON string. %s", e.getMessage()));
         } catch (JsonMappingException e) {
-            logger.error(String.format("There was an error mapping the legaltags JSON string. %s", e.getMessage()));
+            logger.error(String.format("There was an error mapping the date JSON string. %s", e.getMessage()));
         } catch (IOException e) {
-            logger.error(String.format("There was an IO exception while mapping the legaltags objects. %s", e.getMessage()));
+            logger.error(String.format("There was an IO exception while mapping the date objects. %s", e.getMessage()));
         } catch (Exception e) {
-            logger.error(String.format("There was an unknown exception legaltags the schema. %s", e.getMessage()));
+            logger.error(String.format("There was an unknown exception converting the date. %s", e.getMessage()));
         }
         return null;
     }
 
     @Override
-    public EnhancedType<Set<String>> type() {
-        return EnhancedType.setOf(String.class);
+    public EnhancedType<Date> type() {
+        return EnhancedType.of(Date.class);
     }
 
     @Override

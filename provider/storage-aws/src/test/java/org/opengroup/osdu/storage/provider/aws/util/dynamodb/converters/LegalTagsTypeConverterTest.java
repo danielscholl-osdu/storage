@@ -37,6 +37,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 class LegalTagsTypeConverterTest {
     @InjectMocks
@@ -63,16 +64,16 @@ class LegalTagsTypeConverterTest {
     void convert_shouldReturnJsonString_whenListIsValid() throws JsonProcessingException {
         when(objectMapper.writeValueAsString(legalTags)).thenReturn(jsonString);
 
-        String result = converter.convert(legalTags);
+        AttributeValue result = converter.transformFrom(legalTags);
 
-        assertEquals(jsonString, result);
+        assertEquals(jsonString, result.s());
     }
 
     @Test
     void convert_shouldLogErrorAndReturnNull_whenExceptionOccurs() throws JsonProcessingException {
         when(objectMapper.writeValueAsString(legalTags)).thenThrow(JsonProcessingException.class);
 
-        String result = converter.convert(legalTags);
+        AttributeValue result = converter.transformFrom(legalTags);
 
         assertEquals(null, result);
         verify(logger).error(anyString());
@@ -82,7 +83,7 @@ class LegalTagsTypeConverterTest {
     void unconvert_shouldReturnList_whenJsonStringIsValid() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenReturn(legalTags);
 
-        Set<String> result = converter.unconvert(jsonString);
+        Set<String> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
 
         assertEquals(legalTags, result);
     }
@@ -91,7 +92,7 @@ class LegalTagsTypeConverterTest {
     void unconvert_shouldLogError_whenJsonParseExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(JsonParseException.class);
 
-        Set<String> result = converter.unconvert(jsonString);
+        Set<String> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
 
         assertEquals(null, result);
         verify(logger).error(anyString());
@@ -101,7 +102,7 @@ class LegalTagsTypeConverterTest {
     void unconvert_shouldLogError_whenJsonMappingExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(JsonMappingException.class);
 
-        Set<String> result = converter.unconvert(jsonString);
+        Set<String> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
 
         assertEquals(null, result);
         verify(logger).error(anyString());
@@ -111,7 +112,7 @@ class LegalTagsTypeConverterTest {
     void unconvert_shouldLogError_whenExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(RuntimeException.class);
 
-        Set<String> result = converter.unconvert(jsonString);
+        Set<String> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
 
         assertEquals(null, result);
         verify(logger).error(anyString());
@@ -121,7 +122,7 @@ class LegalTagsTypeConverterTest {
     void unconvert_shouldLogError_whenIOExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(new UncheckedIOException(new IOException("Test IOException")));
 
-        Set<String> result = converter.unconvert(jsonString);
+        Set<String> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
 
         assertEquals(null, result);
         verify(logger).error(anyString());

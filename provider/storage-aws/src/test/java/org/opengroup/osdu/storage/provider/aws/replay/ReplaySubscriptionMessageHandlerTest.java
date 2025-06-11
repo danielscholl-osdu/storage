@@ -14,8 +14,13 @@
 
 package org.opengroup.osdu.storage.provider.aws.replay;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.*;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -42,7 +47,7 @@ import static org.mockito.Mockito.*;
 public class ReplaySubscriptionMessageHandlerTest {
 
     @Mock
-    private AmazonSQS sqsClient;
+    private SqsClient sqsClient;
 
     @Mock
     private ReplayMessageHandler replayMessageHandler;
@@ -76,7 +81,7 @@ public class ReplaySubscriptionMessageHandlerTest {
     @Test
     public void testPollMessagesWithNoMessages() {
         // Mock behavior
-        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList());
+        ReceiveMessageResponse result = ReceiveMessageResponse.builder().messages(Arrays.asList()).build();
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
         
         // Execute
@@ -95,32 +100,34 @@ public class ReplaySubscriptionMessageHandlerTest {
         String replayId = "test-replay-id";
         String kind = "test-kind";
         
-        // Create SQS message
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("ApproximateReceiveCount", "1");
-        
         // Add message attributes with operation
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put("operation", new MessageAttributeValue()
-            .withDataType("String")
-            .withStringValue("replay"));
-        
-        Message sqsMessage = new Message()
-                .withMessageId(messageId)
-                .withReceiptHandle(receiptHandle)
-                .withAttributes(attributes)
-                .withMessageAttributes(messageAttributes);
+        messageAttributes.put("operation", MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue("replay")
+                .build());
         
         // Create SNS wrapper
         ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
-        sqsMessage.setBody(snsWrapper.toString());
+
+        // Create SQS message
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("ApproximateReceiveCount", "1");
+
+        Message sqsMessage = Message.builder()
+                .messageId(messageId)
+                .receiptHandle(receiptHandle)
+                .attributesWithStrings(attributes)
+                .messageAttributes(messageAttributes)
+                .body(snsWrapper.toString())
+                .build();
         
         // Create ReplayMessage
         ReplayMessage replayMessage = createReplayMessage(replayId, kind);
         
         // Mock behavior
-        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        ReceiveMessageResponse response = ReceiveMessageResponse.builder().messages(Arrays.asList(sqsMessage)).build();
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(response);
         when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         
@@ -137,7 +144,8 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(any(ReplayMessage.class));
-        verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
+        verify(sqsClient).deleteMessage(eq(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build()));
+
     }
 
     @Test
@@ -147,33 +155,35 @@ public class ReplaySubscriptionMessageHandlerTest {
         String receiptHandle = "test-receipt-handle";
         String replayId = "test-replay-id";
         String kind = "test-kind";
-        
-        // Create SQS message
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("ApproximateReceiveCount", "1");
+
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
         
         // Add message attributes with operation
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put("operation", new MessageAttributeValue()
-            .withDataType("String")
-            .withStringValue("reindex"));
-        
-        Message sqsMessage = new Message()
-                .withMessageId(messageId)
-                .withReceiptHandle(receiptHandle)
-                .withAttributes(attributes)
-                .withMessageAttributes(messageAttributes);
-        
-        // Create SNS wrapper
-        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
-        sqsMessage.setBody(snsWrapper.toString());
+        messageAttributes.put("operation", MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue("reindex")
+                .build());
+
+        // Create SQS message
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("ApproximateReceiveCount", "1");
+
+        Message sqsMessage = Message.builder()
+                .messageId(messageId)
+                .receiptHandle(receiptHandle)
+                .attributesWithStrings(attributes)
+                .messageAttributes(messageAttributes)
+                .body(snsWrapper.toString())
+                .build();
         
         // Create ReplayMessage
         ReplayMessage replayMessage = createReplayMessage(replayId, kind);
         
         // Mock behavior
-        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        ReceiveMessageResponse response = ReceiveMessageResponse.builder().messages(Arrays.asList(sqsMessage)).build();
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(response);
         when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         
@@ -190,7 +200,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(any(ReplayMessage.class));
-        verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
+        verify(sqsClient).deleteMessage(eq(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build()));
     }
 
     @Test
@@ -201,25 +211,25 @@ public class ReplaySubscriptionMessageHandlerTest {
         String replayId = "test-replay-id";
         String kind = "test-kind";
         
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
+
         // Create SQS message
         Map<String, String> attributes = new HashMap<>();
         attributes.put("ApproximateReceiveCount", "1");
-        
-        Message sqsMessage = new Message()
-                .withMessageId(messageId)
-                .withReceiptHandle(receiptHandle)
-                .withAttributes(attributes);
-        
-        // Create SNS wrapper
-        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
-        sqsMessage.setBody(snsWrapper.toString());
+        Message sqsMessage = Message.builder()
+                .messageId(messageId)
+                .receiptHandle(receiptHandle)
+                .attributesWithStrings(attributes)
+                .body(snsWrapper.toString())
+                .build();
         
         // Create ReplayMessage
         ReplayMessage replayMessage = createReplayMessage(replayId, kind);
         
         // Mock behavior
-        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        ReceiveMessageResponse response = ReceiveMessageResponse.builder().messages(Arrays.asList(sqsMessage)).build();
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(response);
         when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(replayMessage);
@@ -237,7 +247,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
-        verify(sqsClient).changeMessageVisibility(eq(REPLAY_QUEUE_URL), eq(receiptHandle), anyInt());
+        verify(sqsClient).changeMessageVisibility(eq(ChangeMessageVisibilityRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).visibilityTimeout(30).build()));
     }
 
     @Test
@@ -247,26 +257,27 @@ public class ReplaySubscriptionMessageHandlerTest {
         String receiptHandle = "test-receipt-handle";
         String replayId = "test-replay-id";
         String kind = "test-kind";
+
+        // Create SNS wrapper
+        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
         
         // Create SQS message
         Map<String, String> attributes = new HashMap<>();
         attributes.put("ApproximateReceiveCount", String.valueOf(MAX_DELIVERY_COUNT));
         
-        Message sqsMessage = new Message()
-                .withMessageId(messageId)
-                .withReceiptHandle(receiptHandle)
-                .withAttributes(attributes);
-        
-        // Create SNS wrapper
-        ObjectNode snsWrapper = createSnsWrapper(replayId, kind);
-        sqsMessage.setBody(snsWrapper.toString());
+        Message sqsMessage = Message.builder()
+                .messageId(messageId)
+                .receiptHandle(receiptHandle)
+                .attributesWithStrings(attributes)
+                .body(snsWrapper.toString())
+                .build();
         
         // Create ReplayMessage
         ReplayMessage replayMessage = createReplayMessage(replayId, kind);
         
         // Mock behavior
-        ReceiveMessageResult result = new ReceiveMessageResult().withMessages(Arrays.asList(sqsMessage));
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(result);
+        ReceiveMessageResponse response = ReceiveMessageResponse.builder().messages(Arrays.asList(sqsMessage)).build();
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(response);
         when(objectMapper.readTree(snsWrapper.toString())).thenReturn(snsWrapper);
         when(objectMapper.readValue(anyString(), eq(ReplayMessage.class))).thenReturn(replayMessage);
         doThrow(new RuntimeException("Test exception")).when(replayMessageHandler).handle(replayMessage);
@@ -285,7 +296,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
         verify(replayMessageHandler).handleFailure(replayMessage);
-        verify(sqsClient).deleteMessage(REPLAY_QUEUE_URL, receiptHandle);
+        verify(sqsClient).deleteMessage(eq(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build()));
     }
 
     private ObjectNode createSnsWrapper(String replayId, String kind) {

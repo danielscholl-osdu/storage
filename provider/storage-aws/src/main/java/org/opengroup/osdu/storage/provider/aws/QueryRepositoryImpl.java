@@ -16,11 +16,14 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ComparisonOperator;
 import org.apache.http.HttpStatus;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
-import org.opengroup.osdu.core.aws.dynamodb.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.GsiQueryRequest;
+import org.opengroup.osdu.core.aws.v2.dynamodb.model.QueryPageResult;
+import org.opengroup.osdu.core.aws.v2.dynamodb.util.RequestBuilderUtil;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -49,6 +52,8 @@ public class QueryRepositoryImpl implements IQueryRepository {
     public static final String STATUS = "Status";
     public static final String ERROR_PARSING_RESULTS = "Error parsing results";
     public static final String ACTIVE = "active";
+    private static final String SCHEMA_GSI_DATAPARTITION_INDEX_NAME = "DataPartitionId-User-Index";
+    private static final String RECORD_GSI_KINDSTATUS_INDEX_NAME = "KindStatusIndex";
     final DpsHeaders headers;
 
     private final org.opengroup.osdu.core.common.logging.JaxRsDpsLog logger;
@@ -70,18 +75,18 @@ public class QueryRepositoryImpl implements IQueryRepository {
         this.schemaService = schemaService;
     }
 
-    private DynamoDBQueryHelperV2 getSchemaTableQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, schemaRepositoryTableParameterRelativePath);
+    private DynamoDBQueryHelper<SchemaDoc> getSchemaTableQueryHelper() {
+        return dynamoDBQueryHelperFactory.createQueryHelper(headers, schemaRepositoryTableParameterRelativePath, SchemaDoc.class);
     }    
 
-    private DynamoDBQueryHelperV2 getRecordMetadataQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, recordMetadataTableParameterRelativePath);
+    private DynamoDBQueryHelper<RecordMetadataDoc> getRecordMetadataQueryHelper() {
+        return dynamoDBQueryHelperFactory.createQueryHelper(headers, recordMetadataTableParameterRelativePath, RecordMetadataDoc.class);
     }
 
     @Override
     public DatastoreQueryResult getAllKinds(Integer limit, String cursor) {
 
-        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+        DynamoDBQueryHelper<SchemaDoc> schemaTableQueryHelper = getSchemaTableQueryHelper();
 
         // Set the page size or use the default constant
         int numRecords = PAGE_SIZE;
@@ -97,18 +102,21 @@ public class QueryRepositoryImpl implements IQueryRepository {
             // Query by DataPartitionId global secondary index with User range key
             SchemaDoc queryObject = new SchemaDoc();
             queryObject.setDataPartitionId(headers.getPartitionId());
-            queryPageResult = schemaTableQueryHelper.queryByGSI(SchemaDoc.class, queryObject, numRecords, cursor);
+            // Build QueryEnhancedRequest with RequestBuilderUtil
+            GsiQueryRequest<SchemaDoc> queryRequest =
+                    RequestBuilderUtil.QueryRequestBuilder.forQuery(queryObject, SCHEMA_GSI_DATAPARTITION_INDEX_NAME, SchemaDoc.class)
+                            .limit(numRecords)
+                            .cursor(cursor)
+                            .buildGsiRequest();
 
-            for (SchemaDoc schemaDoc : queryPageResult.results) {
+            queryPageResult = schemaTableQueryHelper.queryByGSI(queryRequest, true);
+            for (SchemaDoc schemaDoc : queryPageResult.getItems()) {
                 kinds.add(schemaDoc.getKind());
             }
-        } catch (UnsupportedEncodingException e) {
+        } catch (IllegalArgumentException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
         }
-
-        // Set the cursor for the next page, if applicable
-        datastoreQueryResult.setCursor(queryPageResult.cursor);
 
         // Sort the Kinds alphabetically and set the results
         Collections.sort(kinds);
@@ -140,60 +148,24 @@ public class QueryRepositoryImpl implements IQueryRepository {
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, e.toString(), e.getMessage());
         }
-        dqr.setCursor(scanPageResults.cursor); // set the cursor for the next page, if applicable
+        dqr.setCursor(scanPageResults.getNextCursor()); // set the cursor for the next page, if applicable
         Function<RecordMetadataDoc, String> metadataMapper = collaborationContext
             .map(context -> (Function<RecordMetadataDoc, String>) (recordMetadataDoc -> recordMetadataDoc.getId().replaceFirst(String.format("^%s", context.getId()), "")))
             .orElse(RecordMetadataDoc::getId);
-        List<String> ids = scanPageResults.results.stream().map(metadataMapper).sorted().toList(); // extract and sort the Ids from the RecordMetadata Query Results
+        List<String> ids = scanPageResults.getItems().stream().map(metadataMapper).sorted().toList(); // extract and sort the Ids from the RecordMetadata Query Results
 
         dqr.setResults(ids);
         return dqr;
     }
 
     @Override
-    public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor) {
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
-        
-        // Set the page size or use the default constant
-        int numRecords = PAGE_SIZE;
-        if (limit != null) {
-            numRecords = limit > 0 ? limit : PAGE_SIZE;
-        }
-        
-        RecordInfoQueryResult<RecordIdAndKind> result = new RecordInfoQueryResult<>();
-        List<RecordIdAndKind> records = new ArrayList<>();
-        
-        try {
-            // Create a query object with status as the hash key for the GSI
-            RecordMetadataDoc queryObject = new RecordMetadataDoc();
-            queryObject.setStatus(ACTIVE);
-
-            // Use queryByGSI instead of queryPage
-            QueryPageResult<RecordMetadataDoc> queryPageResult = recordMetadataQueryHelper.queryByGSI(
-                    RecordMetadataDoc.class,
-                    queryObject,
-                    numRecords,
-                    cursor);
-            
-            // Convert to RecordIdAndKind objects
-            for (RecordMetadataDoc doc : queryPageResult.results) {
-                RecordIdAndKind idAndKind = new RecordIdAndKind();
-                idAndKind.setId(doc.getId());
-                idAndKind.setKind(doc.getKind());
-                records.add(idAndKind);
-            }
-            
-            // Create a new result with the records and cursor
-            result.setResults(records);
-            result.setCursor(queryPageResult.cursor);
-            
-        } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
-                    e.getMessage(), e);
-        }
-        
-        return result;
+    public RecordInfoQueryResult<RecordIdAndKind> getAllRecordIdAndKind(Integer limit, String cursor)
+    throws IllegalArgumentException{
+        // After discussion, this function will be disabled as AWS have another implementation that is more efficient.
+        throw new UnsupportedOperationException("Method not implemented.");
     }
 
     @Override
@@ -218,11 +190,11 @@ public class QueryRepositoryImpl implements IQueryRepository {
             result.setResults(records);
             
             // Always set the cursor, even if null
-            result.setCursor(scanPageResults.cursor);
+            result.setCursor(scanPageResults.getNextCursor());
             
             // Convert to RecordId objects if we have results
-            if (scanPageResults.results != null) {
-                for (RecordMetadataDoc doc : scanPageResults.results) {
+            if (scanPageResults.getItems() != null) {
+                for (RecordMetadataDoc doc : scanPageResults.getItems()) {
                     RecordId id = new RecordId();
                     id.setId(doc.getId());
                     // RecordId doesn't have setKind method, so we can't set it here
@@ -233,6 +205,8 @@ public class QueryRepositoryImpl implements IQueryRepository {
         } catch (UnsupportedEncodingException e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
                     e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, e.toString(), e.getMessage());
         }
         
         return result;
@@ -280,13 +254,15 @@ public class QueryRepositoryImpl implements IQueryRepository {
                     1000,
                     cursor);
                 
-                count += queryPageResult.results.size();
-                cursor = queryPageResult.cursor;
+                count += queryPageResult.getItems().size();
+                cursor = queryPageResult.getNextCursor();
             } while (cursor != null && !cursor.isEmpty());
             return count;
         } catch (UnsupportedEncodingException e) {
             logger.error("Error counting records for kind " + kind + ": " + e.getMessage(), e);
             return 0;
+        } catch (IllegalArgumentException e) {
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, e.toString(), e.getMessage());
         }
     }
 
@@ -324,25 +300,29 @@ public class QueryRepositoryImpl implements IQueryRepository {
             int limit,
             String cursor) throws UnsupportedEncodingException {
 
-        DynamoDBQueryHelperV2 recordMetadataQueryHelper = getRecordMetadataQueryHelper();
+        DynamoDBQueryHelper<RecordMetadataDoc> recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         // Set GSI hash key
         RecordMetadataDoc recordMetadataKey = new RecordMetadataDoc();
         recordMetadataKey.setKind(kind);
 
-        QueryPageResult<RecordMetadataDoc> result = recordMetadataQueryHelper.queryPage(
-            RecordMetadataDoc.class,
-            recordMetadataKey,
-            STATUS,
-            ACTIVE,
-            "Id",
-            ComparisonOperator.BEGINS_WITH,
-            idPrefix,
-            limit,
-            cursor);
-            
+        Map<String, AttributeValue> idExpressionValues = new HashMap<>();
+        idExpressionValues.put(":IdValue", AttributeValue.builder().s(idPrefix).build());
+        String idFilterExpression = new RequestBuilderUtil.ExpressionBuilder().generateFilterExpression("Id", "IdValue", ComparisonOperator.BEGINS_WITH);
+
+
+        GsiQueryRequest<RecordMetadataDoc> gsiRequest =
+                RequestBuilderUtil.QueryRequestBuilder.forQuery(recordMetadataKey, RECORD_GSI_KINDSTATUS_INDEX_NAME, RecordMetadataDoc.class)
+                        .limit(limit)
+                        .cursor(cursor)
+                        .rangeKeyValue(ACTIVE)
+                        .filterExpression(idFilterExpression, idExpressionValues)
+                        .buildGsiRequest();
+
+        QueryPageResult<RecordMetadataDoc> result = recordMetadataQueryHelper.queryByGSI(gsiRequest);
+
         // Ensure we always have a valid results list, even if empty
-        if (result.results == null) {
-            result.results = new ArrayList<>();
+        if (result.getItems() == null) {
+            result = new QueryPageResult<>(new ArrayList<>(), result.getLastEvaluatedKey(), result.getNextCursor());
         }
         
         return result;

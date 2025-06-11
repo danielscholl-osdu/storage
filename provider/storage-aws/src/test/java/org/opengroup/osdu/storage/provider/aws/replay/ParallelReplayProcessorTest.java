@@ -25,14 +25,15 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayData;
 import org.opengroup.osdu.storage.dto.ReplayMessage;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import org.opengroup.osdu.storage.enums.ReplayState;
 import org.opengroup.osdu.storage.enums.ReplayType;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.ReplayMetadataItem;
 import org.opengroup.osdu.storage.request.ReplayRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -66,6 +67,9 @@ public class ParallelReplayProcessorTest {
 
     @Mock
     private RequestScopeUtil requestScopeUtil;
+
+    @Mock
+    private BatchWriteResult batchWriteResult;
 
     private ParallelReplayProcessor processor;
     private ReplayRequest testRequest;
@@ -315,16 +319,15 @@ public class ParallelReplayProcessorTest {
         }
         
         // Create a failed batch
-        FailedBatch failedBatch = new FailedBatch();
-        failedBatch.setException(new RuntimeException("Test batch failure"));
-        failedBatch.setUnprocessedItems(Map.of("test", List.of()));
+        ReplayMetadataItem failedItem = new ReplayMetadataItem();
+        failedItem.setId("id");
         
         // Mock the batch get calls to return our prepared data
         when(replayRepository.batchGetAwsReplayStatusByKindsAndReplayId(anyList(), anyString()))
             .thenReturn(batchResults);
         
         // Mock the batch save to return a failed batch
-        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(List.of(failedBatch));
+        when(replayRepository.batchSaveAwsReplayMetaData(anyList())).thenReturn(List.of(failedItem));
         
         // Act
         Method method = ParallelReplayProcessor.class.getDeclaredMethod(

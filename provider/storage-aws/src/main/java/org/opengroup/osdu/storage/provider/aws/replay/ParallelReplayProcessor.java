@@ -25,13 +25,13 @@ import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
 import org.opengroup.osdu.storage.provider.aws.config.ReplayBatchConfig;
 import org.opengroup.osdu.storage.provider.aws.exception.ReplayMessageHandlerException;
 import org.opengroup.osdu.storage.provider.aws.util.RequestScopeUtil;
+import org.opengroup.osdu.storage.provider.aws.util.dynamodb.ReplayMetadataItem;
 import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.opengroup.osdu.storage.util.ReplayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import java.util.*;
 import java.util.stream.Collectors;
 import jakarta.annotation.PreDestroy;
@@ -181,15 +181,15 @@ public class ParallelReplayProcessor {
             List<AwsReplayMetaDataDTO> metadataList = retrieveMetadataWithState(batch, replayId, state);
 
             if (!metadataList.isEmpty()) {
-                List<DynamoDBMapper.FailedBatch> failedBatches = replayRepository.batchSaveAwsReplayMetaData(metadataList);
+                List<ReplayMetadataItem> failedBatches = replayRepository.batchSaveAwsReplayMetaData(metadataList);
                 
                 if (!failedBatches.isEmpty()) {
                     LOGGER.log(Level.SEVERE, () -> String.format("Failed to update status for %d batches", failedBatches.size()));
                     
                     // Log details of failed items
-                    for (DynamoDBMapper.FailedBatch failedBatch : failedBatches) {
-                        LOGGER.log(Level.SEVERE, () -> String.format("Batch failure: %s, Exception: %s", 
-                                failedBatch.getUnprocessedItems(), failedBatch.getException().getMessage()));
+                    for (ReplayMetadataItem failedBatch : failedBatches) {
+                        LOGGER.log(Level.SEVERE, () -> String.format("Batch failure: %s.",
+                                failedBatch.getId()));
                     }
                 }
             }
@@ -286,7 +286,7 @@ public class ParallelReplayProcessor {
 
             // Save all updated records in a single batch operation
             if (!metadataToUpdate.isEmpty()) {
-                List<DynamoDBMapper.FailedBatch> failedBatches = replayRepository.batchSaveAwsReplayMetaData(metadataToUpdate);
+                List<ReplayMetadataItem> failedBatches = replayRepository.batchSaveAwsReplayMetaData(metadataToUpdate);
 
                 if (!failedBatches.isEmpty()) {
                     LOGGER.log(Level.SEVERE, ()-> String.format("Failed to update record counts for %d batches", failedBatches.size()));

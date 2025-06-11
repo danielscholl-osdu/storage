@@ -14,9 +14,9 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.AmazonServiceException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import com.google.gson.Gson;
-import org.opengroup.osdu.core.aws.s3.S3ClientFactory;
+import org.opengroup.osdu.core.aws.v2.s3.S3ClientFactory;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -40,7 +40,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 
 import static org.mockito.Mockito.*;
 
@@ -143,7 +141,7 @@ class CloudStorageImplTest {
         doNothing().when(userAccessService).validateRecordAcl(any());
 
         when(recordProcessing.getRecordMetadata()).thenReturn(record);
-        doThrow(AmazonServiceException.class).when(s3RecordClient).saveRecord(recordProcessing, dataPartition);
+        doThrow(AwsServiceException.class).when(s3RecordClient).saveRecord(recordProcessing, dataPartition);
 
         assertThrows(AppException.class, () -> repo.write(recordProcessing));
     }

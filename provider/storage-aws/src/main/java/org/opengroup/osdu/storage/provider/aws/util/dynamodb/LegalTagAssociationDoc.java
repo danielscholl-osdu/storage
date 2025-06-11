@@ -14,7 +14,10 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,17 +25,44 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@DynamoDBTable(tableName = "LegalTagAssociation") // DynamoDB table name (without environment prefix)
+@DynamoDbBean
 public class LegalTagAssociationDoc {
 
-    @DynamoDBHashKey(attributeName = "recordIdLegalTag")
     private String recordIdLegalTag;
 
-    @DynamoDBIndexHashKey(attributeName = "recordId", globalSecondaryIndexName = "recordId-index")
     private String recordId;
 
-    @DynamoDBIndexHashKey(attributeName = "legalTag", globalSecondaryIndexName = "legalTag-index")
     private String legalTag;
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("recordIdLegalTag")
+    public String getRecordIdLegalTag() {
+        return recordIdLegalTag;
+    }
+
+    public void setRecordIdLegalTag(String recordIdLegalTag) {
+        this.recordIdLegalTag = recordIdLegalTag;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"recordId-index"})
+    @DynamoDbAttribute("recordId")
+    public String getRecordId() {
+        return recordId;
+    }
+
+    public void setRecordId(String recordId) {
+        this.recordId = recordId;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = {"legalTag-index"})
+    @DynamoDbAttribute("legalTag")
+    public String getLegalTag() {
+        return legalTag;
+    }
+
+    public void setLegalTag(String legalTag) {
+        this.legalTag = legalTag;
+    }
 
     public static String getLegalRecordId(String recordId, String legalTag) {
         return String.format("%s:%s", recordId, legalTag);

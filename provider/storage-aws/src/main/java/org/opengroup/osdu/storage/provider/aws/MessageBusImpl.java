@@ -14,22 +14,22 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.MessageAttributeValue;
-import com.amazonaws.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.NotImplementedException;
-import org.opengroup.osdu.core.aws.ssm.K8sLocalParameterProvider;
-import org.opengroup.osdu.core.aws.ssm.K8sParameterNotFoundException;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sLocalParameterProvider;
+import org.opengroup.osdu.core.aws.v2.ssm.K8sParameterNotFoundException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.aws.sns.AmazonSNSConfig;
-import org.opengroup.osdu.core.aws.sns.PublishRequestBuilder;
+import org.opengroup.osdu.core.aws.v2.sns.AmazonSNSConfig;
+import org.opengroup.osdu.core.aws.v2.sns.PublishRequestBuilder;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -48,7 +48,7 @@ public class MessageBusImpl implements IMessageBus {
 
     private String amazonSNSTopic;
     private String amazonSNSTopicV2;
-    private AmazonSNS snsClient;
+    private SnsClient snsClient;
     @Value("${AWS.REGION}")
     private String currentRegion;
 
@@ -103,7 +103,7 @@ public class MessageBusImpl implements IMessageBus {
     }
 
     private static MessageAttributeValue getAttrValForContext(CollaborationContext collaborationContext) {
-        return new MessageAttributeValue().withDataType("String").withStringValue("id=" + collaborationContext.getId() + ",application=" + collaborationContext.getApplication());
+        return MessageAttributeValue.builder().dataType("String").stringValue("id=" + collaborationContext.getId() + ",application=" + collaborationContext.getApplication()).build();
     }
 
     @Override
@@ -129,9 +129,10 @@ public class MessageBusImpl implements IMessageBus {
         for (Object message : messageList) {
             try {
                 String messageBody = objectMapper.writeValueAsString(message);
-                PublishRequest publishRequest = new PublishRequest()
-                    .withTopicArn(topicArn)
-                    .withMessage(messageBody);
+                PublishRequest publishRequest = PublishRequest.builder()
+                        .topicArn(topicArn)
+                        .message(messageBody)
+                        .build();
                 
                 snsClient.publish(publishRequest);
                 logger.debug("Published message to SNS topic: " + topicArn);

@@ -16,8 +16,8 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
@@ -34,7 +34,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
@@ -46,7 +45,7 @@ class SchemaRepositoryImplTest {
     private SchemaRepositoryImpl repo;
 
     @Mock
-    private DynamoDBQueryHelperV2 queryHelper;
+    private DynamoDBQueryHelper queryHelper;
 
     @Mock
     private DynamoDBQueryHelperFactory queryHelperFactory;
@@ -58,7 +57,7 @@ class SchemaRepositoryImplTest {
     void setUp() {
         openMocks(this);
 
-        Mockito.when(queryHelperFactory.getQueryHelperForPartition(Mockito.any(DpsHeaders.class), Mockito.any()))
+        Mockito.when(queryHelperFactory.createQueryHelper(any(DpsHeaders.class), any(), any()))
         .thenReturn(queryHelper);
     }
 
@@ -83,20 +82,23 @@ class SchemaRepositoryImplTest {
         expectedSd.setDataPartitionId(dataPartitionId);
 
         Mockito.when(headers.getPartitionId()).thenReturn(dataPartitionId);
-        Mockito.doNothing().when(queryHelper).save(expectedSd);
+        Mockito.doNothing().when(queryHelper).putItem(expectedSd);
 
         // Act
         repo.add(schema, user);
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).save(expectedSd);
+        Mockito.verify(queryHelper, Mockito.times(1)).putItem(expectedSd);
     }
 
     @Test
     void addScehmaThrowsException() {
-        when(queryHelper.keyExistsInTable(eq(SchemaDoc.class), any())).thenThrow(IllegalArgumentException.class);
+        Schema schema = new Schema();
+        schema.setKind("test-kind");
 
-        assertThrows(IllegalArgumentException.class, () -> repo.add(new Schema(), "user"));
+        when(queryHelper.getItem(any())).thenReturn(Optional.of(schema));
+
+        assertThrows(IllegalArgumentException.class, () -> repo.add(schema, "user"));
     }
     @Test
     void getSchema() {
@@ -116,8 +118,8 @@ class SchemaRepositoryImplTest {
         expectedSd.setExtension(expectedSchema.getExt());
         expectedSd.setUser(user);
         expectedSd.setSchemaItems(Arrays.asList(expectedSchema.getSchema()));
-        Mockito.when(queryHelper.loadByPrimaryKey(Mockito.eq(SchemaDoc.class), Mockito.anyString()))
-                .thenReturn(expectedSd);
+        Mockito.when(queryHelper.getItem(Mockito.anyString()))
+                .thenReturn(Optional.of(expectedSd));
 
         // Act
         Schema schema = repo.get(kind);
@@ -129,7 +131,7 @@ class SchemaRepositoryImplTest {
     @Test
     void getSchemaReturnsNull() {
         String kind = "tenant:source:type:1.0.0";
-        when(queryHelper.loadByPrimaryKey(SchemaDoc.class, kind)).thenReturn(null);
+        when(queryHelper.getItem(kind)).thenReturn(Optional.empty());
         Schema result = repo.get(kind);
 
         Assert.assertNull(result);
@@ -142,12 +144,12 @@ class SchemaRepositoryImplTest {
         SchemaDoc expectedSd = new SchemaDoc();
         expectedSd.setKind(kind);
 
-        Mockito.doNothing().when(queryHelper).deleteByPrimaryKey(Mockito.eq(SchemaDoc.class), Mockito.anyString());
+        Mockito.doNothing().when(queryHelper).deleteItem(Mockito.anyString());
 
         // Act
         repo.delete(kind);
 
         // Assert
-        Mockito.verify(queryHelper, Mockito.times(1)).deleteByPrimaryKey(Mockito.eq(SchemaDoc.class), Mockito.anyString());
+        Mockito.verify(queryHelper, Mockito.times(1)).deleteItem(Mockito.anyString());
     }
 }

@@ -14,7 +14,12 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,26 +33,70 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@DynamoDBTable(tableName = "SchemaRepository") // DynamoDB table name (without environment prefix)
+@DynamoDbBean
 public class SchemaDoc {
 
-    @DynamoDBHashKey(attributeName = "Kind")
     private String kind;
 
-    @DynamoDBIndexHashKey(globalSecondaryIndexName = "DataPartitionId-User-Index")
-    @DynamoDBAttribute(attributeName = "DataPartitionId")
     private String dataPartitionId;
 
-    @DynamoDBIndexRangeKey(globalSecondaryIndexName = "DataPartitionId-User-Index")
-    @DynamoDBAttribute(attributeName = "User")
     private String user;
 
-    @DynamoDBTypeConverted(converter = SchemaItemTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "schema")
     private List<SchemaItem> schemaItems;
 
-    @DynamoDBTypeConverted(converter = SchemaExtTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "ext")
     private Map<String,Object> extension;
+
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("Kind")
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
+    }
+
+    // Sort key for GSI "SubjectLastPostedDateIndex" and sort key for LSI "ForumLastPostedDateIndex".
+    @DynamoDbSecondaryPartitionKey(indexNames = {"DataPartitionId-User-Index"})
+    @DynamoDbAttribute("DataPartitionId")
+    public String getDataPartitionId() {
+        return dataPartitionId;
+    }
+
+    public void setDataPartitionId(String dataPartitionId) {
+        this.dataPartitionId = dataPartitionId;
+    }
+
+    @DynamoDbSecondarySortKey(indexNames = {"DataPartitionId-User-Index"})
+    @DynamoDbSecondaryPartitionKey(indexNames = {"UserIndex"})
+    @DynamoDbAttribute("User")
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    @DynamoDbConvertedBy(SchemaItemTypeConverter.class)
+    @DynamoDbAttribute("schema")
+    public List<SchemaItem> getSchemaItems() {
+        return this.schemaItems;
+    }
+
+    public void setSchemaItems(List<SchemaItem> schemaItems) {
+        this.schemaItems = schemaItems;
+    }
+
+    @DynamoDbConvertedBy(SchemaExtTypeConverter.class)
+    @DynamoDbAttribute("ext")
+    public Map<String,Object> getExtension() {
+        return this.extension;
+    }
+
+    public void setExtension(Map<String,Object> extension) {
+        this.extension = extension;
+    }
 }
 

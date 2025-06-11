@@ -13,7 +13,6 @@
 // limitations under the License.
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb.converters;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -24,9 +23,7 @@ import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.List;
-
+import java.util.Date;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,81 +38,92 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-class CrmAccountIdsTypeConverterTest {
+class DateTypeConverterTest {
     @InjectMocks
-    private CrmAccountIdsTypeConverter converter = new CrmAccountIdsTypeConverter();
+    private DateTypeConverter converter = new DateTypeConverter();
 
     @Mock
     private JaxRsDpsLog logger;
 
-    @Mock 
+    @Mock
     private ObjectMapper objectMapper;
 
-    private List<String> accountIds = new ArrayList<>();
+    private Date date = new Date(12345678);
 
-    private String jsonString = "[\"id1\",\"id2\"]";
+    private String jsonString = "12345678";
 
     @BeforeEach
     void setUp() {
         openMocks(this);
-        accountIds.add("id1");
-        accountIds.add("id2");
     }
 
     @Test
     void convert_shouldReturnJsonString_whenListIsValid() throws JsonProcessingException {
-        when(objectMapper.writeValueAsString(accountIds)).thenReturn(jsonString);
 
-        AttributeValue result = converter.transformFrom(accountIds);
+        when(objectMapper.writeValueAsString(date)).thenReturn(jsonString);
+
+        AttributeValue result = converter.transformFrom(date);
 
         assertEquals(jsonString, result.s());
     }
 
     @Test
     void convert_shouldLogErrorAndReturnNull_whenExceptionOccurs() throws JsonProcessingException {
-        when(objectMapper.writeValueAsString(accountIds)).thenThrow(JsonProcessingException.class);
-        AttributeValue result = converter.transformFrom(accountIds);
-        verify(logger).error(anyString());
+        when(objectMapper.writeValueAsString(date)).thenThrow(JsonProcessingException.class);
+
+        AttributeValue result = converter.transformFrom(date);
+
         assertEquals(null, result);
+        verify(logger).error(anyString());
     }
 
     @Test
     void unconvert_shouldReturnList_whenJsonStringIsValid() throws IOException {
-        when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenReturn(accountIds);
+        when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenReturn(date);
 
+        Date result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
 
-        List<String> result = converter.transformTo(AttributeValue.builder().s(jsonString).build());
-        assertEquals(accountIds, result);
+        assertEquals(date, result);
     }
-
 
     @Test
     void unconvert_shouldLogError_whenJsonParseExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(JsonParseException.class);
-        converter.transformTo(AttributeValue.builder().s(jsonString).build());
+
+        Date result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
+
+        assertEquals(null, result);
         verify(logger).error(anyString());
     }
 
     @Test
     void unconvert_shouldLogError_whenJsonMappingExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(JsonMappingException.class);
-        converter.transformTo(AttributeValue.builder().s(jsonString).build());
+
+        Date result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
+
+        assertEquals(null, result);
         verify(logger).error(anyString());
     }
 
     @Test
     void unconvert_shouldLogError_whenExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(RuntimeException.class);
-        converter.transformTo(AttributeValue.builder().s(jsonString).build());
+
+        Date result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
+
+        assertEquals(null, result);
         verify(logger).error(anyString());
     }
 
     @Test
     void unconvert_shouldLogError_whenIOExceptionOccurs() throws IOException {
         when(objectMapper.readValue(eq(jsonString), any(TypeReference.class))).thenThrow(new UncheckedIOException(new IOException("Test IOException")));
-        converter.transformTo(AttributeValue.builder().s(jsonString).build());
+
+        Date result = converter.transformTo(AttributeValue.builder().s(jsonString).build());;
+
+        assertEquals(null, result);
         verify(logger).error(anyString());
     }
-
 
 }

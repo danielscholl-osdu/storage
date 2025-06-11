@@ -14,8 +14,8 @@
 
 package org.opengroup.osdu.storage.provider.aws;
 
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperFactory;
-import org.opengroup.osdu.core.aws.dynamodb.DynamoDBQueryHelperV2;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelperFactory;
+import org.opengroup.osdu.core.aws.v2.dynamodb.DynamoDBQueryHelper;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.Schema;
 import org.opengroup.osdu.core.common.model.storage.SchemaItem;
@@ -28,6 +28,7 @@ import org.springframework.stereotype.Repository;
 import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 // To be deprecated
 @Repository
@@ -44,20 +45,20 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
     String schemaRepositoryTableParameterRelativePath;    
 
 
-    private DynamoDBQueryHelperV2 getSchemaTableQueryHelper() {
-        return dynamoDBQueryHelperFactory.getQueryHelperForPartition(headers, schemaRepositoryTableParameterRelativePath);
+    private DynamoDBQueryHelper<SchemaDoc> getSchemaTableQueryHelper() {
+        return dynamoDBQueryHelperFactory.createQueryHelper(headers, schemaRepositoryTableParameterRelativePath, SchemaDoc.class);
     }
 
     @Override
     public void add(Schema schema, String user) {
 
-        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
+        DynamoDBQueryHelper<SchemaDoc> schemaTableQueryHelper = getSchemaTableQueryHelper();
 
         SchemaDoc sd = new SchemaDoc();
         sd.setKind(schema.getKind());
 
         // Check if a schema with this kind already exists
-        if (schemaTableQueryHelper.keyExistsInTable(SchemaDoc.class, sd)) {
+        if (schemaTableQueryHelper.getItem(sd.getKind()).isPresent()) {
             throw new IllegalArgumentException("Schema " + sd.getKind() + " already exists. Can't create again.");
         }
 
@@ -66,33 +67,32 @@ public class SchemaRepositoryImpl implements ISchemaRepository {
         sd.setUser(user);
         sd.setSchemaItems(Arrays.asList(schema.getSchema()));
         sd.setDataPartitionId(headers.getPartitionId());
-        schemaTableQueryHelper.save(sd);
+        schemaTableQueryHelper.putItem(sd);
     }
 
     @Override
     public Schema get(String kind) {
         
-        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
-
-        SchemaDoc sd = schemaTableQueryHelper.loadByPrimaryKey(SchemaDoc.class, kind);
-        if (sd == null) {
+        DynamoDBQueryHelper<SchemaDoc> schemaTableQueryHelper = getSchemaTableQueryHelper();
+        Optional<SchemaDoc> sdOptional = schemaTableQueryHelper.getItem(kind);
+        if (sdOptional.isEmpty()) {
             return null;
         }
 
         // Create a Schema object and assign the values retrieved from DynamoDB
         Schema newSchema = new Schema();
         newSchema.setKind(kind);
-        List<SchemaItem> schemaItemList = sd.getSchemaItems();
+        List<SchemaItem> schemaItemList = sdOptional.get().getSchemaItems();
         SchemaItem[] schemaItemsArray = schemaItemList.toArray(new SchemaItem[0]); // convert List to Array
         newSchema.setSchema(schemaItemsArray);
-        newSchema.setExt(sd.getExtension());
+        newSchema.setExt(sdOptional.get().getExtension());
         return newSchema;
     }
 
     @Override
     public void delete(String kind) {
-        DynamoDBQueryHelperV2 schemaTableQueryHelper = getSchemaTableQueryHelper();
-        
-        schemaTableQueryHelper.deleteByPrimaryKey(SchemaDoc.class, kind);
+        DynamoDBQueryHelper<SchemaDoc> schemaTableQueryHelper = getSchemaTableQueryHelper();
+
+        schemaTableQueryHelper.deleteItem(kind);
     }
 }

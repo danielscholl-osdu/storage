@@ -27,11 +27,13 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 
 @Service
+@Qualifier("ServiceAccountJwtAwsClientImplSDKV2")
 public class UserAccessService {
 
 

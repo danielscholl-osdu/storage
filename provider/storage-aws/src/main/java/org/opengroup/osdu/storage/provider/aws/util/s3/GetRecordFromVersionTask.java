@@ -16,7 +16,7 @@ package org.opengroup.osdu.storage.provider.aws.util.s3;
 
 import java.util.concurrent.Callable;
 
-import com.amazonaws.AmazonServiceException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 class GetRecordFromVersionTask implements Callable<GetRecordFromVersionTask> {
     private final S3RecordClient s3RecordClient;
@@ -51,7 +51,7 @@ class GetRecordFromVersionTask implements Callable<GetRecordFromVersionTask> {
                 result = CallableResult.FAIL;
             }
         }
-        catch(AmazonServiceException e) {
+        catch(AwsServiceException e) {
             exception = e;
             result = CallableResult.FAIL;
         }

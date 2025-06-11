@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb.converters;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,11 +25,15 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 
 
 import jakarta.inject.Inject;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
+import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
 import java.io.IOException;
 import java.util.List;
 
 // Converts the complex type of a SchemaItem array to a string and vice-versa.
-public class SchemaItemTypeConverter implements DynamoDBTypeConverter<String, List<SchemaItem>> {
+public class SchemaItemTypeConverter implements AttributeConverter<List<SchemaItem>> {
 
     @Inject
     private JaxRsDpsLog logger;
@@ -43,22 +47,23 @@ public class SchemaItemTypeConverter implements DynamoDBTypeConverter<String, Li
         }
     }
 
+
+    // Converts a list of SchemaItems to a JSON string (In form of AttributeValue) for DynamoDB
     @Override
-    // Converts a list of SchemaItems to a JSON string for DynamoDB
-    public String convert(List<SchemaItem> schemaItems) {
+    public AttributeValue transformFrom(List<SchemaItem> schemaItems) {
         try {
-            return objectMapper.writeValueAsString(schemaItems);
+            return AttributeValue.fromS(objectMapper.writeValueAsString(schemaItems));
         } catch (JsonProcessingException e) {
             logger.error(String.format("There was an error converting the schema to a JSON string. %s", e.getMessage()));
         }
         return null;
     }
 
+    // Converts a JSON string (In form of AttributeValue) of an array of SchemaItems to a list of SchemaItem objects
     @Override
-    // Converts a JSON string of an array of SchemaItems to a list of SchemaItem objects
-    public List<SchemaItem> unconvert(String schemaItemsString) {
+    public List<SchemaItem> transformTo(AttributeValue schemaItemsString) {
         try {
-            return objectMapper.readValue(schemaItemsString, new TypeReference<List<SchemaItem>>(){});
+            return objectMapper.readValue(schemaItemsString.s(), new TypeReference<List<SchemaItem>>(){});
         } catch (JsonParseException e) {
             logger.error(String.format("There was an error parsing the schema JSON string. %s", e.getMessage()));
         } catch (JsonMappingException e) {
@@ -69,5 +74,15 @@ public class SchemaItemTypeConverter implements DynamoDBTypeConverter<String, Li
             logger.error(String.format("There was an unknown exception converting the schema. %s", e.getMessage()));
         }
         return null;
+    }
+
+    @Override
+    public EnhancedType<List<SchemaItem>> type() {
+        return EnhancedType.listOf(SchemaItem.class);
+    }
+
+    @Override
+    public AttributeValueType attributeValueType() {
+        return AttributeValueType.S;
     }
 }

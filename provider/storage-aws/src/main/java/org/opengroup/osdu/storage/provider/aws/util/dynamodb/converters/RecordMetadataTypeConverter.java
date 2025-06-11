@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.dynamodb.converters;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,10 +26,14 @@ import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 
 
 import jakarta.inject.Inject;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
+import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
 import java.io.IOException;
 
 // Converts the complex type of RecordMetadata to a string and vice-versa.
-public class RecordMetadataTypeConverter implements DynamoDBTypeConverter<String, RecordMetadata> {
+public class RecordMetadataTypeConverter implements AttributeConverter<RecordMetadata> {
 
     @Inject
     private JaxRsDpsLog logger;
@@ -43,23 +47,23 @@ public class RecordMetadataTypeConverter implements DynamoDBTypeConverter<String
         }
     }
 
+    // Converts RecordMetadata to a JSON string (In form of AttributeValue) for DynamoDB
     @Override
-    // Converts RecordMetadata to a JSON string for DynamoDB
-    public String convert(RecordMetadata recordMetadata) {
+    public AttributeValue transformFrom(RecordMetadata recordMetadata) {
         try {
-            return objectMapper.writeValueAsString(recordMetadata);
+            return AttributeValue.fromS(objectMapper.writeValueAsString(recordMetadata));
         } catch (JsonProcessingException e) {
             logger.error(String.format("There was an error converting the record metadata to a JSON string. %s", e.getMessage()));
         }
         return null;
     }
 
+    // Converts a JSON string (In form of AttributeValue) of an array of RecordMetadata to a RecordMetadata object
     @Override
-    // Converts a JSON string of an array of RecordMetadata to a RecordMetadata object
-    public RecordMetadata unconvert(String recordMetadataString) {
+    public RecordMetadata transformTo(AttributeValue recordMetadataString) {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
-            return objectMapper.readValue(recordMetadataString, new TypeReference<RecordMetadata>(){});
+            return objectMapper.readValue(recordMetadataString.s(), new TypeReference<RecordMetadata>(){});
         } catch (JsonParseException e) {
             logger.error(String.format("There was an error parsing the record metadata JSON string. %s", e.getMessage()));
         } catch (JsonMappingException e) {
@@ -70,5 +74,15 @@ public class RecordMetadataTypeConverter implements DynamoDBTypeConverter<String
             logger.error(String.format("There was an unknown exception converting the record metadata. %s", e.getMessage()));
         }
         return null;
+    }
+
+    @Override
+    public EnhancedType<RecordMetadata> type() {
+        return EnhancedType.of(RecordMetadata.class);
+    }
+
+    @Override
+    public AttributeValueType attributeValueType() {
+        return AttributeValueType.S;
     }
 }

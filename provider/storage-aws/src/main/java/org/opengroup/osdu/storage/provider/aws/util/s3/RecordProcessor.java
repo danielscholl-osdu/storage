@@ -14,7 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.aws.util.s3;
 
-import com.amazonaws.AmazonServiceException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
 
@@ -24,7 +24,7 @@ public class RecordProcessor implements Callable<RecordProcessor> {
     private final RecordProcessing recordProcessing;
     private final S3RecordClient s3Client;
     private CallableResult result;
-    private AmazonServiceException exception;
+    private AwsServiceException exception;
     private final String recordId;
     private final String dataPartition;
 
@@ -41,7 +41,7 @@ public class RecordProcessor implements Callable<RecordProcessor> {
             s3Client.saveRecord(recordProcessing, dataPartition);
             result = CallableResult.PASS;
         }
-        catch(AmazonServiceException e) {
+        catch(AwsServiceException e) {
             this.exception = e;
             result = CallableResult.FAIL;
         }
@@ -56,7 +56,7 @@ public class RecordProcessor implements Callable<RecordProcessor> {
         return result;
     }
 
-    public AmazonServiceException getException() {
+    public AwsServiceException getException() {
         return exception;
     }
 }
