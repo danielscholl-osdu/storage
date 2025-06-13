@@ -1,0 +1,273 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
+  workflow_dispatch:      # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout main (contains workflows and actions)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Security Tools
+        run: |
+          # Install Trivy
+          echo "Installing Trivy..."
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.49.1
+          
+          # Install Claude Code
+          echo "Installing Claude Code..."
+          npm install -g @anthropic-ai/claude-code
+          
+          # Create .mcp.json in the repository root for Claude
+          cat > .mcp.json << 'EOF'
+          {
+            "mcpServers": {
+              "mvn-mcp-server": {
+                "type": "stdio",
+                "command": "uvx",
+                "args": [
+                  "--from",
+                  "git+https://github.com/danielscholl-osdu/mvn-mcp-server@main",
+                  "mvn-mcp-server"
+                ],
+                "env": {}
+              }
+            }
+          }
+          EOF
+          
+          echo "Claude Code installed and MCP configured"
+
+      - name: Setup Python and PR Generator
+        run: |
+          python -m pip install --upgrade pip
+          pip install pr-generator-agent
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create a global exclude file to prevent .mcp.json from being tracked
+          echo ".mcp.json" > ~/.gitignore_global
+          git config core.excludesfile ~/.gitignore_global
+
+          # Add upstream remote using stored variable
+          if [ -z "${{ vars.UPSTREAM_REPO_URL }}" ]; then
+            echo "::error::UPSTREAM_REPO_URL variable is not configured. Please set it in repository settings."
+            echo "This variable should contain the URL of your upstream repository (e.g., https://github.com/Azure/osdu-infrastructure.git)"
+            exit 1
+          fi
+          
+          echo "Adding upstream remote: ${{ vars.UPSTREAM_REPO_URL }}"
+          git remote add upstream "${{ vars.UPSTREAM_REPO_URL }}" || {
+            echo "::error::Failed to add upstream remote. Please check the UPSTREAM_REPO_URL variable."
+            exit 1
+          }
+
+      - name: Fetch Upstream
+        run: |
+          # Fetch latest from upstream
+          git fetch upstream --prune
+
+          # Determine default branch
+          if git rev-parse --verify upstream/main >/dev/null 2>&1; then
+            DEFAULT_BRANCH="main"
+          elif git rev-parse --verify upstream/master >/dev/null 2>&1; then
+            DEFAULT_BRANCH="master"
+          else
+            echo "::error::Could not find main or master branch in upstream"
+            exit 1
+          fi
+          echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        id: sync-changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
+          AZURE_API_BASE: ${{ secrets.AZURE_API_BASE }}
+          AZURE_API_VERSION: ${{ secrets.AZURE_API_VERSION }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Generate branch names with timestamp for uniqueness
+          DATE_SUFFIX=$(date +%Y%m%d-%H%M%S)
+          SYNC_BRANCH="sync/upstream-${DATE_SUFFIX}"
+          
+          # Fetch and checkout fork_upstream branch
+          git fetch origin fork_upstream
+          git checkout -b fork_upstream origin/fork_upstream
+
+          # Create a new branch for the sync
+          git checkout -b $SYNC_BRANCH
+          
+          # Try to merge upstream changes, automatically preferring upstream versions on conflict
+          git merge upstream/$DEFAULT_BRANCH -X theirs --no-edit
+          
+          # Check if there are any changes to commit
+          if git diff --quiet fork_upstream; then
+            echo "No changes to sync from upstream"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          
+          # Push changes with force flag to handle any branch name conflicts
+          git push -f origin $SYNC_BRANCH
+
+          # Get upstream version for PR description
+          UPSTREAM_VERSION=$(git describe --tags --abbrev=0 upstream/$DEFAULT_BRANCH 2>/dev/null || echo "latest")
+          
+          # Get the changes for the PR description
+          CHANGES=$(git log --pretty=format:"* %s" fork_upstream..$SYNC_BRANCH)
+          
+          # Prepare fallback description for PR
+          FALLBACK_DESCRIPTION="Automated PR to sync with upstream repository changes."$'\n\n'"### Changes from upstream:"$'\n'"${CHANGES}"
+          
+          # Set environment variables for subsequent steps
+          echo "SYNC_BRANCH=$SYNC_BRANCH" >> $GITHUB_ENV
+          echo "UPSTREAM_VERSION=$UPSTREAM_VERSION" >> $GITHUB_ENV
+          echo "FALLBACK_DESCRIPTION<<EOF" >> $GITHUB_ENV
+          echo "$FALLBACK_DESCRIPTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+      - name: Create enhanced sync PR
+        if: steps.sync-changes.outputs.has_changes == 'true'
+        id: create-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
+          AZURE_API_BASE: ${{ secrets.AZURE_API_BASE }}
+          AZURE_API_VERSION: ${{ secrets.AZURE_API_VERSION }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Get environment variables from previous step
+          SYNC_BRANCH="${{ env.SYNC_BRANCH }}"
+          UPSTREAM_VERSION="${{ env.UPSTREAM_VERSION }}"
+          FALLBACK_DESCRIPTION="${{ env.FALLBACK_DESCRIPTION }}"
+          
+          # Detect available LLM provider
+          USE_LLM=false
+          LLM_MODEL=""
+          
+          # Check for Anthropic API key (primary)
+          if [[ -n "$ANTHROPIC_API_KEY" ]]; then
+            USE_LLM=true
+            LLM_MODEL="claude-4"
+            echo "Using Anthropic Claude for PR description generation"
+          # Check for Azure OpenAI API key (secondary)
+          elif [[ -n "$AZURE_API_KEY" && -n "$AZURE_API_BASE" ]]; then
+            USE_LLM=true
+            LLM_MODEL="azure/gpt-4o"
+            echo "Using Azure OpenAI GPT-4o for PR description generation"
+          # Check for OpenAI API key (tertiary)
+          elif [[ -n "$OPENAI_API_KEY" ]]; then
+            USE_LLM=true
+            LLM_MODEL="gpt-4.1"
+            echo "Using OpenAI GPT-4 for PR description generation"
+          else
+            echo "No LLM API keys found. Using fallback PR description."
+          fi
+          
+          # Calculate diff size to avoid generating prompts that exceed model limits
+          MAX_DIFF_LINES=20000
+          DIFF_LINES=$(git diff fork_upstream | wc -l | tr -d ' ')
+          # Ensure DIFF_LINES is a valid numeric value
+          if [[ -z "$DIFF_LINES" || ! "$DIFF_LINES" =~ ^[0-9]+$ ]]; then
+            DIFF_LINES=0
+          fi
+          echo "Diff contains $DIFF_LINES lines"
+          
+          # Generate PR description using AI if available
+          if [[ "$USE_LLM" == "true" && "$DIFF_LINES" -le "$MAX_DIFF_LINES" ]]; then
+            echo "Generating AI-enhanced PR description using $LLM_MODEL..."
+            
+            # Use aipr tool with vulnerability analysis
+            PR_DESCRIPTION=$(aipr -t fork_upstream --vulns -p meta -m $LLM_MODEL --max-diff-lines $MAX_DIFF_LINES 2>/dev/null || echo "")
+            
+            if [[ -n "$PR_DESCRIPTION" ]]; then
+              echo "Generated enhanced PR description using $LLM_MODEL"
+            else
+              echo "AI generation failed, using fallback description"
+              PR_DESCRIPTION="$FALLBACK_DESCRIPTION"
+            fi
+          else
+            if [[ "$DIFF_LINES" -gt "$MAX_DIFF_LINES" ]]; then
+              echo "Diff is larger than $MAX_DIFF_LINES lines; using fallback description"
+            fi
+            PR_DESCRIPTION="$FALLBACK_DESCRIPTION"
+          fi
+          
+          # Create the PR
+          echo "Creating PR from branch $SYNC_BRANCH to fork_upstream"
+          PR_URL=$(gh pr create \
+            --base fork_upstream \
+            --head "$SYNC_BRANCH" \
+            --title "⬆️ Sync with upstream $UPSTREAM_VERSION" \
+            --body "$PR_DESCRIPTION" \
+            --label "upstream-sync")
+          
+          echo "PR created: $PR_URL"
+          
+          # Extract PR number for output
+          PR_NUMBER=$(basename "$PR_URL")
+          echo "PR number: $PR_NUMBER"
+          
+          # Set outputs for next step
+          echo "pr-url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "PR_DESCRIPTION<<EOF" >> $GITHUB_ENV
+          echo "$PR_DESCRIPTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Log sync completion
+        if: steps.sync-changes.outputs.has_changes == 'true'
+        run: |
+          PR_URL="${{ steps.create-pr.outputs.pr-url }}"
+          PR_NUMBER="${{ steps.create-pr.outputs.pr-number }}"
+          echo "✅ Sync PR created successfully: $PR_URL"
+          echo "The PR can be reviewed and merged to integrate upstream changes."
+
+      - name: Handle Failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          ISSUE_BODY="The automated upstream sync workflow failed.
+
+          ### Error Details
+          Please check the workflow logs for more information:
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ### Manual Steps Required
+          1. Review the error logs
+          2. Resolve any conflicts
+          3. Re-run the sync workflow
+
+          @${{ github.repository_owner }}"
+
+          gh issue create \
+            --title "🔄 Upstream Sync Failed $(date +%Y-%m-%d)" \
+            --body "$ISSUE_BODY" \
+            --label "sync-failed"

@@ -1,0 +1,294 @@
+name: Cascade Integration
+
+on:
+  push:
+    branches:
+      - fork_upstream      # Triggered when sync PR merges to fork_upstream
+      - fork_integration   # Triggered when integration PR merges to fork_integration
+  pull_request:
+    types: [closed]
+    branches:
+      - fork_upstream      # Triggered when PR to fork_upstream is closed
+      - fork_integration   # Triggered when PR to fork_integration is closed
+  workflow_dispatch:       # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: cascade-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # Never cancel cascade operations
+
+jobs:
+  cascade-to-integration:
+    name: "🔄 Cascade to Integration"
+    if: >
+      (github.ref == 'refs/heads/fork_upstream') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       github.event.pull_request.base.ref == 'fork_upstream' &&
+       contains(github.event.pull_request.labels.*.name, 'upstream-sync')) ||
+      (github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check Cascade State
+        id: check_state
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Check for active cascade operations
+          # Note: Assumes 'cascade-active' label exists (created during init)
+          active_cascades=$(gh pr list --label "cascade-active" --json number,title)
+          if [ "$(echo $active_cascades | jq length)" -gt 0 ]; then
+            echo "::notice::Cascade already in progress, exiting"
+            echo "active=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "active=false" >> $GITHUB_OUTPUT
+
+      - name: Update fork_integration with main
+        if: steps.check_state.outputs.active == 'false'
+        run: |
+          # Fetch all branches
+          git fetch origin --prune
+          
+          # Checkout fork_integration
+          git checkout fork_integration
+          
+          # Merge latest from main to ensure we test against current features
+          echo "Updating fork_integration with latest from main..."
+          if git merge origin/main --no-edit; then
+            echo "Successfully merged main into fork_integration"
+          else
+            echo "::warning::Conflicts detected merging main into fork_integration"
+            # Continue anyway - conflicts will be handled in the next merge
+          fi
+          
+          # Push the updated fork_integration
+          if git diff --quiet origin/fork_integration; then
+            echo "No changes to push to fork_integration"
+          else
+            git push origin fork_integration
+          fi
+
+      - name: Create integration PR
+        if: steps.check_state.outputs.active == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Create timestamped branch for the integration
+          DATE_SUFFIX=$(date +%Y%m%d-%H%M%S)
+          INTEGRATION_BRANCH="integrate/upstream-${DATE_SUFFIX}"
+          
+          # Create branch from fork_integration
+          git checkout -b $INTEGRATION_BRANCH
+          
+          # Merge fork_upstream into this branch
+          echo "Merging fork_upstream changes..."
+          CONFLICTS_FOUND=false
+          
+          if git merge origin/fork_upstream --no-edit; then
+            echo "::notice::Clean merge achieved"
+          else
+            # Check if there are conflicts
+            if git diff --check; then
+              echo "::notice::Merge completed with automatic resolution"
+            else
+              echo "::warning::Conflicts detected"
+              CONFLICTS_FOUND=true
+              # Get list of conflicted files
+              git diff --name-only --diff-filter=U > conflicted_files.txt
+            fi
+          fi
+          
+          # Push the branch
+          git push origin $INTEGRATION_BRANCH
+          
+          # Determine PR title and labels based on conflicts
+          if [ "$CONFLICTS_FOUND" = "true" ]; then
+            PR_TITLE="🚨 CONFLICTS: Integrate upstream changes to integration - $(date +%Y-%m-%d)"
+            PR_LABELS="conflict,upstream-sync,needs-resolution,cascade-blocked"
+            PR_BODY="Manual Conflict Resolution Required - This PR has conflicts that need to be resolved manually before merging. See conflicted files list in PR."
+          else
+            PR_TITLE="✅ Integrate upstream changes to integration - $(date +%Y-%m-%d)"
+            PR_LABELS="upstream-sync,cascade-active"
+            PR_BODY="Automated Integration PR - This PR integrates the latest upstream changes into the integration branch. No conflicts detected, ready for automated testing."
+          fi
+          
+          # Create the PR
+          PR_URL=$(gh pr create \
+            --base fork_integration \
+            --head $INTEGRATION_BRANCH \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --label "$PR_LABELS")
+          
+          echo "Integration PR created: $PR_URL"
+          
+          # If conflicts, record creation time for SLA tracking
+          if [ "$CONFLICTS_FOUND" = "true" ]; then
+            PR_NUMBER=$(basename $PR_URL)
+            gh pr comment $PR_NUMBER --body "Conflict detected at $(date -u +%Y-%m-%dT%H:%M:%SZ). SLA: 48 hours for resolution."
+          fi
+
+  cascade-to-main:
+    name: "🎯 Cascade to Main"
+    if: github.ref == 'refs/heads/fork_integration'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check if changes need to cascade
+        id: check_changes
+        run: |
+          # Compare fork_integration with main
+          git fetch origin main
+          CHANGES=$(git rev-list --count origin/main..fork_integration)
+          
+          if [ "$CHANGES" = "0" ]; then
+            echo "No changes to cascade from fork_integration to main"
+            echo "needs_cascade=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found $CHANGES commits to cascade to main"
+            echo "needs_cascade=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create main PR
+        if: steps.check_changes.outputs.needs_cascade == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Create timestamped branch for the main PR
+          DATE_SUFFIX=$(date +%Y%m%d-%H%M%S)
+          MAIN_BRANCH="release/upstream-${DATE_SUFFIX}"
+          
+          # Create branch from fork_integration
+          git checkout -b $MAIN_BRANCH
+          
+          # Push the branch
+          git push origin $MAIN_BRANCH
+          
+          # Get commit summary
+          COMMIT_SUMMARY=$(git log --pretty=format:"- %s" origin/main..HEAD | head -20)
+          if [ $(git rev-list --count origin/main..HEAD) -gt 20 ]; then
+            COMMIT_SUMMARY="${COMMIT_SUMMARY} ... and $(( $(git rev-list --count origin/main..HEAD) - 20 )) more commits"
+          fi
+          
+          # Calculate diff size for auto-merge eligibility
+          DIFF_LINES=$(git diff --stat origin/main..HEAD | tail -1 | awk '{print $4 + $6}' | tr -d ' ')
+          if [[ -z "$DIFF_LINES" || ! "$DIFF_LINES" =~ ^[0-9]+$ ]]; then
+            DIFF_LINES=0
+          fi
+          
+          # Check for breaking changes
+          BREAKING_CHANGES=false
+          if git log origin/main..HEAD --grep="BREAKING CHANGE" --grep="!:" | grep -q .; then
+            BREAKING_CHANGES=true
+          fi
+          
+          # Create the PR
+          PR_BODY="Production Release - Upstream Integration. This PR completes the cascade of upstream changes to the main branch. Total commits: $(git rev-list --count origin/main..HEAD), Diff size: ${DIFF_LINES} lines."
+          
+          PR_URL=$(gh pr create \
+            --base main \
+            --head $MAIN_BRANCH \
+            --title "🚀 Cascade upstream changes to main - $(date +%Y-%m-%d)" \
+            --body "$PR_BODY" \
+            --label "upstream-sync,production-ready,cascade-active")
+          
+          echo "Main PR created: $PR_URL"
+          PR_NUMBER=$(basename $PR_URL)
+          
+          # Determine auto-merge eligibility
+          if [[ "$DIFF_LINES" -lt 1000 ]] && [[ "$BREAKING_CHANGES" == "false" ]]; then
+            echo "✅ PR eligible for auto-merge (diff: $DIFF_LINES lines, no breaking changes)"
+            gh pr edit $PR_NUMBER --add-label "auto-merge-enabled"
+            
+            # Enable auto-merge after checks pass
+            gh pr merge $PR_NUMBER --auto --squash --delete-branch || echo "Auto-merge enabled, waiting for checks"
+          else
+            echo "❌ Manual review required (diff: $DIFF_LINES lines, breaking changes: $BREAKING_CHANGES)"
+            gh pr edit $PR_NUMBER --add-label "manual-review-required"
+          fi
+          
+          # Create tracking issue
+          ISSUE_BODY="This issue tracks the final cascade PR to main branch. PR: $PR_URL. Diff size: ${DIFF_LINES} lines, Breaking changes: ${BREAKING_CHANGES}. Once merged, upstream changes will be included in the next release."
+          
+          gh issue create \
+            --title "📦 Upstream Integration Complete - $(date +%Y-%m-%d)" \
+            --body "$ISSUE_BODY" \
+            --label "release-tracking"
+
+  check-stale-conflicts:
+    name: "⏰ Check Stale Conflicts"
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for stale conflict PRs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Find conflict PRs older than 48 hours
+          stale_prs=$(gh pr list \
+            --label "conflict,cascade-blocked" \
+            --json number,createdAt,title \
+            --jq '.[] | select((now - (.createdAt | fromdateiso8601)) > 172800)')
+          
+          if [ -n "$stale_prs" ]; then
+            echo "$stale_prs" | jq -r '.number' | while read pr_number; do
+              # Create escalation issue
+              gh issue create \
+                --title "🚨 ESCALATION: Cascade conflict unresolved for 48+ hours" \
+                --body "PR #$pr_number has unresolved conflicts blocking the cascade pipeline. Action Required: Please resolve conflicts immediately. SLA Status: EXCEEDED. @${{ github.repository_owner }}" \
+                --label "escalation,high-priority,cascade-escalated" \
+                --assignee "${{ github.repository_owner }}"
+              
+              # Update PR with escalation notice
+              gh pr comment $pr_number --body "⚠️ This conflict has exceeded the 48-hour SLA and has been escalated."
+              
+              # Add escalation label to PR
+              gh pr edit $pr_number --add-label "cascade-escalated"
+            done
+          else
+            echo "No stale conflict PRs found"
+          fi
+
+  cascade-failure-handler:
+    name: "🚨 Handle Cascade Failure"
+    if: failure()
+    runs-on: ubuntu-latest
+    needs: [cascade-to-integration, cascade-to-main]
+    steps:
+      - name: Create failure issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          FAILURE_DETAILS="The automated cascade workflow failed. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.ref }}. The cascade pipeline is blocked until this issue is resolved. @${{ github.repository_owner }}"
+
+          gh issue create \
+            --title "🚨 Cascade Pipeline Failure - $(date +%Y-%m-%d)" \
+            --body "$FAILURE_DETAILS" \
+            --label "cascade-failed,high-priority" \
+            --assignee "${{ github.repository_owner }}"
