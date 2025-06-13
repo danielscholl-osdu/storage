@@ -1,0 +1,61 @@
+# Default values for storage-deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  domain: ""
+  limitsEnabled: true
+  logLevel: "ERROR"
+  tier: ""
+  autoscaling: true
+
+data:
+  # configmaps
+  logLevel: ""
+  defaultDataCountry: "US"
+  storageServiceAccountEmail: "storage@service.local"
+  entitlementsHost: "http://entitlements"
+  partitionHost: "http://partition"
+  crsConverterHost: "http://crs-conversion"
+  legalHost: "http://legal"
+  opaEndpoint: "http://opa"
+  # deployments
+  requestsCpu: "150m"
+  requestsMemory: "768Mi"
+  limitsCpu: "1"
+  limitsMemory: "3G"
+  image: ""
+  imagePullPolicy: "IfNotPresent"
+  serviceAccountName: "storage"
+  # redis connection. Change it if you want to use external redis
+  redisStorageHost: ""
+  redisStoragePort: 6379
+  redisImage: "docker.io/library/redis:7.2-alpine"
+
+conf:
+  appName: "storage"
+  replicas: 3
+  storageRedisSecretName: "storage-redis-secret"
+
+istio:
+  proxyCPU: "5m"
+  proxyCPULimit: "200m"
+  proxyMemory: "50Mi"
+  proxyMemoryLimit: "256Mi"
+
+hpa:
+  minReplicas: 6
+  maxReplicas: 20
+  targetType: "AverageValue"
+  targetValue: 45
+  behaviorScaleUpStabilizationWindowSeconds: 10
+  behaviorScaleUpPoliciesValue: 50
+  behaviorScaleUpPoliciesPeriodSeconds: 15
+  behaviorScaleDownStabilizationWindowSeconds: 60
+  behaviorScaleDownPoliciesValue: 25
+  behaviorScaleDownPoliciesPeriodSeconds: 60
+
+local_ratelimit:
+  max_tokens: 30
+  tokens_per_fill: 30
+  fill_interval: "1s"

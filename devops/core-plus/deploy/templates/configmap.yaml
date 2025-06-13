@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: {{ .Values.conf.appName | quote }}
+  name: {{ printf "%s-config" .Values.conf.appName | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  CRS_CONVERTER_HOST: {{ .Values.data.crsConverterHost | quote }}
+  DEFAULT_DATA_COUNTRY: {{ .Values.data.defaultDataCountry | quote }}
+  ENTITLEMENTS_HOST: {{ .Values.data.entitlementsHost | quote }}
+  LEGAL_HOST: {{ .Values.data.legalHost | quote }}
+  LOG_LEVEL: {{ .Values.data.logLevel | quote }}
+  PARTITION_HOST: {{ .Values.data.partitionHost | quote }}
+  STORAGE_SERVICE_ACCOUNT_EMAIL: {{ .Values.data.storageServiceAccountEmail | quote }}
+  SPRING_PROFILES_ACTIVE: "antos"
+  OPA_ENABLED: {{ .Values.data.opaEnabled | quote }}
+  OPA_ENDPOINT: {{ .Values.data.opaEndpoint | quote }}
+  {{- if .Values.data.redisStorageHost }}
+  REDIS_GROUP_HOST: {{ .Values.data.redisStorageHost | quote }}
+  REDIS_STORAGE_HOST: {{ .Values.data.redisStorageHost | quote }}
+  {{- else }}
+  REDIS_GROUP_HOST: {{ printf "redis-%s" .Values.conf.appName | quote }}
+  REDIS_STORAGE_HOST: {{ printf "redis-%s" .Values.conf.appName | quote }}
+  {{- end }}
+  REDIS_STORAGE_PORT: {{ .Values.data.redisStoragePort | quote }}
+  REDIS_GROUP_PORT: {{ .Values.data.redisStoragePort | quote }}
