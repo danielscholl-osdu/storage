@@ -25,11 +25,22 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
+import static org.apache.hc.core5.http.HttpStatus.SC_GATEWAY_TIMEOUT;
+import static org.apache.hc.core5.http.HttpStatus.SC_BAD_GATEWAY;
+import static org.apache.hc.core5.http.HttpStatus.SC_TOO_MANY_REQUESTS;
 
 public final class RetryPolicy {
     public static RetryConfig httpRetryConfig(int maxAttempts, int backoffInitialIntervalInSecs, int backOffMultiplier) {
+                // List of status codes to retry on
+        List<Integer> retryStatusCodes = List.of(
+                SC_TOO_MANY_REQUESTS, // 429
+                SC_SERVICE_UNAVAILABLE, // 503
+                SC_GATEWAY_TIMEOUT, // 504
+                SC_BAD_GATEWAY // 502
+        );
         return RetryConfig.custom()
                 .maxAttempts(maxAttempts)
                 // Exponential backoff with jitter
@@ -48,7 +59,7 @@ public final class RetryPolicy {
                 .retryOnResult(response -> {
                     if (response instanceof CloseableHttpResponse httpResponse) {
                         int statusCode = httpResponse.getCode();
-                        return statusCode == 429 || statusCode == SC_SERVICE_UNAVAILABLE;
+                        return retryStatusCodes.contains(statusCode);
                     }
                     return false;
                 })

@@ -184,7 +184,6 @@ public abstract class TestUtils {
         CloseableHttpClient httpClient = HttpClientBuilder.create().setConnectionManager(cm).build();
         ClassicHttpRequest httpRequest = createHttpRequest(path, httpMethod, requestBody, headers);
 
-        RetryPolicy.logRetryEvents(retry);
         CheckedSupplier<CloseableHttpResponse> retryingHttpCall = Retry.decorateCheckedSupplier(retry, () -> httpClient.execute(httpRequest, new CustomHttpClientResponseHandler()));
 
         try {
