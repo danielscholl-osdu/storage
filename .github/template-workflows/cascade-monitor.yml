@@ -1,0 +1,207 @@
+name: Cascade Monitor
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  pull_request:
+    types: [closed]
+    branches:
+      - fork_upstream      # Monitor PRs merged into fork_upstream
+  workflow_dispatch:       # Allow manual trigger
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  trigger-cascade-on-upstream-merge:
+    name: "🔄 Trigger Cascade on Upstream Merge"
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'fork_upstream' &&
+      (contains(github.event.pull_request.labels.*.name, 'upstream-sync') ||
+       contains(github.event.pull_request.labels.*.name, 'sync'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Trigger cascade workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "🔄 PR #${{ github.event.pull_request.number }} merged into fork_upstream"
+          echo "📋 PR title: ${{ github.event.pull_request.title }}"
+          echo "🏷️ PR labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}"
+          
+          # Trigger the cascade integration workflow
+          echo "Triggering cascade integration workflow..."
+          if gh workflow run "Cascade Integration" --repo ${{ github.repository }}; then
+            echo "✅ Cascade workflow triggered successfully"
+          else
+            echo "❌ Failed to trigger cascade workflow"
+            
+            # Create failure notification issue
+            gh issue create \
+              --title "🚨 Failed to trigger cascade workflow - $(date +%Y-%m-%d)" \
+              --body "Failed to automatically trigger the cascade integration workflow after PR #${{ github.event.pull_request.number }} was merged into fork_upstream.
+              
+              **Manual Action Required:**
+              1. Go to Actions → Cascade Integration
+              2. Click 'Run workflow' manually
+              3. Monitor for completion
+              
+              **PR Details:**
+              - PR: #${{ github.event.pull_request.number }}
+              - Title: ${{ github.event.pull_request.title }}
+              - Merged at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --label "cascade-trigger-failed,human-required,high-priority"
+            
+            exit 1
+          fi
+          
+          # Create a tracking comment on the merged PR
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "🔄 **Cascade Triggered**
+            
+            This PR merge into \`fork_upstream\` has automatically triggered the cascade integration workflow.
+            
+            **Next Steps:**
+            1. Monitor the cascade workflow for completion
+            2. Review any integration conflicts if they arise  
+            3. Validate the final integration before production merge
+            
+            🔗 [View Workflow Runs](https://github.com/${{ github.repository }}/actions/workflows/cascade.yml)"
+
+  check-stale-conflicts:
+    name: "⏰ Check Stale Cascade Conflicts"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for stale conflict PRs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "Checking for cascade PRs with unresolved conflicts..."
+          
+          # Find conflict PRs older than 48 hours
+          stale_prs=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --label "conflict,cascade-blocked" \
+            --json number,createdAt,title,url \
+            --jq '.[] | select((now - (.createdAt | fromdateiso8601)) > 172800)')
+          
+          if [ -n "$stale_prs" ]; then
+            echo "Found stale conflict PRs:"
+            echo "$stale_prs" | jq .
+            
+            echo "$stale_prs" | jq -r '.number' | while read pr_number; do
+              pr_data=$(echo "$stale_prs" | jq -r --arg num "$pr_number" '.[] | select(.number == ($num | tonumber))')
+              pr_title=$(echo "$pr_data" | jq -r '.title')
+              pr_url=$(echo "$pr_data" | jq -r '.url')
+              pr_created=$(echo "$pr_data" | jq -r '.createdAt')
+              
+              # Check if already escalated
+              existing_labels=$(gh pr view $pr_number --json labels --jq '.labels[].name')
+              if echo "$existing_labels" | grep -q "cascade-escalated"; then
+                echo "PR #$pr_number already escalated, skipping"
+                continue
+              fi
+              
+              # Create escalation issue
+              issue_url=$(gh issue create \
+                --title "🚨 ESCALATION: Cascade conflict unresolved for 48+ hours (PR #$pr_number)" \
+                --body "URGENT: PR #$pr_number has unresolved conflicts blocking the cascade pipeline. PR: $pr_url. Title: $pr_title. Created: $pr_created. SLA Status: EXCEEDED (48+ hours). The cascade pipeline is blocked. Assign a developer to resolve conflicts immediately." \
+                --label "escalation,high-priority,cascade-escalated,human-required")
+              
+              echo "Created escalation issue: $issue_url"
+              
+              # Update PR with escalation notice
+              gh pr comment $pr_number --body "ESCALATION: This conflict has exceeded the 48-hour SLA and has been escalated. Escalation Issue: $issue_url. Time Since Creation: >48 hours. Action Required: Immediate conflict resolution. Please resolve conflicts as soon as possible to unblock the cascade pipeline."
+              
+              # Add escalation label to PR
+              gh pr edit $pr_number --add-label "cascade-escalated"
+              echo "Added escalation label to PR #$pr_number"
+            done
+          else
+            echo "✅ No stale conflict PRs found"
+          fi
+          
+  check-cascade-health:
+    name: "🏥 Check Cascade Health"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate cascade health report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "## Cascade Pipeline Health Report - $(date)"
+          echo
+          
+          # Check active cascades
+          active_cascades=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --label "cascade-active" \
+            --json number,title,createdAt)
+          
+          active_count=$(echo "$active_cascades" | jq length)
+          echo "### Active Cascades: $active_count"
+          if [ "$active_count" -gt 0 ]; then
+            echo "$active_cascades" | jq -r '.[] | "- PR #\(.number): \(.title) (started: \(.createdAt))"'
+          fi
+          echo
+          
+          # Check blocked cascades
+          blocked_cascades=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --label "cascade-blocked" \
+            --json number,title,createdAt)
+          
+          blocked_count=$(echo "$blocked_cascades" | jq length)
+          echo "### Blocked Cascades: $blocked_count"
+          if [ "$blocked_count" -gt 0 ]; then
+            echo "$blocked_cascades" | jq -r '.[] | "- PR #\(.number): \(.title) (blocked since: \(.createdAt))"'
+          fi
+          echo
+          
+          # Check escalated issues
+          escalated_issues=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --label "cascade-escalated" \
+            --state open \
+            --json number,title,createdAt)
+          
+          escalated_count=$(echo "$escalated_issues" | jq length)
+          echo "### Escalated Issues: $escalated_count"
+          if [ "$escalated_count" -gt 0 ]; then
+            echo "$escalated_issues" | jq -r '.[] | "- Issue #\(.number): \(.title)"'
+          fi
+          echo
+          
+          # Overall health status
+          echo "### Overall Status"
+          if [ "$blocked_count" -eq 0 ] && [ "$escalated_count" -eq 0 ]; then
+            echo "✅ **HEALTHY**: Cascade pipeline is operating normally"
+          elif [ "$escalated_count" -gt 0 ]; then
+            echo "🔴 **CRITICAL**: Cascade pipeline has escalated issues requiring immediate attention"
+          elif [ "$blocked_count" -gt 0 ]; then
+            echo "🟡 **WARNING**: Cascade pipeline has blocked PRs"
+          fi
+          
+          # Save report to step summary
+          {
+            echo "# Cascade Pipeline Health Report"
+            echo "Generated: $(date)"
+            echo
+            echo "## Summary"
+            echo "- Active Cascades: $active_count"
+            echo "- Blocked Cascades: $blocked_count"
+            echo "- Escalated Issues: $escalated_count"
+            echo
+            if [ "$blocked_count" -gt 0 ] || [ "$escalated_count" -gt 0 ]; then
+              echo "## ⚠️ Action Required"
+              echo "There are blocked or escalated items in the cascade pipeline that need attention."
+            fi
+          } >> $GITHUB_STEP_SUMMARY
