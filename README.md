@@ -1,91 +1,172 @@
-# Fork Management Template
+## Documentation
+Official documentation [https://osdu.pages.opengroup.org/platform/system/storage/](https://osdu.pages.opengroup.org/platform/system/storage/)
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![GitHub Issues](https://img.shields.io/github/issues/danielscholl-osdu/osdu-fork-template)](https://github.com/danielscholl-osdu/osdu-fork-template/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/danielscholl-osdu/osdu-fork-template/pulls)
+## Running the Storage Service locally
+The Storage Service is a Maven multi-module project with each cloud implemention placed in its submodule.
 
+## Azure
 
-#### AI-Driven Development
+Instructions for running the Azure implementation locally can be found [here](./provider/storage-azure/README.md).
 
-[![Claude Ready](https://img.shields.io/badge/Claude%20Code-Ready-orange?logo=anthropic)](https://github.com/danielscholl/pr-generator-agent/blob/main/CLAUDE.md)
-[![Copilot-Ready](https://img.shields.io/badge/Copilot%20Agent-Ready-8A2BE2?logo=github)](https://github.com/danielscholl-osdu/osdu-fork-template/blob/main/.github/copilot-instructions.md)
-[![Template CI](https://img.shields.io/badge/Template%20CI-Active-green?logo=github)](https://github.com/danielscholl-osdu/osdu-fork-template/actions)
+## Google Cloud Implementation
 
+All documentation for the Google Cloud implementation of Storage service lives [here](./provider/storage-gc/README.md)
 
-- 🤖 **Built with AI** - Developed and maintained using [Claude Code](CLAUDE.md) and [GitHub Copilot](.github/copilot-instructions.md)
-- 📋 **AI Task Assignment** - Issues assigned to `copilot` or comments to `claude` invoke agents
-- 📚 **AI-Friendly Documentation** - Comprehensive [guides](CONTRIBUTING.md) for AI agents
-- 🔄 **Automated Workflows** - GitHub Actions with AI-enhanced PR descriptions and conflict resolution
-- 🎯 **AI-First Architecture** - Designed with clear [principals](AI_PRINCIPLES.md) for AI understanding and modification
+## AWS
 
-## What is Fork Management Template?
+Instructions for running and testing this service can be found [here](./provider/storage-aws/README.md)
 
-This template automates the complex task of maintaining long-lived forks of upstream repositories. It's designed for teams who need to:
+### Open API 3.0 - Swagger
+- Swagger UI : https://host/context-path/swagger (will redirect to https://host/context-path/swagger-ui/index.html)
+- api-docs (JSON) : https://host/context-path/api-docs
+- api-docs (YAML) : https://host/context-path/api-docs.yaml
 
-<div align="center">
+All the Swagger and OpenAPI related common properties are managed here [swagger.properties](./storage-core/src/main/resources/swagger.properties)
 
-
-| Preserve Local Changes | Smart Conflict Resolution | Release Versions | AI Development |
-|:------------------------:|:---------------------------:|:------------------------:|:-----------------------:|
-| Keep custom modifications safe while syncing upstream | AI-powered detection and resolution of merge conflicts | Align fork versions with upstream releases | Patterns and docs for AI agent integration |
+_Note: For Collaboration Filter exclusion, refer 'excluded paths' section in  [docs/tutorial/CollaborationContext.md](./docs/tutorial/CollaborationContext.md#excluded-paths-a-nameexcluded-pathsa)_
 
 
-</div>
+#### Server Url(full path vs relative path) configuration
+- `api.server.fullUrl.enabled=true` It will generate full server url in the OpenAPI swagger
+- `api.server.fullUrl.enabled=false` It will generate only the contextPath only
+- default value is false (Currently only in Azure it is enabled)
+[Reference]:(https://springdoc.org/faq.html#_how_is_server_url_generated) 
 
-**Perfect for**: scenarios requiring controlled upstream synchronization with forked changes.
+### Other platforms
 
-## Core Architecture
+1. Navigate to the module of the cloud of interest, for example, ```storage-azure```. Configure ```application.properties``` and optionally ```logback-spring.xml```. Intead of changing these files in the source, you can also provide external files at run time. 
 
-The template implements a **three-branch strategy** that creates controlled integration checkpoints:
+2. Navigate to the root of the storage project, build and run unit tests in command line:
+    ```bash
+    mvn clean package
+    ```
 
-```mermaid
-graph LR
-   fork_upstream["fork_upstream<br/>(mirror)"] --> fork_integration["fork_integration<br/>(conflicts)"]
-   fork_integration --> main["main<br/>(stable)"]
+3. Install Redis
+
+    > Redis is currently not required when running BYOC
+
+    You can follow the [tutorial to install Redis locally](https://koukia.ca/installing-redis-on-windows-using-docker-containers-7737d2ebc25e) or install [docker for windows](https://docs.docker.com/docker-for-windows/install/). Make sure you are running docker with linux containers as Redis does not have a Windows image.
+
+    ```bash
+    #Pull redis image on docker
+    docker pull redis
+    #Run redis on docker
+    docker run --name some-redis -d redis
+    ```
+
+    Install windows Redis client by following the instructions [here](https://github.com/MicrosoftArchive/redis/releases). Use default port 6379.
+
+4. Set environment variables:
+    
+**AWS**: AWS service account credentials are read from the environment variables in order to 
+authenticate AWS requests. The following variables can be set as either system environment 
+variables or user environment variables. User values will take precedence if both are set.
+1. `AWS_ACCESS_KEY_ID=<YOURAWSACCESSKEYID>`
+2. `AWS_SECRET_KEY=<YOURAWSSECRETKEY>`
+
+Note that these values can be found in the IAM stack's export values in the AWS console. To 
+deploy resources to the AWS console, see the deployment section below.
+
+5. Run storage service in command line:
+    ```bash
+    # Running BYOC (Bring Your Own Cloud): 
+    java -jar storage-service-byoc\target\storage-byoc-0.0.1-SNAPSHOT-spring-boot.jar
+    
+    # Running Google Cloud:
+    java -jar  -Dspring.profiles.active=local storage-service-gc\target\storage-gc-0.0.1-SNAPSHOT-spring-boot.jar
+    
+    # Running Azure:
+    java -jar storage-service-azure\target\storage-azure-0.0.1-SNAPSHOT-spring-boot.jar
+    
+    # Running AWS:
+    java -jar provider\storage-aws\target\storage-aws-0.0.1-SNAPSHOT-spring-boot.jar
+    ```
+
+6. Access the service:
+
+    The port and path for the service endpoint can be configured in ```application.properties``` in the provider folder as following. If not specified, then  the web container (ex. Tomcat) default is used: 
+    ```bash
+    server.servlet.contextPath=/api/storage/v2/
+    server.port=8080
+    ```
+
+    > On Azure, when you access this service endpoint, you'll see a simple html page from which you can log in to Azure AD and get an Open ID Connect JWT token. You can then use this token to access the Storage Service API. The ```/whoami``` controller displays the logged in user info, and ```/swagger``` takes you to the swagger UI. 
+
+7. Build and test in IntelliJ:
+    1. Import the maven project from the root of this project. 
+    2. Create a ```JAR Application``` in ```Run/Debug Configurations``` with the ```Path to JAR``` set to the target jar file. 
+    3. To run unit tests, creat a ```JUnit``` configuration in ```Run/Debug Configurations```, specify, for example:
+
+    ```text
+    Test kind: All in a package
+    Search for tests: In whole project
+    ```
    
-   style fork_upstream fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-   style fork_integration fill:#fff3e0,stroke:#e65100,stroke-width:2px
-   style main fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-```
+## Cloud Deployment
+This section describes the deployment process for each cloud provider.
 
-This flow ensures upstream changes are validated before reaching your stable branch, with AI-enhanced conflict analysis at each stage.
+### Azure
 
-## Key Features
+Instructions for running the Azure implementation in the cloud can be found [here](https://dev.azure.com/slb-des-ext-collaboration/open-data-ecosystem/_git/infrastructure-templates?path=%2Fdocs%2Fosdu%2FSERVICE_DEPLOYMENTS.md&_a=preview).
+(This link may not be reachable for everyone, it points to Azure infrastructure templates and ensuing documentation. We are trying to find a home for that, so please stay tuned, or reach our to Dania.Kodeih@microsoft.com to get early access)
 
-| Feature                | Description                                                                                   |
-|------------------------|-----------------------------------------------------------------------------------------------|
-| Automated Daily Sync   | Pulls upstream changes with conflict detection                                                |
-| AI-Enhanced Analysis   | Intelligent PR descriptions and conflict categorization                                       |
-| Branch Protection      | Prevents accidental damage to stable branches                                                 |
-| Release Correlation    | Tracks your versions against upstream releases                                                |
-| Multi-AI Ready         | Optimized for Claude Code and GitHub Copilot collaboration                                    |
+### AWS
+This guide assumes that you already have an AWS account and have admin access to it in order to 
+configure the environment.
+1. **CodeCommit setup:** The automated deployment pipeline will require a CodeCommit repo to be 
+    set up for storage service. Push the current Storage Service codebase to this repo in the 
+    branch that you'd like to deploy from.
+    1. NOTE: After the move the GitLab, we will revisit and see if deployment straight from GitLab 
+    is possible.
+2. **Pipeline setup:** In the AWS Console, navigate the the CloudFormation service. Create a new 
+    stack, and upload the template found in 
+    `provider/storage-aws/CloudFormation/Manual/01-CreateCodePipeline.yml`. You can upload via S3 
+    or copy/paste into the Designer, it doesn't make a difference. Click "next" and upload any 
+    of the default parameter values as-needed. For example, the notification email, environment, 
+    and the CodeCommit repository and branch names are likely to change, as well as the region if 
+    you are deploying somewhere other than us-east-1.
+3. **Application deployment:** Allow the stack to finish deploying, then navigate to CodePipeline 
+    in the AWS console and locate the new pipeline you just deployed. It should be automatically 
+    be performing an initial run. Allow it to complete and validate that there weren't any errors.
+    1. The pipeline is subscribed to the CodeCommit branch you specified in the CodePipeline stack, 
+    and the pipeline will automatically be kicked off and update and changed resources automatically 
+    when code is committed to the subscribed branch.
+    2. When the deployment is complete, you can return the the CloudFormation console and locate 
+    the stack with the name starting with `<env>-os-storage-master-stack-IAMCredentialsStack`. 
+    Select it, click on the 'Outputs' tab, and you will find the AWS access key and secret you 
+    need for the environment variables (required for running integration tests against AWS 
+    resources).
+        1. `StorageServiceIamUserAccessKeyId` contains the value you need for `AWS_ACCESS_KEY_ID`
+        2. `StorageServiceIamUserSecretAccessKey` contains the value you need for `AWS_SECRET_KEY`
 
-## Prerequisites
 
-Before starting, ensure you have:
-- GitHub account with repository creation permissions
-- (Optional) Personal Access Token (PAT) for full automation:
-  - Create a secret named `GH_TOKEN` in your repository
-  - Required scopes: `repo`, `workflow`, `admin:repo_hook`
-  - Without PAT: Manual configuration of branch protection and secrets required
+## Running integration tests
+Integration tests are located in a separate project for each cloud in the ```testing``` directory under the project root directory. 
 
-## Quick Start
+### Azure
 
-### 1. Create New Repository
-1. Click the "Use this template" button above
-2. Choose a name and owner for your new repository
-3. Create repository
+Instructions for running the Azure integration tests can be found [here](./provider/storage-azure/README.md).
 
-### 2. Initialize Repository
-1. Go to Actions → Select "Initialize Fork" → Click "Run workflow"
-2. Follow the setup instructions in the auto-created issue
-3. Configure your upstream repository and sync settings
 
-## How It Works
+### Google Cloud
 
-1. **Daily Automation**: Checks upstream for changes and creates sync PRs
-2. **Conflict Analysis**: AI categorizes conflicts and suggests resolution approaches  
-3. **Staged Integration**: Changes flow through validation checkpoints
-4. **Release Tracking**: Maintains correlation between your versions and upstream
+Instructions for running the Google Cloud integration tests can be found [here](./provider/storage-gc/README.md).
 
-**See detailed architecture diagrams and workflows**: [Product Architecture](doc/product-architecture.md)
+### AWS
+
+Instructions for running the AWS integration tests can be found [here](./provider/storage-aws/README.md).
+
+## License
+Copyright 2017-2019, Schlumberger
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at 
+
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
