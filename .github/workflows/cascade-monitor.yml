@@ -3,7 +3,7 @@ name: Cascade Monitor
 on:
   schedule:
     - cron: '0 */6 * * *'  # Run every 6 hours
-  pull_request:
+  pull_request_target:
     types: [closed]
     branches:
       - fork_upstream      # Monitor PRs merged into fork_upstream
@@ -19,7 +19,7 @@ jobs:
   trigger-cascade-on-upstream-merge:
     name: "🔄 Trigger Cascade on Upstream Merge"
     if: >
-      github.event_name == 'pull_request' &&
+      github.event_name == 'pull_request_target' &&
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'fork_upstream' &&
       (contains(github.event.pull_request.labels.*.name, 'upstream-sync') ||
