@@ -23,7 +23,7 @@ env:
     DOCKER_PASSWORD: /osdu/devops/docker_credentials:password
     SONAR_USERNAME: /osdu/devops/sonar_credentials:username
     SONAR_PASSWORD: /osdu/devops/sonar_credentials:password
-  
+
   parameter-store:
     SONAR_URL: /osdu/devops/sonar_url
 
@@ -87,6 +87,13 @@ phases:
          --commitMessage "\"${COMMIT_MESSAGE}\"" --commitAuthor "\"${COMMIT_AUTHOR}\"" --commitDate "\"${COMMIT_DATE}\"" \
           --buildid ${CODEBUILD_BUILD_ID} --buildnumber ${CODEBUILD_BUILD_NUMBER} --reponame ${REPO_NAME} --outdir ${OUTPUT_DIR} \
           --artifact ${ECR_IMAGE}
+
+  post_build:
+    commands:
+      - mkdir -p ${OUTPUT_DIR}/acceptance-tests
+      - cp -r storage-acceptance-test/* ${OUTPUT_DIR}/acceptance-tests
+      - cp testing/storage-test-aws/build-aws/run-acceptance-tests.sh ${OUTPUT_DIR}/acceptance-tests
+
 reports:
   SurefireReports: # CodeBuild will create a report group called "SurefireReports".
     files: #Store all of the files
