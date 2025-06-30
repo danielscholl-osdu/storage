@@ -66,11 +66,6 @@
       "color": "b60205"
     },
     {
-      "name": "auto-merge-enabled",
-      "description": "PR will auto-merge when checks pass",
-      "color": "0e8a16"
-    },
-    {
       "name": "manual-review-required",
       "description": "Requires human review before merge",
       "color": "fbca04"

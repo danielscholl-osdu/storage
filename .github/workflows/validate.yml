@@ -3,8 +3,40 @@ name: Validation
 on:
   pull_request:
     branches: [main, fork_integration, fork_upstream]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/template-workflows/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/actions/**'
+      - '.github/*.md'
+      - '.github/*.json'
+      - '.github/*.yml'
+      - '.github/*.yaml'
+      - '.github/.template-sync-commit'
+      - '.vscode/**'
+      - 'docs/**'
+      - '**.md'
+      - '**.txt'
+      - 'LICENSE'
+      - 'NOTICE'
   push:
     branches: [main, fork_integration, fork_upstream]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.github/template-workflows/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/actions/**'
+      - '.github/*.md'
+      - '.github/*.json'
+      - '.github/*.yml'
+      - '.github/*.yaml'
+      - '.github/.template-sync-commit'
+      - '.vscode/**'
+      - 'docs/**'
+      - '**.md'
+      - '**.txt'
+      - 'LICENSE'
+      - 'NOTICE'
   workflow_dispatch:
     inputs:
       post_init:

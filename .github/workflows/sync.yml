@@ -253,29 +253,60 @@ jobs:
           # Get commit count for the notification
           COMMIT_COUNT=$(git rev-list --count fork_upstream..${{ env.SYNC_BRANCH }})
           
-          NOTIFICATION_BODY="## 📥 Upstream Sync Ready for Review
-          
-          New upstream changes are available and ready for review.
-          
-          **Sync Details:**
-          - **PR:** $PR_URL  
-          - **Upstream Version:** $UPSTREAM_VERSION
-          - **Commits:** $COMMIT_COUNT new commits from upstream
-          - **Branch:** \`${{ env.SYNC_BRANCH }}\` → \`fork_upstream\`
-          
-          **Next Steps:**
-          1. 🔍 **Review the sync PR** for any breaking changes or conflicts
-          2. ✅ **Merge the PR** when satisfied with the changes  
-          3. 🚀 **Automatic cascade** will begin once merged to integrate changes
-          
-          **Timeline:**
-          - Sync detected: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          - Action required: Human review and approval"
-          
-          gh issue create \
+          # Create issue first to get the issue number
+          ISSUE_URL=$(gh issue create \
             --title "📥 Upstream Sync Ready for Review - $(date +%Y-%m-%d)" \
-            --body "$NOTIFICATION_BODY" \
-            --label "upstream-sync,human-required"
+            --body "Creating sync tracking issue..." \
+            --label "upstream-sync,human-required")
+          
+          # Extract issue number
+          ISSUE_NUMBER=$(basename "$ISSUE_URL")
+          
+          # Build notification body with the actual issue number
+          printf -v NOTIFICATION_BODY '%s\n\n%s\n\n%s\n\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n%s\n\n%s\n\n%s\n%s\n\n%s\n\n%s\n%s\n%s\n\n%s\n\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n%s\n%s' \
+            "📥 **Upstream Sync Ready for Review**" \
+            "This issue tracks the integration of upstream changes into your fork." \
+            "---" \
+            "**What You Need to Do Now**" \
+            "1. Review & merge the sync PR: [$PR_URL]($PR_URL)" \
+            "2. After merging, [run the Cascade Integration workflow](../../actions/workflows/cascade.yml):" \
+            "   - In the \`issue_number\` field, enter: \`$ISSUE_NUMBER\`" \
+            "   - Click **Run workflow**" \
+            "> **Note**: If not triggered manually, the automated monitor will start the cascade process within 6 hours." \
+            "---" \
+            "**Sync Summary**" \
+            "- **Upstream Version**: \`$UPSTREAM_VERSION\`" \
+            "- **Changes**: $COMMIT_COUNT new commits from upstream" \
+            "- **Branch**: \`${{ env.SYNC_BRANCH }}\` → \`fork_upstream\`" \
+            "---" \
+            "**Complete Integration Process**" \
+            "### Phase 1: Review & Merge (**Current**)" \
+            "1. Review the sync PR for breaking changes or merge conflicts" \
+            "2. Merge the PR when approved" \
+            "### Phase 2: Cascade Integration" \
+            "3. Trigger the Cascade Integration workflow" \
+            "4. Monitor progress – updates will appear as comments below" \
+            "### Phase 3: Final Integration to Main" \
+            "5. Review cascade results posted by the workflow" \
+            "6. Approve final integration if tests pass and no conflicts exist" \
+            "7. Done – changes merged to \`main\`" \
+            "---" \
+            "**Progress Tracking**" \
+            "**Status Updates**" \
+            "This issue will be updated with:" \
+            "- ✅ Successful completions" \
+            "- ⚠️ Conflicts requiring manual resolution" \
+            "- 📝 Cascade results and next steps" \
+            "**Label Tracking**" \
+            "Monitor PR/issue labels for current status:" \
+            "\`upstream-sync\` → \`cascade-active\` → \`cascade-ready\` → \`production-ready\`" \
+            "---" \
+            "**Timeline**" \
+            "- **Sync detected**: \`$(date -u +%Y-%m-%dT%H:%M:%SZ)\`" \
+            "- **Current status**: Awaiting PR review and merge"
+          
+          # Update the issue with the complete description
+          gh issue edit "$ISSUE_NUMBER" --body "$NOTIFICATION_BODY"
 
       - name: Log sync completion
         if: steps.sync-changes.outputs.has_changes == 'true'
