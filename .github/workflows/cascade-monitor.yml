@@ -16,65 +16,61 @@ permissions:
   actions: write
 
 jobs:
-  trigger-cascade-on-upstream-merge:
-    name: "🔄 Trigger Cascade on Upstream Merge"
-    if: >
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'fork_upstream' &&
-      (contains(github.event.pull_request.labels.*.name, 'upstream-sync') ||
-       contains(github.event.pull_request.labels.*.name, 'sync'))
+  detect-missed-cascade:
+    name: "🛡️ Safety Net - Detect Missed Cascade"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Trigger cascade workflow
+        with:
+          fetch-depth: 0
+          
+      - name: Check for missed cascade triggers
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🔄 PR #${{ github.event.pull_request.number }} merged into fork_upstream"
-          echo "📋 PR title: ${{ github.event.pull_request.title }}"
-          echo "🏷️ PR labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}"
+          git fetch origin --prune
           
-          # Trigger the cascade integration workflow
-          echo "Triggering cascade integration workflow..."
-          if gh workflow run "Cascade Integration" --repo ${{ github.repository }}; then
-            echo "✅ Cascade workflow triggered successfully"
+          # Check if fork_upstream has commits that fork_integration doesn't
+          UPSTREAM_COMMITS=$(git rev-list --count origin/fork_integration..origin/fork_upstream 2>/dev/null || echo "0")
+          
+          echo "Found $UPSTREAM_COMMITS commits in fork_upstream ahead of fork_integration"
+          
+          if [ "$UPSTREAM_COMMITS" -gt 0 ]; then
+            # Find the tracking issue (try different label combinations)
+            ISSUE_NUMBER=$(gh issue list \
+              --label "upstream-sync" \
+              --state open \
+              --limit 1 \
+              --json number \
+              --jq '.[0].number // empty')
+            
+            if [ -n "$ISSUE_NUMBER" ]; then
+              echo "Found missed cascade trigger for issue #$ISSUE_NUMBER - auto-initiating"
+              
+              # Comment on issue about auto-trigger
+              gh issue comment "$ISSUE_NUMBER" --body $'🤖 **Auto-Cascade Initiated** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nSafety net detected that upstream PR was merged but cascade integration was not triggered manually.\n\n**Auto-Action:** Initiating cascade integration automatically as safety net\n**Found:** '"$UPSTREAM_COMMITS"$' commits in `fork_upstream` awaiting integration\n**Workflow:** [Monitor Progress]('"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"$')'
+              
+              # Trigger cascade
+              echo "Triggering cascade integration workflow..."
+              if gh workflow run "Cascade Integration" --repo ${{ github.repository }} -f issue_number="$ISSUE_NUMBER"; then
+                echo "✅ Safety net cascade triggered successfully"
+              else
+                echo "❌ Failed to trigger cascade workflow"
+                gh issue comment "$ISSUE_NUMBER" --body $'❌ **Auto-trigger Failed** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nSafety net detected pending upstream changes but failed to automatically trigger cascade integration.\n\n**Manual Action Required:** Please trigger \'Cascade Integration\' workflow manually'
+                exit 1
+              fi
+            else
+              echo "Found pending upstream changes but no tracking issue - may need manual investigation"
+              echo "Upstream commits pending: $UPSTREAM_COMMITS"
+              
+              # Log recent commits for visibility
+              echo "Recent commits in fork_upstream:"
+              git log --oneline origin/fork_integration..origin/fork_upstream
+            fi
           else
-            echo "❌ Failed to trigger cascade workflow"
-            
-            # Create failure notification issue
-            gh issue create \
-              --title "🚨 Failed to trigger cascade workflow - $(date +%Y-%m-%d)" \
-              --body "Failed to automatically trigger the cascade integration workflow after PR #${{ github.event.pull_request.number }} was merged into fork_upstream.
-              
-              **Manual Action Required:**
-              1. Go to Actions → Cascade Integration
-              2. Click 'Run workflow' manually
-              3. Monitor for completion
-              
-              **PR Details:**
-              - PR: #${{ github.event.pull_request.number }}
-              - Title: ${{ github.event.pull_request.title }}
-              - Merged at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              --label "cascade-trigger-failed,human-required,high-priority"
-            
-            exit 1
+            echo "✅ No pending upstream changes detected"
           fi
-          
-          # Create a tracking comment on the merged PR
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --body "🔄 **Cascade Triggered**
-            
-            This PR merge into \`fork_upstream\` has automatically triggered the cascade integration workflow.
-            
-            **Next Steps:**
-            1. Monitor the cascade workflow for completion
-            2. Review any integration conflicts if they arise  
-            3. Validate the final integration before production merge
-            
-            🔗 [View Workflow Runs](https://github.com/${{ github.repository }}/actions/workflows/cascade.yml)"
 
   check-stale-conflicts:
     name: "⏰ Check Stale Cascade Conflicts"
@@ -82,7 +78,7 @@ jobs:
     steps:
       - name: Check for stale conflict PRs
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Checking for cascade PRs with unresolved conflicts..."
           
@@ -135,7 +131,7 @@ jobs:
     steps:
       - name: Generate cascade health report
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "## Cascade Pipeline Health Report - $(date)"
           echo
@@ -205,3 +201,60 @@ jobs:
               echo "There are blocked or escalated items in the cascade pipeline that need attention."
             fi
           } >> $GITHUB_STEP_SUMMARY
+
+  detect-recovery-ready:
+    name: "🔄 Automatic Recovery - Detect Ready Retries"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Check for recovery-ready issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for issues ready for automatic cascade retry..."
+          
+          # Find issues with cascade-failed but NOT human-required (human resolved)
+          RECOVERY_ISSUES=$(gh issue list \
+            --label "cascade-failed" \
+            --state open \
+            --json number,labels,title,url \
+            --jq '.[] | select(.labels | map(.name) | contains(["cascade-failed"]) and (contains(["human-required"]) | not))')
+          
+          if [ -z "$RECOVERY_ISSUES" ]; then
+            echo "No recovery-ready issues found"
+            exit 0
+          fi
+          
+          echo "Found recovery-ready issues:"
+          echo "$RECOVERY_ISSUES" | jq .
+          
+          # Process each recovery-ready issue
+          echo "$RECOVERY_ISSUES" | jq -r '.number' | while read ISSUE_NUMBER; do
+            echo "Processing recovery for issue #$ISSUE_NUMBER"
+            
+            # Update issue labels: remove cascade-failed, add cascade-active
+            gh issue edit "$ISSUE_NUMBER" \
+              --remove-label "cascade-failed" \
+              --add-label "cascade-active"
+            
+            # Add comment about retry
+            gh issue comment "$ISSUE_NUMBER" --body $'🔄 **Automatic Recovery Initiated** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nThe monitoring system detected that the failure has been resolved (human-required label removed).\n\n**Auto-Action:** Initiating cascade integration retry automatically\n**Monitor Run:** ['"${{ github.run_id }}"$']('"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"$')\n\nThe cascade integration will be retried. If it fails again, a new failure issue will be created.'
+            
+            # Trigger cascade retry
+            echo "Triggering cascade integration retry for issue #$ISSUE_NUMBER"
+            if gh workflow run "Cascade Integration" --repo ${{ github.repository }} -f issue_number="$ISSUE_NUMBER"; then
+              echo "✅ Cascade retry triggered successfully for issue #$ISSUE_NUMBER"
+            else
+              echo "❌ Failed to trigger cascade retry for issue #$ISSUE_NUMBER"
+              # Revert labels on failure to trigger
+              gh issue edit "$ISSUE_NUMBER" \
+                --remove-label "cascade-active" \
+                --add-label "cascade-failed,human-required"
+              
+              gh issue comment "$ISSUE_NUMBER" --body $'❌ **Automatic Recovery Failed** - '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\nThe monitoring system failed to trigger the cascade integration retry.\n\n**Manual Action Required:** Please manually trigger the Cascade Integration workflow or contact system administrators.\n\n**Workflow Trigger Error:** Unable to start cascade workflow via API'
+            fi
+          done
