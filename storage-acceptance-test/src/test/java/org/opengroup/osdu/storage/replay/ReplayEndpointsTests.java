@@ -48,6 +48,7 @@ import org.opengroup.osdu.storage.util.TestUtils;
 import org.opengroup.osdu.storage.util.TokenTestUtils;
 
 public final class ReplayEndpointsTests extends TestBase {
+
     private static String LEGAL_TAG_NAME = LegalTagUtils.createRandomName();
 
     private static final String INVALID_KIND = TenantUtils.getTenantName() + ":ds:1.0."
@@ -142,6 +143,16 @@ public final class ReplayEndpointsTests extends TestBase {
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
         assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
         assertEquals("Not a valid operation. The valid operations are: [reindex, replay]", actualErrorMessage);
+    }
+
+    @Test
+    public void should_return_400_when_request_contains_unknown_properties() throws Exception {
+        String requestBody = ReplayUtils.createJsonWithUnknownProperty();
+        CloseableHttpResponse response = TestUtils.send("replay", "POST",
+            HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
+        String message = ReplayUtils.getFieldFromResponse(response, "message");
+        assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
+        assertEquals("Invalid replay request payload.", message);
     }
 
     @Test
