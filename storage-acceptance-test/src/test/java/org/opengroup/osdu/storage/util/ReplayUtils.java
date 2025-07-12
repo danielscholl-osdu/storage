@@ -75,6 +75,13 @@ public class ReplayUtils {
         return requestBody.toString();
     }
 
+    public static String createJsonWithUnknownProperty(){
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("operation", "reindex");
+        requestBody.add("notValidFilter", new JsonArray());
+        return requestBody.toString();
+    }
+
     public static String getFieldFromResponse(CloseableHttpResponse response, String field) throws IOException, ParseException {
 
         return JsonParser.parseString(EntityUtils.toString(response.getEntity()))

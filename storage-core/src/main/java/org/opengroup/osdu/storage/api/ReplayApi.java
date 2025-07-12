@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.api;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,6 +33,7 @@ import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.opengroup.osdu.storage.response.ReplayStatusResponse;
 import org.opengroup.osdu.storage.response.ReplayResponse;
 import org.opengroup.osdu.storage.service.replay.ReplayService;
+import org.opengroup.osdu.storage.util.GlobalExceptionMapper;
 import org.opengroup.osdu.storage.util.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,6 +61,9 @@ public class ReplayApi {
 
     @Autowired
     private CollaborationContextFactory collaborationContextFactory;
+
+    @Autowired
+    private GlobalExceptionMapper globalExceptionMapper;
 
     @Operation(summary = "${replayApi.getReplayStatus.summary}", description = "${replayApi.getReplayStatus.description}",
             security = {@SecurityRequirement(name = "Authorization")}, tags = {"replay"})
@@ -105,5 +110,16 @@ public class ReplayApi {
         replayRequest.setReplayId(UUID.randomUUID().toString());
         ReplayResponse response = replayService.handleReplayRequest(replayRequest);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+    }
+
+    @ExceptionHandler(JsonMappingException.class)
+    public ResponseEntity<?> handleJsonMapping(JsonMappingException exception) {
+        return globalExceptionMapper.getErrorResponse(
+            new AppException(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad request.",
+                "Invalid replay request payload.",
+                exception
+            ));
     }
 }

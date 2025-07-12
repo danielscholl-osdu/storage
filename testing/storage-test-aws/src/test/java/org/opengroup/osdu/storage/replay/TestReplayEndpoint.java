@@ -22,8 +22,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opengroup.osdu.storage.Replay.ReplayEndpointsTests;
-import org.opengroup.osdu.storage.model.ReplayStatusResponseHelper;
+import org.opengroup.osdu.storage.model.AwsReplayStatusResponseHelper;
 import org.opengroup.osdu.storage.util.*;
+import org.opengroup.osdu.storage.util.AwsReplayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -95,7 +96,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             CloseableHttpResponse statusResponse = TestUtils.send("replay/status/", "GET", 
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 "", replayId);
-            ReplayStatusResponseHelper statusHelper = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
+            AwsReplayStatusResponseHelper statusHelper = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
             
             // Verify operation completed successfully
             assertEquals("reindex", statusHelper.getOperation());
@@ -217,7 +218,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             CloseableHttpResponse statusResponse = TestUtils.send("replay/status/", "GET", 
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 "", replayId);
-            ReplayStatusResponseHelper statusHelper = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
+            AwsReplayStatusResponseHelper statusHelper = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
             
             // Verify operation completed successfully
             assertEquals("reindex", statusHelper.getOperation());
@@ -287,14 +288,14 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
         try {
             // Test reindex operation
             String reindexRequestBody = ReplayUtils.createJsonWithKind("reindex", kindList);
-            ReplayStatusResponseHelper reindexResponse = performReplayWithTimeout(reindexRequestBody);
+            AwsReplayStatusResponseHelper reindexResponse = performReplayWithTimeout(reindexRequestBody);
             assertEquals("reindex", reindexResponse.getOperation());
             assertEquals(kind, reindexResponse.getStatus().get(0).getKind());
             assertEquals("COMPLETED", reindexResponse.getOverallState());
 
             // Test replay operation
             String replayRequestBody = ReplayUtils.createJsonWithKind("replay", kindList);
-            ReplayStatusResponseHelper replayResponse = performReplayWithTimeout(replayRequestBody);
+            AwsReplayStatusResponseHelper replayResponse = performReplayWithTimeout(replayRequestBody);
             assertEquals("replay", replayResponse.getOperation());
             assertEquals(kind, replayResponse.getStatus().get(0).getKind());
             assertEquals("COMPLETED", replayResponse.getOverallState());
@@ -353,13 +354,13 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             CloseableHttpResponse statusResponse1 = TestUtils.send("replay/status/", "GET", 
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 "", replayId1);
-            ReplayStatusResponseHelper status1 = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse1);
+            AwsReplayStatusResponseHelper status1 = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse1);
             assertEquals("COMPLETED", status1.getOverallState());
             
             CloseableHttpResponse statusResponse2 = TestUtils.send("replay/status/", "GET", 
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 "", replayId2);
-            ReplayStatusResponseHelper status2 = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse2);
+            AwsReplayStatusResponseHelper status2 = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse2);
             assertEquals("COMPLETED", status2.getOverallState());
         } finally {
             // Clean up
@@ -401,7 +402,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             CloseableHttpResponse statusResponse = TestUtils.send("replay/status/", "GET", 
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 "", replayId);
-            ReplayStatusResponseHelper statusHelper = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
+            AwsReplayStatusResponseHelper statusHelper = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
             
             // Verify operation attribute is correctly included
             assertEquals("reindex", statusHelper.getOperation());
@@ -453,7 +454,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             
             // Verify status response is correct
             assertEquals(200, statusResponse.getCode());
-            ReplayStatusResponseHelper statusHelper = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
+            AwsReplayStatusResponseHelper statusHelper = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
             assertEquals("COMPLETED", statusHelper.getOverallState());
         } finally {
             // Clean up
@@ -473,7 +474,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             CloseableHttpResponse statusResponse = TestUtils.send("replay/status/", "GET", 
                 HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
                 "", replayId);
-            ReplayStatusResponseHelper statusHelper = ReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
+            AwsReplayStatusResponseHelper statusHelper = AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(statusResponse);
             System.out.println(statusHelper.getOverallState());
             
             if ("COMPLETED".equals(statusHelper.getOverallState()) || "FAILED".equals(statusHelper.getOverallState())) {
@@ -491,7 +492,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
     /**
      * A version of performReplay with a timeout to prevent test hangs
      */
-    protected ReplayStatusResponseHelper performReplayWithTimeout(String requestBody) throws Exception {
+    protected AwsReplayStatusResponseHelper performReplayWithTimeout(String requestBody) throws Exception {
         CloseableHttpResponse response = TestUtils.send("replay", "POST", 
             HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
             requestBody, "");
@@ -513,7 +514,7 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
             "", replayId);
 
         
-        return ReplayUtils.getConvertedReplayStatusResponseFromResponse(response);
+        return AwsReplayUtils.getConvertedReplayStatusResponseFromResponse(response);
     }
     
     /**
