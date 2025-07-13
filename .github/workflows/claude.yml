@@ -19,9 +19,9 @@ jobs:
       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write
+      pull-requests: write
+      issues: write
       id-token: write
     steps:
       - name: Checkout repository
@@ -29,8 +29,56 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Java and Maven
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'zulu'
+          cache: 'maven'
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.9.6
+
+      - name: Install UV and Trivy for MCP server
+        run: |
+          # Install UV for Python MCP server
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+          # Install Trivy for vulnerability scanning
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
       - name: Run Claude PR Action
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           timeout_minutes: "60"
+          allowed_tools: "Bash,Task,mcp__mvn-mcp-server__check_version_tool,mcp__mvn-mcp-server__check_version_batch_tool,mcp__mvn-mcp-server__list_available_versions_tool,mcp__mvn-mcp-server__scan_java_project_tool,mcp__mvn-mcp-server__analyze_pom_file_tool"
+          mcp_config: |
+            {
+              "mcpServers": {
+                "mvn-mcp-server": {
+                  "type": "stdio",
+                  "command": "uvx",
+                  "args": [
+                    "--from",
+                    "git+https://github.com/danielscholl-osdu/mvn-mcp-server@main",
+                    "mvn-mcp-server"
+                  ],
+                  "env": {},
+                  "tools": ["*"]
+                }
+              }
+            }

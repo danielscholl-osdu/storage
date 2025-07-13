@@ -1,0 +1,49 @@
+# Default values for storage-deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  domain: ""
+  limitsEnabled: true
+
+# This flag enables configuration specific to ROSA environments.
+rosa: false 
+
+data:
+  # configmaps
+  logLevel: "ERROR"
+  defaultDataCountry: "US"
+  storageServiceAccountEmail: "storage@service.local"
+  entitlementsHost: "http://entitlements"
+  partitionHost: "http://partition"
+  crsConverterHost: "http://crs-conversion"
+  legalHost: "http://legal"
+  opaEnabled: false
+  opaEndpoint: "http://opa"
+  # deployments
+  requestsCpu: "7m"
+  requestsMemory: "450Mi"
+  limitsCpu: "1"
+  limitsMemory: "3G"
+  image: ""
+  imagePullPolicy: "IfNotPresent"
+  serviceAccountName: "storage"
+  # redis connection. Change it if you want to use external redis
+  redisStorageHost: ""
+  redisStoragePort: 6379
+  redisImage: "docker.io/library/redis:7"
+
+conf:
+  appName: "storage"
+  keycloakSecretName: "storage-keycloak-secret"
+  minioSecretName: "storage-minio-secret"
+  postgresSecretName: "storage-postgres-secret"
+  rabbitmqSecretName: "rabbitmq-secret"
+  replicas: 3
+  storageRedisSecretName: "storage-redis-secret"
+
+istio:
+  proxyCPU: "5m"
+  proxyCPULimit: "200m"
+  proxyMemory: "50Mi"
+  proxyMemoryLimit: "256Mi"
