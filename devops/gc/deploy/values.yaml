@@ -61,7 +61,7 @@ hpa:
     scaleDownPeriod: 15
   requests:
     targetType: "AverageValue"
-    targetValue: 40
+    targetValue: 45
     scaleUpStabilizationWindowSeconds: 10
     scaleUpValue: 50
     scaleUpPeriod: 15
