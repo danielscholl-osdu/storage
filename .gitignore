@@ -1,0 +1,3 @@
+.aider*
+!.vscode
+.claude/settings.local.json

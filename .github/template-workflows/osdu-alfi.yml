@@ -1,0 +1,180 @@
+name: Alfi
+
+on:
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
+
+jobs:
+  osdu:
+    # Optional: Filter by PR author
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@alfi')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@alfi')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@alfi') || contains(github.event.issue.title, '@alfi')))
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+    
+    env:
+      GITLAB_UPSTREAM_URL: ${{ vars.UPSTREAM_REPO_URL }}
+      GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+      GITLAB_CLI_VERSION: ${{ vars.GITLAB_CLI_VERSION || '1.36.0' }}
+      CLAUDE_OAUTH_TOKEN: ""
+      CLAUDE_API_KEY: ""
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Set Claude authentication variables
+        id: claude_auth
+        run: |
+          if [ -n "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
+            echo "CLAUDE_OAUTH_TOKEN=${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" >> $GITHUB_ENV
+            echo "CLAUDE_API_KEY=" >> $GITHUB_ENV
+            echo "auth_method=oauth" >> $GITHUB_OUTPUT
+            echo "Using OAuth token for authentication"
+          elif [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "CLAUDE_OAUTH_TOKEN=" >> $GITHUB_ENV
+            echo "CLAUDE_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> $GITHUB_ENV
+            echo "auth_method=api_key" >> $GITHUB_OUTPUT
+            echo "Using API key for authentication"
+          else
+            echo "CLAUDE_OAUTH_TOKEN=" >> $GITHUB_ENV
+            echo "CLAUDE_API_KEY=" >> $GITHUB_ENV
+            echo "auth_method=none" >> $GITHUB_OUTPUT
+            echo "::error::No Claude authentication available. Please configure either CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY secrets."
+            exit 1
+          fi
+
+      - name: Validate GitLab configuration
+        if: contains(github.event.pull_request.labels.*.name, 'OSDU')
+        run: |
+          if [ -z "${{ vars.GITLAB_UPSTREAM_URL }}" ]; then
+            echo "::error::GITLAB_UPSTREAM_URL variable is not configured. Please set it in repository settings."
+            echo "This variable should contain the URL of your upstream GitLab repository (e.g., https://gitlab.com/group/project.git)"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITLAB_TOKEN }}" ]; then
+            echo "::error::GITLAB_TOKEN secret is not configured. Please set it in repository secrets."
+            echo "This secret should contain a GitLab personal access token with appropriate permissions."
+            exit 1
+          fi
+          
+          echo "GitLab configuration validated:"
+          echo "- GITLAB_UPSTREAM_URL: ${{ vars.GITLAB_UPSTREAM_URL }}"
+          echo "- GITLAB_TOKEN: configured"
+
+
+      - name: Create GitLab MR
+        if: steps.claude_auth.outputs.auth_method != 'none'
+        id: claude_gitlab
+        timeout-minutes: 10
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ env.CLAUDE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ env.CLAUDE_API_KEY }}
+          
+          # GitLab MCP server configuration
+          mcp_config: |
+            {
+              "mcpServers": {
+                "gitlab": {
+                  "command": "npx",
+                  "args": ["-y", "@zereight/mcp-gitlab"],
+                  "env": {
+                    "GITLAB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITLAB_TOKEN }}",
+                    "GITLAB_API_URL": "https://community.opengroup.org/api/v4",
+                    "GITLAB_READ_ONLY_MODE": "false",
+                    "USE_GITLAB_WIKI": "false",
+                    "USE_MILESTONE": "false",
+                    "USE_PIPELINE": "false"
+                  }
+                }
+              }
+            }
+          
+          # Allow GitLab MCP tools for merge request creation
+          allowed_tools: |
+            mcp__gitlab__create_merge_request
+            mcp__gitlab__create_or_update_file
+            mcp__gitlab__get_file_contents
+            mcp__gitlab__create_branch
+            mcp__gitlab__get_project
+            mcp__gitlab__push_files
+            mcp__gitlab__create_note
+            mcp__gitlab__create_merge_request_note
+            Edit
+            Read
+            Bash
+            Task
+
+          additional_permissions: |
+            actions: read
+          
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
+          
+          # Optional: Customize the trigger phrase (default: @claude)
+          trigger_phrase: "@alfi"
+          
+          # Direct prompt for GitLab MR creation
+          direct_prompt: |
+            You have access to GitLab MCP server tools for creating merge requests.
+            
+            GITLAB REPOSITORY: ${{ env.GITLAB_UPSTREAM_URL }}
+            
+            TASK: Create a GitLab merge request that mirrors this GitHub PR
+            
+            AVAILABLE GITLAB MCP TOOLS:
+            - mcp__gitlab__get_project (get project details)
+            - mcp__gitlab__create_branch (create new branch)
+            - mcp__gitlab__get_file_contents (read files)
+            - mcp__gitlab__create_or_update_file (update files)
+            - mcp__gitlab__push_files (push changes)
+            - mcp__gitlab__create_merge_request (create MR)
+            - mcp__gitlab__create_merge_request_note (add MR comments)
+            
+            INSTRUCTIONS:
+            1. Get the GitLab project details using mcp__gitlab__get_project
+            2. Create a new branch with name prefixed `ai-agent-` using mcp__gitlab__create_branch
+            3. Read the changed files from this GitHub PR and push them to GitLab using mcp__gitlab__create_or_update_file
+            4. Create a GitLab MR using mcp__gitlab__create_merge_request with:
+               - Same title as GitHub PR
+               - Same description (adapted for GitLab format)
+               - Label: `MR::Dependencies Upgrade`
+            5. Comment on this GitHub PR with the GitLab MR URL
+            
+            Use only the GitLab MCP server tools listed above for all GitLab operations.
+            Do not log any authentication tokens or sensitive information.
+
+          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          # use_sticky_comment: true
+
