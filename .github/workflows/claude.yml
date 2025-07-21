@@ -11,23 +11,22 @@ on:
     types: [submitted]
 
 jobs:
-  claude:
+  claude-code-action:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
-    
     env:
       CLAUDE_OAUTH_TOKEN: ""
       CLAUDE_API_KEY: ""
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,35 +54,58 @@ jobs:
             exit 1
           fi
 
-      - name: Run Claude Code
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Java and Maven
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'zulu'
+          cache: 'maven'
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.9.6
+
+      - name: Install UV and Trivy for MCP server
+        run: |
+          # Install UV for Python MCP server
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+          # Install Trivy for vulnerability scanning
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      - name: Run Claude PR Action
         if: steps.claude_auth.outputs.auth_method != 'none'
-        id: claude
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ env.CLAUDE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ env.CLAUDE_API_KEY }}
-
-          # This is an optional setting that allows Claude to read CI results on PRs
-          additional_permissions: |
-            actions: read
-          
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
-          
-          # Optional: Customize the trigger phrase (default: @claude)
-          
-          # Optional: Trigger when specific user is assigned to an issue
-          assignee_trigger: "claude"
-          
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
-          
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
-          
-          # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
+          timeout_minutes: "60"
+          allowed_tools: "Bash,Task,mcp__mvn-mcp-server__check_version_tool,mcp__mvn-mcp-server__check_version_batch_tool,mcp__mvn-mcp-server__list_available_versions_tool,mcp__mvn-mcp-server__scan_java_project_tool,mcp__mvn-mcp-server__analyze_pom_file_tool"
+          mcp_config: |
+            {
+              "mcpServers": {
+                "mvn-mcp-server": {
+                  "type": "stdio",
+                  "command": "uvx",
+                  "args": [
+                    "--from",
+                    "git+https://github.com/danielscholl-osdu/mvn-mcp-server@main",
+                    "mvn-mcp-server"
+                  ],
+                  "env": {},
+                  "tools": ["*"]
+                }
+              }
+            }
