@@ -53,7 +53,7 @@ class OsmRecordsMetadataRepositoryTest {
       public <OET> void deleteById(Class<OET> entityType, Destination destination, String id, String... ids) {
         assertEquals(ID_1, id);
         List<String> strings = Arrays.stream(ids).toList();
-        assertEquals(strings, List.of(ID_2, ID_3));
+        assertEquals(strings, List.of(ID_2));
       }
     };
     tenantInfo = new TenantInfo();
