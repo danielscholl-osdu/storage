@@ -17,3 +17,17 @@ cimpl-test:
 cimpl-acceptance-test:
   variables:
     OPA_INTEGRATION_ENABLED: "false"
+
+#dev2 jobs
+
+cimpl-dev2-deploy:
+  variables:
+    CIMPL_SERVICE: "storage"
+
+cimpl-dev2-acceptance-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "false"
+
+cimpl-dev2-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "false"
