@@ -164,7 +164,7 @@ jobs:
             
             INSTRUCTIONS:
             1. Get the GitLab project details using mcp__gitlab__get_project
-            2. Create a new branch with name prefixed `ai-agent-` using mcp__gitlab__create_branch
+            2. Create a new branch with name prefixed `ai-agent/` using mcp__gitlab__create_branch
             3. Read the changed files from this GitHub PR and push them to GitLab using mcp__gitlab__create_or_update_file
             4. Create a GitLab MR using mcp__gitlab__create_merge_request with:
                - Same title as GitHub PR
