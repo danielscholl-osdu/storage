@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.1](https://github.com/danielscholl-osdu/storage/compare/v1.0.0...v1.0.1) (2025-08-06)
+
+
+### 🐛 Bug Fixes
+
+* Correct test expectation in OsmRecordsMetadataRepositoryTest ([6c9f1d3](https://github.com/danielscholl-osdu/storage/commit/6c9f1d3231475eba761e3b95acd1bfbf70a8fd66))
+* Correct test expectation in OsmRecordsMetadataRepositoryTest ([dcc0825](https://github.com/danielscholl-osdu/storage/commit/dcc0825a5086411bb5c4f78bf6305f2735e11867))
+
+
+### 🔧 Miscellaneous
+
+* Clean up duplicate URLs in NOTICE file and fix test assertion ([0b86e70](https://github.com/danielscholl-osdu/storage/commit/0b86e70c8d2a0ad0c7673829fab420a3ee85ea36))
+* Sync template updates ([6e61808](https://github.com/danielscholl-osdu/storage/commit/6e61808e518d18447feeaf92ffe5bff9320ca123))
+
 ## 1.0.0 (2025-07-21)
 
 
