@@ -63,4 +63,17 @@ public abstract class GetQueryKindsIntegrationTests extends TestBase {
 			assertEquals(2, responseObject.results.length);
 		}
 	}
+
+	@Test
+	public void should_returnBadRequest_when_dataPartitionIDIsMissing() throws Exception {
+		CloseableHttpResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeadersWithoutDataPartitionId(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2");
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
+	}
+
+	@Test
+	public void should_returnNotFoundOrUnauthorized_when_dataPartitionIDIsInvalid() throws Exception {
+		String invalidTestDataPartitionId = "test-data-partition";
+		CloseableHttpResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(invalidTestDataPartitionId, testUtils.getToken()), "", "?limit=2");
+		assertTrue(response.getCode() == HttpStatus.SC_UNAUTHORIZED || response.getCode() == HttpStatus.SC_NOT_FOUND);
+	}
 }
