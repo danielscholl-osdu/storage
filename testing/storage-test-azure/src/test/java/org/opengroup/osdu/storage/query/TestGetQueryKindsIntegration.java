@@ -14,10 +14,20 @@
 
 package org.opengroup.osdu.storage.query;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.opengroup.osdu.storage.util.AzureTestUtils;
 import org.opengroup.osdu.storage.util.ConfigUtils;
+import org.opengroup.osdu.storage.util.HeaderUtils;
+import org.opengroup.osdu.storage.util.TenantUtils;
+import org.opengroup.osdu.storage.util.TestUtils;
 
 public class TestGetQueryKindsIntegration extends GetQueryKindsIntegrationTests {
 
@@ -33,5 +43,22 @@ public class TestGetQueryKindsIntegration extends GetQueryKindsIntegrationTests 
     public void tearDown() throws Exception {
         this.testUtils = null;
         this.configUtils = null;
+	}
+
+	@Test
+	@Override
+	public void should_returnBadRequest_when_dataPartitionIDIsMissing() throws Exception {
+		CloseableHttpResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeadersWithoutDataPartitionId(TenantUtils.getTenantName(), testUtils.getToken()), "", "?limit=2");
+		assertTrue(EntityUtils.toString(response.getEntity()).contains("data-partition-id header is missing"));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
+	}
+
+	@Test
+	@Override
+	public void should_returnNotFoundOrUnauthorized_when_dataPartitionIDIsInvalid() throws Exception {
+		String invalidTestDataPartitionId = "test-data-partition";
+		CloseableHttpResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(invalidTestDataPartitionId, testUtils.getToken()), "", "?limit=2");
+		assertTrue(EntityUtils.toString(response.getEntity()).contains(String.format("%s partition not found", invalidTestDataPartitionId)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
 	}
 }
