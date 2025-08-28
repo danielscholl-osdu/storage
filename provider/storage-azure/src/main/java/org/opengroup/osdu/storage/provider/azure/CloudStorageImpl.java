@@ -337,6 +337,14 @@ public class CloudStorageImpl implements ICloudStorage {
             String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
             map.put(key, content);
         } catch (AppException e) {
+            if (e.getError() != null && e.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
+                try{
+                    String content = handleNotFoundAndRetryRead(dataPartitionId, path, containerName);
+                    map.put(key, content);
+                } catch (AppException ex) {
+                    // Eat any exceptions to continue with other records.
+                    logger.error("Unknown error occurred while handling 404s.", ex);
+                }
             }
         }
     
