@@ -32,8 +32,10 @@ import java.util.List;
 
 public abstract class PubsubEndpointTest extends TestBase {
 	protected static final long NOW = System.currentTimeMillis();
+	protected static int MAX_RETRY_COUNT = 2;
+	protected static int MAX_BACKOFF_MS = 30000;
 	protected static final long FIVE_SECOND_LATER = NOW + 5000L;
-	protected static final String LEGAL_TAG_1 = LegalTagUtils.createRandomName();
+	protected static final String LEGAL_TAG_1 = LegalTagUtils.createRandomName() + "pubsub";
 	protected static final String LEGAL_TAG_2 = LEGAL_TAG_1 + "random2";
 
 	protected static final String KIND = TenantUtils.getTenantName() + ":test:endtoend:1.1." + NOW;
@@ -78,7 +80,7 @@ public abstract class PubsubEndpointTest extends TestBase {
 				HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
 		System.out.println(" getEntity"  + EntityUtils.toString(responseEndpoint.getEntity()));
 		Assert.assertEquals(HttpStatus.SC_OK, responseEndpoint.getCode());
-		System.out.println("ok");
+		System.out.println("Status of Legal tag " + LEGAL_TAG_1 + " is marked as incompliant and will be invalidated in the in-memory cache.");
 		CloseableHttpResponse responseRecordQuery = TestUtils.send("records/" + RECORD_ID, "GET", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "",
 				"");
 		Assert.assertEquals(HttpStatus.SC_NOT_FOUND, responseRecordQuery.getCode());
@@ -91,7 +93,16 @@ public abstract class PubsubEndpointTest extends TestBase {
 		String recordIdTemp2 = TenantUtils.getTenantName() + ":endtoend:1.1." + later;
 		String recordTemp2 = RecordUtil.createDefaultJsonRecord(recordIdTemp2, kindTemp, LEGAL_TAG_2);
 
+		int retryCount = 0;
+		int waitInMS = 1000;
 		CloseableHttpResponse responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
+
+		while (retryCount < MAX_RETRY_COUNT && responseInvalid.getCode() != HttpStatus.SC_BAD_REQUEST) {
+			retryCount++;
+			Thread.sleep(waitInMS);
+			waitInMS = Math.min(waitInMS * 2, MAX_BACKOFF_MS);
+			responseInvalid = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp1, "");
+		}
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, responseInvalid.getCode());
 		Assert.assertEquals("Invalid legal tags", this.getResponseReasonFromRecordIngestResponse(responseInvalid));
 		CloseableHttpResponse responseValid3 = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), recordTemp2, "");
