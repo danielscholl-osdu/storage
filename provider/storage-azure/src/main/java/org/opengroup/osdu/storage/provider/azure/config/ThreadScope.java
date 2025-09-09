@@ -19,7 +19,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.Scope;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -34,8 +33,6 @@ import java.util.stream.Collectors;
  * Thread scope which allows putting data in thread scope and clearing up afterwards.
  */
 public class ThreadScope implements Scope, DisposableBean {
-    @Autowired
-    HttpServletRequest request;
     /**
      * Get bean for the given name in the "ThreadScope"
      * This is called for creating beans of DpsHeaders and ThreadDpsHeaders type in "ThreadScope"
@@ -62,9 +59,11 @@ public class ThreadScope implements Scope, DisposableBean {
         ThreadScopeContext context = ThreadScopeContextHolder.getContext();
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         Map<String, String> contextMap = MDC.getCopyOfContextMap();
-        if (null != requestAttributes && contextMap.size() == 0) {
+        
+        if (null != requestAttributes && contextMap != null && contextMap.size() == 0) {
             context.clear();
         }
+        
         Object result = context.getBean(name);
         if (null == result && null != requestAttributes) {
             DpsHeaders headers = new DpsHeaders();

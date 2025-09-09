@@ -14,28 +14,28 @@
 
 package org.opengroup.osdu.storage.provider.azure.pubsub;
 
-import com.microsoft.azure.servicebus.SubscriptionClient;
-import com.microsoft.azure.servicebus.primitives.ServiceBusException;
-import org.opengroup.osdu.azure.servicebus.ISubscriptionClientFactory;
-import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
+import com.microsoft.azure.servicebus.IMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-@Component
 @ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
-public class LegalTagSubscriptionClientFactory {
+@Component
+public class LegalTagMessageHandler {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagSubscriptionClientFactory.class);
-    @Autowired
-    AzureBootstrapConfig azureBootstrapConfig;
-    @Autowired
-    private ISubscriptionClientFactory subscriptionClientFactory;
+    private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagMessageHandler.class);
 
-    public SubscriptionClient getSubscriptionClient(String dataPartition, String serviceBusTopic, String serviceBusTopicSubscription) throws ServiceBusException, InterruptedException {
-            return subscriptionClientFactory.getClient(dataPartition, serviceBusTopic, serviceBusTopicSubscription);
+    @Autowired
+    private LegalComplianceChangeUpdate legalComplianceChangeUpdate;
+
+    public void handle(IMessage message) throws Exception {
+        LOGGER.info("Processing LegalTag message with delivery count: {}", message.getDeliveryCount());
+        legalComplianceChangeUpdate.updateCompliance(message);
+    }
+
+    public void handleFailure(IMessage message) {
+        LOGGER.error("Processing failure for LegalTag message");
     }
 }

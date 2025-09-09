@@ -64,6 +64,41 @@ az keyvault secret show --vault-name $KEY_VAULT_NAME --name $KEY_VAULT_SECRET_NA
 | `BULK_EXECUTOR_MAX_RUS` | `4000` | Maximum RU Consumption for bulk uploads in each storage service pod. NOTE: This is an attempted maximum and it may exceed this number. | no | Recommended to set to 4000, but can be changed for specific use cases. NOTE: If not set, this will default to 4000.|
 | `DOCUMENT_CLIENT_MAX_POOL_SIZE` | See description | Connection pool size for bulk upload http client. Recommended to not set and allow for default value which is calculated based on the number of available processors. | no | Recommended to not set manually, but can be changed for specific use cases. NOTE: If not set, this will default to 100 * number of available processors.|
 
+**Optional variables to tune service performance**
+
+| name | value | description | sensitive? | source |
+| ---  | ---   | ---         | ---        | ---    |
+| `async.executor.threadPool.coreSize` | `3` | Core thread pool size for async task executor | no | application.properties |
+| `async.executor.threadPool.maxSize` | `6` | Maximum thread pool size for async task executor | no | application.properties |
+| `async.executor.threadPool.queueCapacity` | `100` | Queue capacity for async task executor | no | application.properties |
+| `async.executor.threadPool.threadNamePrefix` | `Primary-Async-` | Thread name prefix for async task executor | no | application.properties |
+| `async.executor.threadPool.waitForTasksToCompleteOnShutdown` | `true` | Wait for async tasks to complete on shutdown | no | application.properties |
+| `async.executor.threadPool.awaitTerminationSeconds` | `60` | Await termination timeout in seconds for async executor | no | application.properties |
+| `subscription.scheduler.refreshInterval` | `300000` | Global subscription scheduler refresh interval in milliseconds (5 minutes) | no | application.properties |
+| `subscription.scheduler.initialDelay` | `300000` | Global subscription scheduler initial delay in milliseconds (5 minutes) | no | application.properties |
+| `subscription.scheduler.base.threadPool.coreSize` | `1` | Base subscription scheduler thread pool core size | no | application.properties |
+| `subscription.scheduler.base.threadPool.maxSize` | `2` | Base subscription scheduler thread pool maximum size | no | application.properties |
+| `subscription.scheduler.base.threadPool.queueCapacity` | `10` | Base subscription scheduler thread pool queue capacity | no | application.properties |
+| `subscription.scheduler.base.threadPool.awaitTerminationSeconds` | `30` | Base subscription scheduler await termination timeout | no | application.properties |
+| `legalTag.scheduler.threadPool.coreSize` | `1` | Legal tag scheduler thread pool core size | no | application.properties |
+| `legalTag.scheduler.threadPool.maxSize` | `2` | Legal tag scheduler thread pool maximum size | no | application.properties |
+| `legalTag.scheduler.threadPool.queueCapacity` | `10` | Legal tag scheduler thread pool queue capacity | no | application.properties |
+| `legalTag.scheduler.threadPool.awaitTerminationSeconds` | `30` | Legal tag scheduler await termination timeout | no | application.properties |
+| `legalTag.scheduler.threadPool.keepAliveSeconds` | `60` | Legal tag scheduler thread keep alive time | no | application.properties |
+| `legalTag.scheduler.threadPool.allowCoreThreadTimeout` | `true` | Allow core threads to timeout in legal tag scheduler | no | application.properties |
+| `replay.scheduler.threadPool.coreSize` | `1` | Replay scheduler thread pool core size | no | application.properties |
+| `replay.scheduler.threadPool.maxSize` | `2` | Replay scheduler thread pool maximum size | no | application.properties |
+| `replay.scheduler.threadPool.queueCapacity` | `10` | Replay scheduler thread pool queue capacity | no | application.properties |
+| `replay.scheduler.threadPool.awaitTerminationSeconds` | `30` | Replay scheduler await termination timeout | no | application.properties |
+| `replay.scheduler.threadPool.keepAliveSeconds` | `60` | Replay scheduler thread keep alive time | no | application.properties |
+| `replay.scheduler.threadPool.allowCoreThreadTimeout` | `true` | Allow core threads to timeout in replay scheduler | no | application.properties |
+| `azure.replay.servicebus.topic-name` | `replaytopic` | Service Bus topic name for replay messages | no | application.properties |
+| `azure.replay.servicebus.topic-subscription` | `replaytopicsubscription` | Service Bus subscription name for replay messages | no | application.properties |
+| `subscription.manager.cleanup.awaitTerminationSeconds` | `10` | Subscription manager cleanup await termination timeout | no | application.properties |
+| `subscription.manager.messageHandler.maxConcurrentCalls` | `1` | Maximum concurrent calls for subscription message handlers | no | application.properties |
+| `subscription.manager.messageHandler.autoComplete` | `false` | Auto complete messages in subscription handlers | no | application.properties |
+| `subscription.manager.messageHandler.maxAutoRenewDurationMinutes` | `5` | Maximum auto renew duration for message locks in minutes | no | application.properties |
+
 **Run the service in intellij**
 
 Add VM option `-Dspring.profiles.active=local` in the Edit Configurations Section to activate `application-local.properties` that will avoid unnecessary changes to 

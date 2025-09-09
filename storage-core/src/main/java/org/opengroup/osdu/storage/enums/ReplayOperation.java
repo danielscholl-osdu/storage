@@ -23,10 +23,8 @@ import java.util.stream.Collectors;
 @Getter
 public enum ReplayOperation {
 
-    REINDEX("reindex"),
-
-    REPLAY("replay");
-
+    REINDEX("reindex");
+    
     private final String operation;
 
     ReplayOperation(String operation) {
