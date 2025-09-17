@@ -45,4 +45,3 @@ public class LegalTagSubscriberSetUp implements ApplicationListener<ContextRefre
           legalTagSubscriptionManager.subscribeLegalTagsChangeEvent();
     }
 }
-

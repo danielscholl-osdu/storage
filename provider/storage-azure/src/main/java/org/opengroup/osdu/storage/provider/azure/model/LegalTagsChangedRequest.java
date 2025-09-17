@@ -14,6 +14,8 @@
 package org.opengroup.osdu.storage.provider.azure.model;
 
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,9 +25,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LegalTagsChangedRequest {
-    private String id;
-    private String eventType;
-    private String subject;
-    private JsonObject data;
-    private String eventTime;
+    private Message message;
+
+    @Data
+    @AllArgsConstructor
+    public static class Message {
+        private JsonObject data;
+
+        @SerializedName("data-partition-id")
+        private String dataPartitionId;
+
+        @SerializedName("user")
+        private String user;
+
+        @SerializedName("correlation-id")
+        private String correlationId;
+    }
 }
