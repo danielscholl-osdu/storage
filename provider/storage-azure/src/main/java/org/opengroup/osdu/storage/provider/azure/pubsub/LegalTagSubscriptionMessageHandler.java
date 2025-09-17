@@ -44,10 +44,9 @@ public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
             this.legalComplianceChangeUpdate.updateCompliance(message);
             return this.receiveClient.completeAsync(message.getLockToken());
         } catch (ComplianceUpdateStoppedException e) {
-            LOGGER.error("Exception while processing legal tag subscription.", e);
+            LOGGER.error("Compliance update stopped while processing legal tag subscription due to ", e);
             return this.receiveClient.abandonAsync(message.getLockToken());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOGGER.error("Exception while processing legal tag subscription.", e);
             return this.receiveClient.abandonAsync(message.getLockToken());
         }
