@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.opengroup.osdu.core.common.model.info.VersionInfo;
 
 import java.io.IOException;
 
@@ -23,15 +24,5 @@ public class VersionInfoUtils {
     }
     Gson gson = new Gson();
     return gson.fromJson(json, VersionInfo.class);
-  }
-
-  public class VersionInfo {
-    public String groupId;
-    public String artifactId;
-    public String version;
-    public String buildTime;
-    public String branch;
-    public String commitId;
-    public String commitMessage;
   }
 }

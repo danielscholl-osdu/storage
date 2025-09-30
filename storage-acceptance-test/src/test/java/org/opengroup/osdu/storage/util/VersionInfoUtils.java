@@ -19,6 +19,8 @@ package org.opengroup.osdu.storage.util;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.opengroup.osdu.core.common.model.info.VersionInfo;
+
 import com.google.gson.Gson;
 import java.io.IOException;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -39,15 +41,5 @@ public class VersionInfoUtils {
     }
     Gson gson = new Gson();
     return gson.fromJson(json, VersionInfo.class);
-  }
-
-  public class VersionInfo {
-    public String groupId;
-    public String artifactId;
-    public String version;
-    public String buildTime;
-    public String branch;
-    public String commitId;
-    public String commitMessage;
   }
 }

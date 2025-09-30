@@ -33,11 +33,12 @@ Or tokens can be used directly from env variables:
 
 Feature testing is controlled with the following environment variables:
 
-| name                      | value             | description                                                               |
-|---------------------------|-------------------|---------------------------------------------------------------------------|
-| `TEST_REPLAY_ENABLED`     | `true` OR `false` | Controls Replay API tests.                                                |
-| `COLLABORATION_ENABLED`   | `true` OR `false` | Controls collaboration feature tests.                                     |
-| `OPA_INTEGRATION_ENABLED` | `true` OR `false` | Used to adjust assertions if integration with OPA\Policy enabled\disabled |
+| name                         | value             | description                                                                    |
+|------------------------------|-------------------|--------------------------------------------------------------------------------|
+| `TEST_REPLAY_ENABLED`        | `true` OR `false` | Controls Replay API tests.                                                     |
+| `COLLABORATION_ENABLED`      | `true` OR `false` | Controls collaboration feature tests.                                          |
+| `OPA_INTEGRATION_ENABLED`    | `true` OR `false` | Used to adjust assertions if integration with OPA\Policy enabled\disabled      |
+| `EXPOSE_FEATUREFLAG_ENABLED` | `true` OR `false` | Feature flag exposure in /info endpoint. Default to true when missing. Must match the actual value used by the storage service. It cannot be changed dynamically at testing time.               |
 
 
 
