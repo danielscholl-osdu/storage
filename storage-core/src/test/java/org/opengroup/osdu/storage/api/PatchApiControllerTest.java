@@ -30,7 +30,6 @@ import org.opengroup.osdu.storage.response.PatchRecordsResponse;
 import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.ResultActions;
@@ -51,7 +50,6 @@ import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(controllers = PatchApi.class)
-@ComponentScan("org.opengroup.osdu")
 public class PatchApiControllerTest extends ApiTest<PatchRecordsRequestModel> {
 
     private final ObjectMapper mapper = new ObjectMapper();

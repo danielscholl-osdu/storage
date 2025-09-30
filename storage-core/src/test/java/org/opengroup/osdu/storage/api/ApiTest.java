@@ -26,6 +26,7 @@ import org.opengroup.osdu.core.common.model.entitlements.EntitlementsException;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.multitenancy.ITenantInfoService;
 import org.opengroup.osdu.storage.conversion.CrsConversionService;
 import org.opengroup.osdu.storage.logging.ReadAuditLogsConsumer;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
@@ -97,6 +98,9 @@ public abstract class ApiTest<T> {
 
     @MockBean
     protected IFeatureFlag collaborationFeatureFlag;
+
+    @MockBean
+    protected ITenantInfoService tenantInfoService;
 
     @MockBean
     protected DpsHeaders dpsHeaders;

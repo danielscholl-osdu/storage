@@ -10,16 +10,6 @@ public class TestGetQueryInfoIntegration extends GetQueryInfoIntegrationTest {
 
   private static final AzureTestUtils azureTestUtils = new AzureTestUtils();
 
-  @BeforeClass
-  public static void classSetup() throws Exception {
-    PostQueryRecordsIntegrationTests.classSetup(azureTestUtils.getToken());
-  }
-
-  @AfterClass
-  public static void classTearDown() throws Exception {
-    PostQueryRecordsIntegrationTests.classTearDown(azureTestUtils.getToken());
-  }
-
   @Before
   @Override
   public void setup() throws Exception {

@@ -17,8 +17,13 @@
 
 package org.opengroup.osdu.storage.query;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
@@ -33,12 +38,22 @@ import org.opengroup.osdu.storage.util.TestBase;
 import org.opengroup.osdu.storage.util.TestUtils;
 import org.opengroup.osdu.storage.util.TokenTestUtils;
 import org.opengroup.osdu.storage.util.VersionInfoUtils;
-
+import org.opengroup.osdu.core.common.model.info.VersionInfo;
+import org.opengroup.osdu.core.common.model.info.FeatureFlagStateResolver.FeatureFlagState;
 
 public final class GetQueryInfoIntegrationTest extends TestBase {
 
+  // Feature flag property constant - matches the value used in service configuration
+  private static final String EXPOSE_FEATUREFLAG_ENABLED_PROPERTY = "expose_featureflag.enabled";
+
   private static final VersionInfoUtils VERSION_INFO_UTILS = new VersionInfoUtils();
   private static final TokenTestUtils TOKEN_TEST_UTILS = new TokenTestUtils();
+  
+  // Expected feature flags for storage service
+  private static final String[] expectedFeatureFlags = {
+      "collaborations-enabled",
+      "featureFlag.opa.enabled"
+  };
 
   @BeforeAll
   public static void classSetup() throws Exception {
@@ -69,14 +84,38 @@ public final class GetQueryInfoIntegrationTest extends TestBase {
             testUtils.getToken()), "", "");
     assertEquals(HttpStatus.SC_OK, response.getCode());
 
-    VersionInfoUtils.VersionInfo responseObject = VERSION_INFO_UTILS.getVersionInfoFromResponse(response);
+    VersionInfo responseObject = VERSION_INFO_UTILS.getVersionInfoFromResponse(response);
 
-    assertNotNull(responseObject.groupId);
-    assertNotNull(responseObject.artifactId);
-    assertNotNull(responseObject.version);
-    assertNotNull(responseObject.buildTime);
-    assertNotNull(responseObject.branch);
-    assertNotNull(responseObject.commitId);
-    assertNotNull(responseObject.commitMessage);
+    assertNotNull(responseObject.getGroupId());
+    assertNotNull(responseObject.getArtifactId());
+    assertNotNull(responseObject.getVersion());
+    assertNotNull(responseObject.getBuildTime());
+    assertNotNull(responseObject.getBranch());
+    assertNotNull(responseObject.getCommitId());
+    assertNotNull(responseObject.getCommitMessage());
+
+    List<FeatureFlagState> featureFlagStates = responseObject.getFeatureFlagStates();
+    
+    // Read the actual configuration property value to validate behavior alignment
+    // Check system property first, then fall back to environment variable
+    String featureFlagExposeEnabledProperty = System.getProperty(EXPOSE_FEATUREFLAG_ENABLED_PROPERTY);
+    if (featureFlagExposeEnabledProperty == null) {
+        featureFlagExposeEnabledProperty = System.getenv("EXPOSE_FEATUREFLAG_ENABLED");
+    }
+    boolean isFeatureFlagExposureEnabled = featureFlagExposeEnabledProperty == null || !"false".equalsIgnoreCase(featureFlagExposeEnabledProperty);
+    
+    if (!isFeatureFlagExposureEnabled)
+    {
+      assertNull(featureFlagStates);
+    }
+    else
+    {
+      assertNotNull(featureFlagStates);
+      assertFalse(featureFlagStates.isEmpty());
+
+      for (String ffName : expectedFeatureFlags){
+        assertTrue(featureFlagStates.stream().anyMatch(ffState -> ffState.getName().equals(ffName)));
+      }
+    }
   }
 }
