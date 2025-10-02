@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # GitHub Actions - Template Repository
+  # This template repository uses GitHub Actions for CI/CD automation
+  # Monitor all actions for security updates and version improvements
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 5
