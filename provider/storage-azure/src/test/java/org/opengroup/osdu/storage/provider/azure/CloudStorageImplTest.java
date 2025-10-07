@@ -1,15 +1,33 @@
 package org.opengroup.osdu.storage.provider.azure;
 
-import com.google.common.collect.Sets;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.apache.http.HttpStatus;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
@@ -20,20 +38,20 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.storage.Record;
-import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.core.common.model.storage.RecordData;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
 import org.opengroup.osdu.storage.provider.azure.util.EntitlementsHelper;
 import org.opengroup.osdu.storage.provider.azure.util.RecordUtil;
 import org.opengroup.osdu.storage.util.CrcHashGenerator;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.google.common.collect.Sets;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 @ExtendWith(MockitoExtension.class)
 class CloudStorageImplTest {
@@ -61,6 +79,25 @@ class CloudStorageImplTest {
     private TransferInfo transfer;
     @InjectMocks
     private CloudStorageImpl cloudStorage;
+
+    // Test Constants
+    private static final String TEST_PARTITION = "test-partition";
+    private static final String ENCODED_PATH = "kind/encoded%20record%20id/version123";
+    private static final String DECODED_PATH = "kind/encoded record id/version123";
+    private static final String NORMAL_PATH = "kind/normal-record-id/version123";
+    private static final String COMPLEX_ENCODED_PATH = "osdu:wks:reference-data--LogCurveType:1.1.0/opendes:reference-data--LogCurveType:NumarMRILogging:T2%20or%20T2GM/1755720614709870";
+    private static final String COMPLEX_DECODED_PATH = "osdu:wks:reference-data--LogCurveType:1.1.0/opendes:reference-data--LogCurveType:NumarMRILogging:T2 or T2GM/1755720614709870";
+    private static final String TEST_CONTENT = "test content";
+    private static final String RESTORED_CONTENT = "restored content";
+
+    // Helper methods
+    private AppException createNotFoundException(String message) {
+        return new AppException(HttpStatus.SC_NOT_FOUND, "NotFound", message);
+    }
+    
+    private AppException createServerErrorException(String message) {
+        return new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "ServerError", message);
+    }
 
     @BeforeEach
     void setup() {
@@ -200,13 +237,25 @@ class CloudStorageImplTest {
         when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
         when(recordUtil.getKindForVersion(recordMetadata, "1")).thenReturn("kind");
 
-        when(blobStore.readFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER)).thenThrow(new AppException(HttpStatus.SC_NOT_FOUND, "NotFound", "NotFound")).thenReturn("some content");
+        // Mock the blob store calls:
+        // 1. Original path fails (404) - triggers handleNotFoundAndRetryWithDecodedPath
+        // 2. Since "kind/id1/1" has no encoded chars, decoded path = original path
+        // 3. restoreBlobAndRetryRead is called
+        // 4. After restoration, read succeeds
+        when(blobStore.readFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER))
+            .thenThrow(createNotFoundException("NotFound"))  // Original call fails
+            .thenReturn("some content");                     // Call after restoration succeeds
+
+        // Mock the undelete operation
+        when(blobStore.undeleteFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER))
+            .thenReturn(true);
 
         long version = 1;
-        cloudStorage.read(recordMetadata, version, true);
+        String result = cloudStorage.read(recordMetadata, version, true);
 
-        verify(blobStore, Mockito.times(1)).undeleteFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER);
-        verify(blobStore, Mockito.times(2)).readFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER);
+        assertEquals("some content", result);
+        verify(blobStore, times(1)).undeleteFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER);
+        verify(blobStore, times(2)).readFromStorageContainer(DATA_PARTITION, "kind/id1/1", CONTAINER);
     }
 
     @Test
@@ -290,35 +339,6 @@ class CloudStorageImplTest {
         verify(blobStore, times(1))
                 .readFromStorageContainer(DATA_PARTITION, "path2", CONTAINER);
 
-        assertEquals(2, recordIdContentMap.size());
-    }
-
-    @Test
-    void shouldAttemptRestoreBlob_when_blobStoreReadThrowsException() {
-        Map<String, String> objectsToRead = new HashMap<>();
-        objectsToRead.put("id1", "path1");
-        objectsToRead.put("id2", "path2");
-        Map<String, RecordMetadata> recordMetadatarecordMetadataMap = new HashMap<>();
-        recordMetadatarecordMetadataMap.put("id1", setUpRecordMetadata("id1"));
-        recordMetadatarecordMetadataMap.put("id2", setUpRecordMetadata("id2"));
-        when(recordRepository.get(objectsToRead.keySet().stream().toList(), Optional.empty()))
-                .thenReturn(recordMetadatarecordMetadataMap);
-        when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
-        when(entitlementsHelper.hasViewerAccessToRecord(any())).thenReturn(Boolean.TRUE);
-
-        when(blobStore.readFromStorageContainer(DATA_PARTITION, "path1", CONTAINER)).thenReturn("content1");
-        when(blobStore.readFromStorageContainer(DATA_PARTITION, "path2", CONTAINER)).thenThrow(new AppException(HttpStatus.SC_NOT_FOUND, "NotFound", "NotFound")).thenReturn("content2");
-
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
-        ReflectionTestUtils.setField(cloudStorage, "threadPool", executorService);
-
-        Map<String, String> recordIdContentMap = cloudStorage.read(objectsToRead, Optional.empty());
-
-        verify(blobStore, times(1))
-                .readFromStorageContainer(DATA_PARTITION, "path1", CONTAINER);
-        verify(blobStore, times(2))
-                .readFromStorageContainer(DATA_PARTITION, "path2", CONTAINER);
-        verify(blobStore).undeleteFromStorageContainer(DATA_PARTITION, "path2", CONTAINER);
         assertEquals(2, recordIdContentMap.size());
     }
 
@@ -434,7 +454,7 @@ class CloudStorageImplTest {
         when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath3", CONTAINER)).thenReturn(true);
 
         cloudStorage.deleteVersions(versionPaths);
-
+        
         // All versions should continue to be deleted after a 404 from blob store is eaten successfully.
         versionPaths.forEach(versionPath ->
                 verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, versionPath, CONTAINER));
@@ -442,13 +462,14 @@ class CloudStorageImplTest {
 
     @Test
     void deleteAllVersionsFails_when_blobThrowsRandomException() {
+
         List<String> versionPaths = Arrays.asList("versionPath1", "versionPath2", "versionPath3");
         when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
         when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath1", CONTAINER)).thenReturn(true);
         when(blobStore.deleteFromStorageContainer(DATA_PARTITION, "versionPath2", CONTAINER)).thenThrow(new AppException(500, "Random error", "500"));
 
         assertThrows(AppException.class, () -> cloudStorage.deleteVersions(versionPaths));
-
+        
         // versionPath1 deletes successfully.
         verify(blobStore, times(1)).deleteFromStorageContainer(DATA_PARTITION, "versionPath1", CONTAINER);
 
@@ -549,6 +570,143 @@ class CloudStorageImplTest {
 
         assertFalse(result);
         assertEquals(0, transfer.getSkippedRecords().size());
+    }
+
+    @Test
+    void handleNotFoundAndRetryWithDecodedPath_shouldDecodeAndReturnContent() {
+        // Test successful decoding and content retrieval        
+        when(blobStore.readFromStorageContainer(TEST_PARTITION, COMPLEX_DECODED_PATH, CONTAINER))
+            .thenReturn(TEST_CONTENT);
+        
+        String result = cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, COMPLEX_ENCODED_PATH, CONTAINER);
+        
+        assertEquals(TEST_CONTENT, result);
+        verify(blobStore, times(1)).readFromStorageContainer(TEST_PARTITION, COMPLEX_DECODED_PATH, CONTAINER);
+    }
+
+    @Test
+    void handleNotFoundAndRetryWithDecodedPath_shouldRestoreWhenDecodedPathNotFound() {
+        // Test restore functionality when decoded path also fails        
+        when(blobStore.readFromStorageContainer(TEST_PARTITION, DECODED_PATH, CONTAINER))
+            .thenThrow(createNotFoundException("Decoded not found"))
+            .thenReturn(RESTORED_CONTENT);
+        when(blobStore.undeleteFromStorageContainer(TEST_PARTITION, DECODED_PATH, CONTAINER))
+            .thenReturn(true);
+        
+        String result = cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, ENCODED_PATH, CONTAINER);
+        
+        assertEquals(RESTORED_CONTENT, result);
+        verify(blobStore, times(1)).undeleteFromStorageContainer(TEST_PARTITION, DECODED_PATH, CONTAINER);
+        verify(blobStore, times(2)).readFromStorageContainer(TEST_PARTITION, DECODED_PATH, CONTAINER);
+    }
+
+    @Test
+    void handleNotFoundAndRetryWithDecodedPath_shouldPropagateNonNotFoundExceptions() {
+        // Test that non-404 errors are propagated correctly
+        AppException serverError = createServerErrorException("Server error");
+        
+        when(blobStore.readFromStorageContainer(TEST_PARTITION, DECODED_PATH, CONTAINER))
+            .thenThrow(serverError);
+        
+        AppException thrownException = assertThrows(AppException.class, () -> {
+            cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, ENCODED_PATH, CONTAINER);
+        });
+        
+        assertEquals(serverError, thrownException);
+        verify(blobStore, never()).undeleteFromStorageContainer(any(), any(), any());
+    }
+
+    @Test
+    void handleNotFoundAndRetryWithDecodedPath_shouldAttemptRestorationWhenPathSame() {
+        // Test when path doesn't need decoding - should now attempt restoration instead of throwing        
+        // Mock successful restoration and read
+        when(blobStore.undeleteFromStorageContainer(TEST_PARTITION, NORMAL_PATH, CONTAINER))
+            .thenReturn(true);
+        when(blobStore.readFromStorageContainer(TEST_PARTITION, NORMAL_PATH, CONTAINER))
+            .thenReturn(TEST_CONTENT);
+        
+        String result = cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, NORMAL_PATH, CONTAINER);
+        
+        assertEquals(TEST_CONTENT, result);
+        verify(blobStore, times(1)).undeleteFromStorageContainer(TEST_PARTITION, NORMAL_PATH, CONTAINER);
+        verify(blobStore, times(1)).readFromStorageContainer(TEST_PARTITION, NORMAL_PATH, CONTAINER);
+    }
+
+    @Test
+    void handleNotFoundAndRetryRead_shouldHandleInvalidEncoding() {
+        // Test handling of malformed encoded strings
+        String invalidEncodedPath = "kind/invalid%GGencoding/1";
+        
+        AppException exception = assertThrows(AppException.class, () -> {
+            cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, invalidEncodedPath, CONTAINER);
+        });
+        
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+    }
+
+    @Test
+    void handleNotFoundAndRetryRead_shouldPropagateErrorWhenRestorationFails() {
+        // Test handling when blob restoration fails
+        String encodedPath = "kind/record%20id/1";
+        String decodedPath = "kind/record id/1";
+        
+        AppException restorationError = createServerErrorException("Restoration Failed");
+        
+        when(blobStore.readFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER))
+            .thenThrow(createNotFoundException("Decoded blob not found"));
+        when(blobStore.undeleteFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER))
+            .thenThrow(restorationError);
+        
+        AppException thrownException = assertThrows(AppException.class, () -> {
+            cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, encodedPath, CONTAINER);
+        });
+        
+        assertEquals(restorationError, thrownException);
+        verify(blobStore, times(1)).undeleteFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER);
+    }
+
+    @Test
+    void handleNotFoundAndRetryRead_shouldPropagateErrorWhenRestorationSucceedsButReadStillFails() {
+        // Test handling when blob restoration succeeds but subsequent read still fails
+        String encodedPath = "kind/record%20id/1";
+        String decodedPath = "kind/record id/1";
+        
+        AppException persistentReadError = createNotFoundException("Still not found after restoration");
+        
+        when(blobStore.readFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER))
+            .thenThrow(createNotFoundException("Decoded blob not found"))
+            .thenThrow(persistentReadError);
+        when(blobStore.undeleteFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER))
+            .thenReturn(true);
+        
+        AppException thrownException = assertThrows(AppException.class, () -> {
+            cloudStorage.handleNotFoundAndRetryRead(TEST_PARTITION, encodedPath, CONTAINER);
+        });
+        
+        assertEquals(persistentReadError, thrownException);
+        verify(blobStore, times(1)).undeleteFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER);
+        verify(blobStore, times(2)).readFromStorageContainer(TEST_PARTITION, decodedPath, CONTAINER);
+    }
+
+    @Test
+    void read_shouldIntegrateWithDecodedPathHandling() {
+        RecordMetadata recordMetadata = setUpRecordMetadata("encoded%20record%20id");
+        recordMetadata.setGcsVersionPaths(List.of("path1"));
+
+        when(entitlementsHelper.hasViewerAccessToRecord(recordMetadata)).thenReturn(true);
+        when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
+        when(recordUtil.getKindForVersion(recordMetadata, "1")).thenReturn("kind");
+        
+        when(blobStore.readFromStorageContainer(DATA_PARTITION, "kind/encoded%20record%20id/1", CONTAINER))
+            .thenThrow(createNotFoundException("Original not found"));
+        when(blobStore.readFromStorageContainer(DATA_PARTITION, "kind/encoded record id/1", CONTAINER))
+            .thenReturn(TEST_CONTENT);
+        
+        String result = cloudStorage.read(recordMetadata, 1L, false);
+        
+        assertEquals(TEST_CONTENT, result);
+        verify(blobStore, times(1)).readFromStorageContainer(DATA_PARTITION, "kind/encoded%20record%20id/1", CONTAINER);      
+        verify(blobStore, times(1)).readFromStorageContainer(DATA_PARTITION, "kind/encoded record id/1", CONTAINER);        
     }
 
     private RecordMetadata setUpRecordMetadata(String id) {

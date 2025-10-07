@@ -14,10 +14,20 @@
 
 package org.opengroup.osdu.storage.provider.azure;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
@@ -26,7 +36,11 @@ import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.storage.*;
+import org.opengroup.osdu.core.common.model.storage.RecordData;
+import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
+import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.provider.azure.repository.GroupsInfoRepository;
 import org.opengroup.osdu.storage.provider.azure.repository.RecordMetadataRepository;
@@ -38,9 +52,12 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import jakarta.inject.Named;
-import java.util.*;
-import java.util.concurrent.*;
 
 @Repository
 public class CloudStorageImpl implements ICloudStorage {
@@ -210,7 +227,7 @@ public class CloudStorageImpl implements ICloudStorage {
             try {
                 blobStore.deleteFromStorageContainer(headers.getPartitionId(), versionPath, containerName);
             } catch (AppException ex) {
-                //  It is possible that the record may have a version instance that is present in the metadata store and absent from the the blob store.
+                // It is possible that the record may have a version instance that is present in the metadata store and absent from the the blob store.
                 // This is a known inconsistency caused when we fail to successfully add the version instance to the blob store.
                 // To handle it we should ignore deletions from the blob store that result in a 404 (not found) error.
                 if (ex.getError().getCode() == 404) {
@@ -269,18 +286,13 @@ public class CloudStorageImpl implements ICloudStorage {
         validateReadAccessToRecord(record);
         String path = this.buildPath(record, version.toString());
         try {
+            this.logger.info("Reading record from blob.");
             return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
         } catch (AppException ex) {
-            if (ex.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
-                //we've encountered data inconsistency. Record is present in cosmosDb but not found in blob storage
-                //we'll attempt to recover the data object
-                try {
-                    restoreSpecifiedBlob(headers.getPartitionId(), path, containerName);
-                    return blobStore.readFromStorageContainer(headers.getPartitionId(), path, containerName);
-                } catch (AppException e) {
-                    throw e;
-                }
+            if (ex.getError() != null  && ex.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
+                return handleNotFoundAndRetryRead(headers.getPartitionId(), path, containerName);
             } else {
+                this.logger.error("Unknown error occurred while reading the specified blob", ex);
                 throw ex;
             }
         }
@@ -295,6 +307,8 @@ public class CloudStorageImpl implements ICloudStorage {
         Map<String, RecordMetadata> recordsMetadata = this.recordRepository.get(recordIds, collaborationContext);
 
         String dataPartitionId = headers.getPartitionId();
+
+        this.logger.info(String.format("Reading %s records from blob", recordIds.size()));
 
         for (String recordId : recordIds) {
             RecordMetadata recordMetadata = recordsMetadata.get(CollaborationContextUtil.composeIdWithNamespace(recordId, collaborationContext));
@@ -318,28 +332,87 @@ public class CloudStorageImpl implements ICloudStorage {
         return map;
     }
 
-    private void restoreSpecifiedBlob(String dataPartitionId, String path, String containerName) {
-        blobStore.undeleteFromStorageContainer(dataPartitionId, path, containerName);
-    }
-
     private boolean readBlobThread(String key, String path, Map<String, String> map, String dataPartitionId) {
         try {
             String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
             map.put(key, content);
         } catch (AppException e) {
-            if(e.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
-                //we've encountered data inconsistency. Record is present in cosmosDb but not found in blob storage
-                //we'll attempt to recover the data object
-                try {
-                    restoreSpecifiedBlob(dataPartitionId, path, containerName);
-                    String content = blobStore.readFromStorageContainer(dataPartitionId, path, containerName);
+            if (e.getError() != null && e.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
+                try{
+                    String content = handleNotFoundAndRetryRead(dataPartitionId, path, containerName);
                     map.put(key, content);
                 } catch (AppException ex) {
-                    logger.error("Unknown error occurred while restoring and then reading the specified blob", ex);
+                    // Eat any exceptions to continue with other records.
+                    logger.error("Unknown error occurred while handling 404s.", ex);
                 }
             }
         }
+    
         return true;
+    }
+
+    /**
+     * Compatibility shim for Azure SDK for Java breaking change (PR 37711).
+     * Historically the path in its decoded form was used by Blob Store (e.g. "a b.txt").
+     * After the SDK change, Blob Store used the path in its encoded form (e.g. "a%20b.txt").
+     * To remain compatible with blobs created under either behavior, if a read returns 404
+     * We try to decode the blob path, and restore if that's not the case.
+     * @param dataPartitionId
+     * @param filePath
+     * @param containerName
+     * @return 
+     */
+    protected String handleNotFoundAndRetryRead(String dataPartitionId, String filePath, String containerName) {
+        String decodedFilePath;
+       
+        try {
+            decodedFilePath = URLDecoder.decode(filePath, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid encoding in file path: " + filePath, e);
+            throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid file path encoding", e.getMessage());
+        }
+
+        
+        if (decodedFilePath.equals(filePath)) {
+            logger.debug("Path doesn't need decoding, attempting to restore");
+            return restoreBlobAndRetryRead(dataPartitionId, filePath, containerName);
+        }
+        
+        // Try reading with decoded path first
+        try {
+            logger.debug("Blob not found. Retrying with decoded file path " + decodedFilePath);
+            return blobStore.readFromStorageContainer(dataPartitionId, decodedFilePath, containerName);
+        } catch (AppException newEx) {
+            if (newEx.getError() != null && newEx.getError().getCode() == HttpStatus.SC_NOT_FOUND) {
+                logger.debug("Decoded path also not found, attempt restoration");
+                return restoreBlobAndRetryRead(dataPartitionId, decodedFilePath, containerName);
+            }
+            // Non-404 errors should be propagated
+            throw newEx;
+        }
+    }
+
+    /*
+     * We've encountered data inconsistency. Record is present in cosmosDb but not found in blob storage
+     * we'll attempt to recover the data object
+     * @param dataPartitionId
+     * @param filePath
+     * @param containerName
+     * @return
+     */
+    protected String restoreBlobAndRetryRead(String dataPartitionId, String filePath, String containerName) {
+        try {
+            restoreSpecifiedBlob(dataPartitionId, filePath, containerName);
+            return blobStore.readFromStorageContainer(dataPartitionId, filePath, containerName);
+        } catch (AppException ex) {
+            logger.error("Unknown error occurred while restoring and then reading the specified blob", ex);
+            throw ex;
+        }
+    }
+
+    private void restoreSpecifiedBlob(String dataPartitionId, String path, String containerName) {
+        this.logger.info("Restoring blob.");
+        blobStore.undeleteFromStorageContainer(dataPartitionId, path, containerName);
     }
 
     private String buildPath(RecordMetadata record)
