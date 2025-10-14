@@ -203,7 +203,7 @@ public class MultiThreadingLegalTagChangedProcessingTest {
         } catch (Exception e) {
             System.out.println(Arrays.toString(e.getStackTrace()));
         } finally {
-            ThreadScopeContextHolder.currentThreadScopeAttributes().clear();
+            ThreadScopeContextHolder.clearContext();
             latch.countDown();
         }
     }

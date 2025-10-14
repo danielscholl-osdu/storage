@@ -195,7 +195,7 @@ public class OqmDeadLetteringSubscriberManager {
             if (!ackedNacked) {
               oqmAckReplier.nack(false);
             }
-            ThreadScopeContextHolder.currentThreadScopeAttributes().clear();
+            ThreadScopeContextHolder.clearContext();
           }
         };
 
