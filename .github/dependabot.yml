@@ -1,8 +1,8 @@
 version: 2
 updates:
-  # GitHub Actions - Template Repository
-  # This template repository uses GitHub Actions for CI/CD automation
-  # Monitor all actions for security updates and version improvements
+  # GitHub Actions - Fork Instance
+  # Monitor all GitHub Actions for security updates
+  # Aligns with ADR-026: Dependabot Security Update Strategy
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -21,3 +21,118 @@ updates:
           - "minor"
           - "patch"
     open-pull-requests-limit: 5
+
+  # 1) TOP-LEVEL AGGREGATOR
+  #    Scans the root POM, but ignores any dependencies physically declared in
+  #    testing/**, storage-acceptance-test/**, etc.
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "common"
+    # ***IMPORTANT***
+    ignore:
+      - dependency-name: "*"
+        paths:
+          - "testing/**"
+          - "storage-acceptance-test/**"
+          - "storage-core-plus/**"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot:spring-boot*"
+          - "org.springframework.security:spring-security*"
+          - "org.springdoc:springdoc-openapi*"
+        update-types:
+          - "patch"
+      osdu-core:
+        patterns:
+          - "org.opengroup.osdu:os-core-common"
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+      build-tools:
+        patterns:
+          - "org.projectlombok:lombok"
+          - "com.google.guava:guava"
+          - "io.github.git-commit-id:*"
+          - "org.springframework.boot:spring-boot-maven-plugin"
+        update-types:
+          - "minor"
+          - "patch"
+      logging:
+        patterns:
+          - "org.apache.logging.log4j:*"
+          - "ch.qos.logback:*"
+          - "org.slf4j:*"
+        update-types:
+          - "minor"
+          - "patch"
+      data-format:
+        patterns:
+          - "com.fasterxml.jackson*"
+          - "net.minidev:json-smart"
+          - "com.google.code.gson:gson"
+          - "org.yaml:snakeyaml"
+        update-types:
+          - "minor"
+          - "patch"
+      common-utils:
+        patterns:
+          - "commons-beanutils:commons-beanutils"
+          - "io.github.resilience4j:*"
+          - "org.apache.commons:*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # 2) storage CORE
+  - package-ecosystem: "maven"
+    directory: "/storage-core"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "common"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      core-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # 3) SPI AZURE
+  - package-ecosystem: "maven"
+    directory: "/provider/storage-azure"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "azure"
+    groups:
+      azure-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+  # Note: Disabled providers/modules omitted to avoid validation errors
+  # Dependabot does not support 'interval: never'
+  # If you need to disable updates for specific modules, simply remove them from this file
