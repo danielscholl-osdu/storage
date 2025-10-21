@@ -198,7 +198,7 @@ public class OqmReplayApiSubscriberManager {
             if (!ackedNacked) {
               oqmAckReplier.nack(false);
             }
-            ThreadScopeContextHolder.currentThreadScopeAttributes().clear();
+            ThreadScopeContextHolder.clearContext();
           }
         };
 

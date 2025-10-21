@@ -45,4 +45,16 @@ public class ThreadScopeContextHolder {
             return accessor;
         }
     }
+
+    /**
+     * Clears the thread scope attributes and removes the ThreadLocal to prevent memory leaks.
+     * This method should be called in finally blocks to ensure proper cleanup.
+     */
+    public static void clearContext() {
+        ThreadScopeAttributes accessor = threadScopeAttributesHolder.get();
+        if (accessor != null) {
+            accessor.clear();
+        }
+        threadScopeAttributesHolder.remove();
+    }
 }
