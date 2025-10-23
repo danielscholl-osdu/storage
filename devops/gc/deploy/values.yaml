@@ -19,6 +19,8 @@ data:
   crsConverterHost: "http://crs-conversion"
   legalHost: "http://legal"
   opaEndpoint: "http://opa"
+  otelJavaagentEnabled: "true"
+
   # deployments
   requestsCpu: "150m"
   requestsMemory: "768Mi"

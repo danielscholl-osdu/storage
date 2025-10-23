@@ -10,6 +10,7 @@
 * [Google_Cloud service account configuration](#Google-cloud-service-account-configuration)
 * [Run args](#run-args)
 * [Running E2E Tests](#running-e2e-tests)
+* [Monitoring](#monitoring)
 * [License](#License)
 * 
 ## Environment variables
@@ -198,6 +199,29 @@ Execute following command to build code and run all the integration tests:
  # build + run Google Cloud integration tests.
  $ (cd testing/storage-test-gc/ && mvn clean test)
  ```
+
+## Monitoring
+### OpenTelemetry Integration
+
+The opentelemetry-javaagent.jar file is the OpenTelemetry Java agent. It is used to
+automatically instrument the Java application at runtime, without requiring manual changes
+to the source code.
+
+This provides critical observability features:
+* Distributed Tracing: To trace the path of requests as they travel across different
+  services.
+* Metrics: To capture performance indicators and application-level metrics.
+* Logs: To correlate logs with traces and other telemetry data.
+
+Enabling this agent makes it significantly easier to monitor, debug, and manage the
+application in development and production environments. The agent is activated by the
+startup.sh script when the OTEL_JAVAAGENT_ENABLED environment variable is set to true.
+
+The agent is available from the official OpenTelemetry GitHub repository. It is
+recommended to use the latest stable version.
+
+Official Download Page:
+https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases
 
 ## License
 

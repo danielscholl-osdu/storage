@@ -18,6 +18,11 @@ COPY tmp-gc/gc-apd-acc-*.jar gc/apd-acc.jar
 # Copy the jar to the production image from the builder stage.
 COPY provider/storage-${PROVIDER_NAME}/target/storage-${PROVIDER_NAME}-*-spring-boot.jar storage-${PROVIDER_NAME}.jar
 
+COPY provider/storage-gc/cloudbuild/opentelemetry-javaagent.jar telemetry/opentelemetry-javaagent.jar
+COPY provider/storage-${PROVIDER_NAME}/cloudbuild/startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
+
+
 # Add a non-root user
 RUN groupadd -g 10001 -r nonroot \
   && useradd -g 10001 -r -u 10001 nonroot
@@ -25,10 +30,4 @@ RUN groupadd -g 10001 -r nonroot \
 USER 10001:10001
 
 # Run the web service on container startup.
-CMD java --add-opens java.base/java.lang=ALL-UNNAMED \
-         --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
-         -Djava.security.egd=file:/dev/./urandom \
-         -Dserver.port=${PORT} \
-         -Dlog4j.formatMsgNoLookups=true \
-         -Dloader.main=org.opengroup.osdu.storage.provider.gcp.StorageApplicationGCP \
-         -jar /app/storage-${PROVIDER_NAME}.jar
+CMD ["/app/startup.sh"]
