@@ -1,0 +1,151 @@
+#  Copyright © Microsoft Corporation
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: osdu
+spec:
+  replicas: {{ .Values.global.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        aadpodidbinding: osdu-identity
+    spec:
+{{- if .Values.global.isAutoscalingEnabled }}
+      nodeSelector:
+        nodepool: {{ .Values.global.nodepool }} 
+{{- end }}   
+      volumes:
+      - name: azure-keyvault
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: azure-keyvault
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ .Values.image.repository }}/{{ .Chart.Name }}-{{ .Values.image.branch }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "4Gi"
+          limits:
+            cpu: "1000m"
+            memory: "4Gi"
+        # Upgrade to SpringBoot 2.3 for actuator k8s support with readiness and liveness endpoints
+        # More info https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#boot-features-application-availability
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 250
+          periodSeconds: 10
+        volumeMounts:
+        - name: azure-keyvault
+          mountPath: "/mnt/azure-keyvault"
+          readOnly: true
+        env:
+        - name: spring_application_name
+          value: storage
+        - name: server.servlet.contextPath
+          value: /api/storage/v2/
+        - name: server_port
+          value: "80"
+        - name: ACCEPT_HTTP  # TEMPORARY UNTIL HTTPS
+          value: "true"
+        - name: KEYVAULT_URI
+          valueFrom:
+            configMapKeyRef:
+              name: osdu-svc-properties
+              key: ENV_KEYVAULT
+        - name: aad_client_id
+          valueFrom:
+            secretKeyRef:
+              name: active-directory
+              key: application-appid
+        - name: azure_activedirectory_session_stateless
+          value: "true"
+        - name: appinsights_key
+          valueFrom:
+            secretKeyRef:
+              name: central-logging
+              key: appinsights
+        - name: REDIS_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: redis-configmap
+              key: storage
+        - name: cosmosdb_database
+          value: osdu-db
+        - name: servicebus_topic_name
+          value: recordstopic
+        - name: servicebus_v2_topic_name
+          value: recordstopic-v2
+        - name: legal_servicebus_topic_name
+          value: legaltagschangedtopiceg
+        - name: legal_servicebus_topic_subscription
+          value: eg_sb_legaltagssubscription
+        - name: entitlements_service_endpoint
+          value: http://entitlements/api/entitlements/v2
+        - name: entitlements_service_api_key
+          value: "OBSOLETE"
+        - name: legal_service_endpoint
+          value: http://legal/api/legal/v1
+        - name: legal_service_region
+          value: southcentralus
+        - name: search_service_endpoint
+          value: http://legal/api/legal/v1
+        - name: partition_service_endpoint
+          value: http://partition/api/partition/v1
+        - name: crs_conversion_service_endpoint
+          value: http://crs-conversion-service/api/crs/converter/v2
+        - name: policy_enabled
+          value: "{{ .Values.policy.enabled }}"
+        - name: opa_enabled
+          value: "false"
+        - name: policy_service_endpoint
+          value: http://policy-service/api/policy/v1
+        - name: schema_endpoints_disabled
+          value: "{{ .Values.schemaEndpoints.disabled }}"
+        - name: azure_istioauth_enabled
+          value: "true"
+        - name: azure_activedirectory_AppIdUri
+          value: "api://$(aad_client_id)"
+        - name: JAVA_OPTS
+          value: "-XX:+UseG1GC -XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=50.0"
+        - name: "SERVER_TOMCAT_MAXTHREADS"
+          value: "400"
+        - name: "SERVER_TOMCAT_MINSPARETHREADS"
+          value: "200"
+        - name: azure_serviceBus_enabled
+          value: "true"
+        - name: azure_eventGrid_enabled
+          value: "true"
+        - name: SPRING_CONFIG_NAME
+          value: "common,application"
+        - name: opa_endpoint
+          value: http://opa:8181
