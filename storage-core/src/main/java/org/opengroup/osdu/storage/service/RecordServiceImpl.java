@@ -14,6 +14,10 @@
 
 package org.opengroup.osdu.storage.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.fge.jsonpatch.mergepatch.JsonMergePatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -26,11 +30,11 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.PubSubDeleteInfo;
-import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
+import org.opengroup.osdu.storage.dto.RecordMergePatchRequest;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordChangedV2Delete;
@@ -39,16 +43,22 @@ import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.ValidationDoc;
+import org.opengroup.osdu.storage.validation.api.JsonMergePatchValidator;
 import org.opengroup.osdu.storage.validation.impl.VersionIdsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.opengroup.osdu.core.common.model.storage.Record;
+
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -88,6 +98,16 @@ public class RecordServiceImpl implements RecordService {
     private RecordUtil recordUtil;
     @Autowired
     private IFeatureFlag collaborationFeatureFlag;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private IngestionService ingestionService;
+    @Autowired
+    private QueryService queryService;
+    @Autowired
+    private JsonMergePatchValidator mergePatchValidator;
+    @Autowired
+    private PersistenceService persistenceService;
 
     @Override
     public void purgeRecord(String recordId, Optional<CollaborationContext> collaborationContext) {
@@ -438,6 +458,86 @@ public class RecordServiceImpl implements RecordService {
             }
         }
         return new ImmutablePair<>(recordVersionPathsToRetain, recordVersionPathsToDelete);
+    }
+
+    @Override
+    public String patchRecord(String recordId, RecordMergePatchRequest patchRequest, String user, Optional<CollaborationContext> collaborationContext) {
+        // Get the existing record metadata
+        RecordMetadata recordMetadata = this.recordRepository.get(recordId, collaborationContext);
+        if (recordMetadata == null) {
+            throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found for patching",
+                    String.format("The record '%s' was not found for patching", recordId));
+        }
+
+        String existingRecordJson = queryService.getRecordInfo(recordId, new String[]{}, collaborationContext, true);
+
+        // Validate access permissions for patch operations
+        boolean hasOwnerAccess = this.dataAuthorizationService.validateOwnerAccess(recordMetadata, OperationType.update);
+        if (!hasOwnerAccess) {
+            throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED, "The user is not authorized to perform this action");
+        }
+
+        try {
+            if (patchRequest.getDeleted() == null) {
+                if (recordMetadata.getStatus() == RecordState.deleted) {
+                    //Trying to update a Soft deleted record
+                    throw new AppException(HttpStatus.SC_BAD_REQUEST, "Record is not in active state, so cannot be patched",
+                            "Record is not in active state, so cannot be patched");
+                }
+                //update actual record
+                validateRequest(patchRequest);
+                JsonNode patchRequestNode = objectMapper.valueToTree(patchRequest);
+                ObjectNode cleanedPatchNode = patchRequestNode.deepCopy();
+
+                cleanedPatchNode.remove("deleted");
+                cleanedPatchNode.remove("deletedAt");
+                JsonMergePatch jsonMergePatch = JsonMergePatch.fromJson(cleanedPatchNode);
+                JsonNode updatedJsonNode = jsonMergePatch.apply(objectMapper.readTree(existingRecordJson));
+
+                Record updatedRecord = objectMapper.treeToValue(updatedJsonNode, Record.class);
+
+                recordMetadata.setModifyTime(System.currentTimeMillis());
+                recordMetadata.setModifyUser(user);
+                ingestionService.createUpdateRecords(true, Collections.singletonList(updatedRecord), user, collaborationContext);
+                return updatedJsonNode.toString();
+
+            } else {
+                //update record metadata status
+                RecordState expectedNewStatus = patchRequest.getDeleted() ? RecordState.deleted : RecordState.active;
+                if (recordMetadata.getStatus() != expectedNewStatus) {
+                    recordMetadata.setStatus(expectedNewStatus);
+                    recordMetadata.setModifyTime(System.currentTimeMillis());
+                    recordMetadata.setModifyUser(user);
+
+                    persistenceService.updateMetadataAndPublishRecordChangeEvent(recordMetadata, collaborationContext);
+                    return existingRecordJson;
+                } else {
+                    //status already correct, no updates needed
+                    throw new AppException(HttpStatus.SC_BAD_REQUEST, "Record State already updated", "Record State already updated");
+                }
+            }
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Record patch failed", e.getMessage());
+        }
+    }
+
+    private void validateRequest(RecordMergePatchRequest patchRequest) {
+        if (patchRequest.getAcl() != null) {
+            Set<String> acls = new HashSet<>();
+            acls.addAll(Arrays.asList(patchRequest.getAcl().getOwners()));
+            acls.addAll(Arrays.asList(patchRequest.getAcl().getViewers()));
+            mergePatchValidator.validateACLs(acls);
+        }
+
+        if (patchRequest.getLegal() != null && patchRequest.getLegal().getLegaltags() != null) {
+            mergePatchValidator.validateLegalTags(patchRequest.getLegal().getLegaltags());
+        }
+
+        if (patchRequest.getKind() != null) {
+            mergePatchValidator.validateKind(patchRequest.getKind());
+        }
     }
 
 }

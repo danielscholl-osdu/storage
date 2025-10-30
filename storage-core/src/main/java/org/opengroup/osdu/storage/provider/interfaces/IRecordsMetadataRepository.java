@@ -23,7 +23,9 @@ import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
+import org.opengroup.osdu.core.common.model.search.SortOrder;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 
 // <K> is a serializable (e.g a Cursor, com.google.cloud.datastore.Cursor in case of gcp implementation)
 public interface IRecordsMetadataRepository<K extends Serializable> {
@@ -50,4 +52,8 @@ public interface IRecordsMetadataRepository<K extends Serializable> {
     AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegalTagName(String[] legalTagName, int limit, K cursor);
 
     AbstractMap.SimpleEntry<K, List<RecordMetadata>> queryByLegal(String legalTagName, LegalCompliance status, int limit);
+
+    default RecordInfoQueryResult<RecordMetadata> getRecords(String kind, Long modifiedAfterTime, String cursor, int limit, boolean deletedRecords, SortOrder sortOrder, Optional<CollaborationContext> collaborationContext) {
+        throw new NotImplementedException("IRecordsMetadataRepository.getRecords not implemented");
+    }
 }

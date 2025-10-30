@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.util;
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opengroup.osdu.storage.util.HeaderUtils.getHeaders;
 import static org.opengroup.osdu.storage.util.HeaderUtils.getHeadersWithxCollaboration;
 import static org.opengroup.osdu.storage.util.TestBase.GSON;
 
@@ -197,6 +198,19 @@ public abstract class TestUtils {
         String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, legaltag);
 
         CloseableHttpResponse response = TestUtils.send("records", "PUT", getHeadersWithxCollaboration(collaborationId, applicationName, tenant_name, token), jsonInput, "");
+        assertEquals(SC_CREATED, response.getCode());
+        assertTrue(response.getEntity().getContentType().contains("application/json"));
+
+        String responseBody = EntityUtils.toString(response.getEntity());
+        DummyRecordsHelper.CreateRecordResponse result = GSON.fromJson(responseBody, DummyRecordsHelper.CreateRecordResponse.class);
+
+        return Long.parseLong(result.recordIdVersions[0].split(":")[3]);
+    }
+
+    public static Long createRecordWithoutCollaborationContext_AndReturnVersion(String recordId, String kind, String legaltag, String tenant_name, String token) throws Exception {
+        String jsonInput = RecordUtil.createDefaultJsonRecord(recordId, kind, legaltag);
+
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", getHeaders(tenant_name, token), jsonInput, "");
         assertEquals(SC_CREATED, response.getCode());
         assertTrue(response.getEntity().getContentType().contains("application/json"));
 

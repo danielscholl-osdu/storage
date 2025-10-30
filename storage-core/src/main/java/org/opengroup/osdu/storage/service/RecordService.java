@@ -14,7 +14,9 @@
 
 package org.opengroup.osdu.storage.service;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.storage.dto.RecordMergePatchRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,4 +30,8 @@ public interface RecordService {
 	void deleteRecord(String recordId, String user, Optional<CollaborationContext> collaborationContext);
 
 	void bulkDeleteRecords(List<String> records, String user, Optional<CollaborationContext> collaborationContext);
+
+	default String patchRecord(String recordId, RecordMergePatchRequest patchRequest, String user, Optional<CollaborationContext> collaborationContext) {
+		throw new NotImplementedException("RecordService.patchRecord not implemented");
+	}
 }

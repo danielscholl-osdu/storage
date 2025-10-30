@@ -17,6 +17,8 @@ package org.opengroup.osdu.storage.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.google.common.base.Strings;
+
+import java.util.Collections;
 import java.util.Set;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpStatus;
@@ -129,7 +131,7 @@ public class PersistenceServiceImpl implements PersistenceService {
     }
 
     @Override
-    public List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
+    public List<String> updateMetadataWithBlobSync(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext) {
         Map<String, Acl> originalAcls = new HashMap<>();
         List<String> lockedRecords = new ArrayList<>();
         List<RecordMetadata> validMetadata = new ArrayList<>();
@@ -222,6 +224,28 @@ public class PersistenceServiceImpl implements PersistenceService {
         return recordError;
     }
 
+    @Override
+    public void updateMetadataAndPublishRecordChangeEvent(RecordMetadata recordMetadata, Optional<CollaborationContext> collaborationContext) {
+        List<RecordMetadata> recordMetadataList = Collections.singletonList(recordMetadata);
+        commitDatastoreTransaction(recordMetadataList, collaborationContext);
+
+        // publish event
+        PubSubInfo[] pubsubInfo = new PubSubInfo[recordMetadataList.size()];
+        RecordChangedV2[] recordChangedV2 = new RecordChangedV2[recordMetadataList.size()];
+        for (int i = 0; i < recordMetadataList.size(); i++) {
+            RecordMetadata metadata = recordMetadataList.get(i);
+            pubsubInfo[i] = getPubSubInfo(metadata, OperationType.update);
+            recordChangedV2[i] = getRecordChangedV2(metadata, OperationType.update);
+        }
+        if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
+            this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
+        }
+        if (collaborationContext.isEmpty()) {
+            this.pubSubClient.publishMessage(this.headers, pubsubInfo);
+        }
+
+    }
+
     private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata, OperationType operationType) {
         return PubSubInfo.builder()
                 .id(recordMetadata.getId())
@@ -305,4 +329,7 @@ public class PersistenceServiceImpl implements PersistenceService {
     private List<RecordMetadata> copyMetadata(List<RecordMetadata> sourceMetadata) {
         return sourceMetadata.stream().map(recordMetadata -> recordMetadata.toBuilder().build()).toList();
     }
+
+
+
 }
