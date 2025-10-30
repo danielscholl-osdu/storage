@@ -48,12 +48,12 @@
       <!-- Project Versions-->
       <json-smart.version>2.5.1</json-smart.version>
       <openapi.version>2.3.0</openapi.version>
-      <lombok.version>1.18.28</lombok.version>
+      <lombok.version>1.18.42</lombok.version>
       <netty.version>4.1.115.Final</netty.version>
       <commons-codec.version>1.14</commons-codec.version>
 
       <!-- Plugin Versions -->
-      <spring-boot-maven-plugin.version>3.2.2</spring-boot-maven-plugin.version>
+      <spring-boot-maven-plugin.version>3.5.7</spring-boot-maven-plugin.version>
       <git-commit-id-plugin.version>8.0.2</git-commit-id-plugin.version>
     </properties>
 
