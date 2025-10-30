@@ -102,6 +102,34 @@ The UoM Meta[] schema supports association of a Unit of Measure to one or more a
 The API represents the main injection mechanism into the Data Ecosystem. It allows records creation and/or update. When no record id is provided or when the provided id is not already present in the Data Ecosystemthen a new record is created. If the id is related to an existing record in the Data Ecosystemthen an update operation takes place and a new version of the record is created. 
 More details available at [Creating records](#Creating-records) and [Ingesting records](#Ingesting-records) sections.
 
+### Get all records
+The API returns a list of all active records.
+```
+GET /api/storage/v2/records
+```
+
+#### Parameters
+
+| Parameter       | Description                                                                           |
+|:----------------|:--------------------------------------------------------------------------------------|
+| kind            | Filter results based on kind                                                          |
+| deleted         | Fetch soft deleted records, example - true/false. Default value - false.              |
+| modifyAfterDate | Fetch records only modified after this date. (ISO 8601 format) example - "2025-01-15" |
+| limit           | Page size for results, default value - 20, Max - 100                                  |
+| cursor          | Pointer for next result page                                                          |
+| sortOrder       | Sort Order - ASC/DESC, default - DESC on createTime field                             |
+
+<details><summary>curl</summary>
+
+```
+curl --request GET \
+  --url 'https://osdu.dev1.osdu-cimpl.opengroup.org/api/storage/v2/records' \
+  --header 'authorization: Bearer <JWT>' \
+  --header 'content-type: application/json' \
+  --header 'data-partition-id: common'
+```
+</details>
+
 ### Get record version
 The API retrieves the specific version of the given record.
 The modifyTime and modifyUser info will be version specific.
@@ -183,6 +211,27 @@ curl --request GET \
 ```
 </details>
 
+### Patch record
+The API allows partial updates to a record using JSON Merge Patch (RFC 7396) format. \
+It supports updating record fields like ACL, legal information, data and tags. Only the fields specified in the request body will be modified, leaving other fields unchanged. \
+The API can also handle soft delete/undelete operations by setting the 'deleted' field.
+```
+PATCH /api/storage/v2/records/{id}
+```
+
+<details><summary>curl</summary>
+
+```
+curl --request PATCH \
+   --url '/api/storage/v2/records/{id}' \
+   --header 'authorization: Bearer <JWT>' \
+   --header 'Content-Type: application/merge-patch+json' \
+   --header 'data-partition-id: common' \
+   --data '{
+      "deleted" : "false"
+   }'
+```
+</details>
 
 ### Delete record
 The API performs a logical deletion of the given record. This operation can be reverted later. This operation can be performed by the owner of the record.

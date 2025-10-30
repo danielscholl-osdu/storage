@@ -31,7 +31,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class BatchServiceGcpImpl extends BatchServiceImpl {
+public class OsmBatchServiceImpl extends BatchServiceImpl {
 
     private final IQueryRepository queryRepository;
     private final StorageAuditLogger auditLogger;

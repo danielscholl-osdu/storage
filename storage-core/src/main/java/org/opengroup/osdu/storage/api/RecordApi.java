@@ -23,6 +23,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -30,20 +32,27 @@ import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.search.SortOrder;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.storage.validation.ValidationDoc;
 import org.opengroup.osdu.core.common.model.validation.ValidateCollaborationContext;
+import org.opengroup.osdu.storage.dto.RecordMergePatchRequest;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.mapper.CreateUpdateRecordsResponseMapper;
+
+import org.opengroup.osdu.storage.model.GetRecordsModel;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.IngestionService;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
+import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.opengroup.osdu.storage.validation.api.ValidVersionIds;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,6 +60,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -62,8 +72,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
+import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_KIND_PARAM;
 
 @RestController
 @RequestMapping("records")
@@ -91,6 +104,9 @@ public class RecordApi {
 	@Autowired
 	private CollaborationContextFactory collaborationContextFactory;
 
+	@Autowired
+	private EncodeDecode encodeDecode;
+
 	@Operation(summary = "${recordApi.createOrUpdateRecords.summary}", description = "${recordApi.createOrUpdateRecords.description}",
 			security = {@SecurityRequirement(name = "Authorization")}, tags = { "records" })
 	@ApiResponses(value = {
@@ -113,6 +129,46 @@ public class RecordApi {
 		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
 		TransferInfo transfer = ingestionService.createUpdateRecords(skipdupes, records, headers.getUserEmail(), collaborationContext);
 		return createUpdateRecordsResponseMapper.map(transfer, records);
+	}
+
+	@Operation(summary = "${recordApi.getRecords.summary}", description = "${recordApi.getRecords.description}",
+			security = {@SecurityRequirement(name = "Authorization")}, tags = {"records"})
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Record retrieved successfully.", content = {@Content(schema = @Schema(implementation = String.class))}),
+			@ApiResponse(responseCode = "400", description = "Bad Request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "401", description = "Unauthorized", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "403", description = "Forbidden", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "404", description = "Record not found.", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "502", description = "Bad Gateway", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable", content = {@Content(schema = @Schema(implementation = AppError.class))})
+	})
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.VIEWER + "', '" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+	public ResponseEntity<RecordInfoQueryResult<Record>> getAllRecords(@Parameter(description = "x-collaboration")
+																	   @RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+																	   @Parameter(description = "Page Size", example = "20") @RequestParam(required = false, defaultValue = "20")
+																	   @Max(value = 100, message = "Value for limit param should be between 1 and 100")
+																	   @Min(value = 1, message = "Value for limit param should be between 1 and 100") Integer limit,
+																	   @Parameter(description = "Filter Kind", example = "tenant1:public:well:1.0.2") @RequestParam(required = false)
+																	   @Pattern(regexp = ValidationDoc.KIND_REGEX, message = INVALID_KIND_PARAM) String kind,
+																	   @Parameter(description = "Cursor") @RequestParam(required = false) String cursor,
+																	   @Parameter(description = "Get Only soft deleted records in response", example = "true") @RequestParam(required = false, defaultValue = "false") boolean deleted,
+																	   @Parameter(description = "Get records modified after this date", example = "2025-09-04") @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date modifiedAfterDate,
+																	   @Parameter(description = "Sort Order") @RequestParam(required = false, defaultValue = "DESC") SortOrder sortOrder) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+
+		GetRecordsModel getRecordsModel = GetRecordsModel.builder()
+				.kind(kind)
+				.limit(limit)
+				.modifiedAfterDate(modifiedAfterDate)
+				.sortOrder(sortOrder)
+				.deletedRecords(deleted)
+				.build();
+
+		RecordInfoQueryResult<Record> records = this.queryService.getRecords(getRecordsModel, encodeDecode.deserializeCursor(cursor), collaborationContext);
+		records.setCursor(encodeDecode.serializeCursor(records.getCursor()));
+		return ResponseEntity.ok(records);
 	}
 
 	@Operation(summary = "${recordApi.getLatestRecordVersion.summary}", description = "${recordApi.getLatestRecordVersion.description}",
@@ -277,4 +333,27 @@ public class RecordApi {
 		return new ResponseEntity<RecordVersions>(this.queryService.listVersions(id, collaborationContext), HttpStatus.OK);
 	}
 
+	@Operation(summary = "${recordApi.patchRecord.summary}", description = "${recordApi.patchRecord.description}",
+			security = {@SecurityRequirement(name = "Authorization")}, tags = {"records"})
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Record patched successfully.", content = {@Content(schema = @Schema(implementation = String.class))}),
+			@ApiResponse(responseCode = "400", description = "Bad Request", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "401", description = "Unauthorized", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "403", description = "Forbidden", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "404", description = "Record not found.", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "500", description = "Internal Server Error", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "502", description = "Bad Gateway", content = {@Content(schema = @Schema(implementation = AppError.class))}),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable", content = {@Content(schema = @Schema(implementation = AppError.class))})
+	})
+	@PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = "application/merge-patch+json")
+	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.CREATOR + "', '" + StorageRole.ADMIN + "')")
+	public ResponseEntity<String> patchRecord(@Parameter(description = "x-collaboration")
+											  @RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,
+											  @Parameter(description = "Record id", example = "tenant1:well:123456789") @PathVariable("id") @Pattern(regexp = ValidationDoc.RECORD_ID_REGEX,
+													  message = ValidationDoc.INVALID_RECORD_ID) String id,
+											  @Parameter(description = "Data to be patched") @RequestBody @Valid RecordMergePatchRequest recordMergePatchRequest) {
+		Optional<CollaborationContext> collaborationContext = collaborationContextFactory.create(collaborationDirectives);
+		String response = recordService.patchRecord(id, recordMergePatchRequest, headers.getUserEmail(), collaborationContext);
+		return ResponseEntity.ok(response);
+	}
 }

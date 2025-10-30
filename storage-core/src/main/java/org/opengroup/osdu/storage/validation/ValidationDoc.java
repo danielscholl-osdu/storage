@@ -40,4 +40,6 @@ public class ValidationDoc {
     public static final String INVALID_FROM_VERSION_FOR_LATEST_VERSION = INVALID_FROM_VERSION+" The 'from' should not be latest record version '%d'";
     public static final String INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS = INVALID_FROM_VERSION+" The record version does not contains specified from version '%d'";
     public static final String INVALID_LIMIT_FOR_FROM_VERSION = INVALID_LIMIT+" Given limit count %d, exceeds the record versions count specified by the given 'from' version '%d'";
+    public static final String INVALID_KIND_PARAM = "Invalid Kind param value.";
+
 }

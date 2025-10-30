@@ -17,27 +17,39 @@ package org.opengroup.osdu.storage.service;
 import static java.util.Collections.singletonList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.model.GetRecordsModel;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.ToNumberPolicy;
+
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -61,18 +73,15 @@ public class QueryServiceImpl implements QueryService {
 	private JaxRsDpsLog logger;
 
 	@Autowired
-	private EntitlementsAndCacheServiceImpl entitlementsAndCacheService;
-
-	@Autowired
-	private DpsHeaders dpsHeaders;
-
-	@Autowired
 	private DataAuthorizationService dataAuthorizationService;
 
+	public final Gson gson = new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
+
+
 	@Override
-	public String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext) {
+	public String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext, boolean fetchInactiveRecord) {
 		try {
-			String specificVersion = this.getRecord(id, null, attributes, collaborationContext);
+			String specificVersion = this.getRecord(id, null, attributes, collaborationContext, fetchInactiveRecord);
 			this.auditLogger.readLatestVersionOfRecordSuccess(singletonList(id));
 			return specificVersion;
 		} catch (AppException e) {
@@ -84,7 +93,7 @@ public class QueryServiceImpl implements QueryService {
 	@Override
 	public String getRecordInfo(String id, long version, String[] attributes, Optional<CollaborationContext> collaborationContext) {
 		try {
-			String specificVersion = this.getRecord(id, version, attributes, collaborationContext);
+			String specificVersion = this.getRecord(id, version, attributes, collaborationContext, false);
 			this.auditLogger.readSpecificVersionOfRecordSuccess(singletonList(id));
 			return specificVersion;
 		} catch (AppException e) {
@@ -119,7 +128,77 @@ public class QueryServiceImpl implements QueryService {
 		return recordVersions;
 	}
 
-	private String getRecord(String recordId, Long version, String[] attributes, Optional<CollaborationContext> collaborationContext) {
+	/**
+	 * Retrieves records based on search criteria with full record data.
+	 * 
+	 * @param recordSearchModel Search criteria including kind, limits, filters
+	 * @param cursor Pagination cursor for large result sets
+	 * @param collaborationContext Optional collaboration context for access control
+	 * @throws AppException if access denied, invalid parameters or system error
+	 */
+	@Override
+	public RecordInfoQueryResult<Record> getRecords(GetRecordsModel recordSearchModel, String cursor,
+			Optional<CollaborationContext> collaborationContext) {
+		Long modifiedAfterTime = recordSearchModel.getModifiedAfterDate() != null
+				? recordSearchModel.getModifiedAfterDate().getTime()
+				: null;
+		List<Record> results = new ArrayList<>();
+
+		try {
+			// all eligible records
+			RecordInfoQueryResult<RecordMetadata> records = recordRepository.getRecords(recordSearchModel.getKind(),
+					modifiedAfterTime, cursor, recordSearchModel.getLimit(), recordSearchModel.isDeletedRecords(),
+					recordSearchModel.getSortOrder(), collaborationContext);
+
+			if (records.getResults() == null || records.getResults().isEmpty()) {
+            	return new RecordInfoQueryResult<>(records.getCursor(), results);
+        	}
+			List<RecordMetadata> recordsList = records.getResults();
+			Map<String, String> recordVersionMap = new HashMap<>();
+			Map<String, RecordMetadata> recordIdMetadataMap = new HashMap<>();
+
+			recordsList.forEach(metadata -> {
+				String id = metadata.getId();
+				recordVersionMap.put(id, metadata.getVersionPath(metadata.getLatestVersion()));
+				recordIdMetadataMap.put(id, metadata);
+			});
+
+			Map<String, String> recordDetailsMap = this.cloudStorage.read(recordVersionMap, collaborationContext);
+			List<String> validAttributes = PersistenceHelper.getValidRecordAttributes(new String[] {});
+
+			recordDetailsMap.keySet().forEach(recordId -> {
+				String recordData = recordDetailsMap.get(recordId);
+
+				if (!Strings.isNullOrEmpty(recordData)) {
+					JsonElement jsonRecord = gson.fromJson(recordData, JsonElement.class);
+
+					// Filter out data sub properties
+					if (!validAttributes.isEmpty()) {
+						jsonRecord = PersistenceHelper.filterRecordDataFields(jsonRecord, validAttributes);
+					}
+
+					RecordMetadata recordMetadata = recordIdMetadataMap.get(recordId);
+					JsonObject recordObject = PersistenceHelper.combineRecordMetaDataAndRecordDataIntoJsonObject(
+							jsonRecord, recordMetadata, recordMetadata.getLatestVersion());
+
+					Record record = gson.fromJson(recordObject, Record.class);
+					results.add(record);
+				} else {
+					// Log missing record data, shouldn't ideally happen
+					this.logger.warning(String.format("No data found for record: %s", recordId));
+				}
+			});
+			return new RecordInfoQueryResult<>(records.getCursor(), results);
+		} catch (AppException e) {
+			throw e; // Re-throw application exceptions as-is
+		} catch (JsonSyntaxException e) {
+			throw new AppException(HttpStatus.SC_UNPROCESSABLE_ENTITY, "Invalid record data format", e.getMessage());
+		} catch (Exception e) {
+			throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e.getLocalizedMessage());
+		}
+	}
+
+	private String getRecord(String recordId, Long version, String[] attributes, Optional<CollaborationContext> collaborationContext, boolean fetchInactiveRecord) {
 
 		RecordMetadata recordMetadata = this.getRecordFromRepository(recordId, collaborationContext);
 
@@ -130,7 +209,7 @@ public class QueryServiceImpl implements QueryService {
 
 		Long actualVersion = version == null ? recordMetadata.getLatestVersion() : version;
 
-		return this.fetchRecord(recordMetadata, actualVersion, attributes);
+		return this.fetchRecord(recordMetadata, actualVersion, attributes, fetchInactiveRecord);
 	}
 
 	private RecordMetadata getRecordFromRepository(String recordId, Optional<CollaborationContext> collaborationContext) {
@@ -154,12 +233,12 @@ public class QueryServiceImpl implements QueryService {
 		return recordMetadata;
 	}
 
-	private String fetchRecord(RecordMetadata recordMetadata, Long version, String[] attributes) {
+	private String fetchRecord(RecordMetadata recordMetadata, Long version, String[] attributes, boolean fetchInactiveRecord) {
 
 		RecordState recordStatus = recordMetadata.getStatus();
 
 		// Verify if the record status is active
-		if (!recordStatus.equals(RecordState.active)) {
+		if (!recordStatus.equals(RecordState.active) && !fetchInactiveRecord) {
 			throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found",
 					"The record with the given ID is not active");
 		}

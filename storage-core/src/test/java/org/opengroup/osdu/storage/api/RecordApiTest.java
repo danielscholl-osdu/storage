@@ -24,16 +24,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.http.CollaborationContextFactory;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.search.SortOrder;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
 import org.opengroup.osdu.core.common.model.storage.StorageRole;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
+import org.opengroup.osdu.storage.dto.RecordMergePatchRequest;
 import org.opengroup.osdu.storage.mapper.CreateUpdateRecordsResponseMapper;
+import org.opengroup.osdu.storage.model.GetRecordsModel;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.response.CreateUpdateRecordsResponse;
 import org.opengroup.osdu.storage.service.IngestionService;
 import org.opengroup.osdu.storage.service.QueryService;
 import org.opengroup.osdu.storage.service.RecordService;
+import org.opengroup.osdu.storage.util.EncodeDecode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -85,6 +90,9 @@ public class RecordApiTest {
 
     @Mock
     private CreateUpdateRecordsResponseMapper createUpdateRecordsResponseMapper;
+
+    @Mock
+    private EncodeDecode encodeDecode;
 
     @InjectMocks
     private RecordApi sut;
@@ -414,5 +422,50 @@ public class RecordApiTest {
         assertTrue(annotation.value().contains(StorageRole.VIEWER));
         assertTrue(annotation.value().contains(StorageRole.CREATOR));
         assertTrue(annotation.value().contains(StorageRole.ADMIN));
+    }
+
+    @Test
+    public void should_returnHttp200_when_gettingAllRecordsSuccessfully() {
+        // Arrange
+        List<Record> mockRecords = new ArrayList<>();
+        Record mockRecord = new Record();
+        mockRecord.setId(RECORD_ID);
+        mockRecords.add(mockRecord);
+        
+        RecordInfoQueryResult<Record> mockResult = new RecordInfoQueryResult<>("cursor123", mockRecords);
+        
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+        when(this.encodeDecode.deserializeCursor(eq("cursor123"))).thenReturn("deserializedCursor");
+        when(this.encodeDecode.serializeCursor(eq("cursor123"))).thenReturn("serializedCursor");
+        when(this.queryService.getRecords(org.mockito.ArgumentMatchers.any(GetRecordsModel.class), 
+                eq("deserializedCursor"), eq(Optional.empty()))).thenReturn(mockResult);
+
+        // Act
+        ResponseEntity<RecordInfoQueryResult<Record>> response = this.sut.getAllRecords(
+                COLLABORATION_DIRECTIVES, 20, "tenant1:test:kind", "cursor123", false, null, SortOrder.DESC);
+
+        // Assert
+        assertEquals(HttpStatus.SC_OK, response.getStatusCode().value());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().getResults().size());
+        assertEquals(RECORD_ID, response.getBody().getResults().get(0).getId());
+    }
+
+    @Test
+    public void should_returnHttp200_when_patchingRecordSuccessfully() {
+        // Arrange
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        String expectedResponse = "{\"id\":\"" + RECORD_ID + "\",\"status\":\"patched\"}";
+        
+        when(this.collaborationContextFactory.create(eq(COLLABORATION_DIRECTIVES))).thenReturn(Optional.empty());
+        when(this.recordService.patchRecord(eq(RECORD_ID), eq(patchRequest), eq(USER), eq(Optional.empty())))
+                .thenReturn(expectedResponse);
+
+        // Act
+        ResponseEntity<String> response = this.sut.patchRecord(COLLABORATION_DIRECTIVES, RECORD_ID, patchRequest);
+
+        // Assert
+        assertEquals(HttpStatus.SC_OK, response.getStatusCode().value());
+        assertEquals(expectedResponse, response.getBody());
     }
 }
