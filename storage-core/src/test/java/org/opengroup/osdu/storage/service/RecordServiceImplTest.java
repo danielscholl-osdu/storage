@@ -15,13 +15,18 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.feature.IFeatureFlag;
@@ -36,6 +41,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.storage.PersistenceHelper;
+import org.opengroup.osdu.storage.dto.RecordMergePatchRequest;
 import org.opengroup.osdu.storage.exception.DeleteRecordsException;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.model.RecordChangedV2Delete;
@@ -45,6 +51,7 @@ import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository
 import org.opengroup.osdu.storage.util.RecordConstants;
 import org.opengroup.osdu.storage.util.api.RecordUtil;
 import org.opengroup.osdu.storage.validation.RequestValidationException;
+import org.opengroup.osdu.storage.validation.api.JsonMergePatchValidator;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -116,6 +123,8 @@ public class RecordServiceImplTest {
 
     @Mock
     private DpsHeaders headers;
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
     private TenantInfo tenant;
@@ -134,6 +143,14 @@ public class RecordServiceImplTest {
 
     @Mock
     private IFeatureFlag collaborationFeatureFlag;
+    @Mock
+    private QueryService queryService;
+    @Mock
+    private IngestionService ingestionService;
+    @Mock
+    private PersistenceService persistenceService;
+    @Mock
+    private JsonMergePatchValidator mergePatchValidator;
 
     @BeforeEach
     public void setup() {
@@ -1091,5 +1108,229 @@ public class RecordServiceImplTest {
         recordMetadata.setStatus(RecordState.active);
         recordMetadata.setGcsVersionPaths(versionPaths);
         return recordMetadata;
+    }
+
+    @Test
+    public void should_patchRecord_when_validPatchRequestProvided() throws Exception {
+        // Arrange
+        String recordId = "test:record:123";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("name", "Updated Name");
+        patchRequest.setData(updateData);
+
+        List<String> versions = asList("1", "2", "3");
+        RecordMetadata existingRecord = createRecordMetadata(versions);
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.active);
+
+        String existingRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Original Name\"}}";
+        String updatedRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Updated Name\"}}";
+
+        // Mock dependencies
+        when(recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(true);
+        when(queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+        // Act
+        String result = this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(result, updatedRecordJson);
+    }
+
+    @Test
+    public void should_patchRecord_when_statusChangeFromDeletedToActive() throws Exception {
+        // Arrange
+        String recordId = "test:record:789";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        patchRequest.setDeleted(false); // Change from deleted to active
+
+        List<String> versions = List.of("1");
+        RecordMetadata existingRecord = createRecordMetadata(versions);
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.deleted);
+
+        String existingRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Deleted Record\"}}";
+
+        // Mock dependencies
+        when(this.recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(this.dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(true);
+        when(this.queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+
+        // Act
+        String result = this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(RecordState.active, existingRecord.getStatus());
+        assertEquals(user, existingRecord.getModifyUser());
+    }
+
+    @Test
+    public void should_patchRecord_when_statusChangeFromActiveToDeleted() throws Exception {
+        // Arrange
+        String recordId = "test:record:delete";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        patchRequest.setDeleted(true); // Change from active to deleted
+
+        List<String> versions = asList("1", "2");
+        RecordMetadata existingRecord = createRecordMetadata(versions);
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.active);
+
+        String existingRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Active Record\"}}";
+
+        // Mock dependencies
+        when(this.recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(this.dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(true);
+        when(this.queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+
+        // Act
+        String result = this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(RecordState.deleted, existingRecord.getStatus());
+    }
+
+    @Test
+    public void should_throwAppException_when_recordNotFound() throws Exception {
+        // Arrange
+        String recordId = "test:record:notfound";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("name", "Updated Name");
+        patchRequest.setData(updateData);
+
+        when(this.recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(null);
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () -> {
+            this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+        });
+
+        assertEquals(HttpStatus.SC_NOT_FOUND, exception.getError().getCode());
+        assertEquals("Record not found for patching", exception.getError().getReason());
+        assertTrue(exception.getError().getMessage().contains(recordId));
+    }
+
+    @Test
+    public void should_throwAppException_when_ownerAccessDenied() throws Exception {
+        // Arrange
+        String recordId = "test:record:noaccess";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("name", "Updated Name");
+        patchRequest.setData(updateData);
+
+        List<String> versions = asList("1");
+        RecordMetadata existingRecord = createRecordMetadata(versions);
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.active);
+
+        String existingRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Original Name\"}}";
+
+        when(this.recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(this.dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(false);
+        when(this.queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () -> {
+            this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+        });
+
+        assertEquals(HttpStatus.SC_FORBIDDEN, exception.getError().getCode());
+        assertEquals("Access denied", exception.getError().getReason());
+        assertEquals("The user is not authorized to perform this action", exception.getError().getMessage());
+    }
+
+    private static Stream<Arguments> patchRequestTestData() {
+        // ACL test case
+        Acl newAcl = new Acl();
+        newAcl.setOwners(new String[]{"new-owner@tenant.com"});
+        newAcl.setViewers(new String[]{"new-viewer@tenant.com"});
+        RecordMergePatchRequest aclPatchRequest = new RecordMergePatchRequest();
+        aclPatchRequest.setAcl(newAcl);
+
+        // Kind test case
+        RecordMergePatchRequest kindPatchRequest = new RecordMergePatchRequest();
+        kindPatchRequest.setKind("osdu:wks:dataset--File.generic:1.1.0");
+
+        return Stream.of(
+            Arguments.of(
+                "test:record:acl",
+                aclPatchRequest,
+                "{\"id\":\"test:record:acl\",\"acl\":{\"owners\":[\"owner@tenant.com\"],\"viewers\":[\"viewer@tenant.com\"]}}",
+                "{\"id\":\"test:record:acl\",\"acl\":{\"owners\":[\"new-owner@tenant.com\"],\"viewers\":[\"new-viewer@tenant.com\"]}}"
+            ),
+            Arguments.of(
+                "test:record:kind",
+                kindPatchRequest,
+                "{\"id\":\"test:record:kind\",\"kind\":\"osdu:wks:dataset--File.text:1.0.0\"}",
+                "{\"id\":\"test:record:kind\",\"kind\":\"osdu:wks:dataset--File.generic:1.1.0\"}"
+            )
+        );
+    }
+
+    @ParameterizedTest(name = "should_patchRecord_when_valid{0}Provided")
+    @MethodSource("patchRequestTestData")
+    public void should_patchRecord_when_validPatchRequestProvided(
+            String recordId,
+            RecordMergePatchRequest patchRequest, 
+            String existingRecordJson, 
+            String expectedUpdatedJson) throws Exception {
+        // Arrange
+        String user = "test@tenant.com";
+
+        List<String> versions = asList("1");
+        RecordMetadata existingRecord = createRecordMetadata(versions);
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.active);
+
+        // Mock dependencies
+        when(this.recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(this.dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(true);
+        when(this.queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+
+        // Act
+        String result = this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(expectedUpdatedJson, result);
+    }
+
+    @Test
+    public void should_throwAppException_when_recordStatusAlreadyCorrect() throws Exception {
+        // Arrange
+        String recordId = "test:record:samestatus";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        patchRequest.setDeleted(false); // Setting to active when already active
+
+        List<String> versions = asList("1");
+        RecordMetadata existingRecord = createRecordMetadata(versions);
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.active); // Already active
+
+        String existingRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Active Record\"}}";
+
+        when(this.recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(this.dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(true);
+        when(this.queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () -> {
+            this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+        });
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, exception.getError().getCode());
+        assertEquals("Record State already updated", exception.getError().getReason());
     }
 }

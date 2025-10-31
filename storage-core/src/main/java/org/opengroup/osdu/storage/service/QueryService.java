@@ -15,15 +15,25 @@
 package org.opengroup.osdu.storage.service;
 
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
+import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordVersions;
+import org.opengroup.osdu.storage.model.GetRecordsModel;
+import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface QueryService {
 
-	String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext);
+	default String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext) {
+		return getRecordInfo(id, attributes, collaborationContext, false);
+	}
+
+	String getRecordInfo(String id, String[] attributes, Optional<CollaborationContext> collaborationContext, boolean fetchDeletedRecords);
 
 	String getRecordInfo(String id, long version, String[] attributes, Optional<CollaborationContext> collaborationContext);
 
 	RecordVersions listVersions(String id, Optional<CollaborationContext> collaborationContext);
+
+	RecordInfoQueryResult<Record> getRecords(GetRecordsModel getRecordsModel, String s, Optional<CollaborationContext> collaborationContext);
 }

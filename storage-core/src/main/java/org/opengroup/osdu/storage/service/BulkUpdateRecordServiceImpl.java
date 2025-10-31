@@ -123,7 +123,7 @@ public class BulkUpdateRecordServiceImpl implements BulkUpdateRecordService {
         }
 
         if (!validRecordsId.isEmpty()) {
-            lockedRecordsId = persistenceService.updateMetadata(validRecordsMetadata, validRecordsId, idMap, collaborationContext);
+            lockedRecordsId = persistenceService.updateMetadataWithBlobSync(validRecordsMetadata, validRecordsId, idMap, collaborationContext);
         }
 
         for (String lockedId : lockedRecordsId) {

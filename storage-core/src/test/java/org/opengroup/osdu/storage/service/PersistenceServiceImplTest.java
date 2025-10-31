@@ -300,7 +300,7 @@ public class PersistenceServiceImplTest {
         doThrow(new AppException(HttpStatus.SC_REQUEST_TOO_LONG, "entity is too big", "error")).when(this.recordRepository).createOrUpdate(any(), any());
 
         try {
-            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
+            this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
             assertEquals(413, e.getError().getCode());
@@ -329,7 +329,7 @@ public class PersistenceServiceImplTest {
         doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
 
         try {
-            this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
+            this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
             fail("expected exception");
         } catch (AppException e) {
             verify(this.logger, times(1)).warning("Reverting meta data changes");
@@ -348,7 +348,7 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
-        List<String> result = this.sut.updateMetadata(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
+        List<String> result = this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
     }

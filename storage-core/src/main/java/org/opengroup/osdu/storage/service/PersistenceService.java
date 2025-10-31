@@ -12,7 +12,9 @@ import java.util.Optional;
 public interface PersistenceService {
     void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext);
 
-    List<String> updateMetadata(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext);
+    List<String> updateMetadataWithBlobSync(List<RecordMetadata> recordMetadata, List<String> recordsId, Map<String, String> recordsIdMap, Optional<CollaborationContext> collaborationContext);
 
     Map<String, String> patchRecordsMetadata(Map<RecordMetadata, JsonPatch> jsonPatchPerRecord, Optional<CollaborationContext> collaborationContext);
+
+    void updateMetadataAndPublishRecordChangeEvent(RecordMetadata recordMetadata, Optional<CollaborationContext> collaborationContext);
 }
