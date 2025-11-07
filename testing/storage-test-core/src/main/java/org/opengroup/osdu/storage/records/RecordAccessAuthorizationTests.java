@@ -32,10 +32,8 @@ import static org.junit.Assert.assertEquals;
 public abstract class RecordAccessAuthorizationTests extends TestBase {
 
 	protected static long NOW = System.currentTimeMillis();
-	protected static int RETRY_COUNT = 2;
 	protected static String LEGAL_TAG = LegalTagUtils.createRandomName();
 	protected static String KIND = TenantUtils.getTenantName() + ":dataaccess:no:1.1." + NOW;
-	protected static String KIND2 = TenantUtils.getTenantName() + ":dataaccess:no:1.12." + NOW;
 	protected static String RECORD_ID = TenantUtils.getTenantName() + ":no:1.1." + NOW;
 
 	public static void classSetup(String token) throws Exception {
@@ -108,7 +106,10 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 
 		CloseableHttpResponse response = TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
 
-        this.assertNotAuthorized(response);
+        assertEquals(HttpStatus.SC_FORBIDDEN, response.getCode());
+        JsonObject json = JsonParser.parseString(EntityUtils.toString(response.getEntity())).getAsJsonObject();
+        assertEquals(403, json.get("code").getAsInt());
+        assertEquals("Access denied", json.get("reason").getAsString());
     }
 
 	@Test
@@ -129,20 +130,11 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		// Creates a new record
 		String newRecordId = TenantUtils.getTenantName() + ":no:2.2." + NOW;
 
-		int retryCount = RETRY_COUNT;
-		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
+		Map<String, String> headersWithValidAccessToken = HeaderUtils.getHeaders(TenantUtils.getTenantName(),
 				testUtils.getToken());
 
-		CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", headersWithValidAccessToken,
 				RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
-
-
-		// Retry if connection timeout
-		while(retryCount>=0 && response.getCode()== 509) {
-			response = TestUtils.send("records", "PUT", headers,
-					RecordUtil.createDefaultJsonRecord(newRecordId, KIND, LEGAL_TAG), "");
-			retryCount--;
-		}
 
 		assertEquals(HttpStatus.SC_CREATED, response.getCode());
 
@@ -158,19 +150,14 @@ public abstract class RecordAccessAuthorizationTests extends TestBase {
 		JsonObject body = new JsonObject();
 		body.add("records", records);
 
-		response = TestUtils.send("query/records", "POST", headers, body.toString(), "");
+		response = TestUtils.send("query/records", "POST", headersWithNoDataAccessToken, body.toString(), "");
 		assertEquals(HttpStatus.SC_OK, response.getCode());
 
 		DummyRecordsHelper.RecordsMock responseObject = new DummyRecordsHelper().getRecordsMockFromResponse(response);
 
-		assertEquals(2, responseObject.records.length);
+		assertEquals(0, responseObject.records.length);
 		assertEquals(0, responseObject.invalidRecords.length);
 		assertEquals(0, responseObject.retryRecords.length);
-
-		response = TestUtils.send("records/" + newRecordId, "GET", headersWithNoDataAccessToken, "", "");
-
-		// Should get 403 due to lack of access
-		this.assertNotAuthorized(response);
 
 		TestUtils.send("records/" + newRecordId, "DELETE", headersWithNoDataAccessToken, "", "");
 	}
