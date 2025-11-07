@@ -286,7 +286,7 @@ public class PersistenceServiceImpl implements PersistenceService {
             this.commitDatastoreTransaction(updatedRecordsMetadata, collaborationContext);
         }
         if (!orphanedMetadata.isEmpty()) {
-            List<String> ids = recordsMetadata.stream().map(RecordMetadata::getId).toList();
+            List<String> ids = orphanedMetadata.stream().map(RecordMetadata::getId).toList();
             this.batchDeleteMetadata(ids, collaborationContext);
         }
     }
