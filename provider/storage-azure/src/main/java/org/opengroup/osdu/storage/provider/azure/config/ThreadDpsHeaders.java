@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.provider.azure.config;
 
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.opengroup.osdu.storage.provider.azure.config.conditional.AsyncProcessingEnabled;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -26,6 +26,7 @@ import java.util.Map;
 @Component
 @Primary
 @Scope(value = "ThreadScope", proxyMode = ScopedProxyMode.TARGET_CLASS)
+@AsyncProcessingEnabled
 public class ThreadDpsHeaders extends DpsHeaders {
 
     public void setThreadContext(String dataPartitionId, String correlationId, String userEmail) {
