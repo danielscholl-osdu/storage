@@ -28,6 +28,8 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class CollaborationFilterTest extends BaseOsduFilter {
     private static final String X_COLLABORATION_HEADER_NAME = "x-collaboration";
     private static final String COLLABORATION_DIRECTIVES = "id=8e1c4e74-3b9b-4b17-a0d5-67766558ec65,application=Unit test";
+    private static final String DATA_PARTITION_ID = "data-partition-id";
+    private static final String DATA_PARTITION = "data-partition";
     private static final String FEATURE_NAME = "collaborations-enabled";
     @Mock
     public IFeatureFlag iCollaborationFeatureFlag;
@@ -50,6 +52,7 @@ public class CollaborationFilterTest extends BaseOsduFilter {
 
     @Test
     public void shouldThrowException_ifCollaborationHeaderProvided_whenCollaborationFeatureFlagDisabled() throws IOException, ServletException {
+        lenient().when(httpServletRequest.getHeader(DATA_PARTITION_ID)).thenReturn(DATA_PARTITION);
         when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/");
         when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
         when(iCollaborationFeatureFlag.isFeatureEnabled(FEATURE_NAME)).thenReturn(false);

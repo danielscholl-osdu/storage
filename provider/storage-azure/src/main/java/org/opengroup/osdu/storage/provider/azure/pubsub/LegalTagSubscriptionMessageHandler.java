@@ -18,13 +18,12 @@ import com.microsoft.azure.servicebus.ExceptionPhase;
 import com.microsoft.azure.servicebus.IMessage;
 import com.microsoft.azure.servicebus.IMessageHandler;
 import com.microsoft.azure.servicebus.SubscriptionClient;
+import java.util.concurrent.CompletableFuture;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-
-import java.util.concurrent.CompletableFuture;
 
 @ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
@@ -54,8 +53,6 @@ public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
 
     @Override
     public void notifyException(Throwable throwable, ExceptionPhase exceptionPhase) {
-        LOGGER.error("{} - {}", exceptionPhase, throwable.getMessage());
+        LOGGER.error("Legal Tag Subscription Message Handler exception during phase {} - {}", exceptionPhase, throwable.getMessage(), throwable);
     }
-
-
 }

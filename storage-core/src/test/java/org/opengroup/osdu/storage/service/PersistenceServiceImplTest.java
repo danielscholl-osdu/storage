@@ -56,6 +56,7 @@ import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEA
 public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
+    private static final String BUCKET = "anyBucket";
     private static final String MODIFIED_BY = "modifyUser";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
@@ -329,6 +330,7 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
         doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        lenient().when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
             this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
@@ -350,6 +352,7 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
+        lenient().when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
         List<String> result = this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
@@ -528,11 +531,13 @@ public class PersistenceServiceImplTest {
         List<Record> entities2 = new ArrayList<>();
         for (int i = 0; i < batch1Size; i++) {
             Record mock = mock(Record.class);
+            lenient().when(mock.getId()).thenReturn("ID" + i);
             entities1.add(mock);
         }
 
         for (int i = 0; i < batch2Size; i++) {
             Record mock = mock(Record.class);
+            lenient().when(mock.getId()).thenReturn("ID" + (i + idStartPoint));
             entities2.add(mock);
         }
 

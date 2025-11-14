@@ -38,7 +38,7 @@
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
       <!-- OSDU Versions-->
-      <os-core-common.version>3.6.1</os-core-common.version>
+      <os-core-common.version>3.6.2</os-core-common.version>
 
       <!-- Spring Versions-->
       <spring-boot.version>3.3.7</spring-boot.version>
@@ -49,7 +49,7 @@
       <json-smart.version>2.5.1</json-smart.version>
       <openapi.version>2.3.0</openapi.version>
       <lombok.version>1.18.28</lombok.version>
-      <netty.version>4.1.115.Final</netty.version>
+      <netty.version>4.1.119.Final</netty.version>
       <commons-codec.version>1.14</commons-codec.version>
 
       <!-- Plugin Versions -->

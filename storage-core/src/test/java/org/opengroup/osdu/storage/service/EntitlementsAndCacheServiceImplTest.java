@@ -334,7 +334,7 @@ public class EntitlementsAndCacheServiceImplTest {
     }
 
     @Test
-    public void should_returnFalse_when_AclIsNotValid() throws EntitlementsException {
+    public void should_returnFalse_when_AclDoesNotMatchEmailDomain() throws EntitlementsException {
         GroupInfo g1 = new GroupInfo();
         g1.setEmail("role1@tenant.gmail.com");
         g1.setName("role1");
@@ -349,6 +349,41 @@ public class EntitlementsAndCacheServiceImplTest {
         acls.add("invalid@test.whatever.com");
 
         assertEquals(false, this.sut.isValidAcl(this.headers, acls));
+    }
+
+    @Test
+    public void should_returnFalse_when_AclNull()
+            throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("test.tenant@test.com");
+        g1.setName("role1");
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        Set<String> acls = new HashSet<>();
+        acls.add(null);
+
+        assertFalse(this.sut.isValidAcl(this.headers, acls));
+    }
+
+    @Test
+    public void should_returnFalse_when_AclNoAtSymbol()
+            throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("test.tenant@test.com");
+        g1.setName("role1");
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        Set<String> acls = new HashSet<>();
+        acls.add("data.default.ownersopendes.test.com");
+        assertFalse(this.sut.isValidAcl(this.headers, acls));
     }
 
     @Test

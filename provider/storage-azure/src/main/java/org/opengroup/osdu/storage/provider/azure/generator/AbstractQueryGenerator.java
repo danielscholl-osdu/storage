@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.provider.azure.generator;
 
+import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.springframework.data.domain.Sort;
@@ -57,9 +58,13 @@ public abstract class AbstractQueryGenerator {
     }
 
     protected SqlQuerySpec generateCosmosQuery(@NonNull CosmosStoreQuery query, @NonNull String queryHead) {
+        return generateCosmosQuery(query, queryHead, new ArrayList<>());
+    }
+    
+    protected SqlQuerySpec generateCosmosQuery(@NonNull CosmosStoreQuery query, @NonNull String queryHead, List<SqlParameter> parameters) {
         Assert.hasText(queryHead, "query head should have text.");
         String queryString = String.join(" ", queryHead, this.generateQueryTail(query));
-        return new SqlQuerySpec(queryString);
+        return new SqlQuerySpec(queryString, parameters);
     }
 
     protected AbstractQueryGenerator() {

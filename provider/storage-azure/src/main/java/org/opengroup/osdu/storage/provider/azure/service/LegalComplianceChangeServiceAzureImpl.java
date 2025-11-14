@@ -158,10 +158,12 @@ public class LegalComplianceChangeServiceAzureImpl implements ILegalComplianceCh
     private ComplianceChangeInfo getComplianceChangeInfo(LegalTagChanged lt) {
         ComplianceChangeInfo output = null;
 
+        this.LOGGER.info("Legal Tag : {}, compliance : {}", lt.getChangedTagName(), lt.getChangedTagStatus());
         if (lt.getChangedTagStatus().equalsIgnoreCase("compliant")) {
             output = UPDATE_CHANGE;
         } else if (lt.getChangedTagStatus().equalsIgnoreCase("incompliant")) {
             this.legalTagCache.delete(lt.getChangedTagName());
+            this.LOGGER.info("Legal Tag has been deleted : {}", lt.getChangedTagName());
             output = DELETE_CHANGE;
         } else {
             LOGGER.warn(String.format("Unknown LegalTag compliance status received %s %s",

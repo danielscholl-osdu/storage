@@ -15,12 +15,11 @@
 package org.opengroup.osdu.storage.provider.azure.pubsub;
 
 import com.microsoft.azure.servicebus.*;
+import java.util.concurrent.CompletableFuture;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-
-import java.util.concurrent.CompletableFuture;
 
 @ConditionalOnProperty(value = "feature.replay.enabled", havingValue = "true", matchIfMissing = false)
 public class ReplaySubscriptionMessageHandler implements IMessageHandler {
@@ -58,6 +57,6 @@ public class ReplaySubscriptionMessageHandler implements IMessageHandler {
     @Override
     public void notifyException(Throwable throwable, ExceptionPhase exceptionPhase) {
         
-        LOGGER.error("{} - {}", exceptionPhase, throwable.getMessage());
+        LOGGER.error("Replay Subscription Message Handler exception during phase {} - {}", exceptionPhase, throwable.getMessage(), throwable);
     }
 }
