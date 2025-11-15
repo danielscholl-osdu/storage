@@ -20,7 +20,13 @@ public class AzureTestUtils extends TestUtils {
 
 	@Override
 	public synchronized String getToken() throws Exception {
-		if (Strings.isNullOrEmpty(token)) {
+		String bearerToken = System.getProperty("INTEGRATION_TESTER_ACCESS_TOKEN", System.getenv("INTEGRATION_TESTER_ACCESS_TOKEN"));
+		if(!Strings.isNullOrEmpty(bearerToken) && Strings.isNullOrEmpty(token)) {
+			System.out.println("Using INTEGRATION_TESTER_ACCESS_TOKEN bearer token from environment variable");
+			token = bearerToken;
+		}
+		else if (Strings.isNullOrEmpty(token)) {       
+			System.out.println("Generating bearer token using SPN client id and secret");      
 			String sp_id = System.getProperty("INTEGRATION_TESTER", System.getenv("INTEGRATION_TESTER"));
 			String sp_secret = System.getProperty("TESTER_SERVICEPRINCIPAL_SECRET", System.getenv("TESTER_SERVICEPRINCIPAL_SECRET"));
 			String tenant_id = System.getProperty("AZURE_AD_TENANT_ID", System.getenv("AZURE_AD_TENANT_ID"));
@@ -32,7 +38,13 @@ public class AzureTestUtils extends TestUtils {
 
 	@Override
 	public synchronized String getNoDataAccessToken() throws Exception {
-		if (Strings.isNullOrEmpty(noDataAccesstoken)) {
+		String bearerToken = System.getProperty("NO_DATA_ACCESS_TESTER_ACCESS_TOKEN", System.getenv("NO_DATA_ACCESS_TESTER_ACCESS_TOKEN"));
+		if(!Strings.isNullOrEmpty(bearerToken) && Strings.isNullOrEmpty(noDataAccesstoken)) {
+			System.out.println("Using bearer NO_DATA_ACCESS_TESTER_ACCESS_TOKEN token from environment variable");
+			noDataAccesstoken = bearerToken;
+		}
+		else if (Strings.isNullOrEmpty(noDataAccesstoken)) {       
+			System.out.println("Generating bearer token using SPN client id and secret");      
 			String sp_id = System.getProperty("NO_DATA_ACCESS_TESTER", System.getenv("NO_DATA_ACCESS_TESTER"));
 			String sp_secret = System.getProperty("NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET", System.getenv("NO_DATA_ACCESS_TESTER_SERVICEPRINCIPAL_SECRET"));
 			String tenant_id = System.getProperty("AZURE_AD_TENANT_ID", System.getenv("AZURE_AD_TENANT_ID"));

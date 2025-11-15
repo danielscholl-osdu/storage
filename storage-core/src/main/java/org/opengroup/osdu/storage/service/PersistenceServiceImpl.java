@@ -286,7 +286,7 @@ public class PersistenceServiceImpl implements PersistenceService {
             this.commitDatastoreTransaction(updatedRecordsMetadata, collaborationContext);
         }
         if (!orphanedMetadata.isEmpty()) {
-            List<String> ids = recordsMetadata.stream().map(RecordMetadata::getId).toList();
+            List<String> ids = orphanedMetadata.stream().map(RecordMetadata::getId).toList();
             this.batchDeleteMetadata(ids, collaborationContext);
         }
     }
@@ -302,7 +302,7 @@ public class PersistenceServiceImpl implements PersistenceService {
             throw e;
         } catch (Exception e) {
             throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error writing record.",
-                    "The server could not process your request at the moment.", e);
+                "The server could not process your request at the moment.", e);
         }
     }
 

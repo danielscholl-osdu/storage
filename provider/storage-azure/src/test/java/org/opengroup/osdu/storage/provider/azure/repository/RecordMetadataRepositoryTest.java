@@ -2,6 +2,7 @@ package org.opengroup.osdu.storage.provider.azure.repository;
 
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -49,7 +50,15 @@ class RecordMetadataRepositoryTest {
     private final static String RECORD_ID1 = "opendes:id1:15706318658560";
     private final static String RECORD_ID2 = "opendes:id2:15706318658560";
     private final static String KIND = "opendes:source:type:1.0.0";
+    private final static String KIND_PARAMETER = "@kind";
     private final static String STATUS = "active";
+    private final static String STATUS_PARAMETER = "@status";
+    private final static String NAMESPACE_PARAMETER = "@namespace";
+    private final static String LEGAL_TAG_NAME_PARAMETER = "@legalTagNamesString";
+    private final static String ID0_PARAMETER = "@id0";
+    private final static String ID1_PARAMETER = "@id1";
+    private final static String PATH_PARAMETER = "@path";    
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Rule
@@ -243,11 +252,20 @@ class RecordMetadataRepositoryTest {
         }
     }
 
+    private void assertParametersMatch(List<SqlParameter> expectedParameters, List<SqlParameter> capturedParameters) {    
+        // Assert that the captured parameters are as expected
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        for (int i = 0; i < expectedParameters.size(); i++) {
+            assertEquals(expectedParameters.get(i).getName(), capturedParameters.get(i).getName());
+            assertEquals(expectedParameters.get(i).getValue(String.class), capturedParameters.get(i).getValue(String.class));
+        }
+    }
+
     @Test
     void shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsProvided() {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
-        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = '" + KIND + "' AND c.metadata.status = 'active' and STARTSWITH(c.id, '" + CollaborationId + "') ";
+        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = " + KIND_PARAMETER + " AND c.metadata.status = " + STATUS_PARAMETER + " AND STARTSWITH(c.id, " + NAMESPACE_PARAMETER + ") ";
 
         Pageable pageable = PageRequest.of(0, 8);
 
@@ -266,6 +284,17 @@ class RecordMetadataRepositoryTest {
                 any(CosmosQueryRequestOptions.class));
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQuery, capturedQuery.getQueryText());
+
+        List<SqlParameter> expectedParameters = Arrays.asList(
+                new SqlParameter(KIND_PARAMETER, KIND),
+                new SqlParameter(STATUS_PARAMETER, STATUS),
+                new SqlParameter(NAMESPACE_PARAMETER, CollaborationId.toString())
+        );
+
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);
     }
 
     @Test
@@ -273,7 +302,7 @@ class RecordMetadataRepositoryTest {
         UUID CollaborationId = UUID.randomUUID();
         CollaborationContext collaborationContext = CollaborationContext.builder().id(CollaborationId).build();
 
-        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = '" + KIND + "' AND c.metadata.status = 'active' and STARTSWITH(c.id, '" + CollaborationId + "')";
+        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = " + KIND_PARAMETER + " AND c.metadata.status = " + STATUS_PARAMETER + " AND STARTSWITH(c.id, " + NAMESPACE_PARAMETER + ")";
 
         List<RecordMetadataDoc> returnList = new ArrayList<>();
         returnList.add(Mockito.mock(RecordMetadataDoc.class));
@@ -296,11 +325,20 @@ class RecordMetadataRepositoryTest {
                 eq(RecordMetadataDoc.class));
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQuery, capturedQuery.getQueryText());
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(KIND_PARAMETER, KIND),
+            new SqlParameter(STATUS_PARAMETER, STATUS),
+            new SqlParameter(NAMESPACE_PARAMETER, CollaborationId.toString()));
+
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);
     }
 
     @Test
     void shouldQueryByDocIdWithCollaborationId_IfCollaborationContextIsNotProvided() {
-        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = 'opendes:source:type:1.0.0' AND c.metadata.status = 'active' AND c.id = c.metadata.id ";
+        String expectedQuery = "SELECT c.metadata.id FROM c WHERE c.metadata.kind = " + KIND_PARAMETER + " AND c.metadata.status = " + STATUS_PARAMETER + " AND c.id = c.metadata.id ";
 
         Pageable pageable = PageRequest.of(0, 8);
 
@@ -320,6 +358,14 @@ class RecordMetadataRepositoryTest {
 
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQuery, capturedQuery.getQueryText());
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(KIND_PARAMETER, KIND),
+            new SqlParameter(STATUS_PARAMETER, STATUS));
+
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);        
     }
 
     @Test
@@ -346,7 +392,6 @@ class RecordMetadataRepositoryTest {
         String cursor = "cursor";
 
         String expectedQueryWithTrailingSpace = "SELECT * FROM c WHERE ARRAY_CONTAINS_ANY(c.metadata.legal.legaltags, '" + legalTagName + "') ";
-
         doReturn(page).when(cosmosStore).queryItemsPage(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(Class.class), eq(limit), any(), any(CosmosQueryRequestOptions.class));
 
         CosmosStorePageRequest pageable = Mockito.mock(CosmosStorePageRequest.class);
@@ -366,6 +411,14 @@ class RecordMetadataRepositoryTest {
                 any(CosmosQueryRequestOptions.class));
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQueryWithTrailingSpace, capturedQuery.getQueryText());
+        
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(LEGAL_TAG_NAME_PARAMETER, "'" + legalTagName + "'"));
+
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters); 
     }
 
     @Test
@@ -491,7 +544,7 @@ class RecordMetadataRepositoryTest {
 
         doReturn(Arrays.asList(doc1, doc2)).when(cosmosStore).queryItems(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), eq(RecordMetadataDoc.class));
 
-        String expectedQuery = String.format("SELECT * FROM c WHERE c.id IN (\"%s\",\"%s\")", RECORD_ID1, RECORD_ID2);
+        String expectedQuery = String.format("SELECT * FROM c WHERE c.id IN (%s,%s)", ID0_PARAMETER, ID1_PARAMETER);
 
         Map<String, RecordMetadata> resultSet = recordMetadataRepository.get(Arrays.asList(RECORD_ID1, RECORD_ID2), Optional.empty());
 
@@ -501,6 +554,14 @@ class RecordMetadataRepositoryTest {
 
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQuery, capturedQuery.getQueryText());
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(ID0_PARAMETER, RECORD_ID1),
+            new SqlParameter(ID1_PARAMETER, RECORD_ID2));
+
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);
         assertEquals(2, resultSet.size());
     }
 
@@ -511,7 +572,7 @@ class RecordMetadataRepositoryTest {
 
         doReturn(Arrays.asList(doc1, doc2)).when(cosmosStore).queryItems(eq("opendes"), eq("osdu-db"), eq("collection"), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), eq(RecordMetadataDoc.class));
 
-        String expectedQuery = String.format("SELECT * FROM c WHERE c.id IN (\"%s\",\"%s\")", RECORD_ID1, RECORD_ID2);
+        String expectedQuery = String.format("SELECT * FROM c WHERE c.id IN (%s,%s)", ID0_PARAMETER, ID1_PARAMETER);
 
         Map<String, RecordMetadata> resultSet = recordMetadataRepository.get(Arrays.asList(RECORD_ID1, RECORD_ID2), Optional.empty());
 
@@ -521,6 +582,14 @@ class RecordMetadataRepositoryTest {
 
         SqlQuerySpec capturedQuery = queryCaptor.getValue();
         assertEquals(expectedQuery, capturedQuery.getQueryText());
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(ID0_PARAMETER, RECORD_ID1),
+            new SqlParameter(ID1_PARAMETER, RECORD_ID2));
+
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);        
         assertEquals(0, resultSet.size());
     }
 
@@ -531,13 +600,21 @@ class RecordMetadataRepositoryTest {
 
         int actualRecordSize = recordMetadataRepository.getMetadataDocumentCountForBlob("path");
 
-        String requiredQuery = "SELECT COUNT(1) AS documentCount from c WHERE ARRAY_CONTAINS (c.metadata.gcsVersionPaths, 'path')";
+        String requiredQuery = String.format("SELECT COUNT(1) AS documentCount from c WHERE ARRAY_CONTAINS (c.metadata.gcsVersionPaths, %s)", PATH_PARAMETER);
         ArgumentCaptor<SqlQuerySpec> argumentCaptor = ArgumentCaptor.forClass(SqlQuerySpec.class);
 
         verify(cosmosStore).queryItems(eq("opendes"), eq("osdu-db"), eq("collection"), argumentCaptor.capture(), any(CosmosQueryRequestOptions.class), eq(DocumentCount.class));
 
         SqlQuerySpec capturedQuery = argumentCaptor.getValue();
         assertEquals(requiredQuery, capturedQuery.getQueryText());
+        
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(PATH_PARAMETER, "path")
+        );
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);        
         assertEquals(0, actualRecordSize);
     }
 
@@ -548,7 +625,7 @@ class RecordMetadataRepositoryTest {
 
         int actualRecordSize = recordMetadataRepository.getMetadataDocumentCountForBlob("path");
 
-        String requiredQuery = "SELECT COUNT(1) AS documentCount from c WHERE ARRAY_CONTAINS (c.metadata.gcsVersionPaths, 'path')";
+        String requiredQuery = String.format("SELECT COUNT(1) AS documentCount from c WHERE ARRAY_CONTAINS (c.metadata.gcsVersionPaths, %s)", PATH_PARAMETER);
 
         ArgumentCaptor<SqlQuerySpec> argumentCaptor = ArgumentCaptor.forClass(SqlQuerySpec.class);
 
@@ -556,6 +633,13 @@ class RecordMetadataRepositoryTest {
 
         SqlQuerySpec capturedQuery = argumentCaptor.getValue();
         assertEquals(requiredQuery, capturedQuery.getQueryText());
+        List<SqlParameter> expectedParameters = Arrays.asList(
+            new SqlParameter(PATH_PARAMETER, "path")
+        );
+        List<SqlParameter> capturedParameters = capturedQuery.getParameters();
+
+        assertEquals(expectedParameters.size(), capturedParameters.size());
+        assertParametersMatch(expectedParameters, capturedParameters);        
         assertEquals(1, actualRecordSize);
     }
 

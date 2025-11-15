@@ -14,13 +14,17 @@
 
 package org.opengroup.osdu.storage.provider.azure.query;
 
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
+import com.azure.cosmos.models.SqlParameter;
 
 public class CosmosStoreQuery {
     private String query = "";
+    private List<SqlParameter> parameters;
+
     private Sort sort = Sort.unsorted();
     private Pageable pageable = null;
 
@@ -47,6 +51,11 @@ public class CosmosStoreQuery {
         return this;
     }
 
+    public CosmosStoreQuery with(List<SqlParameter> parameters) {
+        this.parameters = parameters;
+        return this;
+    }
+
     public String getQuery() {
         return this.query;
     }
@@ -57,6 +66,10 @@ public class CosmosStoreQuery {
 
     public Pageable getPageable() {
         return this.pageable;
+    }
+
+    public List<SqlParameter> getParameters() {
+        return this.parameters;
     }
 }
 

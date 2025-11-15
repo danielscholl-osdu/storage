@@ -14,7 +14,10 @@
 
 package org.opengroup.osdu.storage.provider.azure.generator;
 
+import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
+import java.util.List;
+
 import org.opengroup.osdu.storage.provider.azure.query.CosmosStoreQuery;
 import org.springframework.lang.NonNull;
 
@@ -32,8 +35,8 @@ public class FindQuerySpecGenerator extends AbstractQueryGenerator {
         return super.generateCosmosQuery(query, "SELECT * FROM c");
     }
 
-    public SqlQuerySpec generateCosmosWithQueryText(CosmosStoreQuery query, String queryText) {
-        return super.generateCosmosQuery(query, queryText);
+    public SqlQuerySpec generateCosmosWithQueryTextAndParameters(CosmosStoreQuery query, String queryText, List<SqlParameter> parameters) {
+        return super.generateCosmosQuery(query, queryText, parameters);
     }
 
     public FindQuerySpecGenerator() {

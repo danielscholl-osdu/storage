@@ -74,7 +74,7 @@ public class QueryApi {
 			@ApiResponse(responseCode = "502", description = "Bad Gateway",  content = {@Content(schema = @Schema(implementation = AppError.class ))}),
 			@ApiResponse(responseCode = "503", description = "Service Unavailable",  content = {@Content(schema = @Schema(implementation = AppError.class ))})
 	})
-	@GetMapping(value = "/records", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value = "/records", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("@authorizationFilter.hasRole('" + StorageRole.ADMIN + "')")
 	public ResponseEntity<DatastoreQueryResult> getAllRecords(
 			@Parameter(description = "x-collaboration") @RequestHeader(name = "x-collaboration", required = false) @Valid @ValidateCollaborationContext String collaborationDirectives,

@@ -10,7 +10,6 @@ export azure.activedirectory.client-id=
 export azure.activedirectory.AppIdUri=
 export azure.activedirectory.session-stateless=
 export cosmosdb_account=
-export cosmosdb_key=
 export cosmosdb_database=
 export azure.storage.account-name=
 export azure.storage.enable-https=

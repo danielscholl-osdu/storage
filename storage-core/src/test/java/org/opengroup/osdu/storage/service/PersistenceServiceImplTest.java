@@ -46,6 +46,8 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEATURE_NAME;
@@ -54,6 +56,7 @@ import static org.opengroup.osdu.storage.util.RecordConstants.COLLABORATIONS_FEA
 public class PersistenceServiceImplTest {
 
     private static final Integer BATCH_SIZE = 48;
+    private static final String BUCKET = "anyBucket";
     private static final String MODIFIED_BY = "modifyUser";
     private final Optional<CollaborationContext> COLLABORATION_CONTEXT = Optional.ofNullable(CollaborationContext.builder().id(UUID.fromString("9e1c4e74-3b9b-4b17-a0d5-67766558ec65")).application("TestApp").build());
 
@@ -327,6 +330,7 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
         doThrow(new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, "other errors", "error")).when(this.recordRepository).createOrUpdate(any(), any());
+        lenient().when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
 
         try {
             this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
@@ -348,6 +352,7 @@ public class PersistenceServiceImplTest {
         currentRecords.put("id:access:1", recordMetadataList.get(0));
         currentRecords.put("id:access:2", recordMetadataList.get(1));
 
+        lenient().when(this.recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
         List<String> result = this.sut.updateMetadataWithBlobSync(recordMetadataList, recordsId, new HashMap<>(), Optional.empty());
 
         assertEquals(0, result.size());
@@ -425,6 +430,66 @@ public class PersistenceServiceImplTest {
         assertTrue(patchErrors.isEmpty());
     }
 
+        @Test
+    public void should_deleteOrphanedMetadata_when_cleanupDatastoreWithNoRemainingVersions() {
+        List<RecordMetadata> recordsMetadata = new ArrayList<>();
+
+        // Create a record that will become orphaned (only has one version which will be removed)
+        RecordMetadata orphanedRecord = new RecordMetadata();
+        orphanedRecord.setId("orphaned-record-id");
+        orphanedRecord.setKind("test:kind");
+        orphanedRecord.setStatus(RecordState.active);
+        // Set gcsVersionPaths with only one version. This will be removed which makes it orphaned.
+        orphanedRecord.setGcsVersionPaths(Arrays.asList("test:kind/orphaned-record-id/1"));
+        recordsMetadata.add(orphanedRecord);
+
+        // Create a record that will have remaining versions (has multiple versions)
+        RecordMetadata recordWithRemainingVersions = new RecordMetadata();
+        recordWithRemainingVersions.setId("record-with-versions");
+        recordWithRemainingVersions.setKind("test:kind");
+        recordWithRemainingVersions.setStatus(RecordState.active);
+        // Set gcsVersionPaths with multiple versions - latest will be removed, but others remain
+        recordWithRemainingVersions.setGcsVersionPaths(Arrays.asList("test:kind/record-with-versions/1", "test:kind/record-with-versions/2"));
+        recordsMetadata.add(recordWithRemainingVersions);
+
+        when(recordRepository.createOrUpdate(anyList(), any()))
+            .thenThrow(new RuntimeException("Simulated datastore failure"))
+            .thenReturn(new ArrayList<>());
+        doNothing().when(recordRepository).batchDelete(anyList(), any());
+
+        TransferBatch batch = createBatchTransferWith(recordsMetadata);
+
+        // Act - This will trigger tryCleanupDatastore internally
+        assertThrows(RuntimeException.class, () -> {
+            sut.persistRecordBatch(batch, Optional.empty());
+        });
+
+        // Assert - Verify the cleanup behavior
+        // The cleanup should:
+        // 1. Call createOrUpdate twice (initial fail + cleanup for records with remaining versions)
+        // 2. Call batchDelete once for orphaned records
+        verify(recordRepository, times(2)).createOrUpdate(anyList(), any());
+
+        ArgumentCaptor<List<String>> batchDeleteCaptor = ArgumentCaptor.forClass(List.class);
+        verify(recordRepository).batchDelete(batchDeleteCaptor.capture(), any());
+
+        // Verify orphaned record was deleted
+        List<String> deletedIds = batchDeleteCaptor.getValue();
+        assertEquals(1, deletedIds.size());
+        assertEquals("orphaned-record-id", deletedIds.get(0));
+
+        // Verify the second createOrUpdate call only contains the record with remaining versions
+        ArgumentCaptor<List<RecordMetadata>> updateCaptor = ArgumentCaptor.forClass(List.class);
+        verify(recordRepository, times(2)).createOrUpdate(updateCaptor.capture(), any());
+
+        List<List<RecordMetadata>> allCalls = updateCaptor.getAllValues();
+        // Second call (cleanup) should only have the record with remaining versions
+        List<RecordMetadata> cleanupCall = allCalls.get(1);
+        assertEquals(1, cleanupCall.size());
+        assertEquals("record-with-versions", cleanupCall.get(0).getId());
+        assertEquals(1, cleanupCall.get(0).getGcsVersionPaths().size()); // Latest version removed
+    }
+
     private PubSubInfo getPubSubInfo(RecordMetadata recordMetadata) {
         return PubSubInfo.builder()
                 .id(recordMetadata.getId())
@@ -466,11 +531,13 @@ public class PersistenceServiceImplTest {
         List<Record> entities2 = new ArrayList<>();
         for (int i = 0; i < batch1Size; i++) {
             Record mock = mock(Record.class);
+            lenient().when(mock.getId()).thenReturn("ID" + i);
             entities1.add(mock);
         }
 
         for (int i = 0; i < batch2Size; i++) {
             Record mock = mock(Record.class);
+            lenient().when(mock.getId()).thenReturn("ID" + (i + idStartPoint));
             entities2.add(mock);
         }
 
@@ -601,5 +668,24 @@ public class PersistenceServiceImplTest {
 
         assertEquals(expectedMeta, metadataArgumentCaptor.getAllValues());
         assertEquals(expectedVersions, versionArgumentCaptor.getAllValues());
+    }
+
+    // Helper method to create a batch transfer with specific metadata
+    private TransferBatch createBatchTransferWith(List<RecordMetadata> recordsMetadata) {
+        TransferInfo transferInfo = new TransferInfo();
+        transferInfo.setRecordCount(recordsMetadata.size());
+        transferInfo.setVersion(123456L);
+        transferInfo.setUser("transactionUser");
+
+        List<RecordProcessing> records = new ArrayList<>();
+
+        for (RecordMetadata metadata : recordsMetadata) {
+            RecordProcessing processing = new RecordProcessing();
+            processing.setRecordMetadata(metadata);
+            processing.setOperationType(OperationType.update);
+            records.add(processing);
+        }
+
+        return new TransferBatch(transferInfo, records);
     }
 }

@@ -1,11 +1,5 @@
 package org.opengroup.osdu.storage.validation;
 
-import jakarta.validation.ConstraintValidatorContext;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.opengroup.osdu.storage.validation.impl.VersionIdsValidator;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,9 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_VERSION_IDS_FOR_LATEST_VERSION;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_VERSION_IDS_FOR_NON_EXISTING_VERSIONS;
 import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_VERSION_IDS_SIZE;
+import org.opengroup.osdu.storage.validation.impl.VersionIdsValidator;
+
+import jakarta.validation.ConstraintValidatorContext;
 
 class VersionIdsValidatorTest {
 
@@ -89,4 +89,18 @@ class VersionIdsValidatorTest {
         assertEquals(expectedMessage, requestValidationException.getMessage());
 
     }
+
+    @Test
+    void shouldThrowException_whenVersionIdsHasNonExistingRecordVersions_andVersionPathContainsSomeVersions() {
+        String versionPathPrefix = "kind1" + "/" + "recordID2" + "/";
+        List<String> existingRecordVersionPaths = Stream.of("55").map(version -> versionPathPrefix + version).toList();
+        String versionIds = "1,2,5,55";
+        String nonExistingVersions = "1,2,5";
+        String expectedMessage = String.format(INVALID_VERSION_IDS_FOR_NON_EXISTING_VERSIONS, nonExistingVersions);
+
+        RequestValidationException requestValidationException = assertThrows( RequestValidationException.class, () ->
+                VersionIdsValidator.validateForNonExistingRecordVersions(versionIds, existingRecordVersionPaths));
+        assertEquals(expectedMessage, requestValidationException.getMessage());
+
+    }    
 }

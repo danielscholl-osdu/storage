@@ -15,25 +15,37 @@
 package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.http.HttpStatus;
+
 import org.opengroup.osdu.core.common.http.ResponseHeadersFactory;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import jakarta.servlet.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 @Order(8)
 @Component
 public class StorageFilter extends BaseOsduFilter implements Filter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(StorageFilter.class);
 
     private static final String DISABLE_AUTH_PROPERTY = "org.opengroup.osdu.storage.disableAuth";
     private static final String OPTIONS_STRING = "OPTIONS";
@@ -77,13 +89,17 @@ public class StorageFilter extends BaseOsduFilter implements Filter {
         }
 
         try {
-            if (!isExcludedPath(httpRequest))
+            if (!isExcludedPath(httpRequest)) {
                 validateMandatoryHeaders();
+            }
             chain.doFilter(request, response);
         } catch (AppException e) {
             //Unhandled Exceptions thrown by filters are not caught by the ExceptionManagers, instead spring security converts them to 500.
             // So, catch all the app exceptions(only, since we're throwing that when something bad happens) and convert them to json, instead of 500 if uncaught
             getErrorResponse(response, new AppError(e.getError().getCode(), e.getError().getReason(), e.getMessage()));
+        } catch (Throwable t) {         
+            this.LOGGER.error("Unhandled throwable caught in StorageFilter", t);
+            throw t;
         }
     }
 

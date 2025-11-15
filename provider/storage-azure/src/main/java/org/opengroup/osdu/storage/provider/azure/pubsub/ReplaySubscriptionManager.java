@@ -66,11 +66,13 @@ public class ReplaySubscriptionManager {
 
         for (String partition : tenantList) {
             try {
+                LOGGER.info("Subscribing to replay events for partition: {}", partition);
                 SubscriptionClient subscriptionClient =
                         this.subscriptionClientFactory
                                 .getClient(partition, replayRoutingProperty.get("topic"), replayRoutingProperty.get("topicSubscription"));
 
                 registerMessageHandler(subscriptionClient, replayMessageHandler, executorService);
+                LOGGER.info("Successfully subscribed to replay events for partition: {}", partition);
             } catch (Exception e) {
                 LOGGER.error("Error while creating or registering replay topic subscription client {}", e.getMessage(), e);
             }
@@ -79,6 +81,7 @@ public class ReplaySubscriptionManager {
 
     private void registerMessageHandler(SubscriptionClient subscriptionClient, ReplayMessageHandler replayMessageHandler, ExecutorService executorService) throws ServiceBusException, InterruptedException {
 
+        LOGGER.info("Registering Replay Message Handler");
         ReplaySubscriptionMessageHandler messageHandler = new ReplaySubscriptionMessageHandler(subscriptionClient, replayMessageHandler);
 
         subscriptionClient.registerMessageHandler(
@@ -90,5 +93,7 @@ public class ReplaySubscriptionManager {
                         Duration.ofSeconds(1)
                 ),
                 executorService);
+
+        LOGGER.info("Successfully registered Replay Message Handler.");
     }
 }

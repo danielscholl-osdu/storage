@@ -87,7 +87,12 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
         }
         String domain = email.split("@")[1];
         for (String acl : acls) {
-            if (!acl.split("@")[1].equalsIgnoreCase(domain)) {
+            if (acl == null) {
+                return false;
+            }
+
+            String[] aclParts = acl.split("@");
+            if (aclParts.length < 2 || !aclParts[1].equalsIgnoreCase(domain)) {
                 return false;
             }
         }

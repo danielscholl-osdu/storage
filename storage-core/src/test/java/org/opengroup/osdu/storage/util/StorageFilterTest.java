@@ -1,27 +1,41 @@
 package org.opengroup.osdu.storage.util;
 
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.opengroup.osdu.core.common.model.http.AppError;
-import org.opengroup.osdu.core.common.model.http.AppException;
-import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.springframework.test.util.ReflectionTestUtils;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
+import org.apache.http.HttpStatus;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+
+import org.slf4j.LoggerFactory;
+
+import org.opengroup.osdu.core.common.model.http.AppError;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class StorageFilterTest extends BaseOsduFilter{
@@ -32,7 +46,7 @@ public class StorageFilterTest extends BaseOsduFilter{
     @InjectMocks
     private StorageFilter storageFilter;
     @Mock
-    private PrintWriter writer;
+    private PrintWriter writer;   
 
     @Test
     public void shouldSetCorrectResponseHeaders() throws IOException, ServletException {
@@ -100,7 +114,7 @@ public class StorageFilterTest extends BaseOsduFilter{
     }
 
     @Test
-    public void ShouldCatchExceptionsThrownFromDoFilter() throws ServletException, IOException {
+    public void shouldCatchAppExceptionsThrownFromDoFilter() throws ServletException, IOException {
         HttpServletRequest httpServletRequest = Mockito.mock(HttpServletRequest.class);
         HttpServletResponse httpServletResponse = Mockito.mock(HttpServletResponse.class);
         FilterChain filterChain = Mockito.mock(FilterChain.class);
@@ -119,5 +133,50 @@ public class StorageFilterTest extends BaseOsduFilter{
         storageFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
         AppError error = new AppError(HttpStatus.SC_LOCKED, "Locked", "Feature is not enabled on this environment");
         Mockito.verify(writer).write(appErrorToJson(error));
+    }
+
+    @Test
+    public void shouldLogErrorAndRethrowThrowableThrownFromDoFilter() throws ServletException, IOException {
+        HttpServletRequest httpServletRequest = Mockito.mock(HttpServletRequest.class);
+        HttpServletResponse httpServletResponse = Mockito.mock(HttpServletResponse.class);
+        FilterChain filterChain = Mockito.mock(FilterChain.class);
+        Mockito.when(dpsHeaders.getCorrelationId()).thenReturn("correlation-id-value");
+        Mockito.when(httpServletRequest.getMethod()).thenReturn("POST");
+        Mockito.when(dpsHeaders.getAuthorization()).thenReturn("token");
+        Mockito.when(dpsHeaders.getPartitionId()).thenReturn("data-partition");
+        when(httpServletRequest.getRequestURI()).thenReturn("https://my-service-url/api/storage/v2/");
+        when(httpServletRequest.getContextPath()).thenReturn("/api/storage/v2/");
+        ReflectionTestUtils.setField(storageFilter, "excludedPaths", Arrays.asList("info", "swagger", "health", "api-docs"));
+        ReflectionTestUtils.setField(storageFilter, "ACCESS_CONTROL_ALLOW_ORIGIN_DOMAINS", "custom-domain");
+
+        // attach mock appender to capture logs from StorageFilter's logger
+        Logger logger = (Logger) LoggerFactory.getLogger(StorageFilter.class);
+        Appender mockAppender = Mockito.mock(Appender.class);
+        logger.addAppender(mockAppender);
+
+        try {
+            doThrow(new AssertionError("this should be caught as a throwable")).when(filterChain).doFilter(httpServletRequest, httpServletResponse);
+
+            Error thrown = assertThrows(Error.class, () -> storageFilter.doFilter(httpServletRequest, httpServletResponse, filterChain));
+
+            // verify that the thrown error is the one we threw from the filter chain
+            assertTrue(thrown instanceof AssertionError);
+            assertEquals("this should be caught as a throwable", thrown.getMessage());
+
+            // verify that that the logger received the expected log entry
+            Mockito.verify(mockAppender, Mockito.atLeastOnce()).doAppend(Mockito.argThat(
+            (ILoggingEvent event) ->
+                event.getLevel() == Level.ERROR &&
+                event.getMessage() != null &&
+                event.getMessage().contains("Unhandled throwable caught in StorageFilter") &&
+                event.getThrowableProxy().getClassName().equals(AssertionError.class.getName()) &&                    
+                event.getThrowableProxy() != null &&
+                event.getThrowableProxy().getMessage() != null &&
+                event.getThrowableProxy().getMessage().contains("this should be caught as a throwable")
+            ));
+        } finally {
+            // detach mock appender so it doesn't interfere with other tests
+            logger.detachAppender(mockAppender);
+        }
     }
 }

@@ -34,6 +34,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,11 +92,11 @@ public class OPAServiceImplTest {
         this.acl.setViewers(ACL);
         this.acl.setOwners(ACL);
 
-        when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT);
+        lenient().when(this.headers.getPartitionIdWithFallbackToAccountId()).thenReturn(TENANT);
+        lenient().when(this.headers.getAuthorization()).thenReturn("Bearer testtoken");
         when(this.headers.getPartitionId()).thenReturn(TENANT);
         when(this.headers.getCorrelationId()).thenReturn("cor-id");
         when(this.headers.getUserId()).thenReturn("user-id");
-        when(this.headers.getAuthorization()).thenReturn("Bearer testtoken");
     }
 
     @Test
@@ -162,6 +164,7 @@ public class OPAServiceImplTest {
         when(httpClient.send(httpRequest)).thenReturn(httpResponse);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
+        lenient().when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{}");
 
         try {
@@ -200,6 +203,7 @@ public class OPAServiceImplTest {
         when(httpClient.send(httpRequest)).thenReturn(httpResponse);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
+        lenient().when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"errors\": [{\"message\":\"Invalid legal tag(s) found on record\"},{\"message\":\"You must be an owner to update a record\"}],\"id\": \"tenant1:crazy:record2\"}]}");
 
         List<OpaError> errors2 = new ArrayList<>();
@@ -241,6 +245,7 @@ public class OPAServiceImplTest {
         when(httpClient.send(httpRequest)).thenReturn(httpResponse);
 
         when(httpResponse.isSuccessCode()).thenReturn(true);
+        lenient().when(httpResponse.getResponseCode()).thenReturn(200);
         when(httpResponse.getBody()).thenReturn("{\"result\": [{\"errors\": [],\"id\": \"tenant1:kind:record1\"},{\"id\": \"tenant1:crazy:record2\",\"errors\":[{\"reason\":\"test\",\"message\":\"You must be a viewer or an owner to access a record\",\"code\":\"401\",\"id\": \"tenant1:crazy:record2\"}]}]}");
 
         List<OpaError> errors2 = new ArrayList<>();

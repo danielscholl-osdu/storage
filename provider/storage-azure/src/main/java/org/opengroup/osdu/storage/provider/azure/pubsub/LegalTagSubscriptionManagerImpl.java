@@ -59,19 +59,22 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
                 .newFixedThreadPool(Integer.parseUnsignedInt(serviceBusConfig.getSbExecutorThreadPoolSize()));
         for (String partition : tenantList) {
             try {
+                LOGGER.info("Subscribing to legal tag change events for partition: {}", partition);
                 SubscriptionClient subscriptionClient = this
                         .legalTagSubscriptionClientFactory
                         .getSubscriptionClient(partition, serviceBusConfig.getLegalServiceBusTopic(), serviceBusConfig.getLegalServiceBusTopicSubscription());
                 registerMessageHandler(subscriptionClient, executorService);
+                LOGGER.info("Successfully subscribed to legal tag change events for partition: {}", partition);
             } catch (InterruptedException | ServiceBusException e) {
-                LOGGER.error("Error while creating or registering subscription client {}", e.getMessage(), e);
+                LOGGER.error("Error while creating or registering legal tag subscription client {}", e.getMessage(), e);
             } catch (Exception e) {
-                LOGGER.error("Error while creating or registering subscription client {}", e.getMessage(), e);
+                LOGGER.error("Error while creating or registering legal tag subscription client {}", e.getMessage(), e);
             }
         }
     }
 
     private void registerMessageHandler(SubscriptionClient subscriptionClient, ExecutorService executorService) throws ServiceBusException, InterruptedException {
+        LOGGER.info("Registering Legal Tag Message Handler");
         LegalTagSubscriptionMessageHandler messageHandler = new LegalTagSubscriptionMessageHandler(subscriptionClient, legalComplianceChangeUpdate);
         subscriptionClient.registerMessageHandler(
                 messageHandler,
@@ -81,5 +84,6 @@ public class LegalTagSubscriptionManagerImpl implements ILegalTagSubscriptionMan
                         Duration.ofSeconds(1)
                 ),
                 executorService);
+        LOGGER.info("Successfully registered Legal Tag Message Handler.");
     }
 }

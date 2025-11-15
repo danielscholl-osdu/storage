@@ -392,7 +392,7 @@ public class IngestionServiceImpl implements IngestionService {
 		Set<String> legalTags = new HashSet<>();
 
 		for (Record record : inputRecords) {
-			if (record.getLegal().hasLegaltags()) {
+			if (record.getLegal() != null && record.getLegal().hasLegaltags()) {
 				legalTags.addAll(record.getLegal().getLegaltags());
 			}
 		}
@@ -404,7 +404,7 @@ public class IngestionServiceImpl implements IngestionService {
 		Set<String> ordc = new HashSet<>();
 
 		for (Record record : inputRecords) {
-			if (record.getLegal().getOtherRelevantDataCountries() != null
+			if (record.getLegal() != null && record.getLegal().getOtherRelevantDataCountries() != null
 					&& !record.getLegal().getOtherRelevantDataCountries().isEmpty()) {
 				ordc.addAll(record.getLegal().getOtherRelevantDataCountries());
 			}
