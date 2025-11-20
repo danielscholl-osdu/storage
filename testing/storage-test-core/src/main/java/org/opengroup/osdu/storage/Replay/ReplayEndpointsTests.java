@@ -111,7 +111,7 @@ public abstract class ReplayEndpointsTests extends TestBase {
         CloseableHttpResponse response = TestUtils.send("replay", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), requestBody, "");
         String actualErrorMessage = ReplayUtils.getFieldFromResponse(response, "message");
         assertEquals(400, response.getCode());
-        assertEquals("Not a valid operation. The valid operation is: [reindex]", actualErrorMessage);
+        assertEquals("Not a valid operation. The valid operations are: [reindex, replay]", actualErrorMessage);
     }
 
     @Test
