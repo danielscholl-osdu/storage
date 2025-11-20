@@ -174,7 +174,7 @@ public class ReplayServiceTest {
             ReplayResponse response = replayService.handleReplayRequest(replayRequest);
         }
         catch (AppException e) {
-            assertEquals("Not a valid operation. The valid operation is: [reindex, replay]", e.getMessage());
+            assertEquals("Not a valid operation. The valid operations are: [reindex, replay]", e.getMessage());
         }
     }
 
