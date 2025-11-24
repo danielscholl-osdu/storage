@@ -59,6 +59,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.argThat;
 
 @ExtendWith(MockitoExtension.class)
 public class ReplayServiceTest {
@@ -346,5 +348,86 @@ public class ReplayServiceTest {
         assertNotNull(response);
         assertNotNull(response.getFilter());
         assertEquals(response.getOverallState(),"COMPLETED");
+    }
+
+    @Test
+    public void test_processFailure_when_auditLoggerThrowsException() {
+        // Given
+        String replayId = UUID.randomUUID().toString();
+        String kind = "test:kind:1.0.0";
+
+        ReplayData replayData = ReplayData.builder()
+                .replayId(replayId)
+                .kind(kind)
+                .build();
+
+        ReplayMessage replayMessage = ReplayMessage.builder()
+                .body(replayData)
+                .build();
+
+        ReplayMetaDataDTO replayMetadata = ReplayMetaDataDTO.builder()
+                .replayId(replayId)
+                .kind(kind)
+                .state(ReplayState.IN_PROGRESS.name())
+                .build();
+
+        // Mock repository calls
+        when(replayRepository.getReplayStatusByKindAndReplayId(kind, replayId))
+                .thenReturn(replayMetadata);
+        when(replayRepository.save(any(ReplayMetaDataDTO.class)))
+                .thenReturn(replayMetadata);
+
+        // Mock auditLogger to throw exception
+        doThrow(new RuntimeException("Audit service unavailable"))
+                .when(auditLogger).createReplayRequestFail(anyList());
+
+        // When
+        replayService.processFailure(replayMessage);
+
+        // Then
+        verify(replayRepository).getReplayStatusByKindAndReplayId(kind, replayId);
+        verify(replayRepository).save(argThat(metadata ->
+                ReplayState.FAILED.name().equals(metadata.getState())));
+        verify(auditLogger).createReplayRequestFail(anyList());
+
+        // Verify that the method completes successfully despite audit logger exception
+        // (The test passing means the exception was caught and handled)
+    }
+
+    @Test
+    public void test_processFailure_when_auditLoggerSucceeds() {
+        // Given
+        String replayId = UUID.randomUUID().toString();
+        String kind = "test:kind:1.0.0";
+
+        ReplayData replayData = ReplayData.builder()
+                .replayId(replayId)
+                .kind(kind)
+                .build();
+
+        ReplayMessage replayMessage = ReplayMessage.builder()
+                .body(replayData)
+                .build();
+
+        ReplayMetaDataDTO replayMetadata = ReplayMetaDataDTO.builder()
+                .replayId(replayId)
+                .kind(kind)
+                .state(ReplayState.IN_PROGRESS.name())
+                .build();
+
+        // Mock repository calls
+        when(replayRepository.getReplayStatusByKindAndReplayId(kind, replayId))
+                .thenReturn(replayMetadata);
+        when(replayRepository.save(any(ReplayMetaDataDTO.class)))
+                .thenReturn(replayMetadata);
+
+        // When
+        replayService.processFailure(replayMessage);
+
+        // Then
+        verify(replayRepository).getReplayStatusByKindAndReplayId(kind, replayId);
+        verify(replayRepository).save(argThat(metadata ->
+                ReplayState.FAILED.name().equals(metadata.getState())));
+        verify(auditLogger).createReplayRequestFail(anyList());
     }
 }
