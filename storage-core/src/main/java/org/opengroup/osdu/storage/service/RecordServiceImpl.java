@@ -401,7 +401,7 @@ public class RecordServiceImpl implements RecordService {
     private void validateFromVersion(Long fromVersion, List<String> existingRecordVersionPaths) {
 
         boolean fromVersionNotFound = existingRecordVersionPaths.stream()
-                .noneMatch(paths -> paths.contains(String.valueOf(fromVersion)));
+                .noneMatch(paths -> paths.endsWith(String.valueOf(fromVersion)));
         if (fromVersionNotFound) {
             String message = String.format(INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS, fromVersion);
             throw new AppException(HttpStatus.SC_BAD_REQUEST, INVALID_FROM_VERSION, message);

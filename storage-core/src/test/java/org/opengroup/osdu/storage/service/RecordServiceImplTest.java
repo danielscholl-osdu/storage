@@ -714,6 +714,25 @@ public class RecordServiceImplTest {
     }
 
     @Test
+    public void shouldThrowBadRequestException_whenPurgeRecordVersions_forFromVersionAsSubstring() {
+        // Test case for the bug fix: version "404" should not match path ending with "17304404123"
+        // This validates the fix from .contains() to .endsWith()
+        List<String> versions = asList("17304404120", "17304404121", "17304404122", "17304404123");
+        RecordMetadata recordMetadata = createRecordMetadata(versions);
+        Long fromVersion = 404L; // This substring exists in all version paths but is not a valid version
+        when(this.recordRepository.get(RECORD_ID, EMPTY_COLLABORATION_CONTEXT)).thenReturn(recordMetadata);
+        when(this.dataAuthorizationService.validateOwnerAccess(any(), any())).thenReturn(true);
+
+        AppException appException = assertThrows(AppException.class,
+                () -> this.sut.purgeRecordVersions(RECORD_ID, DEFAULT_VERSION_IDS, DEFAULT_LIMIT, fromVersion, USER_NAME, EMPTY_COLLABORATION_CONTEXT));
+
+        assertEquals(HttpStatus.SC_BAD_REQUEST, appException.getError().getCode());
+        assertEquals(INVALID_FROM_VERSION, appException.getError().getReason());
+        String errorMessage = String.format(INVALID_FROM_VERSION_FOR_NON_EXISTING_VERSIONS, fromVersion);
+        assertEquals(errorMessage, appException.getMessage());
+    }
+
+    @Test
     public void shouldThrowBadRequestException_whenPurgeRecordVersions_forInvalidFromVersion() {
 
         List<String> versions = asList("1", "2", "3", "4");
