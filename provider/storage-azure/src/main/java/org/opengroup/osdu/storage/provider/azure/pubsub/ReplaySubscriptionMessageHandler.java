@@ -27,7 +27,7 @@ public class ReplaySubscriptionMessageHandler implements IMessageHandler {
 
     private final SubscriptionClient receiveClient;
 
-    private final int MAX_DELIVERY_COUNT = 3;
+    private final int MAX_DELIVERY_COUNT = 5; // Should match Service Bus config
 
     private ReplayMessageHandler replayMessageHandler;
 
@@ -43,13 +43,13 @@ public class ReplaySubscriptionMessageHandler implements IMessageHandler {
             replayMessageHandler.handle(message);
             return this.receiveClient.completeAsync(message.getLockToken());
         } catch (Exception e) {
-            LOGGER.error("Exception while processing replay topic message.", e);
+            LOGGER.error("Exception while processing Replay topic message.", e);
             if (message.getDeliveryCount() >= MAX_DELIVERY_COUNT) {
-                LOGGER.error("Max Delivery Count of {} Exceeded for Message; Dead Lettering the message.", MAX_DELIVERY_COUNT, e);
+                LOGGER.error("Max Delivery Count of {} Exceeded for Replay Message; Dead Lettering the message.", MAX_DELIVERY_COUNT, e);
                 replayMessageHandler.handleFailure(message);
                 return this.receiveClient.deadLetterAsync(message.getLockToken());
             }
-            LOGGER.warn("Attempt {}/{} failed.", message.getDeliveryCount(), MAX_DELIVERY_COUNT, e);
+            LOGGER.warn("Attempt to deliver the Replay Message {}/{} failed.", message.getDeliveryCount(), MAX_DELIVERY_COUNT, e);
             return this.receiveClient.abandonAsync(message.getLockToken());
         }
     }

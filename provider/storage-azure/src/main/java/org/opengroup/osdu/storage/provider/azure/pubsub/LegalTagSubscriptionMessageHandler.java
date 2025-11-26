@@ -22,19 +22,18 @@ import java.util.concurrent.CompletableFuture;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
 public class LegalTagSubscriptionMessageHandler implements IMessageHandler {
-    @Autowired
+    
     private final static Logger LOGGER = LoggerFactory.getLogger(LegalTagSubscriptionMessageHandler.class);
     private final SubscriptionClient receiveClient;
     private final LegalComplianceChangeUpdate legalComplianceChangeUpdate;
 
-    public LegalTagSubscriptionMessageHandler(SubscriptionClient client, LegalComplianceChangeUpdate legalComplianceChangeServiceAzure) {
+    public LegalTagSubscriptionMessageHandler(SubscriptionClient client, LegalComplianceChangeUpdate legalComplianceChangeUpdate) {
         this.receiveClient = client;
-        this.legalComplianceChangeUpdate = legalComplianceChangeServiceAzure;
+        this.legalComplianceChangeUpdate = legalComplianceChangeUpdate;
     }
 
     @Override

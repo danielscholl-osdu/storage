@@ -14,7 +14,19 @@
 
 package org.opengroup.osdu.storage.provider.azure.interfaces;
 
-public interface ILegalTagSubscriptionManager {
+import com.microsoft.azure.servicebus.MessageHandlerOptions;
+import com.microsoft.azure.servicebus.SubscriptionClient;
+import com.microsoft.azure.servicebus.primitives.ServiceBusException;
+import java.util.concurrent.ExecutorService;
 
-    void subscribeLegalTagsChangeEvent();
+/**
+ * Common interface for message handlers that can register themselves with ServiceBus
+ */
+public interface IMessageHandler {
+    
+    /**
+     * Register this message handler with the given subscription client
+     */
+    void registerWith(SubscriptionClient subscriptionClient, MessageHandlerOptions options, ExecutorService executorService) 
+        throws ServiceBusException, InterruptedException;
 }

@@ -255,8 +255,15 @@ public class ReplayService implements IReplayService {
                                                                                             );
         replayMetadata.setState(ReplayState.FAILED.name());
         replayRepository.save(replayMetadata);
-        auditLogger.createReplayRequestFail(Collections.singletonList(replayMetadata.toString()));
-        logger.error("Replay Operation with given metadata failed : {}", replayMetadata);
+        try {
+            auditLogger.createReplayRequestFail(Collections.singletonList(replayMetadata.toString()));
+        } catch (Exception e) {
+            logger.warn("Audit logger failed in processFailure: {}", e.getMessage(), e);
+        }
+        logger.error("Replay operation FAILED for replayId={}, kind={}, metadata={}", 
+            replayMessage.getBody().getReplayId(), 
+            replayMessage.getBody().getKind(), 
+            replayMetadata);
     }
 
     public void processReplayMessage(ReplayMessage replayMessage) {

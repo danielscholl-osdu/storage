@@ -22,6 +22,8 @@ tags:
     description: Health Check API
   - name: records
     description: Records management operations
+  - name: replay
+    description: Replay records
   - name: info
     description: Version info endpoint
 paths:

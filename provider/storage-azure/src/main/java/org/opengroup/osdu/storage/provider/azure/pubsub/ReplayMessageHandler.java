@@ -46,21 +46,41 @@ public class ReplayMessageHandler {
     private MDCContextMap mdcContextMap;
 
     public void handle(IMessage message) {
-
-        ReplayMessage replayMessage = getReplayMessage(message);
-        headers.put(DpsHeaders.DATA_PARTITION_ID,replayMessage.getDataPartitionId());
-        headers.put(DpsHeaders.CORRELATION_ID,replayMessage.getCorrelationId());
-        MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getPartitionId()));
-        LOGGER.info("Processing PerformReplayMessage with a delivery count of: {}", message.getDeliveryCount());
-        replayService.processReplayMessage(replayMessage);
+        try {
+            ReplayMessage replayMessage = getReplayMessage(message);
+            headers.put(DpsHeaders.DATA_PARTITION_ID, replayMessage.getDataPartitionId());
+            headers.put(DpsHeaders.CORRELATION_ID, replayMessage.getCorrelationId());
+            MDC.setContextMap(mdcContextMap.getContextMap(headers.getCorrelationId(), headers.getPartitionId()));
+            LOGGER.info("Processing ReplayMessage: replayId={}, kind={}, deliveryCount={}",
+                replayMessage.getBody() != null ? replayMessage.getBody().getReplayId() : "null",
+                replayMessage.getBody() != null ? replayMessage.getBody().getKind() : "null",
+                message.getDeliveryCount());
+            replayService.processReplayMessage(replayMessage);
+            LOGGER.info("Successfully processed ReplayMessage: replayId={}, kind={}",
+                replayMessage.getBody() != null ? replayMessage.getBody().getReplayId() : "null",
+                replayMessage.getBody() != null ? replayMessage.getBody().getKind() : "null");
+        } catch (Exception e) {
+            LOGGER.error("Exception in handle() for ReplayMessage: {} - {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void handleFailure(IMessage message) {
-
-        LOGGER.info("Processing Failure for message");
-        ReplayMessage replayMessage = getReplayMessage(message);
-        replayService.processFailure(replayMessage);
-        LOGGER.info("Processed Failure for ReplayMessage");
+        try {
+            LOGGER.info("Processing Failure for message: messageId={}, deliveryCount={}",
+                message.getMessageId(), message.getDeliveryCount());
+            ReplayMessage replayMessage = getReplayMessage(message);
+            LOGGER.info("Failure details: replayId={}, kind={}",
+                replayMessage.getBody() != null ? replayMessage.getBody().getReplayId() : "null",
+                replayMessage.getBody() != null ? replayMessage.getBody().getKind() : "null");
+            replayService.processFailure(replayMessage);
+            LOGGER.info("Processed Failure for ReplayMessage: replayId={}, kind={}",
+                replayMessage.getBody() != null ? replayMessage.getBody().getReplayId() : "null",
+                replayMessage.getBody() != null ? replayMessage.getBody().getKind() : "null");
+        } catch (Exception e) {
+            LOGGER.error("Exception in handleFailure() for ReplayMessage: {} - {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     private ReplayMessage getReplayMessage(IMessage message) {
