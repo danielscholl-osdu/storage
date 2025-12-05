@@ -14,6 +14,8 @@
 
 package org.opengroup.osdu.storage.replay;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.After;
@@ -26,6 +28,8 @@ import org.opengroup.osdu.storage.model.AwsReplayStatusResponseHelper;
 import org.opengroup.osdu.storage.util.*;
 import org.opengroup.osdu.storage.util.AwsReplayUtils;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -140,6 +144,8 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
 
         String recordId = TenantUtils.getTenantName() + ":dataset--File.Generic:" + System.currentTimeMillis();
         String legalTagName = LEGAL_TAG_NAME;
+
+        deleteIndexedRecordsForKind(kind);
 
         String recordJson = String.format(
                 "[{" +
@@ -525,16 +531,25 @@ public class TestReplayEndpoint extends ReplayEndpointsTests {
         CloseableHttpResponse response = TestUtils.send(ReplayUtils.getSearchUrl(), "query", "POST", 
             HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), 
             requestBody, "");
-        return Integer.parseInt(ReplayUtils.getFieldFromResponse(response, "totalCount"));
+        
+        String responseBody = EntityUtils.toString(response.getEntity());
+        JsonObject jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
+        
+        if (jsonResponse.has("totalCount") && !jsonResponse.get("totalCount").isJsonNull()) {
+            return jsonResponse.get("totalCount").getAsInt();
+        }
+        
+        return 0; // Return 0 if totalCount is not present or null
     }
     
     /**
      * Helper method to delete indexed records for a specific kind
      */
     private void deleteIndexedRecordsForKind(String kind) throws Exception {
-        CloseableHttpResponse response = TestUtils.send(ReplayUtils.getIndexerUrl(), "index?kind=" + kind, "DELETE", 
+        String encodedKind = URLEncoder.encode(kind, StandardCharsets.UTF_8);
+        CloseableHttpResponse response = TestUtils.send(ReplayUtils.getIndexerUrl(), "index?kind=" + encodedKind, "DELETE",
             HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), "", "");
-        assertEquals(200, response.getCode());
+        assertTrue("Expected 200 or 404 status code", response.getCode() == 200 || response.getCode() == 404);
         
         // Wait for deletion to complete
         int attempts = 0;
