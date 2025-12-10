@@ -31,7 +31,7 @@
 		<maven.compiler.source>17</maven.compiler.source>
 		<os-core-lib-ibm.version>0.28.1</os-core-lib-ibm.version>
 		<start-class>org.opengroup.osdu.storage.provider.ibm.app.StorageIBMApplication</start-class>
-		<jackson-dataformat-cbor.version>2.11.4</jackson-dataformat-cbor.version>
+		<jackson-dataformat-cbor.version>2.20.1</jackson-dataformat-cbor.version>
 		<tomcat-embed-core.version>9.0.70</tomcat-embed-core.version>
 		<commons-compress.version>1.26.1</commons-compress.version>
 	</properties>
