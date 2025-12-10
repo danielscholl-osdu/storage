@@ -31,10 +31,10 @@
     <!-- Azure Dependencies -->
     <core-lib-azure.version>2.2.6</core-lib-azure.version>
     <azure-storage-blob.version>12.29.0</azure-storage-blob.version>
-    <nimbus-jose-jwt.version>9.47</nimbus-jose-jwt.version>
+    <nimbus-jose-jwt.version>10.6</nimbus-jose-jwt.version>
     <!-- Plugin Versions -->
-    <surefire-plugin.version>3.2.2</surefire-plugin.version>
-    <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
+    <surefire-plugin.version>3.5.4</surefire-plugin.version>
+    <jacoco-plugin.version>0.8.14</jacoco-plugin.version>
     <!-- JVM Arguments -->
     <argLine>
         --add-opens=java.base/java.util=ALL-UNNAMED
@@ -139,7 +139,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>3.2.3</version>
+        <version>4.0.0</version>
         <executions>
           <execution>
             <goals>
