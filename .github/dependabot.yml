@@ -1,42 +1,112 @@
 version: 2
 updates:
-  # ========================================================================
-  # TEMPLATE REPOSITORY CONFIGURATION
-  # ========================================================================
-  # This configuration is for the TEMPLATE repository (azure/osdu-spi)
-  # which serves as the engineering system/platform.
-  #
-  # ARCHITECTURE DECISION:
-  # - Template owns: Engineering system (.github workflows and actions)
-  # - Forks own: Application code (Maven dependencies)
-  # - Updates flow: Template → sync-template → Forks
-  #
-  # Fork repositories receive .github updates via sync-template workflow,
-  # NOT via their own dependabot. This eliminates race conditions and
-  # duplicate PRs while maintaining clear separation of concerns.
-  # ========================================================================
+  # Maven Dependencies - Application Code
+  # Workflow and GitHub Actions updates are managed via template synchronization
 
-  # GitHub Actions - Engineering System (Template Responsibility)
-  # Monitors ALL .github subdirectories recursively for workflow/action updates
-  # Includes: workflows/, template-workflows/, actions/, local-actions/
-  - package-ecosystem: "github-actions"
-    directory: "/.github"
+  # 1) TOP-LEVEL AGGREGATOR
+  #    Scans the root POM, but ignores any dependencies physically declared in
+  #    testing/**, storage-acceptance-test/**, etc.
+  - package-ecosystem: "maven"
+    directory: "/"
     schedule:
-      interval: "daily"
-      time: "08:00"
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
     target-branch: "main"
     labels:
       - "dependencies"
+      - "common"
     groups:
-      github-actions:
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot:spring-boot*"
+          - "org.springframework.security:spring-security*"
+          - "org.springdoc:springdoc-openapi*"
+        update-types:
+          - "patch"
+      osdu-core:
+        patterns:
+          - "org.opengroup.osdu:os-core-common"
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+      build-tools:
+        patterns:
+          - "org.projectlombok:lombok"
+          - "com.google.guava:guava"
+          - "io.github.git-commit-id:*"
+          - "org.springframework.boot:spring-boot-maven-plugin"
+        update-types:
+          - "minor"
+          - "patch"
+      logging:
+        patterns:
+          - "org.apache.logging.log4j:*"
+          - "ch.qos.logback:*"
+          - "org.slf4j:*"
+        update-types:
+          - "minor"
+          - "patch"
+      data-format:
+        patterns:
+          - "com.fasterxml.jackson*"
+          - "net.minidev:json-smart"
+          - "com.google.code.gson:gson"
+          - "org.yaml:snakeyaml"
+        update-types:
+          - "minor"
+          - "patch"
+      common-utils:
+        patterns:
+          - "commons-beanutils:commons-beanutils"
+          - "io.github.resilience4j:*"
+          - "org.apache.commons:*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # 2) storage CORE
+  - package-ecosystem: "maven"
+    directory: "/storage-core"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "common"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      core-dependencies:
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
-    open-pull-requests-limit: 5
 
-  # Python/doc dependencies removed to prevent fork initialization issues
-  # Issue: Forks inherit this config momentarily before deploy-fork-resources.sh runs,
-  # causing Dependabot to cache the pip/doc ecosystem even after replacement
-  # Template documentation updates can be monitored separately if needed
+  # 3) SPI AZURE
+  - package-ecosystem: "maven"
+    directory: "/provider/storage-azure"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "azure"
+    groups:
+      azure-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+  # Note: Disabled providers/modules omitted to avoid validation errors
+  # Dependabot does not support 'interval: never'
+  # If you need to disable updates for specific modules, simply remove them from this file
