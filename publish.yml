@@ -15,16 +15,36 @@ run-test-pages:
 pages:
   stage: publish
   image: python:latest
-  tags: ["osdu-medium"]
-  script:
-    - cd docs
-    - pip install --default-timeout=1000 mkdocs-material
-    - pip install mkdocs-git-revision-date-plugin
-    - mkdocs build --site-dir ../public
-  allow_failure: true
-  needs: []
+
+  needs:
+    - job: generate-allure-report
+      artifacts: true
+      optional: true
+
+  script: |
+    cd docs
+    pip install --default-timeout=1000 mkdocs-material mkdocs-git-revision-date-plugin
+    mkdocs build --site-dir ../public
+    cd ..
+
+    mkdir -p public/allure
+
+    if [ -d "tmp/allure" ]; then
+      for dir in tmp/allure/*; do
+        if [ -d "$dir" ]; then
+          module=$(basename "$dir")
+          echo "Publishing Allure report for module: $module"
+          mkdir -p "public/allure/$module"
+          cp -r "$dir/"* "public/allure/$module/"
+        fi
+      done
+    else
+      echo "No Allure reports found — skipping."
+    fi
+
   artifacts:
     paths:
       - public
+    expire_in: 2 days
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
