@@ -34,7 +34,7 @@ public class CursorRedisCache extends RedisAzureCache<String, String> {
             final @Named("REDIS_PASSWORD_KEY") String passwordKey,
             @Value("${redis.database}") final int database,
             @Value("${redis.command.timeout}") final int commandTimeout) {
-        super(String.class, String.class, new RedisAzureConfiguration(database, expiration, port, timeout,
-                commandTimeout, hostKey, passwordKey));
+        super(String.class, String.class, new RedisAzureConfiguration(database, expiration, port, (long) timeout,
+                commandTimeout, hostKey, passwordKey, null));
     }
 }
