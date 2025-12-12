@@ -15,12 +15,10 @@ run-test-pages:
 pages:
   stage: publish
   image: python:latest
-
   needs:
     - job: generate-allure-report
       artifacts: true
       optional: true
-
   script: |
     cd docs
     pip install --default-timeout=1000 mkdocs-material mkdocs-git-revision-date-plugin
@@ -41,10 +39,6 @@ pages:
     else
       echo "No Allure reports found — skipping."
     fi
-
   artifacts:
     paths:
       - public
-    expire_in: 2 days
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
