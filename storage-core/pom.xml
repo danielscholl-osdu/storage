@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.opengroup.osdu</groupId>
         <artifactId>os-storage</artifactId>
-        <version>0.29.0-SNAPSHOT</version>
+        <version>0.30.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -190,9 +190,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>3.2.5</version>
                 <configuration>
-                    <argLine>@{argLine} --add-opens java.base/java.lang=ALL_UNNAMED</argLine>
+                    <argLine>@{argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
             <plugin>

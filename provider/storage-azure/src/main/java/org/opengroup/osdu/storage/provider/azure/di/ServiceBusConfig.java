@@ -41,4 +41,10 @@ public class ServiceBusConfig {
 
     @Value("${azure.legal.servicebus.topic-subscription}")
     private String legalServiceBusTopicSubscription;
+
+    @Value("${azure.replay.servicebus.topic-name:replaytopic}")
+    private String replayTopic;
+
+    @Value("${azure.replay.servicebus.topic-subscription:replaytopicsubscription}")
+    private String replaySubscription;
 }

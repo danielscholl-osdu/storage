@@ -72,7 +72,7 @@ phases:
 
       - echo "Building primary service assemblies..."
       - mvn -ntp -B test install -pl .,storage-core,provider/storage-aws -P core,aws -Ddeployment.environment=prod
-      - mvn sonar:sonar -pl .,provider/storage-aws -P aws -Dsonar.login=${SONAR_USERNAME} -Dsonar.password=${SONAR_PASSWORD} -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.host.url=${SONAR_URL}
+      - mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl .,provider/storage-aws -P aws -Dsonar.login=${SONAR_USERNAME} -Dsonar.password=${SONAR_PASSWORD} -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.host.url=${SONAR_URL}
       - echo "Building integration testing assemblies and gathering artifacts..."
       - ./testing/storage-test-aws/build-aws/prepare-dist.sh
 

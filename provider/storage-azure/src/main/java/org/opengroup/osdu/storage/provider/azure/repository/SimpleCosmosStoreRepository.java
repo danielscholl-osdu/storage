@@ -181,11 +181,11 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
 
     public Page<T> find(@NonNull Pageable pageable, String dataPartitionId, String cosmosDBName, String collectionName, SqlQuerySpec query, CosmosQueryRequestOptions queryOptions) {
         Assert.notNull(pageable, PAGEABLE_MUST_NOT_BE_NULL);
-        CosmosStoreQuery cosmosQuery = (new CosmosStoreQuery()).with(query.getQueryText());
+        CosmosStoreQuery cosmosQuery = (new CosmosStoreQuery()).with(query.getQueryText()).with(query.getParameters());
         if (pageable.getSort().isSorted()) {
             cosmosQuery.with(pageable.getSort());
         }
-        SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmosWithQueryText(cosmosQuery, cosmosQuery.getQuery());
+        SqlQuerySpec sqlQuerySpec = (new FindQuerySpecGenerator()).generateCosmosWithQueryTextAndParameters(cosmosQuery, cosmosQuery.getQuery(), cosmosQuery.getParameters());
         return this.paginationQuery(pageable, sqlQuerySpec, domainClass, dataPartitionId, cosmosDBName, collectionName, queryOptions);
     }
 
@@ -212,5 +212,4 @@ public class SimpleCosmosStoreRepository<T> implements CosmosStoreRepository<T> 
         int pageSize = pageable.getPageSize();
         return this.queryItemsPage(dataPartitionId, cosmosDBName, collectionName, query, domainClass, pageSize, continuationToken, queryOptions);
     }
-
 }

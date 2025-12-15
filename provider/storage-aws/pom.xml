@@ -21,7 +21,7 @@
     <parent>
         <artifactId>os-storage</artifactId>
         <groupId>org.opengroup.osdu</groupId>
-        <version>0.29.0-SNAPSHOT</version>
+        <version>0.30.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -35,9 +35,8 @@
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
         <deployment.environment>dev</deployment.environment>
-        <version.number>0.29.0-SNAPSHOT</version.number>
-        <netty.version>4.1.119.Final</netty.version>
-        <spring-boot.version>3.3.11</spring-boot.version>
+        <version.number>0.30.0-SNAPSHOT</version.number>
+        <!-- Use parent's netty.version (4.1.128.Final) and spring-boot.version (3.5.8) -->
     </properties>
 
     <dependencies>
@@ -102,7 +101,7 @@
         <dependency>
             <groupId>net.minidev</groupId>
             <artifactId>json-smart</artifactId>
-            <version>2.5.2</version>
+            <!-- Use parent's json-smart.version (2.6.0) for CVE-2024-57699 fix -->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -159,7 +158,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
-            <version>6.3.8</version>
+            <!-- Use parent's spring-security.version (6.5.7) -->
         </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>
@@ -175,7 +174,7 @@
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
-            <version>5.10.2</version>
+            <!-- Use Spring Boot's managed JUnit version for compatibility -->
             <scope>test</scope>
         </dependency>
         <dependency>

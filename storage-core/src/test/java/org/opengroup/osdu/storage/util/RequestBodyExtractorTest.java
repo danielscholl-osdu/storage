@@ -16,6 +16,7 @@ package org.opengroup.osdu.storage.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.io.BufferedReader;
@@ -53,6 +54,7 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_returnAttributes_whenRequestBodyProvided() throws Exception {
         this.createRequestStream(REQUEST_BODY);
+        lenient().when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
         Map<String, String> expectedAttributes = new HashMap<>();
         expectedAttributes.put(DpsHeaders.ACCOUNT_ID, "test-tenant");
@@ -65,6 +67,7 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_returnAttributes_whenRequestBodyProvided_dp() throws Exception {
         this.createRequestStream(REQUEST_BODY_DP);
+        lenient().when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
         Map<String, String> expectedAttributes = new HashMap<>();
         expectedAttributes.put(DpsHeaders.DATA_PARTITION_ID, "test-tenant");
@@ -77,6 +80,7 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_throwError_whenRequestBodyProvided_with_notenant() throws Exception {
         this.createRequestStream(REQUEST_BODY_NOTENANT);
+        lenient().when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
 
         AppException exception = assertThrows(AppException.class, ()->{
@@ -88,6 +92,7 @@ public class RequestBodyExtractorTest {
     @Test
     public void should_returnData_whenRequestBodyProvided() throws Exception {
         this.createRequestStream(REQUEST_BODY);
+        lenient().when(this.httpServletRequest.getRequestURI()).thenReturn("legaltag-changed");
         when(this.httpServletRequest.getReader()).thenReturn(this.bufferReader);
         String expectedData = "{\"statusChangedTags\":[{\"changedTagName\":\"tag1\",\"changedTagStatus\":\"incompliant\"},{\"changedTagName\":\"tag2\",\"changedTagStatus\":\"incompliant\"}]}";
 

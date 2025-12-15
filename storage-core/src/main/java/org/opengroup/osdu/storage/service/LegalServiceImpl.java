@@ -26,11 +26,14 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagWithReason;
 import org.opengroup.osdu.core.common.model.legal.InvalidTagsWithReason;
+import org.opengroup.osdu.core.common.model.legal.Legal;
 import org.opengroup.osdu.core.common.model.legal.LegalException;
 import org.opengroup.osdu.core.common.model.legal.LegalTagProperties;
 import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordIdWithVersion;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -60,6 +63,8 @@ public class LegalServiceImpl implements ILegalService {
     @Autowired
     private JaxRsDpsLog log;
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(LegalServiceImpl.class);
+
     @Override
     public void validateLegalTags(Set<String> legaltags) {
 
@@ -70,6 +75,7 @@ public class LegalServiceImpl implements ILegalService {
         InvalidTagWithReason[] invalidLegalTags = this.getInvalidLegalTags(legaltags);
 
         if (invalidLegalTags.length > 0) {
+            LOGGER.info("Invalid Legal Tags : {}", invalidLegalTags.toString());
             throw new AppException(HttpStatus.SC_BAD_REQUEST, "Invalid legal tags",
                     String.format("Invalid legal tags: %s", invalidLegalTags[0].getName()));
         }
@@ -103,6 +109,19 @@ public class LegalServiceImpl implements ILegalService {
                 for (RecordIdWithVersion parentRecordId : recordParentMap.get(record.getId())) {
                     RecordMetadata parentRecord = existingRecordsMetadata.get(parentRecordId.getRecordId());
 
+                    if (record.getLegal() == null) {
+                        Legal legal = new Legal();
+                        legal.setLegaltags(new HashSet<>());
+                        legal.setOtherRelevantDataCountries(new HashSet<>());
+                        record.setLegal(legal);
+                    } else {
+                        if (record.getLegal().getLegaltags() == null) {
+                            record.getLegal().setLegaltags(new HashSet<>());
+                        }
+                        if (record.getLegal().getOtherRelevantDataCountries() == null) {
+                            record.getLegal().setOtherRelevantDataCountries(new HashSet<>());
+                        }
+                    }
                     if (!record.getLegal().hasLegaltags()) {
                         record.getLegal().setLegaltags(parentRecord.getLegal().getLegaltags());
                     } else {
@@ -166,12 +185,14 @@ public class LegalServiceImpl implements ILegalService {
                 currentLegalTagName = legalTagName;
                 legalTag = this.cache.get(legalTagName);
                 if (legalTag == null) {
+                    LOGGER.info("Legal Tag not present in the cache.");
                     return false;
                 }
             }
         } catch (RedisException ex) {
             this.log.error(String.format("Error getting key %s from redis: %s", currentLegalTagName, ex.getMessage()), ex);
         }
+        LOGGER.info("Legal Tags are present in cache {}", legalTagNames.toString());
         return true;
     }
 
