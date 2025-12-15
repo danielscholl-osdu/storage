@@ -24,4 +24,4 @@ ENV JAVA_OPTS="${COMMON_JAVA_FLAGS} -Dserver.port=${PORT} -Dloader.main=org.open
 
 # Run the web service on container startup.
 # Base image entrypoint will intercept 'java' command and inject JAVA_OPTS automatically
-CMD java -jar /app/storage-${PROVIDER_NAME}.jar
+CMD java $JAVA_OPTS -jar /app/storage-${PROVIDER_NAME}.jar
