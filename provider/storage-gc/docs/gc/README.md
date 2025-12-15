@@ -54,6 +54,7 @@ Defined in default application property file but possible to override:
 | `GOOGLE_APPLICATION_CREDENTIALS`           | ex `/path/to/directory/service-key.json`      | Service account credentials, you only need this if running locally                    | yes        | <https://console.cloud.google.com/iam-admin/serviceaccounts> |
 | `PARTITION_PROPERTIES_STORAGE_BUCKET_NAME` | ex `storage.bucket.name`                      | Name of partition property for storage bucket name value                              | yes        | -                                                            |
 | `feature.replay.enabled`                   | ex `true` or `false`                          | `Replay API` feature flag                                                             | no         |                                                              |
+| `OTEL_JAVAAGENT_ENABLED`                   | ex `true` or `false`                          | `true` - OpenTelemetry Java agent enabled, `false` - disabled                         | no         |                                                              |
 
 These variables define service behavior, and are used to switch between `Reference` or `Google Cloud` environments, their overriding and usage in mixed mode was not tested.
 Usage of spring profiles is preferred.

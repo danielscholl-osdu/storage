@@ -1,4 +1,4 @@
-FROM azul/zulu-openjdk:17-latest
+FROM community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-java-image/gc-osdu-java-17-base-master:latest
 
 WORKDIR /app
 
@@ -18,16 +18,10 @@ COPY tmp-gc/gc-apd-acc-*.jar gc/apd-acc.jar
 # Copy the jar to the production image from the builder stage.
 COPY provider/storage-${PROVIDER_NAME}/target/storage-${PROVIDER_NAME}-*-spring-boot.jar storage-${PROVIDER_NAME}.jar
 
-COPY provider/storage-gc/cloudbuild/opentelemetry-javaagent.jar telemetry/opentelemetry-javaagent.jar
-COPY provider/storage-${PROVIDER_NAME}/cloudbuild/startup.sh /app/startup.sh
-RUN chmod +x /app/startup.sh
-
-
-# Add a non-root user
-RUN groupadd -g 10001 -r nonroot \
-  && useradd -g 10001 -r -u 10001 nonroot
-# Run as non-root user
-USER 10001:10001
+# Set Java options using COMMON_JAVA_FLAGS from base image plus service-specific options
+# Base image entrypoint will inject telemetry if OTEL_JAVAAGENT_ENABLED=true
+ENV JAVA_OPTS="${COMMON_JAVA_FLAGS} -Dserver.port=${PORT} -Dloader.main=org.opengroup.osdu.storage.provider.gcp.StorageApplicationGCP"
 
 # Run the web service on container startup.
-CMD ["/app/startup.sh"]
+# Base image entrypoint will intercept 'java' command and inject JAVA_OPTS automatically
+CMD java -jar /app/storage-${PROVIDER_NAME}.jar
