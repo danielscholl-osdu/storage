@@ -38,22 +38,22 @@
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
       <!-- OSDU Versions-->
-      <os-core-common.version>3.6.2</os-core-common.version>
+      <os-core-common.version>4.0.0</os-core-common.version>
 
       <!-- Spring Versions-->
-      <spring-boot.version>3.3.7</spring-boot.version>
-      <spring-security.version>6.3.6</spring-security.version>
-      <spring-framework-version>6.1.16</spring-framework-version>
+      <spring-boot.version>3.5.8</spring-boot.version>
+      <spring-security.version>6.5.7</spring-security.version>
+      <spring-framework-version>6.2.14</spring-framework-version>
 
       <!-- Project Versions-->
-      <json-smart.version>2.5.1</json-smart.version>
-      <openapi.version>2.3.0</openapi.version>
-      <lombok.version>1.18.28</lombok.version>
-      <netty.version>4.1.119.Final</netty.version>
-      <commons-codec.version>1.14</commons-codec.version>
+      <json-smart.version>2.6.0</json-smart.version>
+      <openapi.version>2.8.6</openapi.version>
+      <lombok.version>1.18.42</lombok.version>
+      <netty.version>4.1.128.Final</netty.version>
+      <commons-codec.version>1.17.1</commons-codec.version>
 
       <!-- Plugin Versions -->
-      <spring-boot-maven-plugin.version>3.2.2</spring-boot-maven-plugin.version>
+      <spring-boot-maven-plugin.version>3.5.8</spring-boot-maven-plugin.version>
       <git-commit-id-plugin.version>8.0.2</git-commit-id-plugin.version>
     </properties>
 
