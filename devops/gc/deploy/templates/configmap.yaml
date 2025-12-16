@@ -37,3 +37,4 @@ data:
   {{- end }}
   REDIS_STORAGE_PORT: {{ .Values.data.redisStoragePort | quote }}
   REDIS_GROUP_PORT: {{ .Values.data.redisStoragePort | quote }}
+  OTEL_JAVAAGENT_ENABLED: {{.Values.data.otelJavaagentEnabled | quote}}
