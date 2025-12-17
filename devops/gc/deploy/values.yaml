@@ -20,7 +20,7 @@ data:
   legalHost: "http://legal"
   opaEndpoint: "http://opa"
   otelJavaagentEnabled: "true"
-
+  otelExporterEndpoint: "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4318"
   # deployments
   requestsCpu: "150m"
   requestsMemory: "768Mi"
