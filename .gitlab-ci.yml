@@ -38,6 +38,12 @@ include:
     file: "build/maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
+    file: "reporting/reporting.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "publishing/common-pages.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/aws-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
@@ -79,7 +85,6 @@ include:
     file: "cloud-providers/ibm-one-pipeline.yml"
 
   - local: "devops/gc/pipeline/override-stages.yml"
-  - local: "/publish.yml"
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there

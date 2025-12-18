@@ -29,7 +29,7 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
-        <allure.version>2.29.0</allure.version>
+        <allure.version>2.31.0</allure.version>
         <aspectj.version>1.9.22</aspectj.version>
         <log4j.version>2.23.0</log4j.version>
         <jackson.version>2.16.1</jackson.version>
@@ -78,11 +78,7 @@
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-junit5</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-generator</artifactId>
-            <version>2.30.0</version>
+            <version>${allure.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
