@@ -71,12 +71,7 @@ public class CloudStorageImpl implements ICloudStorage {
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
-        // We still need to validate that the record's ACL has groups that exist. The current way is to validate
-        // that the Service Principal token has access to those groups. We do NOT check the user's groups as the
-        // intended behavior is for users to have create-only permission on every group, but only selected users
-        // can read, update, or delete those records. See the following comment for more detail:
-        // https://community.opengroup.org/osdu/platform/security-and-compliance/policy/-/merge_requests/493#note_317803
-        userAccessService.validateRecordAcl(recordsProcessing);
+
 
         // throughout this class userId isn't used, seems to be something to integrate with entitlements service
         // ensure that the threads come from the shared pool manager from the web server

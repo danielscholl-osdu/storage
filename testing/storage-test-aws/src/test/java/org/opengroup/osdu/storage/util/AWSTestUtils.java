@@ -17,11 +17,14 @@ package org.opengroup.osdu.storage.util;
 
 import com.google.common.base.Strings;
 import org.opengroup.osdu.core.aws.v2.cognito.AWSCognitoClient;
+import org.opengroup.osdu.core.aws.entitlements.ServicePrincipal;
 
 public class AWSTestUtils extends TestUtils {
 	private static String token;
 	private static String noDataAccesstoken;
+	private static String dataRootUserToken;
 	private static AWSCognitoClient awsCognitoClient = null;
+	private static ServicePrincipal servicePrincipal = null;
 
 	@Override
 	public synchronized String getToken() throws Exception {
@@ -39,9 +42,25 @@ public class AWSTestUtils extends TestUtils {
 		return "Bearer " + noDataAccesstoken;
 	}
 
+	@Override
+	public synchronized String getDataRootUserToken() throws Exception {
+		if (Strings.isNullOrEmpty(dataRootUserToken)) {
+			// Use service principal token since it's a member of users.data.root group
+			dataRootUserToken = getServicePrincipal().getServicePrincipalAccessToken();
+			dataRootUserToken = dataRootUserToken.replace("Bearer ", "");
+		}
+		return "Bearer " + dataRootUserToken;
+	}
+
 	private AWSCognitoClient getAwsCognitoClient() {
 		if(awsCognitoClient == null)
 			awsCognitoClient = new AWSCognitoClient();
 		return	awsCognitoClient;
+	}
+
+	private ServicePrincipal getServicePrincipal() {
+		if(servicePrincipal == null)
+			servicePrincipal = new ServicePrincipal();
+		return servicePrincipal;
 	}
 }

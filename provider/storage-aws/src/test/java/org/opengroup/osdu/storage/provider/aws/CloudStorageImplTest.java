@@ -127,18 +127,15 @@ class CloudStorageImplTest {
         when(recordData.getMeta()).thenReturn(data);
         when(recordProcessing.getRecordMetadata()).thenReturn(record);
         when(record.getId()).thenReturn("dummyRecordId");
-        doNothing().when(userAccessService).validateRecordAcl(any());
 
         repo.write(recordProcessing);
 
         verify(record, times(1)).getId();
-        verify(userAccessService, times(1)).validateRecordAcl(recordProcessing);
     }
 
     @Test
     void write_shouldThrowException_whenRecordProcessingHasException() {
         when(recordProcessing.getRecordData()).thenReturn(recordData);
-        doNothing().when(userAccessService).validateRecordAcl(any());
 
         when(recordProcessing.getRecordMetadata()).thenReturn(record);
         doThrow(AwsServiceException.class).when(s3RecordClient).saveRecord(recordProcessing, dataPartition);
@@ -149,7 +146,6 @@ class CloudStorageImplTest {
     @Test
     void write_shouldThrowAppException_whenRecordProcessingThrowsException() {
         when(recordProcessing.getRecordData()).thenReturn(recordData);
-        doNothing().when(userAccessService).validateRecordAcl(any());
         
         when(recordProcessing.getRecordMetadata()).thenReturn(record);
         doThrow(RuntimeException.class).when(s3RecordClient).saveRecord(recordProcessing, dataPartition);
