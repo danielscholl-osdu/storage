@@ -1,0 +1,84 @@
+name: "Copilot Setup Steps"
+
+# Automatically run the setup steps when they are changed to allow for easy validation, and
+# allow manual testing through the repository's "Actions" tab
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    # Set the permissions to the lowest permissions possible needed for your steps.
+    # Copilot will be given its own token for its operations.
+    permissions:
+      # If you want to clone the repository as part of your setup steps, for example to install dependencies, you'll need the `contents: read` permission. If you don't clone the repository in your setup steps, Copilot will do this for you automatically after the steps complete.
+      contents: read
+
+    # You can define any steps you want, and they will run before the agent starts.
+    # If you do not check out your code, Copilot will do this for you.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Azul Zulu JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Install Maven dependencies
+        continue-on-error: true
+        env:
+          # Fix for Maven 3.9+ network issues with Azure/GitHub Actions
+          # Limits connection lifetime to prevent stale connections from being reused
+          # Maven will retry connections 3 times by default
+          MAVEN_OPTS: "-Daether.connector.http.connectionMaxTtl=25"
+        run: |
+          # Retry Maven dependency resolution to handle intermittent network failures
+          # This is especially important for large dependency trees or slower networks
+          MAX_ATTEMPTS=3
+          ATTEMPT=1
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "===== Maven Dependency Resolution Attempt: $ATTEMPT/$MAX_ATTEMPTS ====="
+
+            if mvn dependency:resolve dependency:resolve-sources -q; then
+              echo "✅ Maven dependencies resolved successfully"
+              exit 0
+            else
+              if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+                echo "⚠️ Attempt $ATTEMPT failed, retrying in 5 seconds..."
+                ATTEMPT=$((ATTEMPT + 1))
+                sleep 5
+              else
+                echo "❌ Maven dependency resolution failed after $MAX_ATTEMPTS attempts"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Install Trivy security scanner
+        continue-on-error: true
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      - name: Verify Java installation
+        continue-on-error: true
+        run: |
+          java -version
+          mvn -version
+          trivy version || echo "⚠️ Trivy not available (installation may have failed)"
