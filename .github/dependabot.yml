@@ -1,42 +1,64 @@
 version: 2
 updates:
-  # ========================================================================
-  # TEMPLATE REPOSITORY CONFIGURATION
-  # ========================================================================
-  # This configuration is for the TEMPLATE repository (azure/osdu-spi)
-  # which serves as the engineering system/platform.
+  # Maven Dependencies - Application Code
+  # Workflow and GitHub Actions updates are managed via template synchronization
   #
-  # ARCHITECTURE DECISION:
-  # - Template owns: Engineering system (.github workflows and actions)
-  # - Forks own: Application code (Maven dependencies)
-  # - Updates flow: Template → sync-template → Forks
-  #
-  # Fork repositories receive .github updates via sync-template workflow,
-  # NOT via their own dependabot. This eliminates race conditions and
-  # duplicate PRs while maintaining clear separation of concerns.
-  # ========================================================================
+  # Strategy:
+  # - PATCHES ONLY: Major and minor updates are ignored for stability
+  # - GROUPED: Spring, logging, jackson, and Azure SDK patches are grouped
+  # - INDIVIDUAL: All other patches get individual PRs
+  # - EXCLUDED: Non-Azure providers and build tools are ignored entirely
 
-  # GitHub Actions - Engineering System (Template Responsibility)
-  # Monitors ALL .github subdirectories recursively for workflow/action updates
-  # Includes: workflows/, template-workflows/, actions/, local-actions/
-  - package-ecosystem: "github-actions"
-    directory: "/.github"
+  - package-ecosystem: "maven"
+    directories:
+      - "/"
+      - "/*-core"
+      - "/*-core-plus"
+      - "/provider/*-azure"
     schedule:
       interval: "daily"
-      time: "08:00"
+      time: "09:00"
     target-branch: "main"
     labels:
       - "dependencies"
-    groups:
-      github-actions:
-        patterns:
-          - "*"
+    exclude-paths:
+      - "provider/*-aws/**"
+      - "provider/*-gcp/**"
+      - "provider/*-gc/**"
+      - "provider/*-ibm/**"
+      - "provider/*-jdbc/**"
+      - "testing/**"
+      - "*-acceptance-test/**"
+    ignore:
+      # Only allow patch updates for stability
+      - dependency-name: "*"
         update-types:
-          - "minor"
-          - "patch"
-    open-pull-requests-limit: 5
-
-  # Python/doc dependencies removed to prevent fork initialization issues
-  # Issue: Forks inherit this config momentarily before deploy-fork-resources.sh runs,
-  # causing Dependabot to cache the pip/doc ecosystem even after replacement
-  # Template documentation updates can be monitored separately if needed
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+      # Ignore build tools entirely
+      - dependency-name: "org.jacoco:*"
+      - dependency-name: "io.github.git-commit-id:*"
+      - dependency-name: "org.projectlombok:lombok"
+      - dependency-name: "org.apache.maven.plugins:*"
+      - dependency-name: "org.springframework.boot:spring-boot-maven-plugin"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot:*"
+          - "org.springframework.security:*"
+          - "org.springdoc:*"
+      logging:
+        patterns:
+          - "org.slf4j:*"
+          - "ch.qos.logback:*"
+          - "org.apache.logging.log4j:*"
+      jackson:
+        patterns:
+          - "com.fasterxml.jackson*"
+          - "net.minidev:json-smart"
+      azure:
+        patterns:
+          - "com.azure:*"
+          - "com.azure.spring:*"
+          - "com.microsoft.azure:*"

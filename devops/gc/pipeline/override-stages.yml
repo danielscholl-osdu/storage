@@ -1,0 +1,47 @@
+variables:
+  GC_SERVICE: storage
+  GC_VENDOR: gc
+  NO_DATA_ACCESS_TESTER: $GC_NO_DATA_ACCESS_TESTER_FILE
+  # Variables for acceptance tests
+  OPA_INTEGRATION_ENABLED: "true"
+  TENANT_NAME: $GC_TENANT
+  LEGAL_URL: $GC_LEGAL_EXTERNAL_URL
+  STORAGE_URL: $GC_STORAGE_EXTERNAL_URL
+  ENTITLEMENTS_URL: $ENTITLEMENTS_HOST
+  OTEL_JAVAAGENT_ENABLED: "true"
+
+gc-dev2-test:
+  variables:
+    DATA_ROOT_TESTER: $GC_DEV2_DATA_ROOT_CLIENT_ID_FILE
+
+download_gc_plugins:
+  image: maven:3.8.3-openjdk-17-slim
+  stage: build
+  variables:
+    GC_OSM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1476/packages/maven"
+    GC_OSM_VERSION: "0.27.3"
+    GC_OBM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1475/packages/maven"
+    GC_OBM_VERSION: "0.27.2"
+    GC_OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1477/packages/maven"
+    GC_OQM_VERSION: "0.29.1"
+    GC_APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1480/packages/maven"
+    GC_APD_VERSION: "0.27.2"
+  artifacts:
+    paths:
+      - ./tmp-gc/*.jar
+    when: always
+    expire_in: 1 days
+  script:
+    - mvn dependency:copy -DrepoUrl=$GC_OSM_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:gc-osm-datastore:$GC_OSM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp-gc"
+    - mvn dependency:copy -DrepoUrl=$GC_OBM_PACKAGE_REGISTRY_URL -Dartifact="org.opengroup.osdu:gc-obm-gs:$GC_OBM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp-gc"
+    - mvn dependency:copy -DrepoUrl=$GC_OQM_PACKAGE_REGISRTY_URL -Dartifact="org.opengroup.osdu:gc-oqm-pubsub:$GC_OQM_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp-gc"
+    - mvn dependency:copy -DrepoUrl=$GC_APD_PACKAGE_REGISRTY_URL -Dartifact="org.opengroup.osdu:gc-apd-acc:$GC_APD_VERSION:jar:plugin" -Dtransitive=false -DoutputDirectory="./tmp-gc"
+  only:
+    variables:
+      - $GC == '1'
+
+gc-containerize-gitlab:
+  needs: ["gc-compile-and-unit-test", "download_gc_plugins"]
+
+gc-containerize-gcr:
+  needs: ["gc-compile-and-unit-test", "download_gc_plugins"]
