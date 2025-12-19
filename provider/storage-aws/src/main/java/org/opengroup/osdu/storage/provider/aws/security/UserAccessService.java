@@ -18,14 +18,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.http.HttpStatus;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.entitlements.GroupInfo;
 import org.opengroup.osdu.core.common.model.entitlements.Groups;
-import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.opengroup.osdu.core.common.model.storage.RecordProcessing;
-import org.opengroup.osdu.core.common.util.IServiceAccountJwtClient;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -35,27 +31,16 @@ import jakarta.inject.Inject;
 @Service
 @Qualifier("ServiceAccountJwtAwsClientImplSDKV2")
 public class UserAccessService {
-
-
-    public static final String RECORD_WRITING_ERROR_REASON = "Error on writing record";
+    private static final String ROOT_USER_DATA_GROUP_NAME = "users.data.root";
     @Inject
     private DpsHeaders dpsHeaders;
     @Inject
     private IEntitlementsExtensionService entitlementsExtensions;
-    @Inject
-    IServiceAccountJwtClient serviceAccountClient;
 
-    private static final String SERVICE_PRINCIPAL_ID = "";
 
-    private static class InvalidACLException extends Exception {
-        private final String acl;
-        public InvalidACLException(String acl) {
-            this.acl = acl;
-        }
 
-        public String getAcl() {
-            return acl;
-        }
+    private boolean isDataManager(Groups groups) {
+        return groups.any(ROOT_USER_DATA_GROUP_NAME);
     }
 
     /**
@@ -68,6 +53,14 @@ public class UserAccessService {
     public boolean userHasAccessToRecord(Acl acl) {
         // Get user's groups
         Groups groups = this.entitlementsExtensions.getGroups(dpsHeaders);
+        
+        if (groups == null) {
+            return false;
+        }
+
+        if (isDataManager(groups)) {
+            return true; // Data managers have access to all records
+        }
         
         // Convert ACL lists to a set for O(1) lookup
         Set<String> aclGroups = new HashSet<>();
@@ -83,53 +76,4 @@ public class UserAccessService {
         
         return false;
     }
-
-    private void validateRecordAclsForServicePrincipal(RecordProcessing... records) throws InvalidACLException {
-        //Records can be written by a user using ANY existing valid ACL
-        Set<String> groupNames = this.getPartitionGroupsforServicePrincipal(dpsHeaders);
-
-        for (RecordProcessing recordProcessing : records) {
-            for (String acl : Acl.flattenAcl(recordProcessing.getRecordMetadata().getAcl())) {
-                String groupName = acl.split("@")[0].toLowerCase();
-                if (!groupNames.contains(groupName)) {
-                    throw new InvalidACLException(acl);
-                }
-            }
-        }
-    }
-
-    public void validateRecordAcl (RecordProcessing... records){
-        try {
-            validateRecordAclsForServicePrincipal(records);
-        } catch (InvalidACLException e) {
-            // We are invaliding the groups of the service principal and rechecking in case the
-            // group that a user specified in the record ACL was recently created. Not being
-            // able to use a newly created group is considered blocking.
-            this.entitlementsExtensions.invalidateGroups(getServicePrincipalHeaders(dpsHeaders));
-            try {
-                validateRecordAclsForServicePrincipal(records);
-            } catch (InvalidACLException aclException) {
-                throw new AppException(
-                    HttpStatus.SC_BAD_REQUEST,
-                    RECORD_WRITING_ERROR_REASON,
-                    String.format("Could not find group \"%s\".", aclException.getAcl()));
-            }
-        }
-    }
-
-    private DpsHeaders getServicePrincipalHeaders(DpsHeaders headers) {
-        DpsHeaders newHeaders = DpsHeaders.createFromMap(headers.getHeaders());
-        newHeaders.put(DpsHeaders.AUTHORIZATION, serviceAccountClient.getIdToken(null));
-        //Refactor this, use either from SSM or use Istio service account and stop using hard code.
-
-        newHeaders.put(DpsHeaders.USER_ID, SERVICE_PRINCIPAL_ID);
-        return newHeaders;
-    }
-
-    private Set<String> getPartitionGroupsforServicePrincipal(DpsHeaders headers)
-    {
-        Groups groups = this.entitlementsExtensions.getGroups(getServicePrincipalHeaders(headers));
-        return new HashSet<>(groups.getGroupNames());
-    }
-
 }

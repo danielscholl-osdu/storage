@@ -131,39 +131,4 @@ class UserAccessServiceTest {
         // Assert
         Assert.assertFalse(actual);
     }
-
-    @Test
-    void validateRecordAcl_shouldThrowAppException_whenInvalidGroupName() {
-        // Arrange
-        RecordProcessing recordProcessing = mock(RecordProcessing.class);
-        RecordMetadata recordMetadata = mock(RecordMetadata.class);
-        Acl acl = mock(Acl.class);
-        String[] aclList = {"invalidGroup@domain"};
-        
-        when(acl.flattenAcl(acl)).thenReturn(aclList);
-        when(recordMetadata.getAcl()).thenReturn(acl);
-        when(recordProcessing.getRecordMetadata()).thenReturn(recordMetadata);
-        
-        assertThrows(AppException.class, () -> {
-            CUT.validateRecordAcl(recordProcessing);
-        });
-    }
-
-    @Test
-    void validateRecordAcl_shouldNotThrowException_whenValidGroupName() {
-        // Arrange
-        RecordProcessing recordProcessing = mock(RecordProcessing.class);
-        RecordMetadata recordMetadata = mock(RecordMetadata.class);
-        Acl acl = mock(Acl.class);
-        String[] aclList = {"data.tenant@byoc.local"};
-
-        when(recordProcessing.getRecordMetadata()).thenReturn(recordMetadata);
-        when(recordMetadata.getAcl()).thenReturn(acl);
-        when(Acl.flattenAcl(acl)).thenReturn(aclList);
-
-        // Act & Assert
-        assertDoesNotThrow(() -> {
-            CUT.validateRecordAcl(recordProcessing);
-        });
-    }
 }
