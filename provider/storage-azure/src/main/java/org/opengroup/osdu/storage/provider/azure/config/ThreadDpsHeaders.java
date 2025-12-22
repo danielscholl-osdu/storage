@@ -15,7 +15,7 @@
 package org.opengroup.osdu.storage.provider.azure.config;
 
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.opengroup.osdu.storage.provider.azure.config.conditional.AsyncProcessingEnabled;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -23,9 +23,21 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+
+/**
+ * ThreadDpsHeaders needs for the pubsub functionality related to the replay and legaltag-compliance-update features.
+ * Replay and legaltag-compliance-update functionality works outside the HTTP scope and require
+ * ThreadDpsHeaders with a custom ThreadScope.
+ *
+ * When related feature flags are disabled, this bean has no consumers, which
+ * causes a Spring context error due to an unused custom-scoped bean.
+ *
+ * That's why @AsyncProcessingEnabled used here
+ */
 @Component
 @Primary
 @Scope(value = "ThreadScope", proxyMode = ScopedProxyMode.TARGET_CLASS)
+@AsyncProcessingEnabled
 public class ThreadDpsHeaders extends DpsHeaders {
 
     public void setThreadContext(String dataPartitionId, String correlationId, String userEmail) {
