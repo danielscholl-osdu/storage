@@ -22,10 +22,12 @@ cd $SCRIPT_SOURCE_DIR
 export ENTITLEMENTS_DOMAIN=example.com
 export TENANT_NAME=int-test-storage
 
-export AWS_COGNITO_AUTH_FLOW="USER_PASSWORD_AUTH"
-export PRIVILEGED_USER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters "{\"USERNAME\":\"${ADMIN_USER}\",\"PASSWORD\":\"${ADMIN_PASSWORD}\"}" --query AuthenticationResult.AccessToken --output text)
+export PRIVILEGED_USER_TOKEN=$(curl --location ${TEST_OPENID_PROVIDER_URL} --header "Content-Type:application/x-www-form-urlencoded" --header "Authorization:Basic ${SERVICE_PRINCIPAL_AUTHORIZATION}" --data-urlencode "grant_type=client_credentials" --data-urlencode ${IDP_ALLOWED_SCOPES}  --http1.1 | jq -r '.access_token')
+
 export NO_ACCESS_USER_TOKEN=$(aws cognito-idp initiate-auth --region ${AWS_REGION} --auth-flow ${AWS_COGNITO_AUTH_FLOW} --client-id ${AWS_COGNITO_CLIENT_ID} --auth-parameters "{\"USERNAME\":\"${USER_NO_ACCESS}\",\"PASSWORD\":\"${USER_NO_ACCESS_PASSWORD}\"}" --query AuthenticationResult.AccessToken --output text)
+
 export ROOT_USER_TOKEN=$PRIVILEGED_USER_TOKEN
+
 
 export TEST_REPLAY_ENABLED=false
 export COLLABORATION_ENABLED=false
