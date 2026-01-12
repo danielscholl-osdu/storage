@@ -1,0 +1,81 @@
+pipeline {
+ agent {
+   kubernetes {
+   cloud 'openshift'
+     label 'maven-openjdk18'
+	 yaml """
+spec:
+  containers:
+  - name: jnlp
+    image: quay.io/openshift/origin-jenkins-agent-maven:v4.0.0
+    volumeMounts:
+    - mountPath: "/tmp"
+      name: "workspace-volume"
+      readOnly: false
+    workingDir: "/tmp"
+    securityContext:
+      privileged: false	
+    tty: false
+    resources:
+      limits: 
+        cpu: 200m
+        memory: 2Gi
+      requests: 
+        cpu: 200m
+        memory: 2Gi    
+  restartPolicy: "Never"
+"""		 
+   }
+ }
+
+ environment { 
+  
+ //Cluster environment variable(CLS_ENV). Like QA, DEV, PERF, PROD etc.
+ CLS_ENV = "dev"
+ 
+ //Service variable(CORE_SERVICE). Like indexer, search, delivery, storage, legal etc.
+ CORE_SERVICE = "storage"
+ 
+ //GitHub repo URL credential ID for Environment variable files which saved as Secure text in Jenkins Credential.
+ GIT_ENV_VAR_PATH_URL =  credentials('GitRepo-URL-For-Environment-variables')
+ 
+ //Personal token variable ID which saved as Secure text in Jenkins Credential. Like: GitHub-PRIVATE-TOKEN.
+ PRIVATE_TOKEN  = credentials('GitHub-PRIVATE-TOKEN')
+ 
+ def runShell =  sh (returnStdout: true, script: "curl --header 'PRIVATE-TOKEN: $PRIVATE_TOKEN'  ''$GIT_ENV_VAR_PATH_URL'%2F'$CORE_SERVICE'_'$CLS_ENV'_env.json/raw?ref=master' -s -o env.json")
+
+ }
+
+   stages {
+      stage('Integration_test') {
+          environment {
+            def readContent = readJSON file: 'env.json'
+
+            AUTH_USER_ACCESS = "${readContent['AUTH_USER_ACCESS']}"
+            AUTH_USER_ACCESS_PASSWORD = "${readContent['AUTH_USER_ACCESS_PASSWORD']}"
+            AUTH_USER_NO_ACCESS = "${readContent['AUTH_USER_NO_ACCESS']}" 
+            AUTH_USER_NO_ACCESS_PASSWORD = "${readContent['AUTH_USER_NO_ACCESS_PASSWORD']}" 
+            DEPLOY_ENV = "${readContent['DEPLOY_ENV']}" 
+            DOMAIN = "${readContent['DOMAIN']}"   
+            ENTITLEMENT_URL = "${readContent['ENTITLEMENT_URL']}"
+            KEYCLOAK_CLIENT_ID = "${readContent['KEYCLOAK_CLIENT_ID']}"   
+            KEYCLOAK_CLIENT_SECRET = "${readContent['KEYCLOAK_CLIENT_SECRET']}"  
+            KEYCLOAK_REALM = "${readContent['KEYCLOAK_REALM']}"  
+            KEYCLOAK_URL = "${readContent['KEYCLOAK_URL']}"  
+            LEGAL_URL = "${readContent['LEGAL_URL']}"  
+            PROJECT_ID = "${readContent['PROJECT_ID']}"  
+            PUBSUB_TOKEN = "${readContent['PUBSUB_TOKEN']}"  
+            STORAGE_URL = "${readContent['STORAGE_URL']}"  
+            TENANT_NAME = "${readContent['TENANT_NAME']}" 
+
+          }  
+            steps {
+               script {
+                  sh 'mvn -f testing/storage-test-core/pom.xml install'
+                  sh 'mvn -f testing/storage-test-ibm/pom.xml clean test -pl :storage-test-ibm -amd'
+               }
+            }
+       }
+    }
+
+}

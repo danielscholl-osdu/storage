@@ -1,0 +1,27 @@
+FROM community.opengroup.org:5555/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-java-image/gc-osdu-java-17-base-master:latest
+
+WORKDIR /app
+
+ARG PROVIDER_NAME
+ENV PROVIDER_NAME $PROVIDER_NAME
+
+ARG PORT
+ENV PORT $PORT
+
+ENV LOADER_PATH="gc/"
+
+COPY tmp-gc/gc-oqm-pubsub-*.jar gc/oqm-pubsub.jar
+COPY tmp-gc/gc-obm-gs-*.jar gc/obm-gs.jar
+COPY tmp-gc/gc-osm-datastore-*.jar gc/osm-datastore.jar
+COPY tmp-gc/gc-apd-acc-*.jar gc/apd-acc.jar
+
+# Copy the jar to the production image from the builder stage.
+COPY provider/storage-${PROVIDER_NAME}/target/storage-${PROVIDER_NAME}-*-spring-boot.jar storage-${PROVIDER_NAME}.jar
+
+# Set Java options using COMMON_JAVA_FLAGS from base image plus service-specific options
+# Base image entrypoint will inject telemetry if OTEL_JAVAAGENT_ENABLED=true
+ENV JAVA_OPTS="${COMMON_JAVA_FLAGS} -Dserver.port=${PORT} -Dloader.main=org.opengroup.osdu.storage.provider.gcp.StorageApplicationGCP"
+
+# Run the web service on container startup.
+# Base image entrypoint will intercept 'java' command and inject JAVA_OPTS automatically
+CMD java $JAVA_OPTS -jar /app/storage-${PROVIDER_NAME}.jar

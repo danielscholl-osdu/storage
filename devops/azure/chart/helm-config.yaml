@@ -1,0 +1,24 @@
+# This file contains the essential configs for the osdu on azure helm chart
+global:
+
+  # Service(s) Replica Count
+  replicaCount: 10
+  nodepool: services
+  isAutoscalingEnabled: false
+
+################################################################################
+# Specify the Gitlab branch being used for image creation
+# ie: community.opengroup.org:5555/osdu/platform/system/storage/{{ .Values.global.branch }}/storage:latest
+#
+image:
+  repository: #{container-registry}#.azurecr.io
+  branch: #{ENVIRONMENT_NAME}#
+  tag: #{Build.SourceVersion}#
+
+policy:
+  enabled: #{POLICY_ENABLED}#
+
+schemaEndpoints:
+  disabled: #{SCHEMA_ENDPOINTS_DISABLED}#
+
+istioDnsHost: #{ISTIO_DNS_HOST}# 

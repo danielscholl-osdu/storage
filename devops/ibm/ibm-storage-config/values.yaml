@@ -1,0 +1,49 @@
+data:
+  # common
+  logLevel: "INFO"
+  logPrefix: storage
+  deployEnv: CLOUD
+  javaAppJar: "/deployments/*-spring-boot.jar"
+  contextPath: "/api/storage/v2"
+  serverPort: 8080
+  # ibm
+  beanDefOverriding: true
+  acceptHttp: true
+  cacheExpiration: 9000
+  cahceMaxSize: 2000
+  healthCheckUri: "/api/storage/v2/_ah/liveness_check,/api/storage/v2/_ah/readiness_check,/api/storage/v2/info,/api/storage/v2/api-docs"
+  loggingLevelOsdu: debug
+  loggingLevelSpring: debug
+  #get-from-svc-name-template
+  authorizeAPI: http://TBD:8080/api/entitlements/v2
+  patitionAPI: http://tbd:8080/api/partition/v1
+  policyAPI: http://tbd:8080/api/policy/v1
+  #db
+  dbURL: http://tbd:5984
+  #get-from-existing secret
+  dbUser: admin
+  #get-from-existing secret  
+  dbPassw: tbd
+  envPrefix: ibm-iks
+  envPrefixProject: ibm-ibm-build
+  #partition
+  pKCEndPointHost: tbd
+  pKCClientId: partition-service
+  pKCClientSecret: tbd
+  pKCGrantType: password
+  pKCUser: partition-service-admin
+  pKCPassword: changeit
+  pKCRealm: OSDU
+  pKAcceptHttp: true
+  tenantCacheExpiryInSec: 10000
+  amqpPassword: TBD
+  amqpUserName: TBD
+  amqpURL: "amqp://ex-aao-amqp-0-svc:5672"
+  #minio
+  accessKey: tbd
+  secretKey: tbd
+  createCrsJWTTokenEnabled: false
+  policyEnabled: false
+
+conf:
+  configmap: "storage-config"

@@ -1,0 +1,77 @@
+# Default values for storage-deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  domain: ""
+  limitsEnabled: true
+  logLevel: "ERROR"
+  tier: ""
+  autoscalingMode: "cpu"
+
+data:
+  # configmaps
+  logLevel: ""
+  defaultDataCountry: "US"
+  storageServiceAccountEmail: "storage@service.local"
+  entitlementsHost: "http://entitlements"
+  partitionHost: "http://partition"
+  crsConverterHost: "http://crs-conversion"
+  legalHost: "http://legal"
+  opaEndpoint: "http://opa"
+  otelJavaagentEnabled: "true"
+  otelExporterEndpoint: "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4318"
+  # deployments
+  requestsCpu: "150m"
+  requestsMemory: "768Mi"
+  limitsCpu: "1"
+  limitsMemory: "3G"
+  image: ""
+  imagePullPolicy: "IfNotPresent"
+  serviceAccountName: "storage"
+  affinityLabelsSpot:
+    cloud.google.com/gke-provisioning:
+      - spot
+  affinityLabelsStandard:
+    cloud.google.com/gke-provisioning:
+      - standard
+  # redis connection. Change it if you want to use external redis
+  redisStorageHost: ""
+  redisStoragePort: 6379
+  redisImage: "docker.io/library/redis:7.2-alpine"
+
+conf:
+  appName: "storage"
+  storageRedisSecretName: "storage-redis-secret"
+
+istio:
+  proxyCPU: "5m"
+  proxyCPULimit: "200m"
+  proxyMemory: "50Mi"
+  proxyMemoryLimit: "256Mi"
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 6
+  cpu:
+    utilization: 200
+    scaleUpStabilizationWindowSeconds: 30
+    scaleUpValue: 200
+    scaleUpPeriod: 15
+    scaleDownStabilizationWindowSeconds: 150
+    scaleDownValue: 100
+    scaleDownPeriod: 15
+  requests:
+    targetType: "AverageValue"
+    targetValue: 45
+    scaleUpStabilizationWindowSeconds: 10
+    scaleUpValue: 50
+    scaleUpPeriod: 15
+    scaleDownStabilizationWindowSeconds: 60
+    scaleDownValue: 25
+    scaleDownPeriod: 60
+
+local_ratelimit:
+  max_tokens: 30
+  tokens_per_fill: 30
+  fill_interval: "1s"

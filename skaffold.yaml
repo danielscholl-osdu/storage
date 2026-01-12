@@ -1,0 +1,12 @@
+apiVersion: skaffold/v2beta4
+kind: Config
+metadata:
+  name: storage-reference
+build:
+  artifacts:
+    - image: us.gcr.io/osdu-anthos-02/os-storage/anthos-storage-reference
+      context: ./provider/storage-reference
+deploy:
+  kubectl:
+    manifests:
+      - ./provider/storage-reference/kubernetes/deployments/deployment-os-storage-service.yml
