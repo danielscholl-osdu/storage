@@ -100,8 +100,7 @@ public class PersistenceServiceImpl implements PersistenceService {
         this.commitBatch(recordsProcessing, recordsMetadata, collaborationContext);
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
-        }
-        if (!collaborationContext.isPresent()) {
+        } else if (!collaborationContext.isPresent()) {
             this.pubSubClient.publishMessage(this.headers, pubsubInfo);
         }
     }
@@ -160,8 +159,7 @@ public class PersistenceServiceImpl implements PersistenceService {
         }
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
-        }
-        if (!collaborationContext.isPresent()) {
+        } else if (!collaborationContext.isPresent()) {
             this.pubSubClient.publishMessage(this.headers, pubsubInfo);
         }
 
@@ -216,8 +214,7 @@ public class PersistenceServiceImpl implements PersistenceService {
             }
             if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
                 this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2s.stream().toArray(RecordChangedV2[]::new));
-            }
-            if (!collaborationContext.isPresent()) {
+            } else if (!collaborationContext.isPresent()) {
                 this.pubSubClient.publishMessage(this.headers, pubSubInfos.stream().toArray(PubSubInfo[]::new));
             }
         }
@@ -239,8 +236,7 @@ public class PersistenceServiceImpl implements PersistenceService {
         }
         if (collaborationFeatureFlag.isFeatureEnabled(COLLABORATIONS_FEATURE_NAME)) {
             this.pubSubClient.publishMessage(collaborationContext, this.headers, recordChangedV2);
-        }
-        if (collaborationContext.isEmpty()) {
+        } else if (collaborationContext.isEmpty()) {
             this.pubSubClient.publishMessage(this.headers, pubsubInfo);
         }
 
