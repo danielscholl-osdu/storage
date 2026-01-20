@@ -25,7 +25,7 @@ The collaboration feature is controlled by a `COLLABORATIONS_ENABLED` feature fl
 
 - **Feature Flag = `true`**:
    - Requests with `x-collaboration` header > messages sent to `recordstopic-v2` only
-   - Requests without `x-collaboration` header > messages sent to both `recordstopic` and `recordstopic-v2`
+   - Requests without `x-collaboration` header > messages sent to `recordstopic-v2` only (single queue approach)
 
 - **Feature Flag = `false`**:
    - Requests with `x-collaboration` header > rejected with Not implemented exception
@@ -143,7 +143,7 @@ Meaning, the original functionality of storage should not be changed if collabor
 In summary,
 1. If feature flag is set to true:
    1. A request with x-collaboration header: should send a message to recordstopic-v2
-   2. A request without x-collaboration header: should send a message to recordstopic and recordstopic-v2
+   2. A request without x-collaboration header: should send a message to recordstopic-v2 only (single queue approach)
 2. If feature flag is set to false:
    1. A request with x-collaboration header: should not send a message to any topic
    2. A request without x-collaboration header: should send a message to recordstopic
