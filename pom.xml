@@ -41,13 +41,13 @@
       <os-core-common.version>4.0.0</os-core-common.version>
 
       <!-- Spring Versions-->
-      <spring-boot.version>3.5.8</spring-boot.version>
+      <spring-boot.version>3.5.10</spring-boot.version>
       <spring-security.version>6.5.7</spring-security.version>
-      <spring-framework-version>6.2.14</spring-framework-version>
+      <spring-framework-version>6.2.15</spring-framework-version>
 
       <!-- Project Versions-->
       <json-smart.version>2.6.0</json-smart.version>
-      <openapi.version>2.8.6</openapi.version>
+      <openapi.version>2.8.15</openapi.version>
       <lombok.version>1.18.42</lombok.version>
       <netty.version>4.1.128.Final</netty.version>
       <commons-codec.version>1.17.1</commons-codec.version>
