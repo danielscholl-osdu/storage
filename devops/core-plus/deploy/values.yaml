@@ -20,6 +20,9 @@ data:
   legalHost: "http://legal"
   opaEnabled: false
   opaEndpoint: "http://opa"
+  collaborationsEnabled: true
+  # PubSub topic configuration
+  pubsubSearchTopicV2: "records-changed-v2"
   # deployments
   requestsCpu: "7m"
   requestsMemory: "450Mi"
