@@ -22,7 +22,6 @@ import jakarta.annotation.PostConstruct;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.PubSubInfo;
@@ -51,10 +50,14 @@ public class OqmPubSub implements IMessageBus {
   private final Gson gson = new Gson();
 
   private OqmTopic oqmTopic = null;
+  private OqmTopic oqmTopicV2 = null;
 
   @PostConstruct
   void postConstruct() {
     oqmTopic = getOqmTopic(config.getPubsubSearchTopic());
+    if (config.getPubsubSearchTopicV2() != null && !config.getPubsubSearchTopicV2().isEmpty()) {
+      oqmTopicV2 = getOqmTopic(config.getPubsubSearchTopicV2());
+    }
   }
 
   @Override
@@ -73,7 +76,36 @@ public class OqmPubSub implements IMessageBus {
 
   @Override
   public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-    throw new NotImplementedException();
+    if (oqmTopicV2 == null) {
+      log.error("V2 topic is not configured. Cannot publish collaboration context messages.");
+      throw new IllegalStateException("V2 topic (pubsub-search-topic-v2) is not configured");
+    }
+
+    OqmDestination oqmDestination = getOqmDestination(headers);
+
+    for (int i = 0; i < messages.length; i += BATCH_SIZE) {
+      RecordChangedV2[] batch =
+          Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
+      String json = gson.toJson(batch);
+      Map<String, String> attributes = buildAttributes(headers, tenant);
+      
+      // Add collaboration context to attributes if present
+      collaborationContext.ifPresent(context -> 
+          attributes.put(DpsHeaders.COLLABORATION, 
+              String.format("id=%s,application=%s", context.getId(), context.getApplication()))
+      );
+      
+      OqmMessage oqmMessage = OqmMessage.builder()
+          .data(json)
+          .attributes(attributes)
+          .build();
+
+      log.debug("Publishing collaboration context message to V2 topic. Correlation ID: {}, Collaboration: {}",
+          headers.getCorrelationId(), 
+          collaborationContext.map(c -> String.format("id=%s,application=%s", c.getId(), c.getApplication())).orElse("none"));
+      
+      driver.publish(oqmMessage, oqmTopicV2, oqmDestination);
+    }
   }
 
   @Override
