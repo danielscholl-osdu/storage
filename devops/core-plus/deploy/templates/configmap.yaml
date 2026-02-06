@@ -29,3 +29,7 @@ data:
   {{- if .Values.data.pubsubSearchTopicV2 }}
   PUBSUB_SEARCH_TOPIC_V2: {{ .Values.data.pubsubSearchTopicV2 | quote }}
   {{- end }}
+  {{- if .Values.data.javaToolOptions }}
+  JAVA_TOOL_OPTIONS: {{ .Values.data.javaToolOptions | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.data.otelExporterEndpoint | quote}}
+  {{- end }}

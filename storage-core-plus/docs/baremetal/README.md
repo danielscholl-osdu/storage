@@ -26,17 +26,19 @@ Define the following environment variables.
 
 Must have:
 
-| name                                      | value                                      | description                                                                                                                                            | sensitive? | source |
-|-------------------------------------------|--------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|------------|--------|
-|                                                                                                                                                        | false      | -      |
-| `OPENID_PROVIDER_CLIENT_ID`               | `*****`                                    | Client id that represents this service and serves to request tokens, example `workload-identity-legal`                                                 | yes        | -      |
-| `OPENID_PROVIDER_CLIENT_SECRET`           | `*****`                                    | This client secret that serves to request tokens                                                                                                       | yes        | -      |
-| `OPENID_PROVIDER_URL`                     | `https://keycloack.com/auth/realms/master` | URL of OpenID Connect provider, it will be used as `<OpenID URL> + /.well-known/openid-configuration` to auto configure endpoint for token request     | no         | -      |
-| `<POSTGRES_PASSWORD_ENV_VARIABLE_NAME>`   | ex `POSTGRES_PASS_OSDU`                    | Postgres password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
-| `<MINIO_SECRETKEY_ENV_VARIABLE_NAME>`     | ex `MINIO_SECRET_OSDU`                     | Minio secret env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
-| `<AMQP_PASSWORD_ENV_VARIABLE_NAME>`       | ex `AMQP_PASS_OSDU`                        | Amqp password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
-| `<AMQP_ADMIN_PASSWORD_ENV_VARIABLE_NAME>` | ex `AMQP_ADMIN_PASS_OSDU`                  | Amqp admin password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
-| `STORAGE_SERVICE_ACCOUNT_EMAIL`           | `workload-storage@keycloak.com`            | Storage service account email, used during OQM events processing                                                                                       | no         | -      |
+| name                                      | value                                                      | description                                                                                                                                                                                                                               | sensitive? | source |
+|-------------------------------------------|------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|--------|
+|                                           | false                                                      | -                                                                                                                                                                                                                                         |
+| `OPENID_PROVIDER_CLIENT_ID`               | `*****`                                                    | Client id that represents this service and serves to request tokens, example `workload-identity-legal`                                                                                                                                    | yes        | -      |
+| `OPENID_PROVIDER_CLIENT_SECRET`           | `*****`                                                    | This client secret that serves to request tokens                                                                                                                                                                                          | yes        | -      |
+| `OPENID_PROVIDER_URL`                     | `https://keycloack.com/auth/realms/master`                 | URL of OpenID Connect provider, it will be used as `<OpenID URL> + /.well-known/openid-configuration` to auto configure endpoint for token request                                                                                        | no         | -      |
+| `<POSTGRES_PASSWORD_ENV_VARIABLE_NAME>`   | ex `POSTGRES_PASS_OSDU`                                    | Postgres password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service   | yes        | -      |
+| `<MINIO_SECRETKEY_ENV_VARIABLE_NAME>`     | ex `MINIO_SECRET_OSDU`                                     | Minio secret env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service        | yes        | -      |
+| `<AMQP_PASSWORD_ENV_VARIABLE_NAME>`       | ex `AMQP_PASS_OSDU`                                        | Amqp password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service       | yes        | -      |
+| `<AMQP_ADMIN_PASSWORD_ENV_VARIABLE_NAME>` | ex `AMQP_ADMIN_PASS_OSDU`                                  | Amqp admin password env name, name of that variable not defined at the service level, the name will be received through partition service. Each tenant can have it's own ENV name value, and it must be present in ENV of Storage service | yes        | -      |
+| `STORAGE_SERVICE_ACCOUNT_EMAIL`           | `workload-storage@keycloak.com`                            | Storage service account email, used during OQM events processing                                                                                                                                                                          | no         | -      |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`             | ex `http://127.0.0.1:4318`                                 | OpenTelemetry collector endpoint                                                                                                                                                                                                          | no         |        |
+| `JAVA_TOOL_OPTIONS`                       | ex `-javaagent:/app/telemetry/opentelemetry-javaagent.jar` | Used to extend application runtime arguments. Currently intended to enable the OpenTelemetry Java agent, which is included in the container and can be activated via runtime arguments                                                    | no         |        |
 
 Defined in default application property file but possible to override:
 
@@ -466,6 +468,25 @@ Each Client has embedded Service Account (SA) option. Enable SAs for Clients, ma
 Add `partition-and-entitlements` scope to `Default Client Scopes` and generate Keys.
 
 Give `client-id` and `client-secret` to services, which should be authorized within the platform.
+
+### OpenTelemetry Integration
+
+The `opentelemetry-javaagent.jar` file is the OpenTelemetry Java agent.
+It is used to automatically instrument a Java application at runtime without requiring manual changes to the source code.
+
+This provides critical observability features:
+
+* **Distributed tracing:** Traces the path of requests as they travel across different services.
+* **Metrics:** Captures performance indicators and application-level metrics.
+* **Logs:** Correlates logs with traces and other telemetry data.
+
+Enabling this agent makes it significantly easier to monitor, debug, and manage the application in development and production environments.
+The agent is activated via runtime arguments when the `JAVA_TOOL_OPTIONS` environment variable includes the `-javaagent:/app/telemetry/opentelemetry-javaagent.jar` argument.
+
+The agent is available from the official OpenTelemetry GitHub repository. It is recommended to use the latest stable version.
+
+Official Download Page:
+https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases
 
 ## Running E2E Tests
 
