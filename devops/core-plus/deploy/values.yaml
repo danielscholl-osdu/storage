@@ -21,6 +21,9 @@ data:
   opaEnabled: false
   opaEndpoint: "http://opa"
   collaborationsEnabled: true
+  # Otel
+  javaToolOptions: ""
+  otelExporterEndpoint: ""
   # PubSub topic configuration
   pubsubSearchTopicV2: "records-changed-v2"
   # deployments

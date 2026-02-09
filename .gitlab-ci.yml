@@ -57,6 +57,11 @@ include:
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/cimpl-global.yml"
+    ref: "cimpl-otel"
+
+  - project: "osdu/platform/ci-cd-pipelines"
+    file: "build/cimpl-otel.yml"
+    ref: "cimpl-otel"
 
   - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa-maven.yml"
