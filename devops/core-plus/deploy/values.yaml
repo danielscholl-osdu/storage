@@ -22,8 +22,8 @@ data:
   opaEndpoint: "http://opa"
   collaborationsEnabled: true
   # Otel
-  javaToolOptions: ""
-  otelExporterEndpoint: ""
+  javaToolOptions: "-javaagent:/app/telemetry/opentelemetry-javaagent.jar"
+  otelExporterEndpoint: "http://otel-collector.observability.svc.cluster.local:4317"
   # PubSub topic configuration
   pubsubSearchTopicV2: "records-changed-v2"
   # deployments
