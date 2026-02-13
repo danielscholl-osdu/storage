@@ -21,6 +21,10 @@
           <timestampFormat>yyyy-MM-dd HH:mm:ss.SSS</timestampFormat>
           <timestampFormatTimezoneId>Etc/UTC</timestampFormatTimezoneId>
           <appendLineSeparator>true</appendLineSeparator>
+
+          <jsonFormatter class="org.opengroup.osdu.storage.provider.gcp.logging.formatter.JsonFormatter">
+            <prettyPrint>false</prettyPrint>
+          </jsonFormatter>
         </layout>
       </encoder>
     </appender>

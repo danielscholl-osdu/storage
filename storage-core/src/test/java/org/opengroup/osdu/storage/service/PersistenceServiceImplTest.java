@@ -169,9 +169,8 @@ public class PersistenceServiceImplTest {
         ArgumentCaptor<RecordChangedV2[]> recordChangedV2Captor = ArgumentCaptor.forClass(RecordChangedV2[].class);
 
         verify(this.pubSubClient).publishMessage(eq(Optional.empty()), eq(this.headers), recordChangedV2Captor.capture());
-        verify(this.pubSubClient).publishMessage(eq(this.headers), pubsubCaptor.capture());
+        verify(this.pubSubClient, never()).publishMessage(eq(this.headers), any(PubSubInfo[].class));
 
-        this.assertPubsubInfo(48, pubsubCaptor.getAllValues());
         this.assertRecordChangedV2Info(48, recordChangedV2Captor.getAllValues());
         verify(this.cloudStorage, times(0)).delete(any(RecordMetadata.class));
     }

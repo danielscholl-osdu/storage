@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
 public class GcpAppServiceConfig {
 
     private String pubsubSearchTopic;
+    private String pubsubSearchTopicV2;
 
     private String redisStorageHost;
     private Integer redisStoragePort;

@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;

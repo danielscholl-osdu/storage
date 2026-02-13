@@ -7,6 +7,7 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
 data:
   CRS_CONVERTER_HOST: {{ .Values.data.crsConverterHost | quote }}
+  COLLABORATIONS_ENABLED: {{ .Values.data.collaborationsEnabled | quote }}
   DEFAULT_DATA_COUNTRY: {{ .Values.data.defaultDataCountry | quote }}
   ENTITLEMENTS_HOST: {{ .Values.data.entitlementsHost | quote }}
   LEGAL_HOST: {{ .Values.data.legalHost | quote }}
@@ -25,3 +26,10 @@ data:
   {{- end }}
   REDIS_STORAGE_PORT: {{ .Values.data.redisStoragePort | quote }}
   REDIS_GROUP_PORT: {{ .Values.data.redisStoragePort | quote }}
+  {{- if .Values.data.pubsubSearchTopicV2 }}
+  PUBSUB_SEARCH_TOPIC_V2: {{ .Values.data.pubsubSearchTopicV2 | quote }}
+  {{- end }}
+  {{- if .Values.data.javaToolOptions }}
+  JAVA_TOOL_OPTIONS: {{ .Values.data.javaToolOptions | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.data.otelExporterEndpoint | quote}}
+  {{- end }}

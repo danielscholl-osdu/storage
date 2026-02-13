@@ -108,7 +108,19 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
-        doPublishMessage(false,Optional.empty(), headers, messages);
+        // AWS uses V2 queue only - convert PubSubInfo to RecordChangedV2
+        RecordChangedV2[] v2Messages = Arrays.stream(messages)
+            .map(this::convertToRecordChangedV2)
+            .toArray(RecordChangedV2[]::new);
+        doPublishMessage(true, Optional.empty(), headers, v2Messages);
+    }
+
+    private RecordChangedV2 convertToRecordChangedV2(PubSubInfo pubSubInfo) {
+        return RecordChangedV2.builder()
+            .id(pubSubInfo.getId())
+            .kind(pubSubInfo.getKind())
+            .op(pubSubInfo.getOp())
+            .build();
     }
 
     @Override

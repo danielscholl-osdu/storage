@@ -23,7 +23,7 @@ download_gc_plugins:
     GC_OBM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1475/packages/maven"
     GC_OBM_VERSION: "0.27.2"
     GC_OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1477/packages/maven"
-    GC_OQM_VERSION: "0.29.1"
+    GC_OQM_VERSION: "0.29.2"
     GC_APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1480/packages/maven"
     GC_APD_VERSION: "0.27.2"
   artifacts:

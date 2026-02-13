@@ -17,9 +17,24 @@
 
 package org.opengroup.osdu.storage.provider.gcp.web.repository;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
@@ -37,6 +52,7 @@ import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.storage.TransferInfo;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
 import org.opengroup.osdu.core.common.partition.PartitionPropertyResolver;
+import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.core.obm.core.Driver;
 import org.opengroup.osdu.core.obm.core.ObmDriverRuntimeException;
 import org.opengroup.osdu.core.obm.core.S3CompatibleErrors;
@@ -49,23 +65,6 @@ import org.opengroup.osdu.storage.service.DataAuthorizationService;
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Repository
 @RequiredArgsConstructor
@@ -129,22 +128,32 @@ public class ObmStorage implements ICloudStorage {
         String bucket = getBucketName(this.tenantInfo);
         Map<String, Acl> originalAcls = new HashMap<>();
         Map<String, RecordMetadata> currentRecords = this.recordRepository.get(recordsId, collaborationContext);
+        if (currentRecords.isEmpty()) {
+          throw new AppException(HttpStatus.SC_NOT_FOUND, "Metadata not found", "No metadata found for record id: " + recordsId);
+        }
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
             String id = recordMetadata.getId();
             String idWithVersion = recordsIdMap.get(id);
+            String lookupKey = CollaborationContextUtil.composeIdWithNamespace(id, collaborationContext);
 
             if (!id.equalsIgnoreCase(idWithVersion)) {
                 long previousVersion = Long.parseLong(idWithVersion.split(":")[3]);
-                long currentVersion = currentRecords.get(id).getLatestVersion();
+                long currentVersion = currentRecords.get(lookupKey).getLatestVersion();
                 if (previousVersion != currentVersion) {
                     lockedRecords.add(idWithVersion);
                     continue;
                 }
             }
             validMetadata.add(recordMetadata);
-            storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
-            originalAcls.put(recordMetadata.getId(), currentRecords.get(id).getAcl());
+
+            String versionPath = recordMetadata.getVersionPath(recordMetadata.getLatestVersion());
+            if (collaborationContext.isPresent()) {
+                versionPath = String.format("%s/%s/%s", recordMetadata.getKind(), lookupKey, recordMetadata.getLatestVersion());
+            }
+
+            storage.getBlob(bucket, versionPath, getDestination());
+            originalAcls.put(recordMetadata.getId(), currentRecords.get(lookupKey).getAcl());
         }
 
         return originalAcls;
@@ -155,7 +164,8 @@ public class ObmStorage implements ICloudStorage {
         String bucket = getBucketName(this.tenantInfo);
 
         for (RecordMetadata recordMetadata : recordsMetadata) {
-            storage.getBlob(bucket, recordMetadata.getVersionPath(recordMetadata.getLatestVersion()), getDestination());
+            String versionPath = recordMetadata.getVersionPath(recordMetadata.getLatestVersion());
+            storage.getBlob(bucket, versionPath, getDestination());
         }
     }
 
@@ -167,6 +177,7 @@ public class ObmStorage implements ICloudStorage {
         }
 
         String bucket = getBucketName(this.tenantInfo);
+
         for (RecordMetadata record : records) {
 
             try {
@@ -190,6 +201,7 @@ public class ObmStorage implements ICloudStorage {
 
             try {
                 String path = record.getVersionPath(record.getLatestVersion());
+
                 Blob blob = storage.getBlob(bucket, path, getDestination());
                 if (blob == null) {
                     throw new ObmDriverRuntimeException(S3CompatibleErrors.NO_SUCH_KEY_CODE, new RuntimeException(String.format("'%s' not found", path)));
@@ -241,7 +253,8 @@ public class ObmStorage implements ICloudStorage {
         List<Callable<Boolean>> tasks = new ArrayList<>();
 
         for (Map.Entry<String, String> object : objects.entrySet()) {
-            tasks.add(() -> this.readBlobThread(dataPartitionId, object.getValue(), bucketName, map));
+            String originalKey = object.getKey();
+            tasks.add(() -> this.readBlobThread(dataPartitionId, originalKey, object.getValue(), bucketName, map));
         }
 
         try {
@@ -281,16 +294,20 @@ public class ObmStorage implements ICloudStorage {
 
         String bucket = getBucketName(this.tenantInfo);
         try {
-            Blob blob = storage.getBlob(bucket, record.getVersionPath(record.getLatestVersion()), getDestination());
+            String path = record.getVersionPath(record.getLatestVersion());
+
+            Blob blob = storage.getBlob(bucket, path, getDestination());
 
             if (blob == null) {
                 String msg = String.format("Record with id '%s' does not exist", record.getId());
                 throw new AppException(HttpStatus.SC_NOT_FOUND, "Record not found", msg);
             }
 
-            String[] versionFiles = record.getGcsVersionPaths().toArray(new String[0]);
+            List<String> versionFiles = record.getGcsVersionPaths();
 
-            storage.deleteBlobs(bucket, getDestination(), versionFiles);
+            if (!versionFiles.isEmpty()) {
+                storage.deleteBlobs(bucket, getDestination(), versionFiles.toArray(new String[0]));
+            }
 
         } catch (ObmDriverRuntimeException e) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
@@ -307,13 +324,14 @@ public class ObmStorage implements ICloudStorage {
             if (!record.hasVersion()) {
                 this.log.warning(String.format(RECORD_DOES_NOT_HAVE_VERSIONS_AVAILABLE_MSG, record.getId()));
             }
+            String path = record.getVersionPath(version);
 
-            Blob blob = storage.getBlob(bucket, record.getVersionPath(version), getDestination());
+            Blob blob = storage.getBlob(bucket, path, getDestination());
 
             if (blob == null) {
                 this.log.warning(String.format("Record with id '%s' does not exist, unable to purge version: %s", record.getId(), version));
             }
-            storage.deleteBlob(bucket, record.getVersionPath(version), getDestination());
+            storage.deleteBlob(bucket, path, getDestination());
 
         } catch (ObmDriverRuntimeException e) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ACCESS_DENIED_ERROR_REASON, ACCESS_DENIED_ERROR_MSG, e);
@@ -406,15 +424,12 @@ public class ObmStorage implements ICloudStorage {
         }
     }
 
-    private boolean readBlobThread(String dataPartitionId, String object, String bucket, Map<String, String> map) {
-        String[] tokens = object.split("/");
-        String key = tokens[tokens.length - 2];
-
+    private boolean readBlobThread(String dataPartitionId, String originalKey, String object, String bucket, Map<String, String> map) {
         try {
             String value = new String(storage.getBlobContent(bucket, object, getDestination(dataPartitionId)), UTF_8);
-            map.put(key, value);
+            map.put(originalKey, value);
         } catch (ObmDriverRuntimeException e) {
-            map.put(key, null);
+            map.put(originalKey, null);
         }
 
         return true;

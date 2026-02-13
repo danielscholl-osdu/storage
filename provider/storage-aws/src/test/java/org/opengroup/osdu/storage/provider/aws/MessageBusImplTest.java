@@ -96,7 +96,7 @@ public class MessageBusImplTest {
         verify(snsClient, times(1)).publish(requestCaptor.capture());
         
         PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(topicArn, capturedRequest.topicArn());
+        assertEquals(topicArnV2, capturedRequest.topicArn()); // AWS now uses V2 topic for all messages
         
         // Verify message attributes
         Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();

@@ -59,6 +59,9 @@ include:
     file: "cloud-providers/cimpl-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
+    file: "build/cimpl-otel.yml"
+
+  - project: "osdu/platform/ci-cd-pipelines"
     file: "scanners/fossa-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
@@ -92,120 +95,6 @@ include:
 eslint-sast:
   rules:
     - when: never
-
-.maven:
-  image: maven:3.9.3-eclipse-temurin-17
-  tags: ['osdu-medium']
-  variables:
-    MAVEN_REPO_PATH: "$CI_PROJECT_DIR/.m2/repository"
-    MAVEN_CLI_OPTS: "--batch-mode --settings=$CI_PROJECT_DIR/.mvn/community-maven.settings.xml"
-
-  cache:
-    paths:
-      - $MAVEN_REPO_PATH
-
-  artifacts:
-    paths:
-      - ./**/target/*.jar
-      - ./**/maven-*-output.txt
-    when: always
-    expire_in: 2 days
-
-  before_script:
-    - | # Check for the presence of a maven wrapper script
-      apt-get update && apt-get install -y python3
-      if [ -e "$CI_PROJECT_DIR/mvnw" ]; then
-        export MAVEN_BINARY="$CI_PROJECT_DIR/mvnw"
-        unset MAVEN_CONFIG
-        mkdir -pv .mvn/wrapper
-      else
-        export MAVEN_BINARY="mvn"
-      fi
-    - export MAVEN="$MAVEN_BINARY $MAVEN_CLI_OPTS -Dmaven.repo.local=$MAVEN_REPO_PATH"
-    - echo $MAVEN_BINARY
-    - echo $MAVEN_CLI_OPTS
-    - echo $MAVEN_REPO_PATH
-    - echo $MAVEN
-    - mkdir -pv $MAVEN_REPO_PATH
-    - export ALL_MAVEN_BUILD_DIRS_Z=$(mktemp)
-    - python3 --version
-
-    # This scans for all pom.xml files that aren't listed as a child pom (as
-    # determine by the presence of a <parent> tag).
-    - |
-      (python3 | sort -z > $ALL_MAVEN_BUILD_DIRS_Z) <<EOF
-      from xml.dom.minidom import parse
-      import os
-      import sys
-
-      allPomFiles = set()
-      submoduleFiles = set()
-
-      for root, dirnames, filenames in os.walk(os.environ['CI_PROJECT_DIR']):
-          if 'pom.xml' in filenames:
-              pomFile = os.path.join(root, 'pom.xml')
-              allPomFiles.add(pomFile)
-
-              dom = parse(pomFile)
-              for modules in dom.getElementsByTagName('modules'):
-                  for module in modules.getElementsByTagName('module'):
-                      submoduleFiles.add(os.path.join(root, module.firstChild.nodeValue, "pom.xml"))
-
-      for pomFile in allPomFiles:
-          if pomFile not in submoduleFiles:
-              dir = os.path.dirname(pomFile)
-              sys.stdout.write(dir + '\0')
-      EOF
-    - xargs -0rn 1 echo < $ALL_MAVEN_BUILD_DIRS_Z
-
-    # This creates a script for running maven, capturing output to a file.
-    # - First argument is the directory to build from
-    # - Second argument is the name to use for the logfile
-    # - The remaining arguments are the maven command to run
-    - export MAVEN_BUILD=$(tempfile -m 755 -p build -s .sh)
-    - echo "#!/bin/bash" > $MAVEN_BUILD
-    - |
-      cat >> $MAVEN_BUILD <<EOF
-      id=maven_build_\$(echo "\$@" | sha1sum | head -c 7)
-      cd "\$1"; shift
-      outputFile="\$1"; shift
-
-      echo "********************************************************************************"
-      echo -e "\e[0Ksection_start:\$(date +%s):\${id}\r\e[0K\e[1m\$(pwd)\e[0m"
-      echo -e "\e[32;1m\$MAVEN" "\$@" "\e[0m"
-
-      if \$MAVEN "\$@" > "\$outputFile" 2>&1; then
-          tail -n 25 "\$outputFile";
-          echo -e "\e[36m**** Showing the last 25 lines of the passed build (above). See Job artifacts for full log details *****\e[0m";
-          echo -e "\e[0Ksection_end:\$(date +%s):\${id}\r\e[0K"
-      else
-          tail -n 200 "\$outputFile";
-          echo -e "\e[31m**** Showing the last 200 lines of the failed build (above). See Job artifacts for full log details *****\e[0m";
-          echo -e "\e[0Ksection_end:\$(date +%s):\${id}\r\e[0K"
-          exit 255;
-      fi
-      EOF
-
-    # This creates a script for applying the $MAVEN_BUILD script to all build directories
-    - export MAVEN_FOREACH=$(tempfile -m 755 -p fr-ec -s .sh)
-    - echo "#!/bin/sh" > $MAVEN_FOREACH
-    - echo 'xargs -0rI {} $MAVEN_BUILD {} "$@" < $ALL_MAVEN_BUILD_DIRS_Z' >> $MAVEN_FOREACH
-
-
-    # Temporary fix for AWS Unit tests using Embedded MongoDB that requires libcrypto.so.1.1
-    - apt-get install -y build-essential wget
-    - mkdir $HOME/opt
-    - pushd $HOME/opt
-    - wget https://www.openssl.org/source/old/1.1.1/openssl-1.1.1w.tar.gz
-    - tar -zxvf openssl-1.1.1w.tar.gz
-    - cd openssl-1.1.1w
-    - ./config && make > make-openssl.log
-    - mkdir $HOME/opt/lib
-    - ls $HOME/opt/
-    - mv $HOME/opt/openssl-1.1.1w/libcrypto.so.1.1 $HOME/opt/lib/
-    - mv $HOME/opt/openssl-1.1.1w/libssl.so.1.1 $HOME/opt/lib/
-    - export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH
-    - popd
 
 download_plugins:
   image: maven:3.8.3-openjdk-17-slim

@@ -32,6 +32,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opengroup.osdu.storage.util.ConfigUtils;
 import org.opengroup.osdu.storage.util.LegalTagUtils;
@@ -75,7 +76,7 @@ public final class CollaborationUpdateRecordsMetadataTest extends TestBase {
     }
 
     @Test
-    public void shouldMaintainAndUpdateRecordInRespctiveCollaborationContext() throws Exception {
+    public void shouldMaintainAndUpdateRecordInRespectiveCollaborationContext() throws Exception {
         if (!isCollaborationEnabled) return;
         //assert record with no collaboration context
         CloseableHttpResponse getResponse = TestUtils.send("records/" + RECORD_PATCH_ID, "GET", getHeadersWithxCollaboration(null, APPLICATION_NAME, TENANT_NAME, testUtils.getToken()), "", "");
