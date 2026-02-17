@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.NotImplementedException;
+import java.lang.IllegalStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -124,12 +124,12 @@ class OqmPubSubTest {
   }
 
   @Test
-  void shouldThrowNotImplementedException_whenPublishMessageWithCollaborationContextCalled() {
+  void shouldThrowIllegalStateException_whenPublishMessageWithCollaborationContextCalledWithoutV2Topic() {
     DpsHeaders headers = new DpsHeaders();
     Optional<CollaborationContext> context = Optional.empty();
 
     assertThrows(
-        NotImplementedException.class,
+        IllegalStateException.class,
         () -> publisher.publishMessage(context, headers, new RecordChangedV2()));
   }
 }

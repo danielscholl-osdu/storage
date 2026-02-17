@@ -44,6 +44,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 | Name | Description | Type | Default |Required |
 |------|-------------|------|---------|---------|
 **data.logLevel** | logging level | string | `ERROR` | yes
+**data.collaborationsEnabled** | Collaboration Context feature is enabled | boolean | true | no
 **data.defaultDataCountry** | Data storage region | string | `US` | yes
 **data.storageServiceAccountEmail** | Storage service account email, used during OQM events processing | string | `storage@service.local` | yes
 **data.entitlementsHost** | Entitlements service host address | string | `http://entitlements` | yes
@@ -52,6 +53,7 @@ First you need to set variables in **values.yaml** file using any code editor. S
 **data.legalHost** | Legal service host address | string | `http://legal` | yes
 **data.opaEnabled** | whether OPA is enabled | boolean | false | yes
 **data.opaEndpoint** | OPA host address | string | `http://opa` | yes
+**data.pubsubSearchTopicV2** | PubSub topic name for V2 messages (collaboration context) | string | `records-changed-v2` | no
 **data.redisStorageHost** | The host for redis instance. If empty (by default), helm installs an internal redis instance | string | - | yes
 **data.redisStoragePort** | The port for redis instance | digit | 6379 | yes
 
