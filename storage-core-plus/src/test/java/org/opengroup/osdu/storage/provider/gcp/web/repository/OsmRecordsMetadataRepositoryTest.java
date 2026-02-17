@@ -80,12 +80,13 @@ public class OsmRecordsMetadataRepositoryTest {
 
     repository.createOrUpdate(records, Optional.of(collaborationContext));
 
-    ArgumentCaptor<Object[]> captor = ArgumentCaptor.forClass(Object[].class);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<RecordMetadata[]> captor = ArgumentCaptor.forClass(RecordMetadata[].class);
     verify(context).upsert(any(Destination.class), captor.capture());
 
-    RecordMetadata[] savedRecords = (RecordMetadata[]) captor.getValue()[0];
+    RecordMetadata[] savedRecords = captor.getValue();
     assertEquals(1, savedRecords.length);
-    String expectedId = String.format("%s:%s", COLLAB_ID, RECORD_ID);
+    String expectedId = COLLAB_ID + RECORD_ID;
     assertEquals(expectedId, savedRecords[0].getId());
   }
 
@@ -97,10 +98,11 @@ public class OsmRecordsMetadataRepositoryTest {
 
     repository.createOrUpdate(records, Optional.empty());
 
-    ArgumentCaptor<Object[]> captor = ArgumentCaptor.forClass(Object[].class);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<RecordMetadata[]> captor = ArgumentCaptor.forClass(RecordMetadata[].class);
     verify(context).upsert(any(Destination.class), captor.capture());
 
-    RecordMetadata[] savedRecords = (RecordMetadata[]) captor.getValue()[0];
+    RecordMetadata[] savedRecords = captor.getValue();
     assertEquals(1, savedRecords.length);
     assertEquals(RECORD_ID, savedRecords[0].getId());
   }
@@ -109,14 +111,14 @@ public class OsmRecordsMetadataRepositoryTest {
   public void delete_withCollaborationContext_shouldDeletePrefixedId() {
     repository.delete(RECORD_ID, Optional.of(collaborationContext));
 
-    String expectedId = String.format("%s:%s", COLLAB_ID, RECORD_ID);
+    String expectedId = COLLAB_ID + RECORD_ID;
     verify(context).deleteById(eq(RecordMetadata.class), any(Destination.class), eq(expectedId));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void get_withCollaborationContext_shouldReturnRecordWithOriginalId() {
-    String prefixedId = String.format("%s:%s", COLLAB_ID, RECORD_ID);
+    String prefixedId = COLLAB_ID + RECORD_ID;
     RecordMetadata storedRecord = new RecordMetadata();
     storedRecord.setId(prefixedId);
 
@@ -134,8 +136,8 @@ public class OsmRecordsMetadataRepositoryTest {
   public void getBatch_withCollaborationContext_shouldReturnMapWithComposedKeysAndOriginalIdsInMetadata() {
       // Map keys should be composed IDs
       // RecordMetadata objects should have original IDs restored
-      String prefixedId1 = String.format("%s:%s", COLLAB_ID, RECORD_ID);
-      String prefixedId2 = String.format("%s:%s", COLLAB_ID, RECORD_ID_2);
+      String prefixedId1 = COLLAB_ID + RECORD_ID;
+      String prefixedId2 = COLLAB_ID + RECORD_ID_2;
 
       RecordMetadata r1 = new RecordMetadata(); r1.setId(prefixedId1);
       RecordMetadata r2 = new RecordMetadata(); r2.setId(prefixedId2);
@@ -176,8 +178,8 @@ public class OsmRecordsMetadataRepositoryTest {
       
       repository.batchDelete(ids, Optional.of(collaborationContext));
       
-      String expectedId1 = String.format("%s:%s", COLLAB_ID, RECORD_ID);
-      String expectedId2 = String.format("%s:%s", COLLAB_ID, RECORD_ID_2);
+      String expectedId1 = COLLAB_ID + RECORD_ID;
+      String expectedId2 = COLLAB_ID + RECORD_ID_2;
       
       // Verify deleteById is called with composed IDs
       verify(context).deleteById(
