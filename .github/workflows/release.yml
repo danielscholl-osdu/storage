@@ -1,0 +1,112 @@
+name: Release Management
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/**'
+
+# Add workflow-level permissions
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-initialization:
+    name: "🔍 Check Repository State"
+    runs-on: ubuntu-latest
+    outputs:
+      initialized: ${{ steps.check.outputs.initialized }}
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v5
+        
+      - name: "Verify Initialization Status"
+        id: check
+        run: |
+          # Check repository variable instead of file
+          if [ "${{ vars.INITIALIZATION_COMPLETE }}" = "true" ]; then
+            echo "initialized=true" >> $GITHUB_OUTPUT
+          else
+            echo "initialized=false" >> $GITHUB_OUTPUT
+          fi
+          
+  release-please:
+    name: "📦 Create Release"
+    needs: check-initialization
+    if: needs.check-initialization.outputs.initialized == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: "Generate GitHub App Token"
+        id: app-token
+        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42  # v2.1.4
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: "Generate Release PR"
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: .release-please-config.json
+          
+  tag-with-upstream:
+    name: "🏷️ Update Release Tags"
+    needs: [check-initialization, release-please]
+    if: needs.check-initialization.outputs.initialized == 'true' && needs.release-please.outputs.release_created
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42  # v2.1.4
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: "Checkout Code"
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          
+      - name: "Fetch Upstream Version"
+        run: |
+          git remote add upstream ${{ vars.UPSTREAM_REPO_URL }}
+          git fetch upstream --tags --force
+          UPSTREAM_VERSION=$(git describe --tags --abbrev=0 upstream/main 2>/dev/null || echo "v0.0.0")
+          echo "UPSTREAM_VERSION=$UPSTREAM_VERSION" >> $GITHUB_ENV
+          
+      - name: "Update Release Tags"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          # Get the latest release tag
+          RELEASE_TAG=$(gh release list -L 1 | cut -f 3)
+          
+          # Create correlation tag with upstream reference (additive approach)
+          CORRELATION_TAG="${RELEASE_TAG}-upstream-${UPSTREAM_VERSION}"
+          
+          # Only create correlation tag if it doesn't already exist
+          if ! git tag -l "${CORRELATION_TAG}" | grep -q .; then
+            git tag $CORRELATION_TAG
+            git push origin $CORRELATION_TAG
+          fi
+          
+          # Update release notes without changing the original tag
+          RELEASE_NOTES=$(gh release view $RELEASE_TAG --json body -q .body)
+          gh release edit $RELEASE_TAG \
+            --notes "${RELEASE_NOTES}
+
+            Upstream Version: ${UPSTREAM_VERSION}
+            Correlation Tag: ${CORRELATION_TAG}" 
