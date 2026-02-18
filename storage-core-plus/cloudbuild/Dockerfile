@@ -26,7 +26,8 @@ RUN groupadd -g 10001 -r nonroot \
 USER 10001:10001
 
 # Run the web service on container startup.
-CMD java -Djava.security.egd=file:/dev/./urandom \
+CMD java $JAVA_TOOL_OPTIONS \
+         -Djava.security.egd=file:/dev/./urandom \
          -Dserver.port=${PORT} \
          -Dlog4j.formatMsgNoLookups=true \
          -Dloader.path=plugins/ \
