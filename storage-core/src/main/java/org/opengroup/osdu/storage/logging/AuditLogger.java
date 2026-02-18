@@ -17,10 +17,12 @@ package org.opengroup.osdu.storage.logging;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
+import org.opengroup.osdu.core.common.util.IpAddressUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @Component
@@ -33,11 +35,20 @@ public class AuditLogger {
 	@Autowired
 	private DpsHeaders dpsHeaders;
 
+	@Autowired
+	private HttpServletRequest httpServletRequest;
+
 	private AuditEvents events = null;
 
 	private AuditEvents getAuditEvents() {
 		if (this.events == null) {
-			this.events = new AuditEvents(this.dpsHeaders.getUserEmail());
+			String user = this.dpsHeaders.getUserEmail();
+			String userIpAddress = IpAddressUtil.getClientIpAddress(httpServletRequest);
+			String userAgent = httpServletRequest.getHeader("user-agent");
+			String userAuthorizedGroupName = dpsHeaders.getUserAuthorizedGroupName();
+
+			this.events = new AuditEvents(user, userIpAddress, userAgent, userAuthorizedGroupName
+			);
 		}
 		return this.events;
 	}
