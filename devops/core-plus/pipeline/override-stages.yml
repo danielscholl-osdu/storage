@@ -9,10 +9,6 @@ variables:
 cimpl-deploy:
   variables:
     CIMPL_SERVICE: "storage"
-    CIMPL_HELM_SETS: >-
-      --set data.javaToolOptions=-javaagent:/app/telemetry/opentelemetry-javaagent.jar 
-      --set data.otelExporterEndpoint=http://otel-collector.observability.svc.cluster.local:4317
-      --set data.otelExporterProtocol=grpc
 
 cimpl-test:
   variables:
