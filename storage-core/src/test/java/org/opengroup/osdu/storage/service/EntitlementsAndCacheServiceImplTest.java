@@ -34,6 +34,8 @@ import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
+import org.opengroup.osdu.storage.service.IEntitlementsExtensionService.AuthorizationResult;
+
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -594,5 +596,50 @@ public class EntitlementsAndCacheServiceImplTest {
 
         List<RecordMetadata> result = this.sut.hasValidAccess(input, this.headers);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void should_returnAuthorizationResult_when_authorizeWithGroupName() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@gmail.com");
+        g1.setName("role1");
+
+        GroupInfo g2 = new GroupInfo();
+        g2.setEmail("role2@gmail.com");
+        g2.setName("role2");
+
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+        groupsInfo.add(g2);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        groups.setDesId(MEMBER_EMAIL);
+
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        AuthorizationResult result = this.sut.authorizeWithGroupName(this.headers, "role2");
+        assertEquals(MEMBER_EMAIL, result.user());
+        assertEquals("role2", result.userAuthorizedGroupName());
+    }
+
+    @Test
+    public void should_throwAppException_when_authorizeWithGroupNameUnauthorized() throws EntitlementsException {
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@gmail.com");
+        g1.setName("role1");
+
+        List<GroupInfo> groupsInfo = new ArrayList<>();
+        groupsInfo.add(g1);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo);
+        groups.setDesId(MEMBER_EMAIL);
+
+        when(this.entitlementService.getGroups()).thenReturn(groups);
+
+        AppException exception = assertThrows(AppException.class,
+                () -> this.sut.authorizeWithGroupName(this.headers, "role3"));
+        assertEquals(403, exception.getError().getCode());
     }
 }
