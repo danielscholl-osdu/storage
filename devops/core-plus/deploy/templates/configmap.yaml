@@ -32,4 +32,5 @@ data:
   {{- if .Values.data.javaToolOptions }}
   JAVA_TOOL_OPTIONS: {{ .Values.data.javaToolOptions | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.data.otelExporterEndpoint | quote}}
+  OTEL_EXPORTER_OTLP_PROTOCOL: {{ .Values.data.otelExporterProtocol | quote}}
   {{- end }}

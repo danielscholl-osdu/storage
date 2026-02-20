@@ -17,10 +17,12 @@ package org.opengroup.osdu.storage.logging;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.util.IpAddressUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -34,6 +36,9 @@ public class StorageAuditLogger {
 	@Autowired
 	private DpsHeaders dpsHeaders;
 
+	@Autowired
+	private HttpServletRequest httpServletRequest;
+
 	private StorageAuditEvents events = null;
 
 	@Autowired
@@ -41,7 +46,13 @@ public class StorageAuditLogger {
 
 	private StorageAuditEvents getAuditEvents() {
 		if (this.events == null) {
-			this.events = new StorageAuditEvents(this.dpsHeaders.getUserEmail());
+			String user = this.dpsHeaders.getUserEmail();
+			String userIpAddress = IpAddressUtil.getClientIpAddress(httpServletRequest);
+			String userAgent = httpServletRequest.getHeader("user-agent");
+			String userAuthorizedGroupName = dpsHeaders.getUserAuthorizedGroupName();
+
+			this.events = new StorageAuditEvents(user, userIpAddress, userAgent, userAuthorizedGroupName
+			);
 		}
 		return this.events;
 	}
