@@ -63,12 +63,16 @@ public class EntitlementsAndCacheServiceImpl implements IEntitlementsExtensionSe
 
     @Override
     public String authorize(DpsHeaders headers, String... roles) {
+        return authorizeWithGroupName(headers, roles).user();
+    }
+
+    @Override
+    public AuthorizationResult authorizeWithGroupName(DpsHeaders headers, String... roles) {
         Groups groups = this.getGroups(headers);
-        if (groups.any(roles)) {
-            return groups.getDesId();
-        } else {
+        if (!groups.any(roles)) {
             throw new AppException(HttpStatus.SC_FORBIDDEN, ERROR_REASON, ERROR_MSG);
         }
+        return new AuthorizationResult(groups.getDesId(), groups.getMatchingGroupName(roles));
     }
 
     @Override

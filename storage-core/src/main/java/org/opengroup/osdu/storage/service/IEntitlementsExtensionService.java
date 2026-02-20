@@ -20,7 +20,10 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 
 public interface IEntitlementsExtensionService extends IEntitlementsAndCacheService {
 
+    record AuthorizationResult(String user, String userAuthorizedGroupName) {}
+
     Groups getGroups(DpsHeaders headers);
+    AuthorizationResult authorizeWithGroupName(DpsHeaders headers, String... roles);
     void invalidateGroups(DpsHeaders headers);
     boolean isDataManager(DpsHeaders headers);
 }

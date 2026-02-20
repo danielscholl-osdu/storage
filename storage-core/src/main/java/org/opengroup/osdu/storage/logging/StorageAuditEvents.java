@@ -18,20 +18,21 @@ import com.google.common.base.Strings;
 import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
 import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
-import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 
 import java.util.List;
 
-import static java.util.Collections.singletonList;
-
 public class StorageAuditEvents {
+
+    private static final String UNKNOWN = "unknown";
+    private static final String UNKNOWN_IP = "0.0.0.0";
+
     private static final String CREATE_OR_UPDATE_RECORD_ACTION_ID = "ST001";
     private static final String CREATE_OR_UPDATE_RECORD_MESSAGE = "Records created or updated";
     private static final String DELETE_RECORD_ACTION_ID = "ST002";
     private static final String DELETE_RECORD_MESSAGE = "Record deleted";
     private static final String PURGE_RECORD_ACTION_ID = "ST003";
     private static final String PURGE_RECORD_MESSAGE = "Record purged";
-    private static final String READ_ALL_VERSIONS_OF_RECORD_ACTION_ID ="ST004";
+    private static final String READ_ALL_VERSIONS_OF_RECORD_ACTION_ID = "ST004";
     private static final String READ_ALL_VERSIONS_OF_RECORD_MESSAGE = "Read all versions of record";
     private static final String READ_RECORD_SPECIFIC_VERSION_ACTION_ID = "ST005";
     private static final String READ_RECORD_SPECIFIC_VERSION_MESSAGE = "Read a specific version of record";
@@ -58,294 +59,257 @@ public class StorageAuditEvents {
     private static final String READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE = "Read multiple records with optional conversion";
 
     private static final String PURGE_RECORD_VERSIONS_ACTION_ID = "ST015";
-    private static final String CREATE_REPLAY_REQUEST = "ST015";
+    private static final String CREATE_REPLAY_REQUEST_ACTION_ID = "ST016";
 
     private static final String CREATE_REPLAY_REQUEST_MESSAGE = "Replay started";
 
     private final String user;
+    private final String userIpAddress;
+    private final String userAgent;
+    private final String userAuthorizedGroupName;
 
-    public StorageAuditEvents(String user) {
-        if (Strings.isNullOrEmpty(user)) {
-            throw new IllegalArgumentException("User not provided for audit events.");
-        }
-        this.user = user;
+    public StorageAuditEvents(String user, String userIpAddress, String userAgent, String userAuthorizedGroupName) {
+        this.user = Strings.isNullOrEmpty(user) ? UNKNOWN : user;
+        this.userIpAddress = Strings.isNullOrEmpty(userIpAddress) ? UNKNOWN_IP : userIpAddress;
+        this.userAgent = Strings.isNullOrEmpty(userAgent) ? UNKNOWN : userAgent;
+        this.userAuthorizedGroupName = Strings.isNullOrEmpty(userAuthorizedGroupName) ? UNKNOWN : userAuthorizedGroupName;
+    }
+
+    private AuditPayload.AuditPayloadBuilder createAuditPayloadBuilder(List<String> requiredGroupsForAction, String actionId) {
+        return AuditPayload.builder()
+                .user(this.user)
+                .actionId(actionId)
+                .requiredGroupsForAction(requiredGroupsForAction)
+                .userIpAddress(this.userIpAddress)
+                .userAgent(this.userAgent)
+                .userAuthorizedGroupName(this.userAuthorizedGroupName);
     }
 
     public AuditPayload getReadMultipleRecordsSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_MULTIPLE_RECORDS.getRequiredGroups(), READ_MULTIPLE_RECORDS_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_MULTIPLE_RECORDS_ACTION_ID)
                 .message(READ_MULTIPLE_RECORDS_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadAllRecordsOfGivenKindSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_ALL_RECORDS_FROM_KIND.getRequiredGroups(), READ_ALL_RECORDS_FROM_KIND_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_ALL_RECORDS_FROM_KIND_ACTION_ID)
                 .message(READ_ALL_RECORDS_FROM_KIND_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadAllVersionsOfRecordSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_ALL_VERSIONS_OF_RECORD.getRequiredGroups(), READ_ALL_VERSIONS_OF_RECORD_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_ALL_VERSIONS_OF_RECORD_ACTION_ID)
                 .message(READ_ALL_VERSIONS_OF_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadAllVersionsOfRecordFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_ALL_VERSIONS_OF_RECORD.getRequiredGroups(), READ_ALL_VERSIONS_OF_RECORD_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.FAILURE)
-                .actionId(READ_ALL_VERSIONS_OF_RECORD_ACTION_ID)
                 .message(READ_ALL_VERSIONS_OF_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadSpecificVersionOfRecordSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_SPECIFIC_VERSION_OF_RECORD.getRequiredGroups(), READ_RECORD_SPECIFIC_VERSION_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_RECORD_SPECIFIC_VERSION_ACTION_ID)
                 .message(READ_RECORD_SPECIFIC_VERSION_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadSpecificVersionOfRecordFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_SPECIFIC_VERSION_OF_RECORD.getRequiredGroups(), READ_RECORD_SPECIFIC_VERSION_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.FAILURE)
-                .actionId(READ_RECORD_SPECIFIC_VERSION_ACTION_ID)
                 .message(READ_RECORD_SPECIFIC_VERSION_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadLatestVersionOfRecordSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_LATEST_VERSION_OF_RECORD.getRequiredGroups(), READ_RECORD_LATEST_VERSION_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_RECORD_LATEST_VERSION_ACTION_ID)
                 .message(READ_RECORD_LATEST_VERSION_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadLatestVersionOfRecordFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_LATEST_VERSION_OF_RECORD.getRequiredGroups(), READ_RECORD_LATEST_VERSION_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.FAILURE)
-                .actionId(READ_RECORD_LATEST_VERSION_ACTION_ID)
                 .message(READ_RECORD_LATEST_VERSION_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
 
 
     public AuditPayload getCreateOrUpdateRecordsEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.CREATE_OR_UPDATE_RECORDS.getRequiredGroups(), CREATE_OR_UPDATE_RECORD_ACTION_ID)
                 .action(AuditAction.UPDATE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(CREATE_OR_UPDATE_RECORD_ACTION_ID)
                 .message(CREATE_OR_UPDATE_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getCreateOrUpdateRecordsEventFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.CREATE_OR_UPDATE_RECORDS.getRequiredGroups(), CREATE_OR_UPDATE_RECORD_ACTION_ID)
                 .action(AuditAction.UPDATE)
                 .status(AuditStatus.FAILURE)
-                .actionId(CREATE_OR_UPDATE_RECORD_ACTION_ID)
                 .message(CREATE_OR_UPDATE_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getDeleteRecordEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.DELETE_RECORD.getRequiredGroups(), DELETE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(DELETE_RECORD_ACTION_ID)
                 .message(DELETE_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getDeleteRecordEventFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.DELETE_RECORD.getRequiredGroups(), DELETE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.FAILURE)
-                .actionId(DELETE_RECORD_ACTION_ID)
                 .message(DELETE_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getPurgeRecordEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.PURGE_RECORD.getRequiredGroups(), PURGE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(PURGE_RECORD_ACTION_ID)
                 .message(PURGE_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getPurgeRecordEventFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.PURGE_RECORD.getRequiredGroups(), PURGE_RECORD_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.FAILURE)
-                .actionId(PURGE_RECORD_ACTION_ID)
                 .message(PURGE_RECORD_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getPurgeRecordVersionsEventSuccess(String recordId, List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.PURGE_RECORD_VERSIONS.getRequiredGroups(), PURGE_RECORD_VERSIONS_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(PURGE_RECORD_VERSIONS_ACTION_ID)
                 .message(String.format("Record `%s` versions purged", recordId))
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getPurgeRecordVersionsEventFail(String recordId, List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.PURGE_RECORD_VERSIONS.getRequiredGroups(), PURGE_RECORD_VERSIONS_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.FAILURE)
-                .actionId(PURGE_RECORD_VERSIONS_ACTION_ID)
                 .message(String.format("Record `%s` versions purged", recordId))
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
 
     public AuditPayload getAllKindsEventSuccess(List<String> resource) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_ALL_KINDS.getRequiredGroups(), READ_GET_ALL_KINDS_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_GET_ALL_KINDS_ACTION_ID)
                 .message(READ_GET_ALL_KINDS_MESSAGE)
                 .resources(resource)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getCreateSchemaEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.CREATE_SCHEMA.getRequiredGroups(), CREATE_SCHEMA_ACTION_ID)
                 .action(AuditAction.CREATE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(CREATE_SCHEMA_ACTION_ID)
                 .message(CREATE_SCHEMA_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getDeleteSchemaEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.DELETE_SCHEMA.getRequiredGroups(), DELETE_SCHEMA_ACTION_ID)
                 .action(AuditAction.DELETE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(DELETE_SCHEMA_ACTION_ID)
                 .message(DELETE_SCHEMA_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadSchemaEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
-                .action(AuditAction.CREATE)
+        return createAuditPayloadBuilder(AuditOperation.READ_SCHEMA.getRequiredGroups(), READ_SCHEMA_ACTION_ID)
+                .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_SCHEMA_ACTION_ID)
                 .message(READ_SCHEMA_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getUpdateRecordsComplianceStateEventSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.UPDATE_RECORD_COMPLIANCE_STATE.getRequiredGroups(), UPDATE_RECORD_COMPLIANCE_STATE_ACTION_ID)
                 .action(AuditAction.UPDATE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(UPDATE_RECORD_COMPLIANCE_STATE_ACTION_ID)
                 .message(UPDATE_RECORD_COMPLIANCE_STATE_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadMultipleRecordsWithOptionalConversionSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_MULTIPLE_RECORDS_WITH_CONVERSION.getRequiredGroups(), READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.SUCCESS)
-                .actionId(READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
                 .message(READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getReadMultipleRecordsWithOptionalConversionFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.READ_MULTIPLE_RECORDS_WITH_CONVERSION.getRequiredGroups(), READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
                 .action(AuditAction.READ)
                 .status(AuditStatus.FAILURE)
-                .actionId(READ_MULTIPLE_RECORDS_WITH_CONVERSION_ACTION_ID)
                 .message(READ_MULTIPLE_RECORDS_WITH_CONVERSION_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getCreateReplayRequestFail(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.CREATE_REPLAY_REQUEST.getRequiredGroups(), CREATE_REPLAY_REQUEST_ACTION_ID)
                 .action(AuditAction.CREATE)
                 .status(AuditStatus.FAILURE)
-                .actionId(CREATE_REPLAY_REQUEST)
                 .message(CREATE_REPLAY_REQUEST_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 
     public AuditPayload getCreateReplayRequestSuccess(List<String> resources) {
-        return AuditPayload.builder()
+        return createAuditPayloadBuilder(AuditOperation.CREATE_REPLAY_REQUEST.getRequiredGroups(), CREATE_REPLAY_REQUEST_ACTION_ID)
                 .action(AuditAction.CREATE)
                 .status(AuditStatus.SUCCESS)
-                .actionId(CREATE_REPLAY_REQUEST)
                 .message(CREATE_REPLAY_REQUEST_MESSAGE)
                 .resources(resources)
-                .user(user)
                 .build();
     }
 }
