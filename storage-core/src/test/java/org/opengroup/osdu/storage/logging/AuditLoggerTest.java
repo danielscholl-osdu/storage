@@ -26,15 +26,21 @@ import org.opengroup.osdu.core.common.logging.audit.AuditAction;
 import org.opengroup.osdu.core.common.logging.audit.AuditPayload;
 import org.opengroup.osdu.core.common.logging.audit.AuditStatus;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.core.common.model.storage.StorageRole;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +56,9 @@ public class AuditLoggerTest {
     private DpsHeaders dpsHeaders;
 
     @Mock
+    private HttpServletRequest httpServletRequest;
+
+    @Mock
     private ReadAuditLogsConsumer readAuditLogsConsumer;
 
 
@@ -57,6 +66,10 @@ public class AuditLoggerTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
         when(dpsHeaders.getUserEmail()).thenReturn("user");
+        when(dpsHeaders.getUserAuthorizedGroupName()).thenReturn("service.storage.admin");
+        lenient().when(httpServletRequest.getHeader(any())).thenReturn(null);
+        when(httpServletRequest.getHeader("user-agent")).thenReturn("test-agent");
+        when(httpServletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
     }
 
     @Test
@@ -89,35 +102,37 @@ public class AuditLoggerTest {
     @Test
     public void should_writePurgeRecordVersionsSuccessEvent() {
         List<String> resource = Arrays.asList("version1", "version2");
-        AuditPayload auditPayloadForSuccess = AuditPayload.builder()
-                .action(AuditAction.DELETE)
-                .status(AuditStatus.SUCCESS)
-                .actionId("ST015")
-                .message(String.format("Record `%s` versions purged", "recordId1"))
-                .resources(resource)
-                .user("user")
-                .build();
 
         this.sut.purgeRecordVersionsSuccess("recordId1", resource);
 
-        verify(this.log, times(1)).audit(auditPayloadForSuccess);
+        ArgumentCaptor<AuditPayload> captor = ArgumentCaptor.forClass(AuditPayload.class);
+        verify(this.log, times(1)).audit(captor.capture());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> auditLog = (Map<String, Object>) captor.getValue().get("auditLog");
+        assertEquals("ST015", auditLog.get("actionId"));
+        assertEquals(AuditAction.DELETE, auditLog.get("action"));
+        assertEquals(AuditStatus.SUCCESS, auditLog.get("status"));
+        assertEquals(String.format("Record `%s` versions purged", "recordId1"), auditLog.get("message"));
+        assertEquals(resource, auditLog.get("resources"));
+        assertEquals(Collections.singletonList(StorageRole.ADMIN), auditLog.get("requiredGroupsForAction"));
     }
 
     @Test
     public void should_writePurgeRecordVersionsFailureEvent() {
         List<String> resource = Arrays.asList("version1", "version2");
-        AuditPayload auditPayloadForFailure = AuditPayload.builder()
-                .action(AuditAction.DELETE)
-                .status(AuditStatus.FAILURE)
-                .actionId("ST015")
-                .message(String.format("Record `%s` versions purged", "recordId1"))
-                .resources(resource)
-                .user("user")
-                .build();
 
         this.sut.purgeRecordVersionsFail("recordId1", resource);
 
-        verify(this.log, times(1)).audit(auditPayloadForFailure);
+        ArgumentCaptor<AuditPayload> captor = ArgumentCaptor.forClass(AuditPayload.class);
+        verify(this.log, times(1)).audit(captor.capture());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> auditLog = (Map<String, Object>) captor.getValue().get("auditLog");
+        assertEquals("ST015", auditLog.get("actionId"));
+        assertEquals(AuditAction.DELETE, auditLog.get("action"));
+        assertEquals(AuditStatus.FAILURE, auditLog.get("status"));
+        assertEquals(String.format("Record `%s` versions purged", "recordId1"), auditLog.get("message"));
+        assertEquals(resource, auditLog.get("resources"));
+        assertEquals(Collections.singletonList(StorageRole.ADMIN), auditLog.get("requiredGroupsForAction"));
     }
 
     @Test

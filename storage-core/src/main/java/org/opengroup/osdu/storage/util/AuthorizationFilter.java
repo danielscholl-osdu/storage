@@ -14,8 +14,9 @@
 
 package org.opengroup.osdu.storage.util;
 
-import org.opengroup.osdu.core.common.entitlements.IEntitlementsAndCacheService;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.opengroup.osdu.storage.service.IEntitlementsExtensionService;
+import org.opengroup.osdu.storage.service.IEntitlementsExtensionService.AuthorizationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
@@ -24,14 +25,15 @@ import org.springframework.web.context.annotation.RequestScope;
 @RequestScope
 public class AuthorizationFilter {
     @Autowired
-    private IEntitlementsAndCacheService entitlementsAndCacheService;
+    private IEntitlementsExtensionService entitlementsAndCacheService;
 
     @Autowired
     private DpsHeaders headers;
 
     public boolean hasRole(String... requiredRoles) {
-        String user = entitlementsAndCacheService.authorize(headers, requiredRoles);
-        headers.put(DpsHeaders.USER_EMAIL, user);
+        AuthorizationResult result = entitlementsAndCacheService.authorizeWithGroupName(headers, requiredRoles);
+        headers.put(DpsHeaders.USER_EMAIL, result.user());
+        headers.put(DpsHeaders.USER_AUTHORIZED_GROUP_NAME, result.userAuthorizedGroupName());
         return true;
     }
 }
