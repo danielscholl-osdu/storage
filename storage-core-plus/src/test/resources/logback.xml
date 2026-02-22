@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Suppress noisy framework logs during test execution -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.mockito" level="WARN"/>
+    <logger name="ch.qos.logback" level="WARN"/>
+
+    <!-- Keep application logs at DEBUG so ListAppender tests can capture them -->
+    <logger name="org.opengroup.osdu" level="DEBUG"/>
+
+    <!-- Default appender for test output - only WARNING and above hit console -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
