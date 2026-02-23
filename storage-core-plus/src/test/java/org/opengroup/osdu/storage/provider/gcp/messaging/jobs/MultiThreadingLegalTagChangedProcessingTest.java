@@ -1,6 +1,5 @@
 /*
- *  Copyright 2020-2022 Google LLC
- *  Copyright 2020-2022 EPAM Systems, Inc
+ *  Copyright @ Microsoft Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,9 +29,9 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.opengroup.osdu.auth.TokenProvider;
 import org.opengroup.osdu.core.common.cache.ICache;
@@ -55,7 +54,7 @@ import org.opengroup.osdu.oqm.core.model.OqmAckReplier;
 import org.opengroup.osdu.oqm.core.model.OqmMessage;
 import org.opengroup.osdu.storage.logging.StorageAuditLogger;
 import org.opengroup.osdu.storage.provider.gcp.messaging.config.MessagingConfigurationProperties;
-import org.opengroup.osdu.storage.provider.gcp.messaging.jobs.config.PullConfigStub;
+import org.opengroup.osdu.storage.provider.gcp.messaging.config.PullConfigStub;
 import org.opengroup.osdu.storage.provider.gcp.messaging.jobs.stub.OqmPubSubStub;
 import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ThreadDpsHeaders;
 import org.opengroup.osdu.storage.provider.gcp.messaging.thread.ThreadScopeContextHolder;
@@ -66,11 +65,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {PullConfigStub.class}, webEnvironment = WebEnvironment.NONE, properties = {"oqmDriver=any"})
-public class MultiThreadingLegalTagChangedProcessingTest {
+class MultiThreadingLegalTagChangedProcessingTest {
 
     private static final String FIRST_TEST_TENANT = "test";
     private static final String FIRST_TEST_PROJECT = "test.project";
@@ -138,8 +137,8 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     @Autowired
     private MessagingConfigurationProperties configurationProperties;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         configurationProperties.setStorageServiceAccountEmail("storage");
 
         setUpTenants();
@@ -153,7 +152,7 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     }
 
     @Test
-    public void testMultithreadingMessageProcessingWithDifferentTenants() throws InterruptedException {
+    void testMultithreadingMessageProcessingWithDifferentTenants() throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(numberOfTenantRuns);
         for (int i = 0; i < numberOfTenantRuns; i++) {
             int finalI = i;
@@ -167,10 +166,10 @@ public class MultiThreadingLegalTagChangedProcessingTest {
         assertEquals(numberOfAllRuns, collector.size());
 
         long firstTenantEvents = collector.stream().flatMap(entry -> entry.keySet().stream()).map(DpsHeaders::getPartitionId)
-            .filter(partition -> partition.equals(FIRST_TEST_TENANT)).count();
+                .filter(partition -> partition.equals(FIRST_TEST_TENANT)).count();
 
         long secondTenantEvents = collector.stream().flatMap(entry -> entry.keySet().stream()).map(DpsHeaders::getPartitionId)
-            .filter(partition -> partition.equals(SECOND_TEST_TENANT)).count();
+                .filter(partition -> partition.equals(SECOND_TEST_TENANT)).count();
 
         assertEquals(numberOfTenantRuns, firstTenantEvents);
         assertEquals(numberOfTenantRuns, secondTenantEvents);
@@ -179,25 +178,25 @@ public class MultiThreadingLegalTagChangedProcessingTest {
     private void messageRun(String legalTagName, String tenantName) {
         try {
             OqmMessage firstOqmMessage = new OqmMessage("1", "{\n"
-                + "    \"statusChangedTags\": [{\n"
-                + "            \"changedTagName\": \"" + legalTagName + "\",\n"
-                + "            \"changedTagStatus\": \"incompliant\"\n"
-                + "        }\n"
-                + "    ]\n"
-                + "}",
-                ImmutableMap.of(
-                    DpsHeaders.ACCOUNT_ID,
-                    tenantName,
-                    DpsHeaders.CORRELATION_ID,
-                    TEST_CORRELATION,
-                    DpsHeaders.DATA_PARTITION_ID,
-                    tenantName
-                )
+                    + "    \"statusChangedTags\": [{\n"
+                    + "            \"changedTagName\": \"" + legalTagName + "\",\n"
+                    + "            \"changedTagStatus\": \"incompliant\"\n"
+                    + "        }\n"
+                    + "    ]\n"
+                    + "}",
+                    ImmutableMap.of(
+                            DpsHeaders.ACCOUNT_ID,
+                            tenantName,
+                            DpsHeaders.CORRELATION_ID,
+                            TEST_CORRELATION,
+                            DpsHeaders.DATA_PARTITION_ID,
+                            tenantName
+                    )
             );
 
             threadDpsHeaders.setThreadContext(firstOqmMessage.getAttributes());
             LegalTagChangedProcessing legalTagChangedProcessing =
-                new LegalTagChangedProcessing(legalTagConsistencyValidator, complianceChangeServiceGcp, threadDpsHeaders);
+                    new LegalTagChangedProcessing(legalTagConsistencyValidator, complianceChangeServiceGcp, threadDpsHeaders);
 
             legalTagChangedProcessing.process(firstOqmMessage);
         } catch (Exception e) {
@@ -232,8 +231,8 @@ public class MultiThreadingLegalTagChangedProcessingTest {
         SimpleEntry<String, List<RecordMetadata>> emptyMap = new SimpleEntry<>("empty", Collections.emptyList());
 
         when(recordsMetadataRepository.queryByLegal(legalTagName, LegalCompliance.compliant, 500))
-            .thenReturn(mapWithValues)
-            .thenReturn(emptyMap);
+                .thenReturn(mapWithValues)
+                .thenReturn(emptyMap);
 
     }
 
