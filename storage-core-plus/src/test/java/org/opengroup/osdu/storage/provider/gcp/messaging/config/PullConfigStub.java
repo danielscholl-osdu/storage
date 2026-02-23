@@ -1,6 +1,5 @@
 /*
- *  Copyright 2020-2023 Google LLC
- *  Copyright 2020-2023 EPAM Systems, Inc
+ *  Copyright @ Microsoft Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,13 +14,12 @@
  *  limitations under the License.
  */
 
-package org.opengroup.osdu.storage.provider.gcp.messaging.jobs.config;
+package org.opengroup.osdu.storage.provider.gcp.messaging.config;
 
 import lombok.Getter;
 import org.opengroup.osdu.core.common.legal.ILegalService;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagConsistencyValidator;
-import org.opengroup.osdu.storage.provider.gcp.messaging.config.MessagingCustomContextConfiguration;
 import org.opengroup.osdu.storage.provider.gcp.messaging.jobs.stub.OqmPubSubStub;
 import org.opengroup.osdu.storage.provider.gcp.messaging.scope.override.ScopeModifierPostProcessor;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
