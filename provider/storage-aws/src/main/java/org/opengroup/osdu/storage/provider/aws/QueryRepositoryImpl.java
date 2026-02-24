@@ -40,7 +40,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -145,9 +144,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 String.format("%s:", idPrefix),
                 numRecords,
                 cursor);
-        } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
-                    e.getMessage(), e);
         } catch (IllegalArgumentException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, e.toString(), e.getMessage());
         }
@@ -201,10 +197,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
                     records.add(id);
                 }
             }
-            
-        } catch (UnsupportedEncodingException e) {
-            throw new AppException(HttpStatus.SC_INTERNAL_SERVER_ERROR, ERROR_PARSING_RESULTS,
-                    e.getMessage(), e);
         } catch (IllegalArgumentException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, e.toString(), e.getMessage());
         }
@@ -258,9 +250,6 @@ public class QueryRepositoryImpl implements IQueryRepository {
                 cursor = queryPageResult.getNextCursor();
             } while (cursor != null && !cursor.isEmpty());
             return count;
-        } catch (UnsupportedEncodingException e) {
-            logger.error("Error counting records for kind " + kind + ": " + e.getMessage(), e);
-            return 0;
         } catch (IllegalArgumentException e) {
             throw new AppException(HttpStatus.SC_BAD_REQUEST, e.toString(), e.getMessage());
         }
@@ -292,13 +281,12 @@ public class QueryRepositoryImpl implements IQueryRepository {
      * @param limit The maximum number of records to return
      * @param cursor The pagination cursor
      * @return QueryPageResult containing the results and next cursor
-     * @throws UnsupportedEncodingException If there's an error encoding the cursor
      */
     private QueryPageResult<RecordMetadataDoc> queryRecordMetadataByKind(
             String kind,
             String idPrefix,
             int limit,
-            String cursor) throws UnsupportedEncodingException {
+            String cursor) {
 
         DynamoDBQueryHelper<RecordMetadataDoc> recordMetadataQueryHelper = getRecordMetadataQueryHelper();
         // Set GSI hash key
