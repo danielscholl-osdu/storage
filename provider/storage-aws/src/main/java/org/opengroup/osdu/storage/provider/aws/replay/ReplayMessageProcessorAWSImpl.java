@@ -30,7 +30,6 @@ import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordChangedV2;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.aws.QueryRepositoryImpl;
-import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import org.opengroup.osdu.storage.provider.interfaces.IMessageBus;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
@@ -67,7 +66,6 @@ public class ReplayMessageProcessorAWSImpl {
     private final DpsHeaders headers;
     private final StorageAuditLogger auditLogger;
     private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
-    private final WorkerThreadPool workerThreadPool;
 
     @Value("${aws.dynamodb.recordMetadataTable.ssm.relativePath}")
     private String recordMetadataTableParameterRelativePath;
@@ -78,15 +76,13 @@ public class ReplayMessageProcessorAWSImpl {
                                         IMessageBus messageBus, 
                                         DpsHeaders headers, 
                                         StorageAuditLogger auditLogger,
-                                        DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
-                                        WorkerThreadPool workerThreadPool) {
+                                        DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory) {
         this.replayRepository = replayRepository;
         this.queryRepository = queryRepository;
         this.messageBus = messageBus;
         this.headers = headers;
         this.auditLogger = auditLogger;
         this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
-        this.workerThreadPool = workerThreadPool;
     }
 
     /**
