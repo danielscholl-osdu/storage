@@ -34,7 +34,6 @@ import org.opengroup.osdu.storage.provider.aws.service.AwsSchemaServiceImpl;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.RecordMetadataDoc;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -79,51 +78,6 @@ class QueryRepositoryImplTest {
         
         // Manually set the schemaService field in the repo
         repo.schemaService = schemaService;
-    }
-
-    @Test
-    void getAllRecordIdAndKind() {
-        /*// Arrange
-        String cursor = "abc123";
-        String recordId1 = "tenant:source:type1:1.0.0.1212";
-        String recordId2 = "tenant:source:type2:1.0.0.3434";
-        String kind1 = "tenant:source:type1:1.0.0";
-        String kind2 = "tenant:source:type2:1.0.0";
-        
-        // Create test data
-        RecordMetadataDoc doc1 = new RecordMetadataDoc();
-        doc1.setId(recordId1);
-        doc1.setKind(kind1);
-        doc1.setStatus("active");
-        
-        RecordMetadataDoc doc2 = new RecordMetadataDoc();
-        doc2.setId(recordId2);
-        doc2.setKind(kind2);
-        doc2.setStatus("active");
-        
-        List<RecordMetadataDoc> docList = Arrays.asList(doc1, doc2);
-        QueryPageResult<RecordMetadataDoc> queryResult = new QueryPageResult<>(docList, null, null);
-        
-        // Mock the query helper
-        when(queryHelper.queryByGSI(any(GsiQueryRequest.class),any()))
-                .thenReturn(queryResult);
-        
-        // Act
-        RecordInfoQueryResult<RecordIdAndKind> result = repo.getAllRecordIdAndKind(50, cursor);
-        
-        // Assert
-        assertEquals(cursor, result.getCursor());
-        assertEquals(2, result.getResults().size());
-        
-        RecordIdAndKind record1 = result.getResults().get(0);
-        assertEquals(recordId1, record1.getId());
-        assertEquals(kind1, record1.getKind());
-        
-        RecordIdAndKind record2 = result.getResults().get(1);
-        assertEquals(recordId2, record2.getId());
-        assertEquals(kind2, record2.getKind());
-        
-        verify(queryHelper, times(1)).queryByGSI(any(GsiQueryRequest.class), any());*/
     }
     
     @Test
@@ -312,7 +266,7 @@ class QueryRepositoryImplTest {
     }
     
     @Test
-    void getActiveRecordsCountForKinds() throws UnsupportedEncodingException {
+    void getActiveRecordsCountForKinds() {
         // Arrange
         String partitionId = "tenant";
         String kind1 = "tenant:source:type1:1.0.0";
