@@ -42,7 +42,8 @@ public final class PostQueryRecordsIntegrationTests extends TestBase {
 
 	private static final long NOW = System.currentTimeMillis();
 
-	private static final String RECORD_ID = TenantUtils.getTenantName() + ":query:" + NOW;
+	private static final String RECORD_ID_PREFIX = TenantUtils.getFirstTenantName() + ":query:";
+	private static final String RECORD_ID = RECORD_ID_PREFIX + NOW;
 	private static final String KIND = TenantUtils.getTenantName() + ":ds:query:1.0." + NOW;
 	private static final String LEGAL_TAG = LegalTagUtils.createRandomName();
 	private static final DummyRecordsHelper RECORDS_HELPER = new DummyRecordsHelper();
@@ -171,7 +172,8 @@ public final class PostQueryRecordsIntegrationTests extends TestBase {
 	public void should_returnInvalidRecord_when_nonExistingIDGiven() throws Exception {
 		JsonArray attributes = new JsonArray();
 		JsonArray records = new JsonArray();
-		records.add("nonexisting:id");
+		String notExistingId = RECORD_ID_PREFIX + "nonexisting:id";
+		records.add(notExistingId);
 
 		JsonObject body = new JsonObject();
 		body.add("records", records);
@@ -185,7 +187,7 @@ public final class PostQueryRecordsIntegrationTests extends TestBase {
 
 		assertEquals(0, responseObject.records.length);
 		assertEquals(1, responseObject.invalidRecords.length);
-		assertEquals("nonexisting:id", responseObject.invalidRecords[0]);
+		assertEquals(notExistingId, responseObject.invalidRecords[0]);
 		assertEquals(0, responseObject.retryRecords.length);
 	}
 }
