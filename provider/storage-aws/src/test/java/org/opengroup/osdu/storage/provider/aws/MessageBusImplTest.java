@@ -93,15 +93,37 @@ public class MessageBusImplTest {
 
         // Assert
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
-        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        verify(snsClient, times(2)).publish(requestCaptor.capture()); // AWS publishes to both V1 and V2 topics
         
-        PublishRequest capturedRequest = requestCaptor.getValue();
-        assertEquals(topicArnV2, capturedRequest.topicArn()); // AWS now uses V2 topic for all messages
+        List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
+        // First call should be V1 topic, second should be V2 topic
+        assertEquals(topicArn, capturedRequests.get(0).topicArn());
+        assertEquals(topicArnV2, capturedRequests.get(1).topicArn());
         
-        // Verify message attributes
-        Map<String, MessageAttributeValue> attributes = capturedRequest.messageAttributes();
-        assertTrue(attributes.containsKey("data-partition-id"));
-        assertTrue(attributes.containsKey("correlation-id"));
+        // Verify message attributes on both requests
+        for (PublishRequest request : capturedRequests) {
+            Map<String, MessageAttributeValue> attributes = request.messageAttributes();
+            assertTrue(attributes.containsKey("data-partition-id"));
+            assertTrue(attributes.containsKey("correlation-id"));
+        }
+    }
+
+    @Test
+    public void testPublishMessage_ExceptionHandling() {
+        // Arrange
+        PubSubInfo message = new PubSubInfo();
+        message.setId("id1");
+        
+        // Mock SNS to throw exception
+        when(snsClient.publish(any(PublishRequest.class)))
+            .thenThrow(new RuntimeException("SNS failure"));
+        
+        // Act
+        messageBus.publishMessage(headers, message);
+
+        // Assert
+        verify(snsClient, times(2)).publish(any(PublishRequest.class));
+        verify(logger, atLeastOnce()).error(contains("Failed to publish"), any(Exception.class));
     }
 
     @Test
@@ -117,9 +139,18 @@ public class MessageBusImplTest {
         // Act
         messageBus.publishMessage(noCollaboration, headers, message1, message2);
 
-        // Assert
+        // Assert - Now publishes to both V1 and V2 topics
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
-        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        verify(snsClient, times(2)).publish(requestCaptor.capture());
+        
+        List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
+        
+        // Verify exactly 1 V1 and 1 V2 message
+        long v1Count = capturedRequests.stream().filter(req -> topicArn.equals(req.topicArn())).count();
+        long v2Count = capturedRequests.stream().filter(req -> topicArnV2.equals(req.topicArn())).count();
+        
+        assertEquals("Should have exactly 1 V1 message", 1, v1Count);
+        assertEquals("Should have exactly 1 V2 message", 1, v2Count);
         
         PublishRequest capturedRequest = requestCaptor.getValue();
         assertEquals(topicArnV2, capturedRequest.topicArn());
@@ -146,9 +177,18 @@ public class MessageBusImplTest {
         // Act
         messageBus.publishMessage(withCollaboration, headers, message);
 
-        // Assert
+        // Assert - Now publishes to both V1 and V2 topics
         ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
-        verify(snsClient, times(1)).publish(requestCaptor.capture());
+        verify(snsClient, times(2)).publish(requestCaptor.capture());
+        
+        List<PublishRequest> capturedRequests = requestCaptor.getAllValues();
+        
+        // Verify exactly 1 V1 and 1 V2 message
+        long v1Count = capturedRequests.stream().filter(req -> topicArn.equals(req.topicArn())).count();
+        long v2Count = capturedRequests.stream().filter(req -> topicArnV2.equals(req.topicArn())).count();
+        
+        assertEquals("Should have exactly 1 V1 message", 1, v1Count);
+        assertEquals("Should have exactly 1 V2 message", 1, v2Count);
         
         PublishRequest capturedRequest = requestCaptor.getValue();
         assertEquals(topicArnV2, capturedRequest.topicArn());
@@ -241,9 +281,9 @@ public class MessageBusImplTest {
         // Act
         messageBus.publishMessage(noCollaboration, headers, messages);
 
-        // Assert
-        // Should have 3 batches: 50 + 50 + 1
-        verify(snsClient, times(3)).publish(any(PublishRequest.class));
+        // Assert - Now publishes to both V1 and V2 topics
+        // Should have 6 batches: 3 for V1 (50 + 50 + 1) + 3 for V2 (50 + 50 + 1)
+        verify(snsClient, times(6)).publish(any(PublishRequest.class));
     }
 
     @Test(expected = NotImplementedException.class)

@@ -26,7 +26,6 @@ import org.opengroup.osdu.core.aws.v2.dynamodb.util.RequestBuilderUtil;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.storage.dto.ReplayMetaDataDTO;
-import org.opengroup.osdu.storage.provider.aws.util.WorkerThreadPool;
 import org.opengroup.osdu.storage.provider.aws.util.dynamodb.ReplayMetadataItem;
 import org.opengroup.osdu.storage.provider.interfaces.IReplayRepository;
 import org.opengroup.osdu.storage.request.ReplayFilter;
@@ -48,7 +47,6 @@ public class ReplayRepositoryImpl implements IReplayRepository {
 
     private static final String GSI_REPLAY_ID_INDEX_NAME = "ReplayIdIndex";
     private final DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory;
-    private final WorkerThreadPool workerThreadPool;
     private final DpsHeaders headers;
     private final JaxRsDpsLog logger;
     private final ObjectMapper objectMapper;
@@ -58,12 +56,10 @@ public class ReplayRepositoryImpl implements IReplayRepository {
     
     @Autowired
     public ReplayRepositoryImpl(DynamoDBQueryHelperFactory dynamoDBQueryHelperFactory,
-                               WorkerThreadPool workerThreadPool,
                                DpsHeaders headers,
                                JaxRsDpsLog logger,
                                ObjectMapper objectMapper) {
         this.dynamoDBQueryHelperFactory = dynamoDBQueryHelperFactory;
-        this.workerThreadPool = workerThreadPool;
         this.headers = headers;
         this.logger = logger;
         this.objectMapper = objectMapper;

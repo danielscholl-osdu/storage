@@ -79,7 +79,10 @@ public class MessageBusImpl implements IMessageBus {
         final int BATCH_SIZE = 50;
         PublishRequestBuilder<T> publishRequestBuilder = new PublishRequestBuilder<>();
         publishRequestBuilder.setGeneralParametersFromHeaders(headers);
-        logger.info("Storage publishes message " + headers.getCorrelationId());
+        
+        String topicVersion = v2Message ? "V2" : "V1";
+        logger.info("Storage publishes message " + headers.getCorrelationId() + " to " + topicVersion + " topic");
+        
         for (int i =0; i < messages.length; i+= BATCH_SIZE){
 
             T[] batch = Arrays.copyOfRange(messages, i, Math.min(messages.length, i + BATCH_SIZE));
@@ -106,13 +109,30 @@ public class MessageBusImpl implements IMessageBus {
         return MessageAttributeValue.builder().dataType("String").stringValue("id=" + collaborationContext.getId() + ",application=" + collaborationContext.getApplication()).build();
     }
 
+    private void publishToBothTopics(DpsHeaders headers, PubSubInfo[] v1Messages, RecordChangedV2[] v2Messages, Optional<CollaborationContext> collaborationContext) {
+        // Publish to V1 topic
+        try {
+            doPublishMessage(false, Optional.empty(), headers, v1Messages);
+        } catch (Exception e) {
+            logger.error("Failed to publish to V1 topic: " + e.getMessage(), e);
+        }
+        
+        // Publish to V2 topic
+        try {
+            doPublishMessage(true, collaborationContext, headers, v2Messages);
+        } catch (Exception e) {
+            logger.error("Failed to publish to V2 topic: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public void publishMessage(DpsHeaders headers, PubSubInfo... messages) {
-        // AWS uses V2 queue only - convert PubSubInfo to RecordChangedV2
+        // AWS publishes to both V1 and V2 topics for backward compatibility
         RecordChangedV2[] v2Messages = Arrays.stream(messages)
             .map(this::convertToRecordChangedV2)
             .toArray(RecordChangedV2[]::new);
-        doPublishMessage(true, Optional.empty(), headers, v2Messages);
+        
+        publishToBothTopics(headers, messages, v2Messages, Optional.empty());
     }
 
     private RecordChangedV2 convertToRecordChangedV2(PubSubInfo pubSubInfo) {
@@ -125,7 +145,20 @@ public class MessageBusImpl implements IMessageBus {
 
     @Override
     public void publishMessage(Optional<CollaborationContext> collaborationContext, DpsHeaders headers, RecordChangedV2... messages) {
-        doPublishMessage(true, collaborationContext, headers, messages);
+        // Convert V2 messages to V1 format for backward compatibility
+        PubSubInfo[] v1Messages = Arrays.stream(messages)
+            .map(this::convertToV1Format)
+            .toArray(PubSubInfo[]::new);
+        
+        publishToBothTopics(headers, v1Messages, messages, collaborationContext);
+    }
+
+    private PubSubInfo convertToV1Format(RecordChangedV2 recordChangedV2) {
+        PubSubInfo pubSubInfo = new PubSubInfo();
+        pubSubInfo.setId(recordChangedV2.getId());
+        pubSubInfo.setKind(recordChangedV2.getKind());
+        pubSubInfo.setOp(recordChangedV2.getOp());
+        return pubSubInfo;
     }
 
     @Override

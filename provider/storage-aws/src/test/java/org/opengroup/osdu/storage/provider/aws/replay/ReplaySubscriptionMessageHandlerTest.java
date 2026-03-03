@@ -144,7 +144,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(any(ReplayMessage.class));
-        verify(sqsClient).deleteMessage(eq(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build()));
+        verify(sqsClient).deleteMessage(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build());
 
     }
 
@@ -200,7 +200,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(any(ReplayMessage.class));
-        verify(sqsClient).deleteMessage(eq(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build()));
+        verify(sqsClient).deleteMessage(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build());
     }
 
     @Test
@@ -247,7 +247,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         // Verify
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
-        verify(sqsClient).changeMessageVisibility(eq(ChangeMessageVisibilityRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).visibilityTimeout(30).build()));
+        verify(sqsClient).changeMessageVisibility(ChangeMessageVisibilityRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).visibilityTimeout(30).build());
     }
 
     @Test
@@ -296,7 +296,7 @@ public class ReplaySubscriptionMessageHandlerTest {
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(replayMessageHandler).handle(replayMessage);
         verify(replayMessageHandler).handleFailure(replayMessage);
-        verify(sqsClient).deleteMessage(eq(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build()));
+        verify(sqsClient).deleteMessage(DeleteMessageRequest.builder().queueUrl(REPLAY_QUEUE_URL).receiptHandle(receiptHandle).build());
     }
 
     private ObjectNode createSnsWrapper(String replayId, String kind) {
