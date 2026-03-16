@@ -13,6 +13,8 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
+import org.opengroup.osdu.storage.opa.model.OpaError;
+import org.opengroup.osdu.storage.opa.model.ValidationOutputRecord;
 import org.opengroup.osdu.storage.opa.service.IOPAService;
 import org.opengroup.osdu.storage.policy.service.IPolicyService;
 import org.opengroup.osdu.storage.policy.service.PartitionPolicyStatusService;
@@ -20,10 +22,12 @@ import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.opengroup.osdu.storage.util.RecordConstants.OPA_FEATURE_NAME;
@@ -138,6 +142,82 @@ public class DataAuthorizationServiceTest {
 
         verify(this.opaService, times(0)).validateUserAccessToRecords(any(), any());
         verify(this.entitlementsService, times(0)).hasOwnerAccess(any(), any());
+    }
+
+    @Test
+    public void should_returnFalse_hasAccess_when_opaEnabled_andRecordInactive() {
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(false);
+
+        RecordMetadata metadata = getRecordMetadata();
+        metadata.setStatus(RecordState.deleted);
+
+        assertFalse(this.sut.hasAccess(metadata, OperationType.view));
+        verify(this.opaService, never()).validateUserAccessToRecords(any(), any());
+    }
+
+    @Test
+    public void should_returnFalse_hasAccess_when_opaEnabled_andRecordHasNoVersions() {
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(true);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(false);
+
+        RecordMetadata metadata = getRecordMetadata();
+        metadata.setGcsVersionPaths(Collections.emptyList());
+
+        assertFalse(this.sut.hasAccess(metadata, OperationType.view));
+        verify(this.opaService, never()).validateUserAccessToRecords(any(), any());
+    }
+
+    @Test
+    public void should_callCloudStorage_hasAccess_when_opaDisabled() {
+        when(featureFlag.isFeatureEnabled(OPA_FEATURE_NAME)).thenReturn(false);
+        when(this.entitlementsService.isDataManager(any())).thenReturn(false);
+        when(this.cloudStorage.hasAccess(any(RecordMetadata.class))).thenReturn(true);
+
+        assertTrue(this.sut.hasAccess(this.getRecordMetadata(), OperationType.view));
+        verify(this.cloudStorage, times(1)).hasAccess(any(RecordMetadata.class));
+    }
+
+    @Test
+    public void should_returnTrue_policyEnabled_when_policyServiceAndStatusEnabled() {
+        when(this.statusService.policyEnabled(any())).thenReturn(true);
+
+        assertTrue(this.sut.policyEnabled());
+    }
+
+    @Test
+    public void should_returnFalse_policyEnabled_when_policyServiceIsNull() {
+        ReflectionTestUtils.setField(sut, "policyService", null);
+
+        assertFalse(this.sut.policyEnabled());
+    }
+
+    @Test
+    public void should_returnFalse_doesUserHasAccessToData_when_opaReturnsErrors() {
+        OpaError opaError = OpaError.builder().message("Access denied by policy").build();
+        ValidationOutputRecord errorRecord = ValidationOutputRecord.builder()
+                .id("id:access")
+                .errors(Collections.singletonList(opaError))
+                .build();
+        when(this.opaService.validateUserAccessToRecords(any(), any()))
+                .thenReturn(Collections.singletonList(errorRecord));
+
+        assertFalse(this.sut.doesUserHasAccessToData(
+                Collections.singletonList(getRecordMetadata()), OperationType.view));
+        verify(this.logger).error(contains("Data authorization failure"));
+    }
+
+    @Test
+    public void should_returnTrue_doesUserHasAccessToData_when_opaReturnsNoErrors() {
+        ValidationOutputRecord successRecord = ValidationOutputRecord.builder()
+                .id("id:access")
+                .errors(Collections.emptyList())
+                .build();
+        when(this.opaService.validateUserAccessToRecords(any(), any()))
+                .thenReturn(Collections.singletonList(successRecord));
+
+        assertTrue(this.sut.doesUserHasAccessToData(
+                Collections.singletonList(getRecordMetadata()), OperationType.view));
     }
 
     private RecordMetadata getRecordMetadata() {

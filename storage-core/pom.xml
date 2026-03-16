@@ -38,6 +38,13 @@
             --add-opens java.base/java.lang.reflect=ALL-UNNAMED
             --add-opens java.base/java.text=ALL-UNNAMED
         </argLine>
+       
+        <sonar.coverage.exclusions>
+            **/response/**,
+            **/dto/**,
+            **/provider/interfaces/**,
+            **/di/**
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -204,14 +211,12 @@
                         <exclude>org/opengroup/osdu/storage/response/**</exclude>
                         <exclude>org/opengroup/osdu/storage/policy/cache/**</exclude>
                         <exclude>org/opengroup/osdu/storage/policy/di/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/logging/**</exclude>
                         <exclude>org/opengroup/osdu/storage/dto/**</exclude>
                         <exclude>org/opengroup/osdu/storage/provider/interfaces/**</exclude>
                         <exclude>org/opengroup/osdu/storage/di/**</exclude>
                         <exclude>org/opengroup/osdu/storage/validation/ValidationDoc.class</exclude>
                         <exclude>org/opengroup/osdu/storage/exception/**</exclude>
                         <exclude>org/opengroup/osdu/storage/request/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/mapper/**</exclude>
                         <exclude>org/opengroup/osdu/storage/enums/**</exclude>
                     </excludes>
                 </configuration>

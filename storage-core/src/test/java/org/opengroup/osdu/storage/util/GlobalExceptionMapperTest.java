@@ -16,9 +16,15 @@ package org.opengroup.osdu.storage.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,9 +37,15 @@ import org.opengroup.osdu.core.common.exception.NotFoundException;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.storage.exception.DeleteRecordsException;
+import org.opengroup.osdu.storage.validation.RequestValidationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import java.io.IOException;
 import org.springframework.validation.BindingResult;
@@ -161,5 +173,104 @@ public class GlobalExceptionMapperTest {
 		this.sut.handleMethodArgumentNotValid(ex, headers, status, request);
 		verify(logger).warning(errorMessage.capture(), appException.capture());
 		assertEquals(aDefaultMessage, errorMessage.getValue());
+	}
+
+	@Test
+	public void should_returnForbidden_when_AccessDeniedExceptionIsCaptured() {
+		AccessDeniedException exception = new AccessDeniedException("no access");
+
+		ResponseEntity response = this.sut.handleAccessDeniedException(exception);
+
+		assertEquals(org.springframework.http.HttpStatus.FORBIDDEN.value(), response.getStatusCodeValue());
+		assertNotNull(response.getBody());
+		assertEquals(AppError.class, response.getBody().getClass());
+		assertEquals("Access denied", ((AppError) response.getBody()).getReason());
+	}
+
+	@Test
+	public void should_returnMultiStatus_when_DeleteRecordsExceptionIsCaptured() {
+		List<Pair<String, String>> notDeleted = new ArrayList<>();
+		notDeleted.add(Pair.of("record1", "Access denied"));
+		notDeleted.add(Pair.of("record2", "Not found"));
+		DeleteRecordsException exception = new DeleteRecordsException(notDeleted);
+
+		ResponseEntity response = this.sut.handleDeleteRecordsException(exception);
+
+		assertEquals(207, response.getStatusCodeValue());
+		assertNotNull(response.getBody());
+		String body = response.getBody().toString();
+		assertTrue(body.contains("record1"));
+		assertTrue(body.contains("record2"));
+	}
+
+	@Test
+	public void should_returnBadRequest_when_ConstraintViolationExceptionIsCaptured() {
+		Set<ConstraintViolation<?>> violations = new HashSet<>();
+		ConstraintViolation<?> violation = Mockito.mock(ConstraintViolation.class);
+		when(violation.getMessage()).thenReturn("must not be null");
+		violations.add(violation);
+		ConstraintViolationException exception = new ConstraintViolationException(violations);
+
+		ResponseEntity response = this.sut.handleConstraintValidationException(exception);
+
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertNotNull(response.getBody());
+	}
+
+	@Test
+	public void should_returnBadRequest_when_ConstraintViolationExceptionHasNoViolations() {
+		Set<ConstraintViolation<?>> violations = new HashSet<>();
+		ConstraintViolationException exception = new ConstraintViolationException(violations);
+
+		ResponseEntity response = this.sut.handleConstraintValidationException(exception);
+
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		String body = ((AppError) response.getBody()).getMessage();
+		assertTrue(body.contains("Invalid payload"));
+	}
+
+	@Test
+	public void should_returnBadRequest_when_RequestValidationExceptionIsCapturedDirectly() {
+		RequestValidationException exception = RequestValidationException.builder()
+				.message("Kind is invalid")
+				.build();
+
+		ResponseEntity response = this.sut.handleRequestValidationException(exception);
+
+		assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+	}
+
+	@Test
+	public void should_delegateToRequestValidation_when_ValidationExceptionWrapsRequestValidationException() {
+		RequestValidationException cause = RequestValidationException.builder()
+				.message("Kind is invalid")
+				.build();
+		ValidationException wrapper = new ValidationException(cause);
+
+		ResponseEntity response = this.sut.handleValidationException(wrapper);
+
+		assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+	}
+
+	@Test
+	public void should_returnMethodNotAllowed_when_HttpRequestMethodNotSupportedExceptionIsCaptured() {
+		HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("DELETE");
+
+		ResponseEntity<Object> response = this.sut.handleHttpRequestMethodNotSupported(
+				exception, new HttpHeaders(), org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED, Mockito.mock(WebRequest.class));
+
+		assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, response.getStatusCodeValue());
+	}
+
+	@Test
+	public void should_returnBadRequest_when_HttpMessageNotReadableWithValueInstantiationException() {
+		ValueInstantiationException cause = Mockito.mock(ValueInstantiationException.class);
+		HttpMessageNotReadableException exception = new HttpMessageNotReadableException(
+				"Cannot deserialize", cause, new MockHttpInputMessage(new byte[0]));
+
+		ResponseEntity<Object> response = this.sut.handleHttpMessageNotReadable(
+				exception, new HttpHeaders(), org.springframework.http.HttpStatus.BAD_REQUEST, Mockito.mock(WebRequest.class));
+
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
 	}
 }
