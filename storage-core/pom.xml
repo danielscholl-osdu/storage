@@ -38,12 +38,23 @@
             --add-opens java.base/java.lang.reflect=ALL-UNNAMED
             --add-opens java.base/java.text=ALL-UNNAMED
         </argLine>
-       
+
+        <!--
+            Permanent coverage exclusions — these packages contain no testable business
+            logic.  They are excluded from both SonarQube (sonar.coverage.exclusions)
+            and JaCoCo (jacoco-maven-plugin <excludes>) so the two reports stay aligned.
+        -->
         <sonar.coverage.exclusions>
             **/response/**,
+            **/policy/cache/**,
+            **/policy/di/**,
             **/dto/**,
             **/provider/interfaces/**,
-            **/di/**
+            **/di/**,
+            **/validation/ValidationDoc.java,
+            **/exception/**,
+            **/request/**,
+            **/enums/**
         </sonar.coverage.exclusions>
     </properties>
 
@@ -207,6 +218,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
                 <configuration>
+                    <!-- Keep in sync with sonar.coverage.exclusions above -->
                     <excludes>
                         <exclude>org/opengroup/osdu/storage/response/**</exclude>
                         <exclude>org/opengroup/osdu/storage/policy/cache/**</exclude>

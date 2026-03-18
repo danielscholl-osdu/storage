@@ -72,7 +72,7 @@ public class GlobalExceptionMapperTest {
 		AppException exception = new AppException(409, "any reason", "any message");
 
 		ResponseEntity response = this.sut.handleAppException(exception);
-		assertEquals(409, response.getStatusCodeValue());
+		assertEquals(409, response.getStatusCode().value());
 
 		verify(this.logger).warning("any message", exception);
 	}
@@ -82,7 +82,7 @@ public class GlobalExceptionMapperTest {
 		ValidationException diException = new ValidationException("my bad");
 
 		ResponseEntity response = this.sut.handleValidationException(diException);
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class GlobalExceptionMapperTest {
 		JsonProcessingException exception = Mockito.mock(JsonProcessingException.class);
 		ResponseEntity response = this.sut.handleJsonProcessingException(exception);
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 		assertNotNull(response.getBody());
 		assertEquals(AppError.class, response.getBody().getClass());
 		assertEquals("Failed to process JSON.", ((AppError)response.getBody()).getReason());
@@ -125,7 +125,7 @@ public class GlobalExceptionMapperTest {
 		UnrecognizedPropertyException exception = Mockito.mock(UnrecognizedPropertyException.class);
 		ResponseEntity response = this.sut.handleUnrecognizedPropertyException(exception);
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 		assertNotNull(response.getBody());
 		assertEquals(AppError.class, response.getBody().getClass());
 		assertEquals("Unrecognized property.", ((AppError)response.getBody()).getReason());
@@ -146,7 +146,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleIOException(ioException);
 
-		assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, response.getStatusCode().value());
 	}
 
 
@@ -181,7 +181,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleAccessDeniedException(exception);
 
-		assertEquals(org.springframework.http.HttpStatus.FORBIDDEN.value(), response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode().value());
 		assertNotNull(response.getBody());
 		assertEquals(AppError.class, response.getBody().getClass());
 		assertEquals("Access denied", ((AppError) response.getBody()).getReason());
@@ -196,7 +196,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleDeleteRecordsException(exception);
 
-		assertEquals(207, response.getStatusCodeValue());
+		assertEquals(207, response.getStatusCode().value());
 		assertNotNull(response.getBody());
 		String body = response.getBody().toString();
 		assertTrue(body.contains("record1"));
@@ -213,7 +213,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleConstraintValidationException(exception);
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 		assertNotNull(response.getBody());
 	}
 
@@ -224,7 +224,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleConstraintValidationException(exception);
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 		String body = ((AppError) response.getBody()).getMessage();
 		assertTrue(body.contains("Invalid payload"));
 	}
@@ -237,7 +237,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleRequestValidationException(exception);
 
-		assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 	}
 
 	@Test
@@ -249,7 +249,7 @@ public class GlobalExceptionMapperTest {
 
 		ResponseEntity response = this.sut.handleValidationException(wrapper);
 
-		assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST.value(), response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 	}
 
 	@Test
@@ -257,9 +257,9 @@ public class GlobalExceptionMapperTest {
 		HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("DELETE");
 
 		ResponseEntity<Object> response = this.sut.handleHttpRequestMethodNotSupported(
-				exception, new HttpHeaders(), org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED, Mockito.mock(WebRequest.class));
+				exception, new HttpHeaders(), HttpStatusCode.valueOf(HttpStatus.SC_METHOD_NOT_ALLOWED), Mockito.mock(WebRequest.class));
 
-		assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, response.getStatusCode().value());
 	}
 
 	@Test
@@ -269,8 +269,9 @@ public class GlobalExceptionMapperTest {
 				"Cannot deserialize", cause, new MockHttpInputMessage(new byte[0]));
 
 		ResponseEntity<Object> response = this.sut.handleHttpMessageNotReadable(
-				exception, new HttpHeaders(), org.springframework.http.HttpStatus.BAD_REQUEST, Mockito.mock(WebRequest.class));
+				exception, new HttpHeaders(), HttpStatusCode.valueOf(HttpStatus.SC_BAD_REQUEST), Mockito.mock(WebRequest.class));
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCodeValue());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode().value());
 	}
 }
+
