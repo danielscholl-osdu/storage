@@ -56,7 +56,7 @@ import org.opengroup.osdu.core.common.util.CollaborationContextUtil;
 import org.opengroup.osdu.core.obm.core.Driver;
 import org.opengroup.osdu.core.obm.core.ObmDriverRuntimeException;
 import org.opengroup.osdu.core.obm.core.S3CompatibleErrors;
-import org.opengroup.osdu.core.obm.core.model.Blob;
+import org.opengroup.osdu.core.obm.core.model.ObmBlob;
 import org.opengroup.osdu.core.obm.core.persistence.ObmDestination;
 import org.opengroup.osdu.storage.provider.gcp.web.config.PartitionPropertyNames;
 import org.opengroup.osdu.storage.provider.interfaces.ICloudStorage;
@@ -202,7 +202,7 @@ public class ObmStorage implements ICloudStorage {
             try {
                 String path = record.getVersionPath(record.getLatestVersion());
 
-                Blob blob = storage.getBlob(bucket, path, getDestination());
+                ObmBlob blob = storage.getBlob(bucket, path, getDestination());
                 if (blob == null) {
                     throw new ObmDriverRuntimeException(S3CompatibleErrors.NO_SUCH_KEY_CODE, new RuntimeException(String.format("'%s' not found", path)));
                 }
@@ -272,12 +272,12 @@ public class ObmStorage implements ICloudStorage {
         String bucket = getBucketName(this.tenantInfo);
 
         String[] blobIds = records.stream().map(rm -> rm.getVersionPath(rm.getLatestVersion())).toArray(String[]::new);
-        Iterable<Blob> blobs = storage.listBlobsByName(bucket, getDestination(), blobIds);
+        Iterable<ObmBlob> blobs = storage.listBlobsByName(bucket, getDestination(), blobIds);
 
         Map<String, String> hashes = new HashMap<>();
 
         for (RecordMetadata rm : records) {
-            Blob blob = blobs.iterator().next();
+            ObmBlob blob = blobs.iterator().next();
             String hash = blob == null ? "" : blob.getChecksum();
             hashes.put(rm.getId(), hash);
         }
@@ -296,7 +296,7 @@ public class ObmStorage implements ICloudStorage {
         try {
             String path = record.getVersionPath(record.getLatestVersion());
 
-            Blob blob = storage.getBlob(bucket, path, getDestination());
+            ObmBlob blob = storage.getBlob(bucket, path, getDestination());
 
             if (blob == null) {
                 String msg = String.format("Record with id '%s' does not exist", record.getId());
@@ -326,7 +326,7 @@ public class ObmStorage implements ICloudStorage {
             }
             String path = record.getVersionPath(version);
 
-            Blob blob = storage.getBlob(bucket, path, getDestination());
+            ObmBlob blob = storage.getBlob(bucket, path, getDestination());
 
             if (blob == null) {
                 this.log.warning(String.format("Record with id '%s' does not exist, unable to purge version: %s", record.getId(), version));
@@ -374,7 +374,7 @@ public class ObmStorage implements ICloudStorage {
         RecordMetadata metadata = processing.getRecordMetadata();
         String objectPath = metadata.getVersionPath(metadata.getLatestVersion());
 
-        Blob blob = Blob.builder().bucket(bucket).name(objectPath).contentType(MediaType.APPLICATION_JSON_VALUE).build();
+        ObmBlob blob = ObmBlob.builder().bucket(bucket).name(objectPath).contentType(MediaType.APPLICATION_JSON_VALUE).build();
 
         try {
             String content = mapper.writeValueAsString(processing.getRecordData());

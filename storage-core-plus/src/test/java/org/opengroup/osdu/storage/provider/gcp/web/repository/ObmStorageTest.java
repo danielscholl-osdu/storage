@@ -46,7 +46,7 @@ import org.opengroup.osdu.core.common.partition.PartitionPropertyResolver;
 import org.opengroup.osdu.core.obm.core.Driver;
 import org.opengroup.osdu.core.obm.core.ObmDriverRuntimeException;
 import org.opengroup.osdu.core.obm.core.S3CompatibleErrors;
-import org.opengroup.osdu.core.obm.core.model.Blob;
+import org.opengroup.osdu.core.obm.core.model.ObmBlob;
 import org.opengroup.osdu.core.obm.core.persistence.ObmDestination;
 import org.opengroup.osdu.storage.provider.gcp.web.config.PartitionPropertyNames;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
@@ -156,8 +156,8 @@ class ObmStorageTest {
             RecordProcessing recordProcessing = createRecordProcessing();
 
             when(entitlementsService.isDataManager(headers)).thenReturn(true);
-            when(storage.createAndGetBlob(any(Blob.class), any(byte[].class), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+            when(storage.createAndGetBlob(any(ObmBlob.class), any(byte[].class), any(ObmDestination.class)))
+                    .thenReturn(mock(ObmBlob.class));
 
             // Mock threadPool to actually execute the tasks
             when(threadPool.invokeAll(anyList())).thenAnswer(invocation -> {
@@ -180,7 +180,7 @@ class ObmStorageTest {
 
             // Assert
             verify(threadPool).invokeAll(anyList());
-            verify(storage).createAndGetBlob(any(Blob.class), any(byte[].class), any(ObmDestination.class));
+            verify(storage).createAndGetBlob(any(ObmBlob.class), any(byte[].class), any(ObmDestination.class));
         }
 
         @Test
@@ -191,8 +191,8 @@ class ObmStorageTest {
             RecordProcessing record2 = createRecordProcessing();
 
             when(entitlementsService.isDataManager(headers)).thenReturn(true);
-            when(storage.createAndGetBlob(any(Blob.class), any(byte[].class), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+            when(storage.createAndGetBlob(any(ObmBlob.class), any(byte[].class), any(ObmDestination.class)))
+                    .thenReturn(mock(ObmBlob.class));
 
             // Mock threadPool to actually execute the tasks
             when(threadPool.invokeAll(anyList())).thenAnswer(invocation -> {
@@ -215,7 +215,7 @@ class ObmStorageTest {
 
             // Assert
             verify(threadPool).invokeAll(anyList());
-            verify(storage, times(2)).createAndGetBlob(any(Blob.class), any(byte[].class), any(ObmDestination.class));
+            verify(storage, times(2)).createAndGetBlob(any(ObmBlob.class), any(byte[].class), any(ObmDestination.class));
         }
 
         @Test
@@ -305,7 +305,7 @@ class ObmStorageTest {
 
             when(recordRepository.get(recordsId, Optional.empty())).thenReturn(currentRecords);
             when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
 
             // Act
             Map<String, Acl> result = obmStorage.updateObjectMetadata(
@@ -334,7 +334,7 @@ class ObmStorageTest {
             Map<String, Acl> originalAcls = new HashMap<>();
 
             when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
 
             // Act
             obmStorage.revertObjectMetadata(recordsMetadata, originalAcls, Optional.empty());
@@ -366,7 +366,7 @@ class ObmStorageTest {
             RecordMetadata metadata = createRecordMetadata();
             when(entitlementsService.isDataManager(headers)).thenReturn(true);
             when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
 
             // Act
             boolean result = obmStorage.hasAccess(metadata);
@@ -598,12 +598,12 @@ class ObmStorageTest {
 
             Collection<RecordMetadata> records = Arrays.asList(metadata1, metadata2);
 
-            Blob blob1 = mock(Blob.class);
-            Blob blob2 = mock(Blob.class);
+            ObmBlob blob1 = mock(ObmBlob.class);
+            ObmBlob blob2 = mock(ObmBlob.class);
             lenient().when(blob1.getChecksum()).thenReturn("hash1");
             lenient().when(blob2.getChecksum()).thenReturn("hash2");
 
-            List<Blob> blobs = Arrays.asList(blob1, blob2);
+            List<ObmBlob> blobs = Arrays.asList(blob1, blob2);
             lenient().when(storage.listBlobsByName(eq(BUCKET_NAME), any(ObmDestination.class), any(String[].class)))
                     .thenReturn(blobs);
 
@@ -622,7 +622,7 @@ class ObmStorageTest {
             RecordMetadata metadata = createRecordMetadata();
             Collection<RecordMetadata> records = Collections.singletonList(metadata);
 
-            List<Blob> blobs = Collections.singletonList(null);
+            List<ObmBlob> blobs = Collections.singletonList(null);
             when(storage.listBlobsByName(eq(BUCKET_NAME), any(ObmDestination.class), any(String[].class)))
                     .thenReturn(blobs);
 
@@ -647,7 +647,7 @@ class ObmStorageTest {
             metadata.getGcsVersionPaths().add("path/to/version/1");
 
             when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
             // deleteBlobs returns void or something - don't mock it, just let it be called
 
             // Act
@@ -702,7 +702,7 @@ class ObmStorageTest {
             // Arrange
             RecordMetadata metadata = createRecordMetadata();
             when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
             // deleteBlob is not void - don't mock it
 
             // Act
@@ -869,7 +869,7 @@ class ObmStorageTest {
             RecordMetadata metadata = createRecordMetadata();
             when(entitlementsService.isDataManager(headers)).thenReturn(true);
             when(storage.getBlob(eq(customBucket), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
 
             // Act
             newObmStorage.hasAccess(metadata);
@@ -885,7 +885,7 @@ class ObmStorageTest {
             RecordMetadata metadata = createRecordMetadata();
             when(entitlementsService.isDataManager(headers)).thenReturn(true);
             when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                    .thenReturn(mock(Blob.class));
+                    .thenReturn(mock(ObmBlob.class));
 
             // Act
             obmStorage.hasAccess(metadata);
@@ -946,7 +946,7 @@ class ObmStorageTest {
         metadata.setStatus(state);
         lenient().when(entitlementsService.isDataManager(headers)).thenReturn(true);
         lenient().when(storage.getBlob(eq(BUCKET_NAME), anyString(), any(ObmDestination.class)))
-                .thenReturn(mock(Blob.class));
+                .thenReturn(mock(ObmBlob.class));
 
         // Act
         boolean result = obmStorage.hasAccess(metadata);
