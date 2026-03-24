@@ -27,6 +27,9 @@ variables:
   IBM_HELM_CONFIG_PATH: devops/ibm/ibm-storage-config
   IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
 
+  CIMPL_OPENAPI_SPEC_PATH: docs/api/community/v2/openapi.yaml
+  CIMPL_OPENAPI_YAML_ROUTE: /api/storage/v2/api-docs.yaml
+
   CORE_BUILD_SUBDIR: storage-core
   ACCEPTANCE_TEST_DIR: "storage-acceptance-test"
   CORE_COVERAGE_THRESHOLD: "80"
