@@ -696,5 +696,3 @@ unknown
 The following software have components provided under the terms of this license:
 
 - JUnit (from http://junit.org, http://junit.org/)
-- btf (from https://github.com/java-json-tools/btf)
-- msg-simple (from https://github.com/java-json-tools/msg-simple)
