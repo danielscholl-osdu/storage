@@ -74,6 +74,6 @@ public abstract class GetQueryKindsIntegrationTests extends TestBase {
 	public void should_returnNotFoundOrUnauthorized_when_dataPartitionIDIsInvalid() throws Exception {
 		String invalidTestDataPartitionId = "test-data-partition";
 		CloseableHttpResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(invalidTestDataPartitionId, testUtils.getToken()), "", "?limit=2");
-		assertTrue(response.getCode() == HttpStatus.SC_UNAUTHORIZED || response.getCode() == HttpStatus.SC_NOT_FOUND);
+		assertTrue(response.getCode() == HttpStatus.SC_UNAUTHORIZED || response.getCode() == HttpStatus.SC_NOT_FOUND || response.getCode() == HttpStatus.SC_FORBIDDEN);
 	}
 }

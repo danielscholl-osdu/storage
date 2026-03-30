@@ -132,10 +132,11 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String jsonInput = RecordUtil.createJsonRecordWithReference(1, recordId, KIND, LEGAL_TAG, PERSISTABLE_REFERENCE, "CRS");
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
+        String notExistingId = RECORD_ID_PREFIX + "nonexisting:id";
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
-        records.add("nonexisting:id");
+        records.add(notExistingId);
 
         JsonObject body = new JsonObject();
         body.add("records", records);
@@ -152,7 +153,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(1, responseObject.notFound.length);
         assertEquals(0, responseObject.conversionStatuses.size());
 
-        assertEquals("nonexisting:id", responseObject.notFound[0]);
+        assertEquals(notExistingId, responseObject.notFound[0]);
         assertEquals(TestUtils.getAcl(), responseObject.records[0].acl.viewers[0]);
         assertEquals(recordId + 0, responseObject.records[0].id);
         assertEquals(3, responseObject.records[0].data.size());
@@ -259,11 +260,12 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         String jsonInput = RecordUtil.createJsonRecordNoMetaBlock(2, recordId, KIND, LEGAL_TAG);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(HttpStatus.SC_CREATED, createResponse.getCode());
+        String notExistingId = RECORD_ID_PREFIX + "nonexisting:id";
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
         records.add(recordId + 1);
-        records.add("nonexisting:id");
+        records.add(notExistingId);
 
         JsonObject body = new JsonObject();
         body.add("records", records);
@@ -278,7 +280,7 @@ public final class PostFetchRecordsIntegrationTests extends TestBase {
         assertEquals(2, responseObject.records.length);
         assertEquals(1, responseObject.notFound.length);
         assertEquals(2, responseObject.conversionStatuses.size());
-        assertEquals("nonexisting:id", responseObject.notFound[0]);
+        assertEquals(notExistingId, responseObject.notFound[0]);
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(3, responseObject.records[0].data.size());
