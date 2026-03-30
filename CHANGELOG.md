@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/danielscholl-osdu/storage/compare/v1.1.0...v1.2.0) (2026-03-30)
+
+
+### ✨ Features
+
+* **storage-aws:** Publish messages to both V1 and V2 SNS topics for compatibility ([2784195](https://github.com/danielscholl-osdu/storage/commit/2784195aa77e3b6a1fc7637c22dfa45c4832b247))
+
+
+### 🔧 Miscellaneous
+
+* **storage:** Update os-core-common to 5.1.2 and adjust test expectations ([b687f6b](https://github.com/danielscholl-osdu/storage/commit/b687f6bb50cde7cdf932ff12309b57020c820b95))
+* Sync template updates ([9f1ed43](https://github.com/danielscholl-osdu/storage/commit/9f1ed43fd26fed81cb1cb8282e035f2a8512d773))
+
 ## [1.1.0](https://github.com/danielscholl-osdu/storage/compare/v1.0.0...v1.1.0) (2026-02-23)
 
 
