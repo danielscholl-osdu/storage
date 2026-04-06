@@ -1,4 +1,4 @@
-// Copyright © Schlumberger
+// Copyright © Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,16 +14,14 @@
 
 package org.opengroup.osdu.storage.provider.azure.cache;
 
-import org.opengroup.osdu.azure.cache.RedisAzureCache;
+import org.junit.jupiter.api.DisplayName;
 import org.opengroup.osdu.storage.provider.azure.di.RedisConfig;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
-@Component("CursorCache")
-@ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
-public class CursorRedisCache extends RedisAzureCache<String> {
+@DisplayName("SchemaRedisCache Tests")
+class SchemaRedisCacheTest extends AbstractRedisCacheTest<SchemaRedisCache> {
 
-    public CursorRedisCache(final RedisConfig config) {
-        super(String.class, config.createCursorConfiguration());
+    @Override
+    protected SchemaRedisCache createCache(RedisConfig config) {
+        return new SchemaRedisCache(config);
     }
 }

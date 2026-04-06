@@ -16,8 +16,8 @@ Apache-2.0
 ========================================================================
 The following software have components provided under the terms of this license:
 
-- AMQP 1.0 JMS Spring Boot AutoConfiguration (from https://repo1.maven.org/maven2/org/amqphub/spring/amqp-10-jms-spring-boot-autoconfigure)
-- AMQP 1.0 JMS Spring Boot Starter (from https://repo1.maven.org/maven2/org/amqphub/spring/amqp-10-jms-spring-boot-starter)
+- AMQP 1.0 JMS Spring Boot AutoConfiguration (from https://github.com/amqphub/amqp-10-jms-spring-boot, https://repo1.maven.org/maven2/org/amqphub/spring/amqp-10-jms-spring-boot-autoconfigure)
+- AMQP 1.0 JMS Spring Boot Starter (from https://github.com/amqphub/amqp-10-jms-spring-boot, https://repo1.maven.org/maven2/org/amqphub/spring/amqp-10-jms-spring-boot-starter)
 - API Common (from https://github.com/googleapis, https://github.com/googleapis/api-common-java, https://github.com/googleapis/sdk-platform-java)
 - ASM Core (from http://asm.ow2.io/, http://asm.ow2.org/)
 - ASM based accessors helper used by json-smart (from https://urielch.github.io/)
