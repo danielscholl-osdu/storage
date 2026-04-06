@@ -14,16 +14,14 @@
 
 package org.opengroup.osdu.storage.provider.azure.cache;
 
-import org.opengroup.osdu.azure.cache.RedisAzureCache;
+import org.junit.jupiter.api.DisplayName;
 import org.opengroup.osdu.storage.provider.azure.di.RedisConfig;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
-@Component("CursorCache")
-@ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
-public class CursorRedisCache extends RedisAzureCache<String> {
+@DisplayName("CursorRedisCache Tests")
+class CursorRedisCacheTest extends AbstractRedisCacheTest<CursorRedisCache> {
 
-    public CursorRedisCache(final RedisConfig config) {
-        super(String.class, config.createCursorConfiguration());
+    @Override
+    protected CursorRedisCache createCache(RedisConfig config) {
+        return new CursorRedisCache(config);
     }
 }

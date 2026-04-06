@@ -14,29 +14,17 @@
 
 package org.opengroup.osdu.storage.provider.azure.cache;
 
-import org.opengroup.osdu.azure.di.RedisAzureConfiguration;
 import org.opengroup.osdu.azure.cache.RedisAzureCache;
 import org.opengroup.osdu.core.common.model.storage.Schema;
-import org.springframework.beans.factory.annotation.Value;
+import org.opengroup.osdu.storage.provider.azure.di.RedisConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import jakarta.inject.Named;
-
 @Component
 @ConditionalOnProperty(value = "runtime.env.local", havingValue = "false", matchIfMissing = true)
-public class SchemaRedisCache extends RedisAzureCache<String, Schema> {
+public class SchemaRedisCache extends RedisAzureCache<Schema> {
 
-    public SchemaRedisCache(
-            final @Named("REDIS_PORT") int port,
-            final @Named("SCHEMA_REDIS_TTL") int timeout,
-            final @Named("REDIS_EXPIRATION") int expiration,
-            final @Named("REDIS_HOST_KEY") String hostKey,
-            final @Named("REDIS_PASSWORD_KEY") String passwordKey,
-            @Value("${redis.database}") final int database,
-            @Value("${redis.command.timeout}") final int commandTimeout)
-    {
-        super(String.class, Schema.class, new RedisAzureConfiguration(database, expiration, port, (long) timeout,
-                commandTimeout, hostKey, passwordKey, null));
+    public SchemaRedisCache(final RedisConfig config) {
+        super(Schema.class, config.createSchemaConfiguration());
     }
 }
