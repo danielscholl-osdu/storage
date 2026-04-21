@@ -31,14 +31,12 @@
     </licenses>
 
     <properties>
-      <java.version>17</java.version>
-      <maven.compiler.target>17</maven.compiler.target>
-      <maven.compiler.source>17</maven.compiler.source>
+      <maven.compiler.release>17</maven.compiler.release>
       <docker.image.prefix>opendes</docker.image.prefix>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
       <!-- OSDU Versions-->
-      <os-core-common.version>5.4.1</os-core-common.version>
+      <os-core-common.version>6.0.0</os-core-common.version>
 
       <!-- Spring Versions-->
       <spring-boot.version>3.5.8</spring-boot.version>
@@ -47,7 +45,8 @@
 
       <!-- Project Versions-->
       <json-smart.version>2.6.0</json-smart.version>
-      <openapi.version>2.8.6</openapi.version>
+      <openapi.version>2.8.16</openapi.version>
+      <swagger-core.version>2.2.45</swagger-core.version>
       <lombok.version>1.18.42</lombok.version>
       <netty.version>4.1.128.Final</netty.version>
       <commons-codec.version>1.17.1</commons-codec.version>
@@ -133,6 +132,21 @@
           <artifactId>commons-codec</artifactId>
           <version>${commons-codec.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-core-jakarta</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models-jakarta</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
       </dependencies>
     </dependencyManagement>
 
@@ -171,6 +185,25 @@
     </dependencies>
 
     <build>
+      <pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.12.1</version>
+            <configuration>
+              <parameters>true</parameters>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>org.projectlombok</groupId>
+                  <artifactId>lombok</artifactId>
+                  <version>${lombok.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </plugin>
+        </plugins>
+      </pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.springframework.boot</groupId>

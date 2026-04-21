@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -25,13 +26,17 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Request object for triggering a replay operation.")
 public class ReplayRequest {
 
+    @Schema(description = "Optional client-supplied replay identifier. If omitted, the server generates one.", example = "f506be08-b51f-4cdd-a9ee-d9454ad51600")
     private String replayId;
 
     @NotEmpty(message = "Operation field is required. The valid operations are: 'replay', 'reindex'.")
+    @Schema(description = "The operation to perform. Valid values: 'replay', 'reindex'.", example = "reindex", requiredMode = Schema.RequiredMode.REQUIRED)
     private String operation;
 
     @Valid
+    @Schema(description = "Optional filter to restrict the replay to specific kinds.")
     private ReplayFilter filter;
 }
