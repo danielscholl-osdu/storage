@@ -16,6 +16,7 @@
 
 package org.opengroup.osdu.storage.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,7 +26,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "A record identifier with an optional version.")
 public class RecordVersionModel {
+  @Schema(description = "Record identifier.", example = "opendes:ds:example-record:1")
   private String id;
+  @Schema(description = "Record version number.", example = "1728332172782")
   private String version;
 }

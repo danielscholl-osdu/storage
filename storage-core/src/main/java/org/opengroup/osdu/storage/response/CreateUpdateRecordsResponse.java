@@ -17,17 +17,23 @@ package org.opengroup.osdu.storage.response;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
+@Schema(description = "Response object for record creation and update operations.")
 public class CreateUpdateRecordsResponse {
 
+  @Schema(description = "Number of records that were successfully created or updated.")
   private Integer recordCount;
 
+  @Schema(description = "List of record ids that were successfully created or updated.")
   private List<String> recordIds;
 
+  @Schema(description = "List of record ids that were skipped (e.g. duplicates).")
   private List<String> skippedRecordIds;
 
+  @Schema(description = "List of record id:version pairs for the created or updated records.")
   private List<String> recordIdVersions;
 
   public void addRecord(String id, Long version) {

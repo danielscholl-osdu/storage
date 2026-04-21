@@ -24,17 +24,15 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-        <java.version>17</java.version>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.main.basedir>${project.basedir}</project.main.basedir>
         <allure.version>2.31.0</allure.version>
         <aspectj.version>1.9.22</aspectj.version>
         <log4j.version>2.23.0</log4j.version>
-        <jackson.version>2.16.1</jackson.version>
-        <jackson-databind.version>2.16.1</jackson-databind.version>
-        <os-core-common.version>3.6.1</os-core-common.version>
+        <jackson.version>2.21.1</jackson.version>
+        <jackson-databind.version>2.21.1</jackson-databind.version>
+        <os-core-common.version>6.0.0</os-core-common.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <argLine>
             --add-opens java.base/java.lang=ALL-UNNAMED
@@ -73,7 +71,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>1.18.42</version>
         </dependency>
         <dependency>
             <groupId>io.qameta.allure</groupId>
@@ -126,6 +124,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

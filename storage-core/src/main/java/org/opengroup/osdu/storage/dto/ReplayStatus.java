@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,17 +26,24 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "Status of a replay operation for a specific record kind.")
 public class ReplayStatus {
 
+    @Schema(description = "Record kind being replayed.", example = "osdu:wks:master-data--Well:1.0.0")
     private String kind;
 
+    @Schema(description = "Total number of records of this kind to be processed.")
     private Long totalRecords;
 
+    @Schema(description = "Number of records of this kind processed so far.")
     private Long processedRecords;
 
+    @Schema(description = "State of the replay for this kind.", example = "IN_PROGRESS")
     private String state;
 
+    @Schema(description = "Timestamp when processing of this kind started.")
     private Date startedAt;
 
+    @Schema(description = "Human-readable elapsed time for this kind.", example = "0h 2m 15s")
     private String elapsedTime;
 }
