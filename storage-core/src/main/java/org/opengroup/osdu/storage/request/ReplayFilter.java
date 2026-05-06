@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,8 +27,10 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Filter for restricting replay operations to specific record kinds.")
 public class ReplayFilter {
 
     @Size(min = 1, max = 1, message = "Currently restricted to a single valid kind.")
+    @Schema(description = "List of kinds to replay. Currently restricted to a single kind.")
     private List<String> kinds;
 }

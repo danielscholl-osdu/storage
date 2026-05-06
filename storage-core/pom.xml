@@ -29,15 +29,31 @@
     </parent>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.release>17</maven.compiler.release>
         <argLine>
             --add-opens=java.base/java.util=ALL-UNNAMED
             --add-opens java.base/java.lang=ALL-UNNAMED
             --add-opens java.base/java.lang.reflect=ALL-UNNAMED
             --add-opens java.base/java.text=ALL-UNNAMED
         </argLine>
+
+        <!--
+            Permanent coverage exclusions — these packages contain no testable business
+            logic.  They are excluded from both SonarQube (sonar.coverage.exclusions)
+            and JaCoCo (jacoco-maven-plugin <excludes>) so the two reports stay aligned.
+        -->
+        <sonar.coverage.exclusions>
+            **/response/**,
+            **/policy/cache/**,
+            **/policy/di/**,
+            **/dto/**,
+            **/provider/interfaces/**,
+            **/di/**,
+            **/validation/ValidationDoc.java,
+            **/exception/**,
+            **/request/**,
+            **/enums/**
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -159,17 +175,6 @@
     <build>
         <plugins>
             <plugin>
-                <!-- Avoid errors like ` Mapping Parameter org.springframework.data.mapping.Parameter@8efd4ab3 does not have a name`-->
-                <!-- note that `spring-boot-starter-parent` (not used here) set also that option by default, see https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#using-->
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
-                <configuration>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>3.2.3</version>
@@ -200,18 +205,17 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.10</version>
                 <configuration>
+                    <!-- Keep in sync with sonar.coverage.exclusions above -->
                     <excludes>
                         <exclude>org/opengroup/osdu/storage/response/**</exclude>
                         <exclude>org/opengroup/osdu/storage/policy/cache/**</exclude>
                         <exclude>org/opengroup/osdu/storage/policy/di/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/logging/**</exclude>
                         <exclude>org/opengroup/osdu/storage/dto/**</exclude>
                         <exclude>org/opengroup/osdu/storage/provider/interfaces/**</exclude>
                         <exclude>org/opengroup/osdu/storage/di/**</exclude>
                         <exclude>org/opengroup/osdu/storage/validation/ValidationDoc.class</exclude>
                         <exclude>org/opengroup/osdu/storage/exception/**</exclude>
                         <exclude>org/opengroup/osdu/storage/request/**</exclude>
-                        <exclude>org/opengroup/osdu/storage/mapper/**</exclude>
                         <exclude>org/opengroup/osdu/storage/enums/**</exclude>
                     </excludes>
                 </configuration>

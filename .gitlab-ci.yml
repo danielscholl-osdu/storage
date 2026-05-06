@@ -27,6 +27,9 @@ variables:
   IBM_HELM_CONFIG_PATH: devops/ibm/ibm-storage-config
   IBM_HELM_DEPLOY_PATH: devops/ibm/ibm-storage-deploy
 
+  CIMPL_OPENAPI_SPEC_PATH: docs/api/community/v2/openapi.yaml
+  CIMPL_OPENAPI_YAML_ROUTE: /api/storage/v2/api-docs.yaml
+
   CORE_BUILD_SUBDIR: storage-core
   ACCEPTANCE_TEST_DIR: "storage-acceptance-test"
   CORE_COVERAGE_THRESHOLD: "80"
@@ -103,7 +106,7 @@ download_plugins:
     OSM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1448/packages/maven"
     OSM_VERSION: "0.27.5"
     OBM_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1441/packages/maven"
-    OBM_VERSION: "0.26.1"
+    OBM_VERSION: "0.30.0"
     OQM_PACKAGE_REGISRTY_URL: "https://community.opengroup.org/api/v4/projects/1450/packages/maven"
     OQM_VERSION: "0.28.2"
     APD_PACKAGE_REGISTRY_URL: "https://community.opengroup.org/api/v4/projects/1445/packages/maven"

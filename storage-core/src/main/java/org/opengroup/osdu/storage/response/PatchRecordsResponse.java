@@ -14,6 +14,7 @@
 
 package org.opengroup.osdu.storage.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,16 +23,22 @@ import java.util.List;
 
 @Data
 @Builder
+@Schema(description = "Response object for record patch operations.")
 public class PatchRecordsResponse {
 
+    @Schema(description = "Number of records that were successfully patched.")
     private Integer recordCount;
 
+    @Schema(description = "List of record ids that were successfully patched.")
     private List<String> recordIds;
 
     @Builder.Default
+    @Schema(description = "List of record ids that were not found.")
     private List<String> notFoundRecordIds = new ArrayList<>();
     @Builder.Default
+    @Schema(description = "List of record ids that failed to be patched.")
     private List<String> failedRecordIds = new ArrayList<>();
     @Builder.Default
+    @Schema(description = "List of error messages for failed records.")
     private List<String> errors = new ArrayList<>();
 }

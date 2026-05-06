@@ -31,14 +31,12 @@
     </licenses>
 
     <properties>
-      <java.version>17</java.version>
-      <maven.compiler.target>17</maven.compiler.target>
-      <maven.compiler.source>17</maven.compiler.source>
+      <maven.compiler.release>17</maven.compiler.release>
       <docker.image.prefix>opendes</docker.image.prefix>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
       <!-- OSDU Versions-->
-      <os-core-common.version>5.1.2</os-core-common.version>
+      <os-core-common.version>6.0.0</os-core-common.version>
 
       <!-- Spring Versions-->
       <spring-boot.version>3.5.8</spring-boot.version>
@@ -47,7 +45,8 @@
 
       <!-- Project Versions-->
       <json-smart.version>2.6.0</json-smart.version>
-      <openapi.version>2.8.6</openapi.version>
+      <openapi.version>2.8.16</openapi.version>
+      <swagger-core.version>2.2.45</swagger-core.version>
       <lombok.version>1.18.42</lombok.version>
       <netty.version>4.1.128.Final</netty.version>
       <commons-codec.version>1.17.1</commons-codec.version>
@@ -55,6 +54,7 @@
       <!-- Plugin Versions -->
       <spring-boot-maven-plugin.version>3.5.8</spring-boot-maven-plugin.version>
       <git-commit-id-plugin.version>8.0.2</git-commit-id-plugin.version>
+      <jackson.version>2.21.1</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -67,6 +67,15 @@
 
       <!-- BOM Section Start-->
       <dependencies>
+        <!-- Jackson override: Spring Boot 3.5.8 and other artifacts provides 2.19.4, we need 2.21.1 for GHSA-72hv-8253-57qq -->
+        <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.1 -->
+        <dependency>
+          <groupId>com.fasterxml.jackson</groupId>
+          <artifactId>jackson-bom</artifactId>
+          <version>${jackson.version}</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
         <dependency>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-dependencies</artifactId>
@@ -84,13 +93,6 @@
           <groupId>org.springframework</groupId>
           <artifactId>spring-framework-bom</artifactId>
           <version>${spring-framework-version}</version>
-          <type>pom</type>
-        </dependency>
-        <!-- Core CommonBOM Override Section Start -->
-        <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-bom</artifactId>
-          <version>${jackson.version}</version>
           <type>pom</type>
         </dependency>
         <!-- Core CommonBOM Override Section End -->
@@ -130,6 +132,21 @@
           <artifactId>commons-codec</artifactId>
           <version>${commons-codec.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-core-jakarta</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models-jakarta</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
       </dependencies>
     </dependencyManagement>
 
@@ -168,6 +185,25 @@
     </dependencies>
 
     <build>
+      <pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.12.1</version>
+            <configuration>
+              <parameters>true</parameters>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>org.projectlombok</groupId>
+                  <artifactId>lombok</artifactId>
+                  <version>${lombok.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </plugin>
+        </plugins>
+      </pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.springframework.boot</groupId>
