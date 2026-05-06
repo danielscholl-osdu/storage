@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -96,5 +98,31 @@ public class SwaggerConfiguration {
                   currentOperation = currentOperation.addParametersItem(frameOfReference);
                 return currentOperation;
               };
+    }
+
+    // Springdoc may emit `type: object` together with `anyOf` for composed properties,
+    // which can misrepresent union fields in generated OpenAPI clients; clear the type in this case.
+    @Bean
+    public OpenApiCustomizer stripObjectTypeFromAnyOfSchemas() {
+        return openApi -> {
+            if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
+                return;
+            }
+
+            openApi.getComponents().getSchemas().values().forEach(schema -> {
+                if (schema.getProperties() == null) return;
+
+                for (Object property : schema.getProperties().values()) {
+                    if (!(property instanceof ComposedSchema composedSchema)) {
+                        continue;
+                    }
+                    if (composedSchema.getAnyOf() != null
+                            && !composedSchema.getAnyOf().isEmpty()
+                            && "object".equals(composedSchema.getType())) {
+                        composedSchema.setType(null);
+                    }
+                }
+            });
+        };
     }
 }

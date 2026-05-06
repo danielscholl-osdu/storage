@@ -17,6 +17,8 @@
 package org.opengroup.osdu.storage.model;
 
 import java.util.List;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +28,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Request and response model for copying record references between collaboration spaces.")
 public class CopyRecordReferencesModel {
+  @Schema(description = "Target collaboration space identifier.", example = "4b3b1e00-a0d3-4583-b81c-6c2428cdc12a")
   private String target;
+  @Schema(description = "List of record id and version pairs to copy.")
   List<RecordVersionModel> records;
 }

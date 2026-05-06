@@ -97,11 +97,12 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
         String jsonInput = RecordUtil.createJsonRecordNoMetaBlock(2, recordId, KIND, LEGAL_TAG);
         CloseableHttpResponse createResponse = TestUtils.send("records", "PUT", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), jsonInput, "");
         assertEquals(201, createResponse.getCode());
+        String notExistingId = RECORD_ID_PREFIX + "nonexisting:id";
 
         JsonArray records = new JsonArray();
         records.add(recordId + 0);
         records.add(recordId + 1);
-        records.add("nonexisting:id");
+        records.add(notExistingId);
 
         JsonObject body = new JsonObject();
         body.add("records", records);
@@ -115,7 +116,7 @@ public class TestPostFetchRecordsIntegration extends PostFetchRecordsIntegration
         DummyRecordsHelper.ConvertedRecordsMock responseObject = RECORDS_HELPER.getConvertedRecordsMockFromResponse(response);
         assertEquals(2, responseObject.records.length);
         assertEquals(1, responseObject.notFound.length);
-        assertEquals("nonexisting:id", responseObject.notFound[0]);
+        assertEquals(notExistingId, responseObject.notFound[0]);
         assertEquals(KIND, responseObject.records[0].kind);
         assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
         assertEquals(3, responseObject.records[0].data.size());

@@ -52,13 +52,4 @@ public class TestGetQueryKindsIntegration extends GetQueryKindsIntegrationTests 
 		assertTrue(EntityUtils.toString(response.getEntity()).contains("data-partition-id header is missing"));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
 	}
-
-	@Test
-	@Override
-	public void should_returnNotFoundOrUnauthorized_when_dataPartitionIDIsInvalid() throws Exception {
-		String invalidTestDataPartitionId = "test-data-partition";
-		CloseableHttpResponse response = TestUtils.send("query/kinds", "GET", HeaderUtils.getHeaders(invalidTestDataPartitionId, testUtils.getToken()), "", "?limit=2");
-		assertTrue(EntityUtils.toString(response.getEntity()).contains(String.format("%s partition not found", invalidTestDataPartitionId)));
-		assertEquals(HttpStatus.SC_NOT_FOUND, response.getCode());
-	}
 }
