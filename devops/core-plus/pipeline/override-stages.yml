@@ -19,6 +19,20 @@ cimpl-acceptance-test:
     OPA_INTEGRATION_ENABLED: "false"
     EXPOSE_FEATUREFLAG_ENABLED: "true"
 
+#cimpl-stack-prod jobs
+cimpl-prod-deploy:
+  variables:
+    CIMPL_SERVICE: "storage-prod"
+
+cimpl-prod-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "false"
+
+cimpl-prod-acceptance-test:
+  variables:
+    OPA_INTEGRATION_ENABLED: "false"
+    EXPOSE_FEATUREFLAG_ENABLED: "true"
+
 #dev2 jobs
 
 cimpl-dev2-deploy:
