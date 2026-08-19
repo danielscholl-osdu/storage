@@ -22,7 +22,7 @@ cimpl-acceptance-test:
 #cimpl-stack-prod jobs
 cimpl-prod-deploy:
   variables:
-    CIMPL_SERVICE: "storage-prod"
+    CIMPL_SERVICE: "storage"
 
 cimpl-prod-test:
   variables:
