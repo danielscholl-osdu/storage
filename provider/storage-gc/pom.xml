@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.opengroup.osdu</groupId>
     <artifactId>os-storage</artifactId>
-    <version>0.30.1-SNAPSHOT</version>
+    <version>0.31.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <artifactId>storage-gc</artifactId>
-  <version>0.30.1-SNAPSHOT</version>
+  <version>0.31.0-SNAPSHOT</version>
   <description>Storage Service</description>
   <packaging>jar</packaging>
 
@@ -57,7 +57,7 @@
     <dependency>
       <groupId>org.opengroup.osdu</groupId>
       <artifactId>storage-core-plus</artifactId>
-      <version>0.30.1-SNAPSHOT</version>
+      <version>0.31.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
