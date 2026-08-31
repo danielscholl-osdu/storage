@@ -16,7 +16,11 @@
     </parent>
 
     <properties>
-        <jackson.version>2.21.2</jackson.version>
+        <!-- Spring Boot 3.5.x still ships older Jackson; High CVEs need >= 2.21.4 -->
+        <jackson.version>2.21.6</jackson.version>
+        <!-- google-cloud-datastore 2.17.5 pulls vulnerable transitive versions -->
+        <protobuf.version>3.25.9</protobuf.version>
+        <grpc.version>1.75.0</grpc.version>
     </properties>
 
     <dependencyManagement>
@@ -35,12 +39,26 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- Jackson override: Spring Boot 3.5.8 and other artifacts provides 2.19.4, we need 2.21.1 for GHSA-72hv-8253-57qq -->
-            <!-- Maybe remove this override when Spring Boot BOM updates to Jackson >= 2.21.1 -->
+            <!-- Jackson override: Spring Boot 3.5.x provides older Jackson; need >= 2.21.4 for High CVEs -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- google-cloud-datastore 2.17.5 brings protobuf 3.24.4 / grpc 1.59.0 (High CVEs) -->
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-bom</artifactId>
+                <version>${protobuf.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -68,6 +86,27 @@
                 <artifactId>spring-security-bom</artifactId>
                 <version>${spring-security.version}</version>
                 <type>pom</type>
+            </dependency>
+            <!-- Re-apply after spring-boot-dependencies (this module re-imports that BOM) -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-jasper</artifactId>
+                <version>${tomcat.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

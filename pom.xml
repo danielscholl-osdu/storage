@@ -53,6 +53,8 @@
       <commons-codec.version>1.17.1</commons-codec.version>
       <!-- os-core-common 7.0.0 declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
       <lettuce.version>7.5.2.RELEASE</lettuce.version>
+      <!-- Spring Boot 3.5.16 manages Tomcat 10.1.55; CVE-2026-55276 / CVE-2026-59083 need >= 10.1.57 -->
+      <tomcat.version>10.1.59</tomcat.version>
 
       <!-- Plugin Versions -->
       <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
@@ -139,6 +141,27 @@
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
             <version>${lettuce.version}</version>
+        </dependency>
+        <!-- Override Spring Boot's Tomcat embed line for CVE-2026-55276 / CVE-2026-59083 -->
+        <dependency>
+          <groupId>org.apache.tomcat.embed</groupId>
+          <artifactId>tomcat-embed-core</artifactId>
+          <version>${tomcat.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.tomcat.embed</groupId>
+          <artifactId>tomcat-embed-el</artifactId>
+          <version>${tomcat.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.tomcat.embed</groupId>
+          <artifactId>tomcat-embed-websocket</artifactId>
+          <version>${tomcat.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.tomcat.embed</groupId>
+          <artifactId>tomcat-embed-jasper</artifactId>
+          <version>${tomcat.version}</version>
         </dependency>
       </dependencies>
     </dependencyManagement>
