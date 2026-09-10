@@ -33,6 +33,7 @@ import org.opengroup.osdu.core.common.model.entitlements.Groups;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
+import org.opengroup.osdu.core.common.util.Crc32c;
 
 import org.opengroup.osdu.storage.service.IEntitlementsExtensionService.AuthorizationResult;
 
@@ -51,6 +52,8 @@ public class EntitlementsAndCacheServiceImplTest {
     private static final String USER_ID = "userID";
 
     private static final String USER_ID_2 = "userID2";
+    private static final String ON_BEHALF_OF_1 = "user-a@example.com";
+    private static final String ON_BEHALF_OF_2 = "user-b@example.com";
 
     @Mock
     private IEntitlementsFactory entitlementFactory;
@@ -287,6 +290,66 @@ public class EntitlementsAndCacheServiceImplTest {
         // Verifies that cache key is different in case of different user
         verify(this.cache, times(1)).get("RtEtMQ==");
 
+    }
+
+    @Test
+    public void should_getGroupsFromCache_when_requestHashIsFoundInCacheTwoDifferentOnBehalfOf() throws EntitlementsException {
+
+        GroupInfo g1 = new GroupInfo();
+        g1.setEmail("role1@gmail.com");
+        g1.setName("role1");
+
+        GroupInfo g2 = new GroupInfo();
+        g2.setEmail("role2@gmail.com");
+        g2.setName("role2");
+
+        GroupInfo g3 = new GroupInfo();
+        g3.setEmail("role3@gmail.com");
+        g3.setName("role3");
+
+        GroupInfo g4 = new GroupInfo();
+        g4.setEmail("role4@gmail.com");
+        g4.setName("role4");
+
+        List<GroupInfo> groupsInfo1 = new ArrayList<>();
+        groupsInfo1.add(g1);
+        groupsInfo1.add(g2);
+
+        List<GroupInfo> groupsInfo2 = new ArrayList<>();
+        groupsInfo2.add(g3);
+        groupsInfo2.add(g4);
+
+        Groups groups = new Groups();
+        groups.setGroups(groupsInfo1);
+        groups.setDesId(MEMBER_EMAIL);
+
+        Groups groups2 = new Groups();
+        groups2.setGroups(groupsInfo2);
+        groups2.setDesId(MEMBER_EMAIL_2);
+
+        headerMap.put(DpsHeaders.ON_BEHALF_OF, ON_BEHALF_OF_1);
+        this.headers = DpsHeaders.createFromMap(headerMap);
+        lenient().when(this.entitlementFactory.create(this.headers)).thenReturn(this.entitlementService);
+
+        String cacheKey1 = Crc32c.hashToBase64EncodedString(String.format("entitlement-groups:%s:%s:%s:%s",
+                HEADER_ACCOUNT_ID, HEADER_AUTHORIZATION, USER_ID, ON_BEHALF_OF_1));
+        String cacheKey2 = Crc32c.hashToBase64EncodedString(String.format("entitlement-groups:%s:%s:%s:%s",
+                HEADER_ACCOUNT_ID, HEADER_AUTHORIZATION, USER_ID, ON_BEHALF_OF_2));
+
+        when(this.cache.get(cacheKey1)).thenReturn(groups);
+        when(this.cache.get(cacheKey2)).thenReturn(groups2);
+
+        assertEquals(MEMBER_EMAIL, this.sut.authorize(this.headers, "role2"));
+        verify(this.cache, times(1)).get(cacheKey1);
+
+        headerMap.put(DpsHeaders.ON_BEHALF_OF, ON_BEHALF_OF_2);
+        this.headers = DpsHeaders.createFromMap(headerMap);
+
+        assertEquals(MEMBER_EMAIL_2, this.sut.authorize(this.headers, "role3"));
+
+        // Verifies that cache key is different for different impersonation targets
+        verify(this.cache, times(1)).get(cacheKey2);
+        assertNotEquals(cacheKey1, cacheKey2);
     }
 
     @Test
