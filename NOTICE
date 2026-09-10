@@ -301,7 +301,7 @@ The following software have components provided under the terms of this license:
 - perfmark:perfmark-api (from https://github.com/perfmark/perfmark)
 - proto-google-cloud-datastore-admin-v1 (from https://github.com/googleapis/google-cloud-java)
 - proto-google-cloud-datastore-v1 (from https://github.com/googleapis/google-cloud-java, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-datastore/proto-google-cloud-datastore-v1)
-- proto-google-common-protos (from https://github.com/googleapis/api-client-staging, https://github.com/googleapis/google-cloud-java/tree/main/sdk-platform-java, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-common-protos)
+- proto-google-common-protos (from https://github.com/googleapis/api-client-staging, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-common-protos, https://github.com/googleapis/sdk-platform-java)
 - proto-google-iam-v1 (from https://github.com/googleapis/google-cloud-java/tree/main/sdk-platform-java, https://github.com/googleapis/googleapis, https://github.com/googleapis/java-iam/proto-google-iam-v1)
 - resilience4j (from https://github.com/resilience4j/resilience4j, https://resilience4j.readme.io/, ttps://resilience4j.readme.io)
 - spring-security-test (from http://spring.io/spring-security, https://spring.io/projects/spring-security, https://spring.io/spring-security)
