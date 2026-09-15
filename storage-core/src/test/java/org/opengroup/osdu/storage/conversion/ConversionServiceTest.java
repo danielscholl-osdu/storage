@@ -305,6 +305,83 @@ public class ConversionServiceTest {
     }
 
     @Test
+    public void should_serializeObjectTypedPersistableReferenceFromUomLookup() throws Exception {
+        this.originalRecords.add(JsonParser.parseString(RECORD_WITH_VALID_UNIT_OF_MEASURE_ID).getAsJsonObject());
+
+        Map<String, Object> abcd = Map.of("a", 0.0, "b", 0.3048, "c", 1.0, "d", 0.0);
+        Map<String, Object> prObject = Map.of(
+                "abcd", abcd,
+                "symbol", "ft",
+                "baseMeasurement", Map.of("ancestry", "L", "type", "UM"),
+                "type", "UAD");
+        Record uomRecord = new Record();
+        uomRecord.setData(Map.of("PersistableReference", prObject));
+        when(this.queryService.getRecordInfo(any(), any(), any())).thenReturn(UOM_RECORD_BLOB);
+        when(this.objectMapper.readValue(UOM_RECORD_BLOB, Record.class)).thenReturn(uomRecord);
+        when(this.objectMapper.writeValueAsString(prObject)).thenReturn(RESOLVED_PERSISTABLE_REFERENCE);
+
+        List<JsonObject> convertedRecords = new ArrayList<>();
+        convertedRecords.add(JsonParser.parseString(RECORD_WITH_VALID_UNIT_OF_MEASURE_ID).getAsJsonObject());
+        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        ConversionStatus conversionStatus = new ConversionStatus();
+        conversionStatus.setStatus(ConvertStatus.SUCCESS.toString());
+        conversionStatus.setId("unit-test-valid-uom");
+        conversionStatus.setErrors(new ArrayList<>());
+        conversionStatuses.add(conversionStatus);
+        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
+        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setRecords(convertedRecords);
+        when(this.crsConversionService.doCrsConversion(any(), any())).thenReturn(crsConversionResult);
+
+        this.sut.doConversion(this.originalRecords);
+
+        verify(this.crsConversionService).doCrsConversion(argThat(records ->
+                records.get(0).getAsJsonArray("meta")
+                        .get(0).getAsJsonObject()
+                        .get("persistableReference").getAsString()
+                        .equals(RESOLVED_PERSISTABLE_REFERENCE)
+        ), any());
+    }
+
+    @Test
+    public void should_keepEmbeddedPersistableReference_whenCatalogValueIsNotValidJson() throws Exception {
+        String embeddedPr = RESOLVED_PERSISTABLE_REFERENCE;
+        JsonObject record = JsonParser.parseString(RECORD_WITH_VALID_UNIT_OF_MEASURE_ID).getAsJsonObject();
+        record.addProperty("id", "unit-test-keep-embedded-pr");
+        record.getAsJsonArray("meta").get(0).getAsJsonObject()
+                .addProperty("persistableReference", embeddedPr);
+        this.originalRecords.add(record);
+
+        Record uomRecord = new Record();
+        // Simulate legacy Object.toString() garbage that would overwrite a good embedded PR
+        uomRecord.setData(Map.of("PersistableReference", "{abcd={a=0.0, b=0.3048}}"));
+        when(this.queryService.getRecordInfo(any(), any(), any())).thenReturn(UOM_RECORD_BLOB);
+        when(this.objectMapper.readValue(UOM_RECORD_BLOB, Record.class)).thenReturn(uomRecord);
+
+        List<JsonObject> convertedRecords = new ArrayList<>();
+        convertedRecords.add(record.deepCopy());
+        List<ConversionStatus> conversionStatuses = new ArrayList<>();
+        ConversionStatus conversionStatus = new ConversionStatus();
+        conversionStatus.setStatus(ConvertStatus.SUCCESS.toString());
+        conversionStatus.setId("unit-test-keep-embedded-pr");
+        conversionStatus.setErrors(new ArrayList<>());
+        conversionStatuses.add(conversionStatus);
+        RecordsAndStatuses crsConversionResult = new RecordsAndStatuses();
+        crsConversionResult.setConversionStatuses(conversionStatuses);
+        crsConversionResult.setRecords(convertedRecords);
+        when(this.crsConversionService.doCrsConversion(any(), any())).thenReturn(crsConversionResult);
+
+        this.sut.doConversion(this.originalRecords);
+
+        verify(this.crsConversionService).doCrsConversion(argThat(records ->
+                records.get(0).getAsJsonArray("meta")
+                        .get(0).getAsJsonObject()
+                        .get("persistableReference").getAsString()
+                        .equals(embeddedPr)
+        ), any());
+    }
+
+    @Test
     public void should_resolvePersistableReferenceFromUomLookup_whenProvidedRecordWithValidUnitOfMeasureID() throws Exception {
         this.originalRecords.add(JsonParser.parseString(RECORD_WITH_VALID_UNIT_OF_MEASURE_ID).getAsJsonObject());
 

@@ -42,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.annotation.PostConstruct;
@@ -69,6 +70,9 @@ public class DpsConversionService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    /** Strict JSON parsing for UoM persistable references (not the injectable mapper). */
+    private static final ObjectMapper PERSISTABLE_REFERENCE_MAPPER = new ObjectMapper();
 
     private ICache<String, Record> cache;
 
@@ -240,7 +244,7 @@ public class DpsConversionService {
                 }
                 String unitOfMeasureID = unitOfMeasureIDElement.getAsString().replaceAll(":$", "");
                 String persistableReference = this.getPersistableReferenceByUnitOfMeasureID(unitOfMeasureID);
-                if (persistableReference.isEmpty()) {
+                if (persistableReference.isEmpty() || !isValidUnitPersistableReference(persistableReference)) {
                     this.logger.warning("Persistable reference was not obtained for record %s by unit of measure %s"
                             .formatted(recordObj.get(Constants.ID), unitOfMeasureID));
                     continue;
@@ -248,6 +252,20 @@ public class DpsConversionService {
                 // update persistableReference to corresponding to unitOfMeasureID
                 metaItem.addProperty(Constants.PERSISTABLE_REFERENCE, persistableReference);
             }
+        }
+    }
+
+    /**
+     * UnitConversionImpl requires a JSON object persistable reference (e.g. UAD/USO).
+     * Use Jackson (strict) so Map.toString()-style values like "{abcd={a=0.0}}" are rejected
+     * and cannot overwrite a valid embedded meta.persistableReference.
+     */
+    private boolean isValidUnitPersistableReference(String persistableReference) {
+        try {
+            JsonNode node = PERSISTABLE_REFERENCE_MAPPER.readTree(persistableReference);
+            return node != null && node.isObject() && !node.isEmpty();
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -297,7 +315,18 @@ public class DpsConversionService {
         if (persistableReference == null) {
             return "";
         }
-        return persistableReference.toString();
+        if (persistableReference instanceof String) {
+            return (String) persistableReference;
+        }
+        // Jackson often deserializes PersistableReference JSON objects as Map; Object.toString()
+        // yields non-JSON (e.g. {abcd={a=0.0}}) which UnitConversionImpl rejects as INVALID_REFERENCE.
+        try {
+            return this.objectMapper.writeValueAsString(persistableReference);
+        } catch (JsonProcessingException e) {
+            this.logger.error(String.format(
+                    "Error serializing PersistableReference for unitOfMeasureID: %s", unitOfMeasureID), e);
+            return "";
+        }
     }
 
     private void checkMismatchAndLogMissing(List<JsonObject> originalRecords, List<ConversionRecord> convertedRecords) {
