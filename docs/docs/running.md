@@ -4,7 +4,7 @@ The Storage Service is a Maven multi-module project with each cloud implementati
 
 ## AWS
 
-Instructions for running the AWS implementation can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/blob/master/provider/storage-aws/README.md).
+The AWS provider has been removed from this repository.
 
 ## Azure
 

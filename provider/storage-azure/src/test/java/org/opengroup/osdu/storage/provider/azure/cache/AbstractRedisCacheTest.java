@@ -14,14 +14,14 @@
 
 package org.opengroup.osdu.storage.provider.azure.cache;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.opengroup.osdu.azure.cache.RedisAzureCache;
 import org.opengroup.osdu.storage.provider.azure.di.RedisConfig;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Abstract base test class for Redis cache implementations.
@@ -34,12 +34,12 @@ public abstract class AbstractRedisCacheTest<T extends RedisAzureCache<?>> {
     private static final int DEFAULT_DATABASE = 0;
     private static final int DEFAULT_COMMAND_TIMEOUT = 5;
     private static final int DEFAULT_PORT = 6380;
-    private static final int DEFAULT_EXPIRATION = 15;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 15;
     private static final String DEFAULT_HOST_KEY = "test-redis-hostname";
     private static final String DEFAULT_PASSWORD_KEY = "test-redis-password";
     private static final String DEFAULT_PRINCIPAL_ID = "test-principal-id";
     private static final String DEFAULT_HOSTNAME = "primary.redis.cache";
-    private static final long DEFAULT_TTL = 100L;
+    private static final int DEFAULT_TTL = 100;
 
     /**
      * Create a cache instance using the provided RedisConfig.
@@ -81,7 +81,7 @@ public abstract class AbstractRedisCacheTest<T extends RedisAzureCache<?>> {
             DEFAULT_DATABASE,
             DEFAULT_COMMAND_TIMEOUT,
             DEFAULT_PORT,
-            DEFAULT_EXPIRATION,
+            DEFAULT_CONNECTION_TIMEOUT,
             DEFAULT_HOST_KEY,
             DEFAULT_PASSWORD_KEY,
             principalId,

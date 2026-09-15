@@ -24,31 +24,31 @@ public class RedisConfig {
     private final int database;
     private final int commandTimeout;
     private final int port;
-    private final int expiration;
+    private final long connectionTimeout;
     private final String hostKey;
     private final String passwordKey;
     private final String principalId;
     private final String hostname;
-    private final long schemaTtl;
-    private final long groupTtl;
-    private final long cursorTtl;
+    private final int schemaTtl;
+    private final int groupTtl;
+    private final int cursorTtl;
 
     public RedisConfig(
             @Value("${redis.database}") int database,
             @Value("${redis.command.timeout:5}") int commandTimeout,
             @Value("${redis.port:6380}") int port,
-            @Value("${redis.expiration:3600}") int expiration,
+            @Value("${redis.connection.timeout:5}") long connectionTimeout,
             @Value("${redis.host.key}") String hostKey,
             @Value("${redis.password.key}") String passwordKey,
             @Value("${redis.principal.id:#{null}}") String principalId,
             @Value("${redis.hostname:#{null}}") String hostname,
-            @Value("${redis.schema.ttl:3600}") long schemaTtl,
-            @Value("${redis.group.ttl:30}") long groupTtl,
-            @Value("${redis.cursor.ttl:90}") long cursorTtl) {
+            @Value("${redis.schema.ttl:3600}") int schemaTtl,
+            @Value("${redis.group.ttl:30}") int groupTtl,
+            @Value("${redis.cursor.ttl:90}") int cursorTtl) {
         this.database = database;
         this.commandTimeout = commandTimeout;
         this.port = port;
-        this.expiration = expiration;
+        this.connectionTimeout = connectionTimeout;
         this.hostKey = hostKey;
         this.passwordKey = passwordKey;
         this.principalId = principalId;
@@ -64,12 +64,12 @@ public class RedisConfig {
 
     public RedisAzureConfiguration createCursorConfiguration() { return createConfiguration(cursorTtl); }
 
-    private RedisAzureConfiguration createConfiguration(long timeout) {
+    private RedisAzureConfiguration createConfiguration(int ttl) {
         return new RedisAzureConfiguration(
             database,
-            expiration,
+            ttl,
             port,
-            timeout,
+            connectionTimeout,
             commandTimeout,
             hostKey,
             passwordKey,

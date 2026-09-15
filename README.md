@@ -14,7 +14,7 @@ All documentation for the Google Cloud implementation of Storage service lives [
 
 ## AWS
 
-Instructions for running and testing this service can be found [here](./provider/storage-aws/README.md)
+The AWS provider has been removed from this repository.
 
 ### Open API 3.0 - Swagger
 - Swagger UI : https://host/context-path/swagger (will redirect to https://host/context-path/swagger-ui/index.html)
@@ -58,14 +58,7 @@ _Note: For Collaboration Filter exclusion, refer 'excluded paths' section in  [d
 
 4. Set environment variables:
     
-**AWS**: AWS service account credentials are read from the environment variables in order to 
-authenticate AWS requests. The following variables can be set as either system environment 
-variables or user environment variables. User values will take precedence if both are set.
-1. `AWS_ACCESS_KEY_ID=<YOURAWSACCESSKEYID>`
-2. `AWS_SECRET_KEY=<YOURAWSSECRETKEY>`
-
-Note that these values can be found in the IAM stack's export values in the AWS console. To 
-deploy resources to the AWS console, see the deployment section below.
+The AWS provider has been removed from this repository.
 
 5. Run storage service in command line:
     ```bash
@@ -77,9 +70,6 @@ deploy resources to the AWS console, see the deployment section below.
     
     # Running Azure:
     java -jar storage-service-azure\target\storage-azure-0.0.1-SNAPSHOT-spring-boot.jar
-    
-    # Running AWS:
-    java -jar provider\storage-aws\target\storage-aws-0.0.1-SNAPSHOT-spring-boot.jar
     ```
 
 6. Access the service:
@@ -111,33 +101,8 @@ Instructions for running the Azure implementation in the cloud can be found [her
 (This link may not be reachable for everyone, it points to Azure infrastructure templates and ensuing documentation. We are trying to find a home for that, so please stay tuned, or reach our to Dania.Kodeih@microsoft.com to get early access)
 
 ### AWS
-This guide assumes that you already have an AWS account and have admin access to it in order to 
-configure the environment.
-1. **CodeCommit setup:** The automated deployment pipeline will require a CodeCommit repo to be 
-    set up for storage service. Push the current Storage Service codebase to this repo in the 
-    branch that you'd like to deploy from.
-    1. NOTE: After the move the GitLab, we will revisit and see if deployment straight from GitLab 
-    is possible.
-2. **Pipeline setup:** In the AWS Console, navigate the the CloudFormation service. Create a new 
-    stack, and upload the template found in 
-    `provider/storage-aws/CloudFormation/Manual/01-CreateCodePipeline.yml`. You can upload via S3 
-    or copy/paste into the Designer, it doesn't make a difference. Click "next" and upload any 
-    of the default parameter values as-needed. For example, the notification email, environment, 
-    and the CodeCommit repository and branch names are likely to change, as well as the region if 
-    you are deploying somewhere other than us-east-1.
-3. **Application deployment:** Allow the stack to finish deploying, then navigate to CodePipeline 
-    in the AWS console and locate the new pipeline you just deployed. It should be automatically 
-    be performing an initial run. Allow it to complete and validate that there weren't any errors.
-    1. The pipeline is subscribed to the CodeCommit branch you specified in the CodePipeline stack, 
-    and the pipeline will automatically be kicked off and update and changed resources automatically 
-    when code is committed to the subscribed branch.
-    2. When the deployment is complete, you can return the the CloudFormation console and locate 
-    the stack with the name starting with `<env>-os-storage-master-stack-IAMCredentialsStack`. 
-    Select it, click on the 'Outputs' tab, and you will find the AWS access key and secret you 
-    need for the environment variables (required for running integration tests against AWS 
-    resources).
-        1. `StorageServiceIamUserAccessKeyId` contains the value you need for `AWS_ACCESS_KEY_ID`
-        2. `StorageServiceIamUserSecretAccessKey` contains the value you need for `AWS_SECRET_KEY`
+
+The AWS provider has been removed from this repository.
 
 
 ## Running integration tests
@@ -154,7 +119,7 @@ Instructions for running the Google Cloud integration tests can be found [here](
 
 ### AWS
 
-Instructions for running the AWS integration tests can be found [here](./provider/storage-aws/README.md).
+The AWS provider has been removed from this repository.
 
 ## License
 Copyright 2017-2019, Schlumberger

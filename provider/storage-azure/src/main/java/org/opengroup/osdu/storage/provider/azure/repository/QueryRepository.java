@@ -95,7 +95,12 @@ public class QueryRepository implements IQueryRepository {
                     cursorCache.put(continuationToken, Integer.toString(limit));
                     dqr.setCursor(continuationToken);
                 } else {
-                    Integer startIndex = Integer.parseInt(cursorCache.get(cursor));
+                    Integer startIndex;
+                    try {
+                        startIndex = Integer.parseInt(cursorCache.get(cursor));
+                    } catch (NumberFormatException e) {
+                        throw this.getInvalidCursorException();
+                    }
                     Integer endIndex = startIndex + limit;
                     for (int i = startIndex; i < endIndex && i < allDocs.size(); i++) {
                         docs.add(allDocs.get(i));
