@@ -49,7 +49,7 @@
       <swagger-core.version>2.2.45</swagger-core.version>
       <lombok.version>1.18.42</lombok.version>
       <!-- lettuce-core 7.x requires Netty 4.2+; Spring Boot 3.5.14 provides 4.1.x -->
-      <netty.version>4.2.16.Final</netty.version>
+      <netty.version>4.2.18.Final</netty.version>
       <commons-codec.version>1.17.1</commons-codec.version>
       <!-- os-core-common 7.0.0 declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
       <lettuce.version>7.5.2.RELEASE</lettuce.version>
