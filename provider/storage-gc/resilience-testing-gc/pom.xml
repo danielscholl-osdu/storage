@@ -23,7 +23,7 @@
 
   <groupId>org.opengroup.osdu</groupId>
   <artifactId>resilience-testing-gc</artifactId>
-  <version>0.30.2-SNAPSHOT</version>
+  <version>0.30.3-SNAPSHOT</version>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
