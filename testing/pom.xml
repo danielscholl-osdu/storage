@@ -31,7 +31,6 @@
 	</licenses>
 	<modules>
 		<module>storage-test-core</module>
-		<module>storage-test-aws</module>
 		<module>storage-test-azure</module>
 		<module>storage-test-gc</module>
 		<module>storage-test-ibm</module>

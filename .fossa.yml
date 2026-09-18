@@ -28,10 +28,6 @@ analyze:
       type: mvn
       target: provider/storage-azure/pom.xml
       path: .
-    - name: storage-aws
-      type: mvn
-      target: provider/storage-aws/pom.xml
-      path: .
     - name: storage-ibm
       type: mvn
       target: provider/storage-ibm/pom.xml

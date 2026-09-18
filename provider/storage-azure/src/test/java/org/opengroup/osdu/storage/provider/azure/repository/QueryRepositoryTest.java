@@ -1,10 +1,13 @@
 package org.opengroup.osdu.storage.provider.azure.repository;
 
 import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.SqlParameter;
+import com.azure.cosmos.models.SqlQuerySpec;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,7 +22,6 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.storage.DatastoreQueryResult;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
-import org.opengroup.osdu.storage.model.RecordId;
 import org.opengroup.osdu.storage.model.RecordIdAndKind;
 import org.opengroup.osdu.storage.model.RecordInfoQueryResult;
 import org.opengroup.osdu.storage.provider.azure.model.RecordMetadataDoc;
@@ -30,6 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -219,6 +222,39 @@ class QueryRepositoryTest {
 
         verify(cosmosStore).queryItems(any(), any(), any(), any(), any(), any());
         assertEquals(1, datastoreQueryResult.getResults().size());
+    }
+
+    // An expired cursor entry is indistinguishable from an absent one: the cache returns null.
+    @Test
+    void getAllKindsShouldThrowBadRequest_whenCursorEntryHasExpired() {
+        List<Object> docs = new ArrayList<>();
+        docs.add("Kind1");
+        docs.add("Kind2");
+
+        when(cosmosStore.queryItems(any(), any(), any(), any(), any(), any())).thenReturn(docs);
+        when(cursorCache.get("cursor")).thenReturn(null);
+
+        AppException exception = assertThrows(AppException.class, () -> queryRepository.getAllKinds(1, "cursor"));
+
+        assertEquals(400, exception.getError().getCode());
+        assertEquals("Cursor invalid", exception.getError().getReason());
+        assertEquals("The requested cursor does not exist or is invalid", exception.getError().getMessage());
+    }
+
+    @Test
+    void getAllKindsShouldThrowBadRequest_whenCursorEntryIsNotNumeric() {
+        List<Object> docs = new ArrayList<>();
+        docs.add("Kind1");
+        docs.add("Kind2");
+
+        when(cosmosStore.queryItems(any(), any(), any(), any(), any(), any())).thenReturn(docs);
+        when(cursorCache.get("cursor")).thenReturn("not-a-number");
+
+        AppException exception = assertThrows(AppException.class, () -> queryRepository.getAllKinds(1, "cursor"));
+
+        assertEquals(400, exception.getError().getCode());
+        assertEquals("Cursor invalid", exception.getError().getReason());
+        assertEquals("The requested cursor does not exist or is invalid", exception.getError().getMessage());
     }
 
     @Test
