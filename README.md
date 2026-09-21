@@ -10,7 +10,7 @@ Instructions for running the Azure implementation locally can be found [here](./
 
 ## Google Cloud Implementation
 
-All documentation for the Google Cloud implementation of Storage service lives [here](./provider/storage-gc/README.md)
+The Google Cloud implementation has been moved to [gc-osdu-services](https://community.opengroup.org/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-services).
 
 ## AWS
 
@@ -65,9 +65,6 @@ The AWS provider has been removed from this repository.
     # Running BYOC (Bring Your Own Cloud): 
     java -jar storage-service-byoc\target\storage-byoc-0.0.1-SNAPSHOT-spring-boot.jar
     
-    # Running Google Cloud:
-    java -jar  -Dspring.profiles.active=local storage-service-gc\target\storage-gc-0.0.1-SNAPSHOT-spring-boot.jar
-    
     # Running Azure:
     java -jar storage-service-azure\target\storage-azure-0.0.1-SNAPSHOT-spring-boot.jar
     ```
@@ -115,7 +112,7 @@ Instructions for running the Azure integration tests can be found [here](./provi
 
 ### Google Cloud
 
-Instructions for running the Google Cloud integration tests can be found [here](./provider/storage-gc/README.md).
+The Google Cloud implementation has been moved to [gc-osdu-services](https://community.opengroup.org/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-services).
 
 ### AWS
 

@@ -13,4 +13,4 @@ Instructions for running the Azure implementation can be found [here](https://co
 
 ## Google
 
-Instructions for running the Google implementation can be found [here](https://community.opengroup.org/osdu/platform/system/storage/-/tree/master/provider/storage-gc).
+The Google Cloud implementation has been moved to [gc-osdu-services](https://community.opengroup.org/osdu/platform/deployment-and-operations/base-containers-gcp/gc-osdu-services).

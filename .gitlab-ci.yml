@@ -1,12 +1,4 @@
 variables:
-  GCP_BUILD_SUBDIR: provider/storage-gcp
-  GCP_INT_TEST_SUBDIR: testing/storage-test-gcp
-  GCP_APPLICATION_NAME: os-storage
-  GCP_ENVIRONMENT: testing
-  GCP_PROJECT: opendes-evt
-  GCP_TENANT_NAME: opendesevt
-  GCP_DEPLOY_ENV: p4d
-
   AZURE_SERVICE: storage
   AZURE_BUILD_SUBDIR: provider/storage-azure
   AZURE_TEST_SUBDIR: testing/storage-test-azure
@@ -33,9 +25,6 @@ include:
     file: "publishing/common-pages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/gc-global.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
     file: "cloud-providers/cimpl-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
@@ -56,12 +45,7 @@ include:
     file: "cloud-providers/azure-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    file: "cloud-providers/gc-one-pipeline.yml"
-
-  - project: "osdu/platform/ci-cd-pipelines"
     file: "reporting/schemathesis.yml"
-
-  - local: "devops/gc/pipeline/override-stages.yml"
 
 # disable the eslint scanner
 # I think this is being generated from the presence of an HTML file, but there

@@ -346,12 +346,6 @@
           <module>provider/storage-ibm</module>
         </modules>
       </profile>
-      <profile>
-        <id>gc</id>
-        <modules>
-          <module>provider/storage-gc</module>
-        </modules>
-      </profile>
     </profiles>
 
     <repositories>
