@@ -32,7 +32,6 @@
 	<modules>
 		<module>storage-test-core</module>
 		<module>storage-test-azure</module>
-		<module>storage-test-gc</module>
 		<module>storage-test-ibm</module>
 		<module>storage-test-baremetal</module>
 	</modules>
