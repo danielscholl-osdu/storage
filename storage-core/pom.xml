@@ -68,7 +68,7 @@
             os-core-common 7.0.0 declares lettuce-core as provided scope, which Maven does
             NOT propagate transitively, so consumers of os-core-common must declare lettuce-core
             themselves. Library-level scope=provided so deployable consumers (storage-core-plus,
-            storage-aws, etc.) control the runtime version.
+            storage-azure, etc.) control the runtime version.
         -->
         <dependency>
             <groupId>io.lettuce</groupId>
