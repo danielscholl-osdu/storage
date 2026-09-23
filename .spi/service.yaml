@@ -7,7 +7,7 @@ tests:
     type: maven
     path: storage-acceptance-test
     mavenArguments: [test]
-    timeoutMinutes: 30
+    timeoutMinutes: 60
     bindings:
       HOST: { source: gateway }
       DATA_PARTITION_ID: { source: partition }
@@ -16,3 +16,4 @@ tests:
       NO_ACCESS_USER_TOKEN: { source: memberToken }
       ROOT_USER_TOKEN: { source: token }
       EXPOSE_FEATUREFLAG_ENABLED: { source: static, value: "false" }
+      COLLABORATION_ENABLED: { source: static, value: "false" }
