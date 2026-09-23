@@ -31,9 +31,7 @@
 	</licenses>
 	<modules>
 		<module>storage-test-core</module>
-		<module>storage-test-azure</module>
-		<module>storage-test-ibm</module>
-		<module>storage-test-baremetal</module>
+    <module>storage-test-azure</module>
 	</modules>
 
 	<properties>

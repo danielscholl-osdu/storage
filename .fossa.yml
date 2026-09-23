@@ -16,15 +16,3 @@ analyze:
       type: mvn
       target: storage-core/pom.xml
       path: .
-    - name: storage-core-plus
-      type: mvn
-      target: storage-core-plus/pom.xml
-      path: .
-    - name: storage-azure
-      type: mvn
-      target: provider/storage-azure/pom.xml
-      path: .
-    - name: storage-ibm
-      type: mvn
-      target: provider/storage-ibm/pom.xml
-      path: .

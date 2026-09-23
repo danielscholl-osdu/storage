@@ -331,21 +331,14 @@
         </activation>
         <modules>
           <module>storage-core</module>
-          <module>storage-core-plus</module>
         </modules>
       </profile>
-      <profile>
-        <id>azure</id>
-        <modules>
-          <module>provider/storage-azure</module>
-        </modules>
-      </profile>
-      <profile>
-        <id>ibm</id>
-        <modules>
-          <module>provider/storage-ibm</module>
-        </modules>
-      </profile>
+    <profile>
+      <id>azure</id>
+      <modules>
+        <module>provider/storage-azure</module>
+      </modules>
+    </profile>
     </profiles>
 
     <repositories>
