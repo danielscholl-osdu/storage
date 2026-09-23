@@ -1,0 +1,95 @@
+# Per-service upstream filter config (ADR-038), planted at fork initialization
+# with storage substituted from the upstream repository name.
+# Every upstream top-level entry, testing/ entry, root pom profile, and
+# .fossa.yml module must appear here: the engine halts rather than guess.
+# Entries absent from a given upstream tree are inert, so this file carries the
+# superset of the conventional OSDU service shape. A service that deviates
+# maintains its own copy of this file on the fork's main branch.
+service: storage
+
+top_level:
+  .config: keep
+  .dockerignore: keep
+  .editorconfig: keep
+  .envrc.template: keep
+  .fossa.yml: keep
+  .gitattributes: keep
+  .gitignore: keep
+  .gitlab: strip
+  .gitlab-ci.yml: strip
+  .mvn: keep
+  .sonarlint: keep
+  .trufflehog-exclude: strip
+  LICENSE: keep
+  NOTICE: keep
+  README.md: keep
+  skaffold.yaml: strip
+  docs: keep
+  pom.xml: keep
+  publish.yml: strip
+  storage-acceptance-test: keep
+  storage-core: keep
+  storage-core-plus: strip
+
+testing:
+  INTEGRATION-TESTS.md: keep
+  NOTICE: keep
+  README.md: keep
+  maven: keep
+  pom.xml: keep
+  storage-test-core: keep
+  storage-test-azure: fork
+  storage-test-aws: strip
+  storage-test-baremetal: strip
+  storage-test-core-plus: strip
+  storage-test-gc: strip
+  storage-test-gcp: strip
+  storage-test-ibm: strip
+  storage-test-jdbc: strip
+
+profiles:
+  Default: keep
+  core: keep
+  azure: inject
+  aws: strip
+  gc: strip
+  gcp: strip
+  ibm: strip
+
+fossa_modules:
+  storage: keep
+  storage-service: keep
+  storage-core: keep
+  storage-core-plus: strip
+  storage-azure: strip
+  storage-aws: strip
+  storage-gc: strip
+  storage-gcp: strip
+  storage-ibm: strip
+  storage-jdbc: strip
+  os-storage: keep
+
+expected_kept:
+  - pom.xml
+  - storage-core
+  - testing/storage-test-core
+
+expected_absent:
+  - provider
+  - devops
+  - storage-core-plus
+  - .gitlab-ci.yml
+  - testing/storage-test-azure
+  - testing/storage-test-aws
+  - testing/storage-test-core-plus
+
+inject_root_pom_azure_profile: |
+      <profile>
+        <id>azure</id>
+        <modules>
+          <module>provider/storage-azure</module>
+        </modules>
+      </profile>
+
+inject_testing_pom_azure_module: |
+      <module>storage-test-azure</module>
