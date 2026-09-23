@@ -50,7 +50,7 @@
       <lombok.version>1.18.42</lombok.version>
       <!-- lettuce-core 7.x requires Netty 4.2+; Spring Boot 3.5.14 provides 4.1.x -->
       <netty.version>4.2.18.Final</netty.version>
-      <commons-codec.version>1.17.1</commons-codec.version>
+      <commons-codec.version>1.17.2</commons-codec.version>
       <!-- os-core-common 7.0.0 declares lettuce-core as provided; CVE-2025-58057 requires >= 7.5.2.RELEASE -->
       <lettuce.version>7.5.2.RELEASE</lettuce.version>
       <!-- Spring Boot 3.5.16 manages Tomcat 10.1.55; CVE-2026-55276 / CVE-2026-59083 need >= 10.1.57 -->
