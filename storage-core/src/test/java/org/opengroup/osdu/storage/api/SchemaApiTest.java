@@ -1,0 +1,176 @@
+// Copyright 2017-2019, Schlumberger
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package org.opengroup.osdu.storage.api;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
+
+import java.lang.reflect.Method;
+
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.core.common.model.http.AppException;
+import org.opengroup.osdu.core.common.model.http.DpsHeaders;
+
+import org.opengroup.osdu.core.common.model.storage.Schema;
+import org.opengroup.osdu.core.common.model.storage.StorageRole;
+import org.opengroup.osdu.storage.di.SchemaEndpointsConfig;
+import org.opengroup.osdu.storage.service.SchemaService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+
+@ExtendWith(MockitoExtension.class)
+public class SchemaApiTest {
+
+    @Mock
+    private SchemaService schemaService;
+
+    @Mock
+    private SchemaEndpointsConfig schemaEndpointsConfig;
+
+    @Mock
+    private DpsHeaders httpHeaders;
+
+    @InjectMocks
+    private SchemaApi sut;
+
+    @BeforeEach
+    public void setup() {
+        initMocks(this);
+    }
+
+    @Test
+    public void should_returnHttp201_when_schemaApiIsEnabled_and_creatingSchemaSuccessfully() {
+        final String USER = "testUser@gmail.com";
+
+        Schema schema = new Schema();
+        schema.setKind("any kind");
+
+        this.schemaService.createSchema(schema);
+
+        ResponseEntity response = this.sut.createSchema(schema);
+
+        assertEquals(HttpStatus.SC_CREATED, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_creatingSchema() {
+        final String USER = "testUser@gmail.com";
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+
+        Schema schema = new Schema();
+        try {
+            ResponseEntity response = this.sut.createSchema(schema);
+            fail("Should not succeed");
+        } catch (AppException e){
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_returnHttp200_when_schemaApiIsEnabled_and_gettingSchemaSuccessfully() {
+        final String KIND = "anyKind";
+
+        Schema schema = new Schema();
+        schema.setKind(KIND);
+
+        when(this.schemaService.getSchema(KIND)).thenReturn(schema);
+
+        ResponseEntity response = this.sut.getSchema(KIND);
+
+        Schema schemaResponse = (Schema) response.getBody();
+
+        assertEquals(HttpStatus.SC_OK, response.getStatusCodeValue());
+        assertEquals(KIND, schemaResponse.getKind());
+    }
+
+    @Test
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_gettingSchema() {
+        final String KIND = "anyKind";
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+        try {
+            ResponseEntity response = this.sut.getSchema(KIND);
+        }catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_returnHttp204_when_schemaApiIsEnabled_and_deletingSchemaSuccessfully() {
+        final String KIND = "anyKind";
+
+        ResponseEntity response = this.sut.deleteSchema(KIND);
+
+        assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatusCodeValue());
+    }
+
+    @Test
+    public void should_returnHttp404_when_schemaApiIsDisabled_and_deletingSchema() {
+        final String KIND = "anyKind";
+        when(this.schemaEndpointsConfig.isDisabled()).thenReturn(true);
+
+        try {
+            ResponseEntity response = this.sut.deleteSchema(KIND);
+        }catch (AppException e) {
+            assertEquals(HttpStatus.SC_NOT_FOUND, e.getError().getCode());
+            assertEquals("This API has been deprecated", e.getError().getReason());
+        }
+    }
+
+    @Test
+    public void should_allowAccessToCreateSchema_when_userBelongsToCreatorOrAdminGroups() throws Exception {
+
+        Method method = this.sut.getClass().getMethod("createSchema", Schema.class);
+        PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
+
+        assertFalse(annotation.value().contains(StorageRole.VIEWER));
+        assertTrue(annotation.value().contains(StorageRole.CREATOR));
+        assertTrue(annotation.value().contains(StorageRole.ADMIN));
+    }
+
+    @Test
+    public void should_allowAccessToGetSchema_when_userBelongsToViewerCreatorOrAdminGroups() throws Exception {
+
+        Method method = this.sut.getClass().getMethod("getSchema", String.class);
+        PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
+
+        assertTrue(annotation.value().contains(StorageRole.VIEWER));
+        assertTrue(annotation.value().contains(StorageRole.CREATOR));
+        assertTrue(annotation.value().contains(StorageRole.ADMIN));
+    }
+
+    @Test
+    public void should_allowAccessToDeleteSchema_when_userBelongsToAdminGroup() throws Exception {
+
+        Method method = this.sut.getClass().getMethod("deleteSchema", String.class);
+        PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
+
+        assertTrue(annotation.value().contains(StorageRole.ADMIN));
+        assertTrue(!annotation.value().contains(StorageRole.CREATOR));
+        assertTrue(!annotation.value().contains(StorageRole.VIEWER));
+    }
+}

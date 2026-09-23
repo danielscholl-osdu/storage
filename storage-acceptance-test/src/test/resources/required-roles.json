@@ -1,0 +1,17 @@
+{
+  "PRIVILEGED_USER": [
+    "users",
+    "service.entitlements.user",
+    "service.entitlements.admin",
+    "service.storage.admin",
+    "service.storage.creator",
+    "service.storage.viewer",
+    "service.legal.admin",
+    "service.legal.editor"
+  ],
+  "NO_ACCESS_USER": [
+    "users",
+    "service.entitlements.user",
+    "service.storage.admin"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "meta": [
+    {
+      "kind": "Unit",
+      "name": "ft",
+      "persistableReference": "{\"abcd\":{\"a\":0.0,\"b\":0.001,\"c\":1.0,\"d\":0.0},\"symbol\":\"ft\",\"baseMeasurement\":{\"ancestry\":\"L\",\"type\":\"UM\"},\"type\":\"UAD\"}",
+      "propertyNames": [
+        "GrainSizes[]"
+      ]
+    }
+  ],
+  "data": {
+    "GrainSizes": [
+      1,
+      2,
+      3
+    ]
+  }
+}

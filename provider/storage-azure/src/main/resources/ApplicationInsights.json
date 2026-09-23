@@ -1,0 +1,9 @@
+{
+  "TelemetryProcessor": [
+    {
+      "ApplicationInsights.SamplingTelemetryProcessor": {
+        "UseAdaptiveSampling": true
+      }
+    }
+  ]
+}
