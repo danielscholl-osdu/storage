@@ -1,0 +1,18 @@
+schemaVersion: 3
+service:
+  name: storage
+  archetype: java-maven-azure
+tests:
+  acceptance:
+    type: maven
+    path: storage-acceptance-test
+    mavenArguments: [test]
+    timeoutMinutes: 30
+    bindings:
+      HOST: { source: gateway }
+      DATA_PARTITION_ID: { source: partition }
+      ENTITLEMENTS_DOMAIN: { source: domain }
+      PRIVILEGED_USER_TOKEN: { source: token }
+      NO_ACCESS_USER_TOKEN: { source: memberToken }
+      ROOT_USER_TOKEN: { source: token }
+      EXPOSE_FEATUREFLAG_ENABLED: { source: static, value: "false" }
