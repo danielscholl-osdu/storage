@@ -562,6 +562,14 @@ class RecordMetadataRepositoryTest {
     }
 
     @Test
+    void getByList_shouldReturnEmptyMapWithoutQuerying_whenNoIdsGiven() {
+        Map<String, RecordMetadata> resultSet = recordMetadataRepository.get(Collections.emptyList(), Optional.empty());
+
+        assertEquals(0, resultSet.size());
+        verify(cosmosStore, never()).queryItems(any(), any(), any(), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), any());
+    }
+
+    @Test
     void getByList_shouldReturnEmptyResultSet_whenCosmosStoreReturnsEmptyRecords() {
         RecordMetadataDoc doc1 = mock(RecordMetadataDoc.class);
         RecordMetadataDoc doc2 = mock(RecordMetadataDoc.class);

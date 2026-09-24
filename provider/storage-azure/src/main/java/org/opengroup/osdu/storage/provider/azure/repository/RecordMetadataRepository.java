@@ -233,6 +233,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
+        if (ids == null || ids.isEmpty()) {
+            return new HashMap<>();
+        }
         logger.info("Reading records from metadata store.");
         SqlQuerySpec query = createCosmosBatchGetQueryById(ids, collaborationContext);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();
