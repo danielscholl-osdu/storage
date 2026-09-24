@@ -15,5 +15,5 @@ tests:
       PRIVILEGED_USER_TOKEN: { source: token }
       NO_ACCESS_USER_TOKEN: { source: memberToken }
       ROOT_USER_TOKEN: { source: token }
-      EXPOSE_FEATUREFLAG_ENABLED: { source: static, value: "false" }
+      EXPOSE_FEATUREFLAG_ENABLED: { source: static, value: "true" }
       COLLABORATION_ENABLED: { source: static, value: "false" }
