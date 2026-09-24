@@ -20,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStore;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -63,9 +62,6 @@ class RecordMetadataRepositoryTest {
 
     @Rule
     ExpectedException exceptionRule = ExpectedException.none();
-    @Mock
-    private JaxRsDpsLog logger;
-
     @Mock
     private CosmosStoreBulkOperations cosmosBulkStore;
 
