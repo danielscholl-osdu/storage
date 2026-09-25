@@ -29,69 +29,53 @@ variables:
   CORE_COVERAGE_THRESHOLD: "80"
 include:
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "standard-setup.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "build/maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "reporting/reporting.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "publishing/common-pages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/aws-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/aws-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/gc-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/cimpl-global.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "build/cimpl-otel.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "scanners/fossa-maven.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "scanners/gitlab-ultimate.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/azure.yml"
 
   - local: "devops/core-plus/pipeline/override-stages.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/aws-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/azure-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "cloud-providers/gc-one-pipeline.yml"
 
   - project: "osdu/platform/ci-cd-pipelines"
-    ref: release/0.30
     file: "reporting/schemathesis.yml"
 
   - local: "devops/gc/pipeline/override-stages.yml"
