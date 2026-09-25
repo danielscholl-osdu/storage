@@ -1,6 +1,5 @@
 package org.opengroup.osdu.storage.provider.azure.pubsub;
 
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.microsoft.azure.servicebus.Message;
 import com.microsoft.azure.servicebus.MessageBody;
@@ -16,10 +15,12 @@ import org.opengroup.osdu.storage.provider.azure.exception.ServiceBusInvalidMess
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
 import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.slf4j.Logger;
+import org.springframework.web.context.request.RequestContextHolder;
 
 
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -140,6 +141,34 @@ class LegalComplianceChangeUpdateTest {
             eq("Deleting associated records for the incompliant legal tag: opendes-Test-Legal-Tag-not-expired")
         );
         verify(complianceMessagePullReceiver).receiveMessage(any(), any());
+    }
+
+    @Test
+    void updateComplianceShouldActivateRequestScopeDuringProcessingAndClearItAfter() throws Exception {
+        when(message.getMessageBody()).thenReturn(getMessageBody(validStatusLegalTagChangedMessage));
+        AtomicBoolean requestScopeActiveDuringReceive = new AtomicBoolean(false);
+        doAnswer(invocation -> {
+            requestScopeActiveDuringReceive.set(RequestContextHolder.getRequestAttributes() != null);
+            return null;
+        }).when(complianceMessagePullReceiver).receiveMessage(any(), any());
+
+        legalComplianceChangeUpdate.updateCompliance(message);
+
+        assertTrue(requestScopeActiveDuringReceive.get(),
+            "request scope should be active while records are processed");
+        assertNull(RequestContextHolder.getRequestAttributes(),
+            "request scope should be cleared after processing completes");
+    }
+
+    @Test
+    void updateComplianceShouldClearRequestScope_whenProcessingThrows() throws Exception {
+        when(message.getMessageBody()).thenReturn(getMessageBody(validStatusLegalTagChangedMessage));
+        doThrow(new RuntimeException("boom")).when(complianceMessagePullReceiver).receiveMessage(any(), any());
+
+        assertThrows(Exception.class, () -> legalComplianceChangeUpdate.updateCompliance(message));
+
+        assertNull(RequestContextHolder.getRequestAttributes(),
+            "request scope must be cleared even when processing fails");
     }
 
     @Test
