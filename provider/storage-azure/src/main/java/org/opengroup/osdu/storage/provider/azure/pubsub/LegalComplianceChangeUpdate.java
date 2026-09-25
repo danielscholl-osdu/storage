@@ -14,25 +14,18 @@
 
 package org.opengroup.osdu.storage.provider.azure.pubsub;
 
-import com.azure.spring.cloud.core.service.AzureServiceType.ServiceBus;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 import com.microsoft.azure.servicebus.IMessage;
-import com.microsoft.azure.servicebus.primitives.ServiceBusException;
-
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.legal.LegalCompliance;
 import org.opengroup.osdu.core.common.model.legal.jobs.ComplianceUpdateStoppedException;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChanged;
 import org.opengroup.osdu.core.common.model.legal.jobs.LegalTagChangedCollection;
+import org.opengroup.osdu.storage.provider.azure.config.MapRequestAttributes;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadDpsHeaders;
 import org.opengroup.osdu.storage.provider.azure.config.ThreadScopeContextHolder;
-import org.opengroup.osdu.storage.provider.azure.model.LegalTagsChangedRequest;
-
 import org.opengroup.osdu.storage.provider.azure.exception.ServiceBusInvalidMessageBodyException;
+import org.opengroup.osdu.storage.provider.azure.model.LegalTagsChangedRequest;
 import org.opengroup.osdu.storage.provider.azure.util.MDCContextMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +33,10 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
 
-import java.util.List;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 @ConditionalOnProperty(value = "azure.feature.legaltag-compliance-update.enabled", havingValue = "true", matchIfMissing = false)
@@ -66,6 +60,7 @@ public class LegalComplianceChangeUpdate {
     private ComplianceMessagePullReceiver complianceMessagePullReceiver;
 
     public void updateCompliance(IMessage message) throws ComplianceUpdateStoppedException , Exception {
+        MapRequestAttributes requestAttributes = null;
         try {
             String messageBody = getMessageBodyAsString(message);
             logger.info(String.format("Received a message from the service bus with message ID %s", message.getMessageId()));
@@ -96,6 +91,9 @@ public class LegalComplianceChangeUpdate {
 
             headers.setThreadContext(dataPartitionId, correlationId, user);
             MDC.setContextMap(mdcContextMap.getContextMap(correlationId, dataPartitionId));
+            requestAttributes = new MapRequestAttributes();
+            RequestContextHolder.setRequestAttributes(requestAttributes);
+
             complianceMessagePullReceiver.receiveMessage(tags, headers);
         } catch (IllegalArgumentException ex) {
             logger.error(String.format("Error occurred when parsing the legal tags changed request from the service bus: %s", ex.getMessage()), ex);
@@ -113,6 +111,10 @@ public class LegalComplianceChangeUpdate {
             logger.error(String.format("Error occurred when updating compliance on records: %s", ex.getMessage()), ex);
             throw ex;
         } finally {
+            RequestContextHolder.resetRequestAttributes();
+            if (requestAttributes != null) {
+                requestAttributes.requestCompleted();
+            }
             ThreadScopeContextHolder.getContext().clear();
             MDC.clear();
         }
