@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
 import org.opengroup.osdu.core.common.model.http.DpsHeaders;
@@ -40,6 +39,8 @@ import org.opengroup.osdu.storage.provider.azure.di.AzureBootstrapConfig;
 import org.opengroup.osdu.storage.provider.azure.di.CosmosContainerConfig;
 import org.opengroup.osdu.storage.provider.azure.model.DocumentCount;
 import org.opengroup.osdu.storage.provider.interfaces.IRecordsMetadataRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -82,8 +83,8 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
     @Autowired
     private String cosmosDBName;
 
-    @Autowired
-    private JaxRsDpsLog logger;
+    // Not JaxRsDpsLog: the legal-tag Service Bus handler calls this outside a request scope.
+    private static final Logger logger = LoggerFactory.getLogger(RecordMetadataRepository.class);
 
     @Autowired
     private int minBatchSizeToUseBulkUpload;
@@ -232,6 +233,9 @@ public class RecordMetadataRepository extends SimpleCosmosStoreRepository<Record
 
     @Override
     public Map<String, RecordMetadata> get(List<String> ids, Optional<CollaborationContext> collaborationContext) {
+        if (ids == null || ids.isEmpty()) {
+            return new HashMap<>();
+        }
         logger.info("Reading records from metadata store.");
         SqlQuerySpec query = createCosmosBatchGetQueryById(ids, collaborationContext);
         CosmosQueryRequestOptions options = new CosmosQueryRequestOptions();

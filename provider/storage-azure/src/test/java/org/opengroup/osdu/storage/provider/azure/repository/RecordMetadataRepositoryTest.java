@@ -20,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStore;
 import org.opengroup.osdu.azure.cosmosdb.CosmosStoreBulkOperations;
 import org.opengroup.osdu.azure.query.CosmosStorePageRequest;
-import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
 import org.opengroup.osdu.core.common.model.http.AppError;
 import org.opengroup.osdu.core.common.model.http.AppException;
@@ -63,9 +62,6 @@ class RecordMetadataRepositoryTest {
 
     @Rule
     ExpectedException exceptionRule = ExpectedException.none();
-    @Mock
-    private JaxRsDpsLog logger;
-
     @Mock
     private CosmosStoreBulkOperations cosmosBulkStore;
 
@@ -563,6 +559,14 @@ class RecordMetadataRepositoryTest {
         assertEquals(expectedParameters.size(), capturedParameters.size());
         assertParametersMatch(expectedParameters, capturedParameters);
         assertEquals(2, resultSet.size());
+    }
+
+    @Test
+    void getByList_shouldReturnEmptyMapWithoutQuerying_whenNoIdsGiven() {
+        Map<String, RecordMetadata> resultSet = recordMetadataRepository.get(Collections.emptyList(), Optional.empty());
+
+        assertEquals(0, resultSet.size());
+        verify(cosmosStore, never()).queryItems(any(), any(), any(), any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), any());
     }
 
     @Test
