@@ -11,9 +11,10 @@
 /build/                         @danielscholl
 /.release-please-config.json    @danielscholl
 
-# Fork-owned Azure source, descriptor, and filter config.
+# Fork-owned Azure source, descriptor, filter config, and contributing guide.
 /provider/storage-azure/      @danielscholl
 /testing/storage-test-azure/  @danielscholl
 /.spi/                          @danielscholl
 /.github/upstream-filter.yml    @danielscholl
 /.github/CODEOWNERS             @danielscholl
+/CONTRIBUTING.md                @danielscholl
