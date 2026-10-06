@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -239,6 +239,25 @@ public abstract class RecordsApiAcceptanceTests extends TestBase {
 		assertEquals(TestUtils.getAcl(), acl.get("viewers").getAsString());
 
 		assertEquals("Foo", responseJson.getAsJsonObject("data").get("name").getAsString());
+	}
+
+	@Test
+	public void should_preserveNumberRepresentation_when_recordIsIngestedWithDecimals() throws Exception {
+		final String RECORD_ID = TenantUtils.getTenantName() + ":inttest:decimals-" + System.currentTimeMillis();
+		Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+
+		CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
+				RecordUtil.createJsonRecordWithDecimalData(RECORD_ID, KIND, LEGAL_TAG), "");
+		TestUtils.getResult(response, 201, String.class);
+
+		response = TestUtils.send("records/" + RECORD_ID, "GET", headers, "", "");
+		String responseString = TestUtils.getResult(response, 200, String.class);
+
+		for (String fragment : RecordUtil.DECIMAL_DATA_FRAGMENTS) {
+			assertTrue(fragment + " not found in " + responseString, responseString.contains(fragment));
+		}
+
+		TestUtils.send("records/" + RECORD_ID, "DELETE", headers, "", "");
 	}
 
 	@Test

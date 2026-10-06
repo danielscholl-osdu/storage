@@ -66,8 +66,6 @@ public class PersistenceServiceImpl implements PersistenceService {
     @Autowired
     private IFeatureFlag collaborationFeatureFlag;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public void persistRecordBatch(TransferBatch transfer, Optional<CollaborationContext> collaborationContext) {
 

@@ -1,4 +1,4 @@
-// Copyright 2017-2024, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,13 @@
 
 package org.opengroup.osdu.storage.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.lang.reflect.Type;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.opengroup.osdu.storage.request.ReplayRequest;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
@@ -25,9 +29,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfiguration implements WebMvcConfigurer {
 
-  @Autowired
-  private MappingJackson2HttpMessageConverter strictConverter;
-
   @Override
   public void configurePathMatch(PathMatchConfigurer configurer) {
     configurer.setUseTrailingSlashMatch(true);
@@ -35,7 +36,26 @@ public class WebConfiguration implements WebMvcConfigurer {
 
   @Override
   public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-    converters.add(0, strictConverter);
+    converters.add(0, strictConverter());
+  }
+
+  // Not a bean, so it is only registered here and not also collected into Boot's converter list
+  static MappingJackson2HttpMessageConverter strictConverter() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+    return new MappingJackson2HttpMessageConverter(objectMapper) {
+
+      @Override
+      public boolean canRead(Type type, Class<?> contextClass, MediaType mediaType) {
+        return type instanceof Class<?> clazz && ReplayRequest.class.isAssignableFrom(clazz)
+            && MediaType.APPLICATION_JSON.includes(mediaType);
+      }
+
+      @Override
+      public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return ReplayRequest.class.isAssignableFrom(clazz) && MediaType.APPLICATION_JSON.includes(mediaType);
+      }
+    };
   }
 
 }

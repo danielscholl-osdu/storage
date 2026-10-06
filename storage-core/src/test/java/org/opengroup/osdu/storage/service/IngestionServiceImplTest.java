@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.opengroup.osdu.storage.service;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import org.opengroup.osdu.storage.di.TestJsonMappers;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -188,7 +189,7 @@ public class IngestionServiceImplTest {
 
         lenient().when(this.tenant.getName()).thenReturn(TENANT);
         lenient().when(this.authService.hasOwnerAccess(any(),any())).thenReturn(true);
-        recordBlocks = new RecordBlocks(cloudStorage, crcHashGenerator);
+        recordBlocks = new RecordBlocks(cloudStorage, crcHashGenerator, TestJsonMappers.objectMapper());
         sut.recordBlocks = recordBlocks;
 
     }

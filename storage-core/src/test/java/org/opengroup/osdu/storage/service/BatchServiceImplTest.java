@@ -3,10 +3,9 @@ package org.opengroup.osdu.storage.service;
 import com.google.common.collect.Sets;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.ToNumberPolicy;
+import org.opengroup.osdu.storage.di.TestJsonMappers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,7 +101,7 @@ class BatchServiceImplTest {
     void setUp() throws NoSuchFieldException, IllegalAccessException {
         Field gsonField = BatchServiceImpl.class.getDeclaredField("gson");
         gsonField.setAccessible(true);
-        gsonField.set(sut, new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create());
+        gsonField.set(sut, TestJsonMappers.gson());
     }
 
     @Test
@@ -174,6 +173,33 @@ class BatchServiceImplTest {
         assertTrue(multiRecordInfo.getInvalidRecords().isEmpty());
         assertTrue(multiRecordInfo.getRetryRecords().isEmpty());
         assertEquals("1", multiRecordInfo.getRecords().get(0).getData().get(INT_NUMBER).toString());
+    }
+
+    @Test
+    void getMultipleRecords_preservesNumberRepresentation_whenRecordsContainLargeAndDecimalNumbers() {
+        List<String> recordIds = Arrays.asList(TEST_ID_1);
+        Map<String, RecordMetadata> recordMetadataMap = new HashMap<>();
+        recordMetadataMap.put(TEST_ID_1, buildRecordMetadata(TEST_ID_1));
+
+        when(recordRepository.get(recordIds, Optional.empty())).thenReturn(recordMetadataMap);
+
+        MultiRecordIds multiRecordIds = new MultiRecordIds();
+        multiRecordIds.setRecords(recordIds);
+
+        Map<String, String> recordIdContentMap = new HashMap<>();
+        recordIdContentMap.put(TEST_ID_1, "{\"id\":\"" + TEST_ID_1 + "\",\"kind\":\"" + TEST_KIND + "\","
+                + "\"data\":{\"large\":1000003872,\"largeDecimal\":1234567890123456.50,\"round\":100.0,\"small\":0.0001}}");
+
+        when(cloudStorage.read(any(),any())).thenReturn(recordIdContentMap);
+        when(entitlementsAndCacheService.isDataManager(headers)).thenReturn(true);
+
+        MultiRecordInfo multiRecordInfo = sut.getMultipleRecords(multiRecordIds, Optional.empty());
+
+        Map<String, Object> data = multiRecordInfo.getRecords().get(0).getData();
+        assertEquals("1000003872", new Gson().toJson(data.get("large")));
+        assertEquals("1234567890123456.50", new Gson().toJson(data.get("largeDecimal")));
+        assertEquals("100.0", new Gson().toJson(data.get("round")));
+        assertEquals("0.0001", new Gson().toJson(data.get("small")));
     }
 
     @Test

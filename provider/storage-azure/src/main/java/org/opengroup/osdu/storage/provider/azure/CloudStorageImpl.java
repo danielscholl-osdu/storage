@@ -92,7 +92,8 @@ public class CloudStorageImpl implements ICloudStorage {
     @Named("STORAGE_CONTAINER_NAME")
     private String containerName;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void write(RecordProcessing... recordsProcessing) {
