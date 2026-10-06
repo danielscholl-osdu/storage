@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package org.opengroup.osdu.storage.util;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -32,6 +33,12 @@ import org.opengroup.osdu.core.test.client.model.storage.UpdateRecordsQuery;
 public class RecordUtil {
 
   private static final String UNIT_OF_MEASURE_ID = "unitOfMeasureID";
+
+  public static final List<String> DECIMAL_DATA_FRAGMENTS = List.of(
+      "\"large\":1000003872",
+      "\"largeDecimal\":1234567890123456.50",
+      "\"round\":100.0",
+      "\"small\":0.0001");
 
   public static StorageRecord[] createDefaultRecords(String id, String kind, String legalTag) {
     return single(getDefaultRecordWithDefaultData(id, kind, legalTag));
@@ -63,6 +70,15 @@ public class RecordUtil {
     dataMap.put("custom", data);
     dataMap.put("score-int", 58377304471659395L);
     dataMap.put("score-double", 58377304.471659395);
+    return single(getRecordWithInputData(id, kind, legalTag, dataMap));
+  }
+
+  public static StorageRecord[] createRecordsWithDecimalData(String id, String kind, String legalTag) {
+    Map<String, Object> dataMap = new LinkedHashMap<>();
+    dataMap.put("large", 1000003872);
+    dataMap.put("largeDecimal", new BigDecimal("1234567890123456.50"));
+    dataMap.put("round", new BigDecimal("100.0"));
+    dataMap.put("small", new BigDecimal("0.0001"));
     return single(getRecordWithInputData(id, kind, legalTag, dataMap));
   }
 

@@ -4,6 +4,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,14 +22,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.storage.di.BeanConfig;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.opengroup.osdu.azure.blobstorage.BlobStore;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.entitlements.Acl;
@@ -77,6 +82,8 @@ class CloudStorageImplTest {
     private RecordData data;
     @Mock
     private TransferInfo transfer;
+    @Spy
+    private ObjectMapper objectMapper = recordObjectMapper();
     @InjectMocks
     private CloudStorageImpl cloudStorage;
 
@@ -534,6 +541,27 @@ class CloudStorageImplTest {
     }
 
     @Test
+    void getHash_matchesIncomingRecordHash_whenDataContainsDecimals() {
+        String recordId = "recordId";
+        RecordMetadata recordMetadata = setUpRecordMetadata(recordId);
+        recordMetadata.setGcsVersionPaths(List.of("1"));
+        when(entitlementsHelper.hasViewerAccessToRecord(recordMetadata)).thenReturn(true);
+        when(headers.getPartitionId()).thenReturn(DATA_PARTITION);
+        when(recordUtil.getKindForVersion(recordMetadata, "1")).thenReturn("kind");
+        when(blobStore.readFromStorageContainer(DATA_PARTITION, "kind/recordId/1", CONTAINER))
+                .thenReturn("{\"data\":{\"largeDecimal\":1234567890123456.50,\"round\":100.0},\"meta\":null}");
+        ReflectionTestUtils.setField(cloudStorage, "crcHashGenerator", crcHashGenerator);
+
+        RecordData incoming = new RecordData();
+        Map<String, Object> data = new HashMap<>();
+        data.put("largeDecimal", new BigDecimal("1234567890123456.50"));
+        data.put("round", new BigDecimal("100.0"));
+        incoming.setData(data);
+
+        assertEquals(crcHashGenerator.getHash(incoming), cloudStorage.getHash(List.of(recordMetadata)).get(recordId));
+    }
+
+    @Test
     void isDuplicated_returnsTrue_whenDuplicatedRecordsFound() {
         Map<String, String> hashMap = new HashMap<>();
         RecordData recordData = createAndGetRandomRecordData();
@@ -743,5 +771,12 @@ class CloudStorageImplTest {
         assertNotNull(exception);
         assertEquals(403, exception.getError().getCode());
         assertEquals("The user is not authorized to perform this action", exception.getError().getMessage());
+    }
+
+    private static ObjectMapper recordObjectMapper() {
+        BeanConfig beanConfig = new BeanConfig();
+        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
+        beanConfig.recordNumbersCustomizer().customize(builder);
+        return builder.build();
     }
 }

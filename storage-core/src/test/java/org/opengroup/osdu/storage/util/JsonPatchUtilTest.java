@@ -1,4 +1,4 @@
-// Copyright 2017-2023, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
 
 package org.opengroup.osdu.storage.util;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
 import com.github.fge.jsonpatch.JsonPatch;
+import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +28,7 @@ import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordAncestry;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +50,26 @@ public class JsonPatchUtilTest {
         assertTrue(Arrays.stream(patchedRecord.getAcl().getViewers()).anyMatch("viewer3"::equals));
         patchedRecord.getData().containsKey("Hello");
         assertEquals("world", patchedRecord.getData().get("Hello"));
+    }
+
+    @Test
+    public void shouldApplyPatch_preservingNumberRepresentation() throws Exception {
+        Record record = getRecord();
+        Map<String, Object> data = new HashMap<>();
+        data.put("largeDecimal", new BigDecimal("1234567890123456.50"));
+        data.put("round", new BigDecimal("100.0"));
+        record.setData(data);
+        ObjectMapper requestMapper = new ObjectMapper()
+                .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                .configure(JsonNodeFeature.STRIP_TRAILING_BIGDECIMAL_ZEROES, false);
+        JsonPatch jsonPatch = requestMapper.readValue("[{\"op\":\"add\", \"path\":\"/data/added\", \"value\":1500.0}]", JsonPatch.class);
+
+        Record patchedRecord = JsonPatchUtil.applyPatch(jsonPatch, Record.class, record);
+
+        Gson gson = new Gson();
+        assertEquals("1234567890123456.50", gson.toJson(patchedRecord.getData().get("largeDecimal")));
+        assertEquals("100.0", gson.toJson(patchedRecord.getData().get("round")));
+        assertEquals("1500.0", gson.toJson(patchedRecord.getData().get("added")));
     }
 
     @Test

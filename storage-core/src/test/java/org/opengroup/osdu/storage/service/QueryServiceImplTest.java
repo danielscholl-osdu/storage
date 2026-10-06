@@ -1,4 +1,4 @@
-// Copyright 2017-2023, Schlumberger
+// Copyright 2017-2026, Schlumberger
 // Copyright © Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,9 +34,12 @@ import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.google.gson.Gson;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opengroup.osdu.storage.di.TestJsonMappers;
 import org.opengroup.osdu.core.common.logging.JaxRsDpsLog;
 import org.opengroup.osdu.core.common.model.http.AppException;
 import org.opengroup.osdu.core.common.model.http.CollaborationContext;
@@ -78,6 +81,9 @@ public class QueryServiceImplTest {
     private JaxRsDpsLog logger;
     @Mock
     private DataAuthorizationService dataAuthorizationService;
+
+    @Spy
+    private Gson gson = TestJsonMappers.gson();
 
     @InjectMocks
     private QueryServiceImpl sut;

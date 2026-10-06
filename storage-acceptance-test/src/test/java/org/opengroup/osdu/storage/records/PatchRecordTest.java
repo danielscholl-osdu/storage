@@ -30,6 +30,7 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.storage.util.RecordUtil;
 
 @DisplayName("Patch StorageRecord API Tests")
 public class PatchRecordTest extends BaseRecordsAcceptanceTest {
@@ -58,6 +59,8 @@ public class PatchRecordTest extends BaseRecordsAcceptanceTest {
   private static final String INVALID_JSON_PATCH = "{\"data\":{\"field\":}";
 
   private String recordId;
+  private String kind;
+  private String legalTagName;
 
   @BeforeEach
   @Override
@@ -65,8 +68,8 @@ public class PatchRecordTest extends BaseRecordsAcceptanceTest {
     super.setup();
     String timestamp = String.valueOf(System.currentTimeMillis());
     recordId = getTenantId() + ":patchRecord:test" + timestamp;
-    String kind = getTenantId() + ":ds:patchRecord:" + timestamp;
-    String legalTagName = createLegalTagName("");
+    kind = getTenantId() + ":ds:patchRecord:" + timestamp;
+    legalTagName = createLegalTagName("");
     createLegalTag(legalTagName);
     createRecordAndReturnVersion(recordId, kind, legalTagName);
   }
@@ -79,6 +82,21 @@ public class PatchRecordTest extends BaseRecordsAcceptanceTest {
     StorageRecord responseJson = patchResponse.body();
     validatePatchResponse(responseJson);
     validateDataFields(responseJson);
+  }
+
+  @Test
+  public void should_preserveNumberRepresentation_ofExistingData_whenDataIsPatched() throws Exception {
+    String decimalRecordId = getTenantId() + ":patchRecord:decimals" + System.currentTimeMillis();
+    var createResponse = storageClient.putRecords(
+        withTestAcl(RecordUtil.createRecordsWithDecimalData(decimalRecordId, kind, legalTagName)));
+    assertEquals(HttpStatus.SC_CREATED, createResponse.statusCode());
+
+    HttpResponse<StorageRecord> patchResponse = storageClient.patchRecord(decimalRecordId, MERGE_PATCH_CONTENT_TYPE, DATA_PATCH_BODY);
+    assertEquals(HttpStatus.SC_OK, patchResponse.statusCode());
+
+    assertRecordJsonContains(decimalRecordId, RecordUtil.DECIMAL_DATA_FRAGMENTS);
+
+    storageClient.deleteRecord(decimalRecordId);
   }
 
   @Test

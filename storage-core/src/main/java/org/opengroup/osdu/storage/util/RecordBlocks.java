@@ -24,17 +24,22 @@ public class RecordBlocks {
 
     private ICloudStorage cloudStorage;
     private CrcHashGenerator crcHashGenerator;
+    private ObjectMapper objectMapper;
 
     @Autowired
-    public RecordBlocks(ICloudStorage cloudStorage, CrcHashGenerator crcHashGenerator) {
+    public RecordBlocks(
+            ICloudStorage cloudStorage,
+            CrcHashGenerator crcHashGenerator,
+            ObjectMapper objectMapper
+    ) {
         this.cloudStorage = cloudStorage;
         this.crcHashGenerator = crcHashGenerator;
+        this.objectMapper = objectMapper;
     }
 
     @Autowired
     private static final String HASH_KEY_DATA = "data";
     private static final String HASH_KEY_META = "meta";
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     public void populateRecordBlocksMetadata(Map<String, RecordMetadata> existingRecords, List<RecordProcessing> recordsToProcess, Optional<CollaborationContext> collaborationContext) {
 
