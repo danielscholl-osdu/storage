@@ -1,4 +1,4 @@
-// Copyright 2017-2023, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opengroup.osdu.storage.util.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -219,6 +220,59 @@ public abstract class PatchRecordsTest extends TestBase {
         assertEquals(expectedRecordCount, queryResponse.records.length);
         assertEquals(TestUtils.getAcl(), queryResponse.records[0].acl.viewers[0]);
         assertEquals(TestUtils.getAcl(), queryResponse.records[0].acl.owners[0]);
+    }
+
+    @Test
+    public void should_preserveNumberRepresentation_whenDataIsPatched() throws Exception {
+        String decimalRecordId = TenantUtils.getFirstTenantName() + ":test:decimals." + System.currentTimeMillis();
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
+                RecordUtil.createJsonRecordWithDecimalData(decimalRecordId, KIND, LEGAL_TAG), "");
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
+
+        JsonObject addDecimalOp = new JsonObject();
+        addDecimalOp.addProperty("op", "add");
+        addDecimalOp.addProperty("path", "/data/added");
+        addDecimalOp.addProperty("value", new BigDecimal("1500.0"));
+        JsonArray ops = new JsonArray();
+        ops.add(addDecimalOp);
+        JsonArray recordsJson = new JsonArray();
+        recordsJson.add(decimalRecordId);
+
+        CloseableHttpResponse patchResponse = TestUtils.sendWithCustomMediaType("records", "PATCH", headers,
+                "application/json-patch+json", getPatchrequestBody(recordsJson, ops), "");
+        assertEquals(HttpStatus.SC_OK, patchResponse.getCode());
+
+        response = TestUtils.send("records/" + decimalRecordId, "GET", headers, "", "");
+        String responseString = TestUtils.getResult(response, 200, String.class);
+        List<String> expectedFragments = new ArrayList<>(RecordUtil.DECIMAL_DATA_FRAGMENTS);
+        expectedFragments.add("\"added\":1500.0");
+        for (String fragment : expectedFragments) {
+            assertTrue(fragment + " not found in " + responseString, responseString.contains(fragment));
+        }
+
+        TestUtils.send("records/" + decimalRecordId, "DELETE", headers, "", "");
+    }
+
+    @Test
+    public void should_preserveNumberRepresentation_ofExistingData_whenRecordIsMergePatched() throws Exception {
+        String decimalRecordId = TenantUtils.getFirstTenantName() + ":test:mergedecimals." + System.currentTimeMillis();
+        Map<String, String> headers = HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken());
+        CloseableHttpResponse response = TestUtils.send("records", "PUT", headers,
+                RecordUtil.createJsonRecordWithDecimalData(decimalRecordId, KIND, LEGAL_TAG), "");
+        assertEquals(HttpStatus.SC_CREATED, response.getCode());
+
+        CloseableHttpResponse patchResponse = TestUtils.sendWithCustomMediaType("records/" + decimalRecordId, "PATCH", headers,
+                "application/merge-patch+json", "{\"data\":{\"name\":\"patched\"}}", "");
+        assertEquals(HttpStatus.SC_OK, patchResponse.getCode());
+
+        response = TestUtils.send("records/" + decimalRecordId, "GET", headers, "", "");
+        String responseString = TestUtils.getResult(response, 200, String.class);
+        for (String fragment : RecordUtil.DECIMAL_DATA_FRAGMENTS) {
+            assertTrue(fragment + " not found in " + responseString, responseString.contains(fragment));
+        }
+
+        TestUtils.send("records/" + decimalRecordId, "DELETE", headers, "", "");
     }
 
     private String getPatchPayload(List<String> records, boolean isMetaUpdate, boolean isDataUpdate) {

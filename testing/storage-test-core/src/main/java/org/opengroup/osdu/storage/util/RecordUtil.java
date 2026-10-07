@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,17 @@ import com.google.gson.JsonObject;
 
 import org.opengroup.osdu.core.common.Constants;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 public class RecordUtil {
 	private static final String UNIT_OF_MEASURE_ID = "unitOfMeasureID";
+
+	public static final List<String> DECIMAL_DATA_FRAGMENTS = List.of(
+			"\"large\":1000003872",
+			"\"largeDecimal\":1234567890123456.50",
+			"\"round\":100.0",
+			"\"small\":0.0001");
 
     public static String createDefaultJsonRecord(String id, String kind, String legalTag) {
         JsonObject record = getDefaultRecordWithDefaultData(id, kind, legalTag);
@@ -70,6 +79,18 @@ public class RecordUtil {
 		JsonArray records = new JsonArray();
 		records.add(record);
 
+		return records.toString();
+	}
+
+	public static String createJsonRecordWithDecimalData(String id, String kind, String legalTag) {
+		JsonObject dataJson = new JsonObject();
+		dataJson.addProperty("large", 1000003872);
+		dataJson.addProperty("largeDecimal", new BigDecimal("1234567890123456.50"));
+		dataJson.addProperty("round", new BigDecimal("100.0"));
+		dataJson.addProperty("small", new BigDecimal("0.0001"));
+
+		JsonArray records = new JsonArray();
+		records.add(getRecordWithInputData(id, kind, legalTag, dataJson));
 		return records.toString();
 	}
 

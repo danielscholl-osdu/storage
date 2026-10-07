@@ -67,7 +67,7 @@ public abstract class RecordWithNullFieldTest extends TestBase {
 		JsonObject dataJson = json.get("data").getAsJsonObject();
 
 		assertEquals("58377304471659395", dataJson.get("score-int").toString());
-		assertEquals("5.837730447165939E7", dataJson.get("score-double").toString());
+		assertEquals("58377304.47165939", dataJson.get("score-double").toString());
 		assertEquals(JsonNull.INSTANCE, dataJson.get("custom"));
 
 		// query records without attribute

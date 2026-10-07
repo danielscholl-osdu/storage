@@ -1,4 +1,4 @@
-// Copyright 2017-2023, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.opengroup.osdu.core.test.client.model.storage.QueryRecordsRequest;
 import org.opengroup.osdu.core.test.client.model.storage.UpdateRecordsMetadataRequest;
 import org.opengroup.osdu.core.test.client.model.storage.UpdateRecordsMetadataResponse;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -189,6 +190,26 @@ public final class PatchRecordsTest extends BaseRecordsAcceptanceTest {
     assertTrue(tags.containsKey("testTag99"));
     assertEquals("value0", tags.get("testTag0"));
     assertEquals("value99", tags.get("testTag99"));
+  }
+
+  @Test
+  public void should_preserveNumberRepresentation_whenDataIsPatched() throws Exception {
+    String decimalRecordId = getTenantId() + ":test:decimals." + System.currentTimeMillis();
+    HttpResponse<CreateRecordsResponse> createResponse = storageClient.putRecords(
+        withTestAcl(RecordUtil.createRecordsWithDecimalData(decimalRecordId, KIND, LEGAL_TAG)));
+    assertEquals(HttpStatus.SC_CREATED, createResponse.statusCode());
+
+    PatchOperation addDecimalOp = new PatchOperation("add", "/data/added", new BigDecimal("1500.0"));
+    HttpResponse<UpdateRecordsMetadataResponse> patchResponse = storageClient.patchRecords(
+        RecordUtil.buildMetadataPatch(new String[] {decimalRecordId}, new PatchOperation[] {addDecimalOp}),
+        Map.of("Content-Type", "application/json-patch+json"));
+    assertEquals(HttpStatus.SC_OK, patchResponse.statusCode());
+
+    List<String> expectedFragments = new ArrayList<>(RecordUtil.DECIMAL_DATA_FRAGMENTS);
+    expectedFragments.add("\"added\":1500.0");
+    assertRecordJsonContains(decimalRecordId, expectedFragments);
+
+    storageClient.deleteRecord(decimalRecordId);
   }
 
   private ConvertedRecords fetchRecordsForIds(List<String> recordIds) {

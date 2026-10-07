@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,6 +82,19 @@ public abstract class PostQueryRecordsIntegrationTests extends TestBase {
 		assertTrue(responseObject.records[0].modifyUser != null && responseObject.records[0].modifyTime != null);
 		assertTrue(responseObject.records[0].version != null && !responseObject.records[0].version.isEmpty());
 		assertEquals(3, responseObject.records[0].data.size());
+	}
+
+	@Test
+	public void should_returnBadRequest_when_bodyContainsUnknownProperty() throws Exception {
+		JsonArray records = new JsonArray();
+		records.add(RECORD_ID + 0);
+		JsonObject body = new JsonObject();
+		body.add("records", records);
+		body.addProperty("unknownProperty", 1);
+
+		CloseableHttpResponse response = TestUtils.send("query/records", "POST", HeaderUtils.getHeaders(TenantUtils.getTenantName(), testUtils.getToken()), body.toString(),
+				"");
+		assertEquals(HttpStatus.SC_BAD_REQUEST, response.getCode());
 	}
 
 	@Test

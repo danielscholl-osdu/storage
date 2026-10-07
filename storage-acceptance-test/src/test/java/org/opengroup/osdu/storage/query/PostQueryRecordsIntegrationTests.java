@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.core.test.service.ServiceType;
 import org.opengroup.osdu.storage.records.BaseRecordsAcceptanceTest;
 import org.opengroup.osdu.storage.util.RecordUtil;
 
@@ -99,6 +101,16 @@ public final class PostQueryRecordsIntegrationTests extends BaseRecordsAcceptanc
     assertTrue(Arrays.asList(ids).contains(RECORD_ID + 0));
     assertTrue(Arrays.asList(ids).contains(RECORD_ID + 1));
     assertTrue(Arrays.asList(ids).contains(RECORD_ID + 2));
+  }
+
+  @Test
+  public void should_returnBadRequest_when_bodyContainsUnknownProperty() throws Exception {
+    String body = "{\"records\":[\"" + RECORD_ID + 0 + "\"],\"unknownProperty\":1}";
+
+    HttpResponse<String> response = send(getDefaultUser(), ServiceType.STORAGE_V2, "query/records",
+        Method.POST, "", body, null);
+
+    assertEquals(HttpStatus.SC_BAD_REQUEST, response.statusCode());
   }
 
   @Test

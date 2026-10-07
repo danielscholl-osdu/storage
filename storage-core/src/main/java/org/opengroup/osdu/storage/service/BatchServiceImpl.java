@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -84,7 +84,8 @@ public abstract class BatchServiceImpl implements BatchService {
     @Autowired
     private IFeatureFlag featureFlag;
 
-    public final Gson gson = new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
+    @Autowired
+    private Gson gson;
 
     @Override
     public MultiRecordInfo getMultipleRecords(MultiRecordIds ids, Optional<CollaborationContext> collaborationContext) {
