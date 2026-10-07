@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,6 +73,10 @@ import static org.opengroup.osdu.storage.validation.ValidationDoc.INVALID_LIMIT_
 public class RecordServiceImpl implements RecordService {
 
     public static final String ACCESS_DENIED = "Access denied";
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Autowired
     private IRecordsMetadataRepository recordRepository;
 
@@ -98,8 +102,6 @@ public class RecordServiceImpl implements RecordService {
     private RecordUtil recordUtil;
     @Autowired
     private IFeatureFlag collaborationFeatureFlag;
-    @Autowired
-    private ObjectMapper objectMapper;
     @Autowired
     private IngestionService ingestionService;
     @Autowired

@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TestUtils;
 
 public final class RecordsApiAcceptanceTests extends BaseRecordsAcceptanceTest {
@@ -236,6 +237,18 @@ public final class RecordsApiAcceptanceTests extends BaseRecordsAcceptanceTest {
     assertEquals("Foo", responseJson.data().get("name"));
 
     storageClient.deleteRecord(wholeRecordId);
+  }
+
+  @Test
+  public void should_preserveNumberRepresentation_when_recordIsIngestedWithDecimals() throws Exception {
+    final String decimalRecordId = getTenantId() + ":inttest:decimals-" + System.currentTimeMillis();
+    var createResponse = storageClient.putRecords(
+        withTestAcl(RecordUtil.createRecordsWithDecimalData(decimalRecordId, kind, legalTag)));
+    assertEquals(HttpStatus.SC_CREATED, createResponse.statusCode());
+
+    assertRecordJsonContains(decimalRecordId, RecordUtil.DECIMAL_DATA_FRAGMENTS);
+
+    storageClient.deleteRecord(decimalRecordId);
   }
 
   @Test

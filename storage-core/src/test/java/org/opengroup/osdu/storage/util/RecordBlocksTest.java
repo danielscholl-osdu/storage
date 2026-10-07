@@ -3,6 +3,8 @@ package org.opengroup.osdu.storage.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opengroup.osdu.storage.di.TestJsonMappers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +36,9 @@ public class RecordBlocksTest {
 
     @Spy
     CrcHashGenerator crcHashGenerator;
+
+    @Spy
+    ObjectMapper objectMapper = TestJsonMappers.objectMapper();
 
     @InjectMocks
     private RecordBlocks recordBlocks;

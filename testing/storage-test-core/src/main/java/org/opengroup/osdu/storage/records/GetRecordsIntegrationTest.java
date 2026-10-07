@@ -72,7 +72,7 @@ public abstract class GetRecordsIntegrationTest extends TestBase {
 		assertEquals(TestUtils.getAcl(), acl.get("viewers").getAsString());
 
 		assertEquals("58377304471659395", dataJson.get("int-tag").getAsJsonObject().get("score-int").toString());
-		assertEquals("5.837730447165939E7",
+		assertEquals("58377304.47165939",
 				dataJson.get("double-tag").getAsJsonObject().get("score-double").toString());
 		assertEquals("123456789", dataJson.get("count").toString());
 	}

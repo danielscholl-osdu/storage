@@ -1,4 +1,4 @@
-// Copyright 2017-2023, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.github.fge.jsonpatch.JsonPatch;
@@ -48,7 +49,8 @@ import static org.opengroup.osdu.storage.util.RecordConstants.PATH;
 public class JsonPatchUtil {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(JsonPatchUtil.class);
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static ObjectMapper objectMapper = new ObjectMapper()
+            .configure(JsonNodeFeature.STRIP_TRAILING_BIGDECIMAL_ZEROES, false);
 
     public static <T> T applyPatch(JsonPatch jsonPatch, Class<T> targetClass, T target) {
         try {

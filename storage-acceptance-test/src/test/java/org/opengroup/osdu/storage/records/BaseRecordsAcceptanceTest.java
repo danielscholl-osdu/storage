@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import org.opengroup.osdu.core.test.client.model.storage.CreateRecordsResponse;
 import org.opengroup.osdu.core.test.client.model.storage.StorageRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.base.Strings;
 import java.util.HashMap;
@@ -25,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
 import org.opengroup.osdu.core.test.auth.UserType;
 import org.opengroup.osdu.core.test.client.HttpResponse;
+import org.opengroup.osdu.core.test.service.ServiceType;
 import org.opengroup.osdu.storage.BaseStorageAcceptanceTest;
 import org.opengroup.osdu.storage.util.RecordUtil;
 import org.opengroup.osdu.storage.util.TestUtils;
@@ -91,6 +94,14 @@ public abstract class BaseRecordsAcceptanceTest extends BaseStorageAcceptanceTes
           "id=" + collaborationId + ",application=" + applicationName);
     }
     return headers;
+  }
+
+  protected void assertRecordJsonContains(String recordId, List<String> fragments) throws Exception {
+    HttpResponse<String> response = send(getDefaultUser(), ServiceType.STORAGE_V2, "records/" + recordId, Method.GET);
+    assertEquals(HttpStatus.SC_OK, response.statusCode());
+    for (String fragment : fragments) {
+      assertTrue(response.body().contains(fragment), fragment + " not found in " + response.body());
+    }
   }
 
   protected Long createRecordAndReturnVersion(String recordId, String kind, String legalTag) {

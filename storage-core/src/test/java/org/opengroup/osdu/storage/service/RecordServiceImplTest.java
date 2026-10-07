@@ -1,4 +1,4 @@
-// Copyright 2017-2019, Schlumberger
+// Copyright 2017-2026, Schlumberger
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
 package org.opengroup.osdu.storage.service;
 
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opengroup.osdu.storage.di.TestJsonMappers;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ import org.opengroup.osdu.core.common.model.http.DpsHeaders;
 import org.opengroup.osdu.core.common.model.indexer.DeletionType;
 import org.opengroup.osdu.core.common.model.indexer.OperationType;
 import org.opengroup.osdu.core.common.model.storage.PubSubDeleteInfo;
+import org.opengroup.osdu.core.common.model.storage.Record;
 import org.opengroup.osdu.core.common.model.storage.RecordMetadata;
 import org.opengroup.osdu.core.common.model.storage.RecordState;
 import org.opengroup.osdu.core.common.model.tenant.TenantInfo;
@@ -123,14 +126,15 @@ public class RecordServiceImplTest {
 
     @Mock
     private DpsHeaders headers;
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
     private TenantInfo tenant;
 
     @Mock
     private RecordUtil recordUtil;
+
+    @Spy
+    private ObjectMapper objectMapper = TestJsonMappers.objectMapper();
 
     @InjectMocks
     private RecordServiceImpl sut;
@@ -1157,6 +1161,38 @@ public class RecordServiceImplTest {
         // Assert
         assertNotNull(result);
         assertEquals(result, updatedRecordJson);
+    }
+
+    @Test
+    public void should_patchRecord_preservingNumberRepresentation_ofExistingData() throws Exception {
+        String recordId = "test:record:123";
+        String user = "test@tenant.com";
+        RecordMergePatchRequest patchRequest = new RecordMergePatchRequest();
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("name", "Updated Name");
+        patchRequest.setData(updateData);
+
+        RecordMetadata existingRecord = createRecordMetadata(asList("1"));
+        existingRecord.setId(recordId);
+        existingRecord.setStatus(RecordState.active);
+
+        String existingRecordJson = "{\"id\":\"" + recordId + "\",\"data\":{\"name\":\"Original Name\","
+                + "\"large\":1000003872,\"largeDecimal\":1234567890123456.50,\"round\":100.0}}";
+
+        when(recordRepository.get(recordId, EMPTY_COLLABORATION_CONTEXT)).thenReturn(existingRecord);
+        when(dataAuthorizationService.validateOwnerAccess(existingRecord, OperationType.update)).thenReturn(true);
+        when(queryService.getRecordInfo(recordId, new String[]{}, EMPTY_COLLABORATION_CONTEXT, true)).thenReturn(existingRecordJson);
+
+        this.sut.patchRecord(recordId, patchRequest, user, EMPTY_COLLABORATION_CONTEXT);
+
+        ArgumentCaptor<List<Record>> recordsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(ingestionService).createUpdateRecords(eq(true), recordsCaptor.capture(), eq(user), eq(EMPTY_COLLABORATION_CONTEXT));
+        Map<String, Object> data = recordsCaptor.getValue().get(0).getData();
+        Gson gson = new Gson();
+        assertEquals("Updated Name", data.get("name"));
+        assertEquals("1000003872", gson.toJson(data.get("large")));
+        assertEquals("1234567890123456.50", gson.toJson(data.get("largeDecimal")));
+        assertEquals("100.0", gson.toJson(data.get("round")));
     }
 
     @Test
