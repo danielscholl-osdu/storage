@@ -5,7 +5,7 @@
 #
 # Multi-arch base so release images pull natively on Apple Silicon. Dependabot bumps the digest
 # in the template only; template-sync carries it to the forks.
-FROM mcr.microsoft.com/openjdk/jdk:17-azurelinux@sha256:2935b846a1cafac271d9789822e33caecb61a9d1702e10f6573f1ec07ffe936a
+FROM mcr.microsoft.com/openjdk/jdk:17-azurelinux@sha256:df29dacf4638fd9d11ce38aa3b073a944f6496a7923bcfcb954b83dce0275fde
 
 ARG JAR_FILE
 ARG APPLICATIONINSIGHTS_CONNECTION_STRING="dummy"
