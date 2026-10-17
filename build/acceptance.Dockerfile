@@ -12,11 +12,12 @@
 #
 # Only the suite source and a warmed local repository are pinned. The run is online, and where
 # the upstream graph carries version ranges (os-core-test pulls io.cucumber ranges) a later run
-# can resolve a different set; go-offline caches artifacts, not range metadata. A fork that
+# can resolve a different set; the prewarm caches artifacts, not range metadata. A fork that
 # wants a frozen set pins the ranges in its own suite pom.
 #
 # amd64 only: this build runs Maven, and under QEMU arm64 emulation that costs minutes per push
 # with no consumer. CI runners are amd64 and Apple Silicon runs the amd64 image emulated.
+ARG JAVA_VERSION=17
 FROM docker.io/library/alpine:3.22@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8 AS select
 # Space-separated suite paths; the first is the run-time default.
 ARG SUITE_DIRS
@@ -29,7 +30,10 @@ RUN set -eu; mkdir -p /suite; \
     if [ -d /src/.spi ]; then cp -R /src/.spi /suite/.spi; fi; \
     printf '%s' "${SUITE_DIRS%% *}" > /suite/.default-suite-dir
 
-FROM docker.io/library/maven:3.9-eclipse-temurin-17@sha256:42a3ac393abbc64dae6c96703e5ead2e921fe9103371ac58b5b404b0d6a26502
+# JAVA_VERSION is the release the fork's root pom declares, one stage per release as in build/Dockerfile.
+FROM docker.io/library/maven:3.9-eclipse-temurin-17@sha256:1a352420f7aba21f5ad08df31bab55f74c013fb491f1ae8ab1dd7ff9ed698584 AS maven-17
+FROM docker.io/library/maven:3.9-eclipse-temurin-25@sha256:93b8a14ea2f412782e4e842651273b4d903e35cc496284f178fbbe2d67d00976 AS maven-25
+FROM maven-${JAVA_VERSION}
 
 ARG SUITE_DIRS
 WORKDIR /suite
@@ -37,17 +41,19 @@ COPY --from=select /suite/ /suite/
 COPY --chmod=0755 build/acceptance-entrypoint.sh /usr/local/bin/acceptance-entrypoint.sh
 
 # Each suite resolves its own graph; a multi-module suite (a testing/ reactor whose provider
-# module depends on a sibling core module) also needs that sibling installed, which
-# go-offline does not do, so the reactor is installed without running its tests first.
+# module depends on a sibling core module) also needs that sibling installed, so the reactor is
+# installed first. -DskipITs as well as -DskipTests, because a failsafe execution that sets its
+# own <skipTests> ignores the user property. resolve, not go-offline: go-offline also fetches
+# conflict losers and unevaluated classifiers the mediated build never uses.
 RUN set -eu; \
     SETTINGS=""; \
     if [ -f /suite/.mvn/community-maven.settings.xml ]; then SETTINGS="--settings /suite/.mvn/community-maven.settings.xml"; fi; \
     for dir in ${SUITE_DIRS:?SUITE_DIRS build-arg is required}; do \
       echo "==> prewarming $dir"; \
       if grep -q "<modules>" "/suite/$dir/pom.xml"; then \
-        mvn -B -q --no-transfer-progress $SETTINGS -f "/suite/$dir/pom.xml" install -DskipTests; \
+        mvn -B -q --no-transfer-progress $SETTINGS -f "/suite/$dir/pom.xml" install -DskipTests -DskipITs; \
       fi; \
-      mvn -B --no-transfer-progress $SETTINGS -f "/suite/$dir/pom.xml" dependency:go-offline; \
+      mvn -B --no-transfer-progress $SETTINGS -f "/suite/$dir/pom.xml" dependency:resolve dependency:resolve-plugins; \
     done
 
 # Arguments are Maven argv tokens, never a shell string.
